@@ -1,5 +1,13 @@
 #pragma once
 #include <string>
+#include <regex>
+#include <vector>
+
+
+// TODO: check the maximum scope of the vector
+const std::vector<const std::string> k_tokenTypevector =
+{ "PUNCTUATION", "KEYWORD", "VALUE", "OPERATOR",
+"IDENTIFIER", "TRIVIA", "EOF", "UNKNOWN" };
 
 class Token
 {
