@@ -16,3 +16,8 @@ void TokenFactory::CreateToken()
 
     return token;
 }
+
+bool TokenFactory::IsFinishedReadingSRC()
+{
+    return this->m_mappedSRC.IsEOF();
+}
