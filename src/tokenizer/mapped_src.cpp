@@ -22,3 +22,10 @@ bool MappedSRC::Seek() noexcept
     return true;
 }
 
+bool MappedSRC::Rewind() noexcept
+{
+    if (this->m_ulIndex == k_nSOF) { return false; }
+
+    this->m_ulIndex--;
+    return true;
+}
