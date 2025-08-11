@@ -6,3 +6,10 @@ MappedSRC::MappedSRC(std::ifstream &fSrc) : m_ulIndex(0)
     // Reads the entire content of the stream fSrc into the string m_sContent
     this->m_sContent.assign(std::istreambuf_iterator<char>(fSrc), {});
 }
+
+char MappedSRC::Get() const
+{
+    if (this->IsEOF()) { return '\0'; }
+    
+    return this->m_sContent[this->m_ulIndex];
+}
