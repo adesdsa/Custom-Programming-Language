@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mapped_src.h"
+#include "token.h"
 
 // Will create and build tokens from the stream
 class TokenFactory
