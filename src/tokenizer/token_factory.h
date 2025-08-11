@@ -6,20 +6,21 @@
 // Will create and build tokens from the stream
 class TokenFactory
 {
- public:
+public:
     TokenFactory(std::ifstream& fSrc);
 
     ~TokenFactory() = default;
 
     // Will build a new token. 
     // @return: The fully initialized token. 
-    void CreateToken();
+    Token& CreateToken() noexcept;
 
     // Checks if file is in EOF.
     // @return: True => , False => .
-    bool IsFinishedReadingSRC();
+    bool IsFinishedReadingSRC() const noexcept;
 
- private:
+
+private:
     MappedSRC m_mappedSRC;
     size_t m_ulLineCounter;
 };
