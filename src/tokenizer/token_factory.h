@@ -2,6 +2,7 @@
 
 #include "mapped_src.h"
 
+// Will create and build tokens from the stream
 class TokenFactory
 {
  public:
@@ -20,4 +21,4 @@ class TokenFactory
  private:
     MappedSRC m_mappedSRC;
     size_t m_ulLineCounter;
-}
+};
