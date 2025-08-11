@@ -7,9 +7,18 @@ MappedSRC::MappedSRC(std::ifstream &fSrc) : m_ulIndex(0)
     this->m_sContent.assign(std::istreambuf_iterator<char>(fSrc), {});
 }
 
-char MappedSRC::Get() const
+char MappedSRC::Get() const noexcept
 {
     if (this->IsEOF()) { return '\0'; }
-    
+
     return this->m_sContent[this->m_ulIndex];
 }
+
+bool MappedSRC::Seek() noexcept
+{
+    if (this->IsEOF()) { return false; }
+
+    this->m_ulIndex++;
+    return true;
+}
+

@@ -12,12 +12,7 @@ class MappedSRC
 
     // Gets current character from the stream based on the index.
     // @return: Current characters from the stream.
-    char Get() const;
-
-    // Read n characters from the stream.
-    // @param ulCharsToRead: Number of characters to read from the stream.
-    // @return: Current characters from the stream.
-    std::string Read(size_t ulCharsToRead) noexcept;
+    char Get() const noexcept;
 
     // Skip a single character from the stream by changing the stream index.
     // @return: True => Index is not EOF, False => Otherwise.
