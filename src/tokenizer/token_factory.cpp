@@ -1,10 +1,12 @@
 #include "token_factory.h"
 
-void TokenFactory::CreateToken()
+TokenFactory::TokenFactory(std::ifstream &fSrc) : m_mappedSRC(fSrc), m_ulLineCounter(0) {};
+
+Token &TokenFactory::CreateToken() noexcept
 {
     Token token(this->m_ulLineCounter);
 
-    while(!token->Append(this->m_mappedSRC.Get()))
+    while(!token.Append(this->m_mappedSRC.Get()))
     {
         if(this->m_mappedSRC.Get() == '\n')
         {
@@ -17,7 +19,7 @@ void TokenFactory::CreateToken()
     return token;
 }
 
-bool TokenFactory::IsFinishedReadingSRC()
+bool TokenFactory::IsFinishedReadingSRC() const noexcept
 {
     return this->m_mappedSRC.IsEOF();
 }

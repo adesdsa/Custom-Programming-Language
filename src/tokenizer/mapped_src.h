@@ -5,9 +5,10 @@
 
 constexpr int k_nSOF = 0;
 
+// Responsible for holding and managing the source file
 class MappedSRC
 {
- public:
+public:
     MappedSRC(std::ifstream& fSrc);
 
     ~MappedSRC() = default;
@@ -26,10 +27,10 @@ class MappedSRC
 
     // Check if the stream index is at the end of the file.
     // @return: True => Index is EOF, False => Otherwise.
-    bool IsEOF() const;
+    bool IsEOF() const noexcept;
 
 
- private:
+private:
     std::string m_sContent;
     size_t m_ulIndex;
 };

@@ -30,7 +30,7 @@ bool MappedSRC::Rewind() noexcept
     return true;
 }
 
-bool MappedSRC::IsEOF() const
+bool MappedSRC::IsEOF() const noexcept
 {
     return this->m_ulIndex == this->m_sContent.size();
 }
