@@ -11,6 +11,10 @@
 *.o
 *.obj
 
+*.sln
+*.vcxproj
+*.fliters
+
 # Precompiled Headers
 *.gch
 *.pch
