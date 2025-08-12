@@ -2,76 +2,78 @@
 
 Token::Token(size_t ulLine) : m_ulLine(ulLine)
 {
-    m_sType = k_tokenTypevector[7];
+    this->m_sType = k_tokenTypevector[7];
 }
 
 bool Token::Append(char cAddedChar) noexcept
 {
     std::string sTempToken = m_sValue + cAddedChar;
 
-    if (std::regex_match(sTempToken, k_regexTriviaPattern)) 
-        // if it's an UNKNOWN operator
+    if (std::regex_match(sTempToken, RegexPatterns::k_Trivia)) 
     {
-        if (m_sValue.size() == 0) // checking if there was already a token
+        if (this->m_sValue.empty()) // checking if there was already a token
         {
-            m_sValue = sTempToken;
-            m_sType = k_tokenTypevector[5];
+            this->m_sValue = sTempToken;
+            this->m_sType = k_tokenTypevector[5];
             return false;
         }
         else { return true; } // the last Token is finished
     }
-    else if (std::regex_match(sTempToken, k_regexIdentifierPattern)) 
-        // if it's an identifier
+
+    else if (std::regex_match(sTempToken, RegexPatterns::k_Identifier)) 
     {
-        m_sValue = sTempToken;
-        m_sType = k_tokenTypevector[4];
+        this->m_sValue = sTempToken;
+        this->m_sType = k_tokenTypevector[4];
         return false;
     }
-    else if (std::regex_match("" + cAddedChar, k_regexPunctuationPattern)) 
-        // if it's a punctuation
+
+    else if (std::regex_match("" + cAddedChar, RegexPatterns::k_Punctuation)) 
     {
-        if (m_sValue.size() == 0) // checking if there was already a token
+        if (this->m_sValue.empty()) // checking if there was already a token
         {
-            m_sValue = cAddedChar;
-            m_sType = k_tokenTypevector[0];
+            this->m_sValue = cAddedChar;
+            this->m_sType = k_tokenTypevector[0];
             return false;
         }
         else { return true; } // the last Token is finished
     }
-    else if (std::regex_match(sTempToken, k_regexKeywordPattern)) // if it's a keyword
+
+    else if (std::regex_match(sTempToken, RegexPatterns::k_Keyword))
     {
-        m_sValue = sTempToken;
-        m_sType = k_tokenTypevector[1];
+        this->m_sValue = sTempToken;
+        this->m_sType = k_tokenTypevector[1];
         return false;
     }
-    else if (std::regex_match(sTempToken, k_regexValuePattern)) // if it's a keyword
+
+    else if (std::regex_match(sTempToken, RegexPatterns::k_Value))
     {
-        m_sValue = sTempToken;
-        m_sType = k_tokenTypevector[2];
+        this->m_sValue = sTempToken;
+        this->m_sType = k_tokenTypevector[2];
         return false;
     }
-    else if (std::regex_match(sTempToken, k_regexKeywordSymbolPattern))
-        // if it's a symbol operator
+
+    else if (std::regex_match(sTempToken, RegexPatterns::k_KeywordSymbol))
     {
-        m_sValue = sTempToken;
-        m_sType = k_tokenTypevector[3];
+        this->m_sValue = sTempToken;
+        this->m_sType = k_tokenTypevector[3];
         return false;
     }
-    else if (std::regex_match(sTempToken, k_regexKeywordOperatorPattern))
-        // if it's a keyword operator
+
+    else if (std::regex_match(sTempToken, RegexPatterns::k_KeywordOperator))
     {
-        if (m_sValue.size() == 0) // checking if there was already a token
+        if (this->m_sValue.empty()) // checking if there was already a token
         {
-            m_sValue = sTempToken;
-            m_sType = k_tokenTypevector[3];
+            this->m_sValue = sTempToken;
+            this->m_sType = k_tokenTypevector[3];
             return false;
         }
         else { return true; } // the last Token is finished
     }
-    else // if it's an UNKNOWN operator
+
+    else // UNKNOWN token
     {
-        m_sValue = sTempToken;
-        m_sType = k_tokenTypevector[7];
+        this->m_sValue = sTempToken;
+        this->m_sType = k_tokenTypevector[7];
         return false;
     }
 }

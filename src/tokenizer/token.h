@@ -1,7 +1,9 @@
 #pragma once
+
 #include <string>
-#include <regex>
 #include <vector>
+
+#include "patterns.h"
 
 
 // TODO: check the maximum scope of the vector

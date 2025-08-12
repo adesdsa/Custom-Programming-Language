@@ -36,7 +36,7 @@ namespace RegexPatterns
         std::regex::optimize
     );
 
-    inline const std::regex k_ValuePattern(
+    inline const std::regex k_Value(
         std::string(R"(\b(?:true|false|nullptr|NULL)\b)") + 
         R"(|(?:0b[01]+|0x[0-9A-Fa-f]+|0[0-7]+|[0-9]+)(?:[uU]?(?:l{1,2}|L{1,2})?)?)" +
         R"(|\d+\.\d*(?:[eE][+-]?\d+)?[fFlL]?)" +
@@ -46,7 +46,7 @@ namespace RegexPatterns
         std::regex::optimize
     );
 
-    inline const std::regex k_rKeywordOperator(
+    inline const std::regex k_KeywordOperator(
         R"(\b(?:sizeof|alignof|typeid|decltype|new|delete|co_await)\b")", 
         std::regex::optimize
     );
