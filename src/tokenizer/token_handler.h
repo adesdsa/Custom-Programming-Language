@@ -4,6 +4,9 @@
 
 #include "token.h"
 
+constexpr const char* k_triviaType = "TRIVIA";
+constexpr const char* k_unknownType = "UNKNOWN";
+
 // Responsible for filter tokens from input stream to output stream  
 class TokenHandler
 {

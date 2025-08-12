@@ -6,3 +6,8 @@ void TokenHandler::HandleToken(const Token &token) noexcept
 
     this->ProcessRelevantToken(token);
 }
+
+bool TokenHandler::IsRelevantToken(const Token &token) const noexcept
+{
+    return !(token.GetType() == k_triviaType|| token.GetType() == k_unknownType);
+}
