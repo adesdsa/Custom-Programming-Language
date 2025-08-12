@@ -6,76 +6,66 @@ Token::Token(size_t ulLine) : m_ulLine(ulLine)
 }
 
 bool Token::Append(char cAddedChar) noexcept
-{
+{   
+    // For single character tokens
+    auto AssignToken = [&](const std::string& val, size_t typeIdx) 
+    {
+        this->m_sValue = val;
+        this->m_sType = k_tokenTypevector[typeIdx];
+        return false;
+    };
+
+    // For multi-characters tokens
+    auto AssignIfEmptyOrFinish = [&](const std::string& val, size_t typeIdx) 
+    {
+        // Checking if there was already a token
+        if (this->m_sValue.empty())
+        {
+            return AssignToken(val, typeIdx);
+        }
+        return true;  // Last token finished
+    };
+
+    // New token value
     std::string sTempToken = m_sValue + cAddedChar;
 
     if (std::regex_match(sTempToken, RegexPatterns::k_Trivia)) 
     {
-        if (this->m_sValue.empty()) // checking if there was already a token
-        {
-            this->m_sValue = sTempToken;
-            this->m_sType = k_tokenTypevector[5];
-            return false;
-        }
-        else { return true; } // the last Token is finished
+        return AssignIfEmptyOrFinish(sTempToken, 5);
     }
 
-    else if (std::regex_match(sTempToken, RegexPatterns::k_Identifier)) 
+    if (std::regex_match(sTempToken, RegexPatterns::k_Identifier)) 
     {
-        this->m_sValue = sTempToken;
-        this->m_sType = k_tokenTypevector[4];
-        return false;
+        return AssignToken(sTempToken, 4);
     }
 
-    else if (std::regex_match("" + cAddedChar, RegexPatterns::k_Punctuation)) 
+    if (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation)) 
     {
-        if (this->m_sValue.empty()) // checking if there was already a token
-        {
-            this->m_sValue = cAddedChar;
-            this->m_sType = k_tokenTypevector[0];
-            return false;
-        }
-        else { return true; } // the last Token is finished
+        return AssignIfEmptyOrFinish(std::string(1, cAddedChar), 0);
     }
 
-    else if (std::regex_match(sTempToken, RegexPatterns::k_Keyword))
+    if (std::regex_match(sTempToken, RegexPatterns::k_Keyword))
     {
-        this->m_sValue = sTempToken;
-        this->m_sType = k_tokenTypevector[1];
-        return false;
+        return AssignToken(sTempToken, 1);
     }
 
-    else if (std::regex_match(sTempToken, RegexPatterns::k_Value))
+    if (std::regex_match(sTempToken, RegexPatterns::k_Value))
     {
-        this->m_sValue = sTempToken;
-        this->m_sType = k_tokenTypevector[2];
-        return false;
+        return AssignToken(sTempToken, 2);
     }
 
-    else if (std::regex_match(sTempToken, RegexPatterns::k_KeywordSymbol))
+    if (std::regex_match(sTempToken, RegexPatterns::k_KeywordSymbol))
     {
-        this->m_sValue = sTempToken;
-        this->m_sType = k_tokenTypevector[3];
-        return false;
+        return AssignToken(sTempToken, 3);
     }
 
-    else if (std::regex_match(sTempToken, RegexPatterns::k_KeywordOperator))
+    if (std::regex_match(sTempToken, RegexPatterns::k_KeywordOperator))
     {
-        if (this->m_sValue.empty()) // checking if there was already a token
-        {
-            this->m_sValue = sTempToken;
-            this->m_sType = k_tokenTypevector[3];
-            return false;
-        }
-        else { return true; } // the last Token is finished
+        return AssignIfEmptyOrFinish(sTempToken, 3);
     }
 
-    else // UNKNOWN token
-    {
-        this->m_sValue = sTempToken;
-        this->m_sType = k_tokenTypevector[7];
-        return false;
-    }
+    // UNKNOWN token
+    return AssignToken(sTempToken, 7);
 }
 
 std::string Token::GetValue() const noexcept
