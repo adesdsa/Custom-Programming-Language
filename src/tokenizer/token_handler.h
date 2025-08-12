@@ -4,14 +4,18 @@
 
 #include "token.h"
 
-constexpr const char* k_triviaType = "TRIVIA";
-constexpr const char* k_unknownType = "UNKNOWN";
+#define FUNCTION_THROWER __func__
+
+constexpr const char* k_sOutputFile = "tokens.txt";
+constexpr const char* k_sTriviaType = "TRIVIA";
+constexpr const char* k_sUnknownType = "UNKNOWN";
+constexpr const char* k_sFileFailedToOpenError = " - ERROR: Failed to open output file: ";
 
 // Responsible for filter tokens from input stream to output stream  
 class TokenHandler
 {
 public:
-    TokenHandler() = default;
+    TokenHandler();
     ~TokenHandler() = default;
 
     // Preform an action based on th token's relevance.
