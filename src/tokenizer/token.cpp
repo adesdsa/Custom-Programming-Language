@@ -110,3 +110,8 @@ std::string Token::GetValue() const noexcept
 {
     return this->m_sValue;
 }
+
+std::string Token::GetType() const noexcept
+{
+    return this->m_sType;
+}
