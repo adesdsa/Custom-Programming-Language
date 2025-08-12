@@ -4,25 +4,6 @@ Token::Token(size_t ulLine) : m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
 
 bool Token::Append(char cAddedChar) noexcept
 {   
-    // For single character tokens
-    auto AssignToken = [&](const std::string& val, std::string_view type) 
-    {
-        this->m_sValue = val;
-        this->m_sType = type;
-        return false;
-    };
-
-    // For multi-characters tokens
-    auto AssignIfEmptyOrFinish = [&](const std::string& val, std::string_view type) 
-    {
-        // Checking if there was already a token
-        if (this->m_sValue.empty())
-        {
-            return AssignToken(val, type);
-        }
-        return true;  // Last token finished
-    };
-
     // New token value
     std::string sTempToken = m_sValue + cAddedChar;
 
@@ -85,4 +66,14 @@ bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenT
     this->m_sValue = sTokenValue;
     this->m_sType = sTokenType;
     return false;
+}
+
+bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType)
+{
+    // Checking if there was already a token
+    if (this->m_sValue.empty())
+    {
+        return AssignToken(sTokenValue, sTokenType);
+    }
+    return true;  // Last token finished
 }

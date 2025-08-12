@@ -20,6 +20,8 @@ namespace TokenTypes
 }
 
 
+
+
 // Represent a token in the stream
 class Token
 {
