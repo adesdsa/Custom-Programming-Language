@@ -105,3 +105,8 @@ bool Token::Append(char cAddedChar) noexcept
         return false;
     }
 }
+
+std::string Token::GetValue() const noexcept
+{
+    return this->m_sValue;
+}
