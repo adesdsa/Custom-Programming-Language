@@ -115,3 +115,8 @@ std::string Token::GetType() const noexcept
 {
     return this->m_sType;
 }
+
+std::string Token::GetLine() const noexcept
+{
+    return std::to_string(this->m_ulLine);
+}
