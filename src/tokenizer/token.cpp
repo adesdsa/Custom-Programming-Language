@@ -5,45 +5,44 @@ Token::Token(size_t ulLine) : m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
 bool Token::Append(char cAddedChar) noexcept
 {   
     // New token value
-    std::string sTempToken = m_sValue + cAddedChar;
+    const std::string k_sTempToken = m_sValue + cAddedChar;
 
-    if (std::regex_match(sTempToken, RegexPatterns::k_Trivia)) 
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Trivia)) 
     {
-        return AssignIfEmptyOrFinish(sTempToken, TokenTypes::TRIVIA);
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
 
-    if (std::regex_match(sTempToken, RegexPatterns::k_Identifier)) 
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier)) 
     {
-        return AssignToken(sTempToken, TokenTypes::IDENTIFIER);
+        return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
     }
 
     if (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation)) 
     {
-        return AssignIfEmptyOrFinish(std::string(1, cAddedChar), TokenTypes::PUNCTUATION);
+        return this->AssignIfEmptyOrFinish(std::string(1, cAddedChar), TokenTypes::PUNCTUATION);
     }
 
-    if (std::regex_match(sTempToken, RegexPatterns::k_Keyword))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword))
     {
-        return AssignToken(sTempToken, TokenTypes::KEYWORD);
+        return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
     }
 
-    if (std::regex_match(sTempToken, RegexPatterns::k_Value))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Value))
     {
-        return AssignToken(sTempToken, TokenTypes::VALUE);
+        return this->AssignToken(k_sTempToken, TokenTypes::VALUE);
     }
 
-    if (std::regex_match(sTempToken, RegexPatterns::k_KeywordSymbol))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordSymbol))
     {
-        return AssignToken(sTempToken, TokenTypes::OPERATOR);
+        return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
     }
 
-    if (std::regex_match(sTempToken, RegexPatterns::k_KeywordOperator))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordOperator))
     {
-        return AssignIfEmptyOrFinish(sTempToken, TokenTypes::OPERATOR);
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::OPERATOR);
     }
 
-    // UNKNOWN token
-    return AssignToken(sTempToken, TokenTypes::UNKNOWN);
+    return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN);  // UNKNOWN token
 }
 
 const std::string& Token::GetValue() const noexcept
@@ -65,7 +64,7 @@ bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenT
 {
     this->m_sValue = sTokenValue;
     this->m_sType = sTokenType;
-    return false;
+    return TokenStatus::UNFINISHED;
 }
 
 bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType)
@@ -75,5 +74,5 @@ bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_vi
     {
         return AssignToken(sTokenValue, sTokenType);
     }
-    return true;  // Last token finished
+    return TokenStatus::FINISHED;
 }

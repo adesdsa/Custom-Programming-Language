@@ -7,6 +7,8 @@
 
 
 // TODO: check the maximum scope of the vector
+
+// All supported token types
 namespace TokenTypes
 {
     inline constexpr std::string_view PUNCTUATION = "PUNCTUATION";
@@ -19,7 +21,12 @@ namespace TokenTypes
     inline constexpr std::string_view UNKNOWN     = "UNKNOWN";
 }
 
-
+// Token status holds which part of the building process the token at
+namespace TokenStatus
+{
+    inline constexpr bool FINISHED = true;
+    inline constexpr bool UNFINISHED = false;
+}
 
 
 // Represent a token in the stream
