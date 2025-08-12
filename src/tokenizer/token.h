@@ -9,10 +9,13 @@ const std::vector<const std::string> k_tokenTypevector =
 { "PUNCTUATION", "KEYWORD", "VALUE", "OPERATOR",
 "IDENTIFIER", "TRIVIA", "EOF", "UNKNOWN" };
 
+
+// Represent a token in the stream
 class Token
 {
 public:
-    Token(size_t ulLine) noexcept;
+    Token(size_t ulLine);
+
      // Tries to append the new character to the Token unless it's a char for
      // the next token than it defines the token type.
      // @param cAddedChar: The character we add to the token right now.
@@ -27,5 +30,4 @@ private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
-
 };
