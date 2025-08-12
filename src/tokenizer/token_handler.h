@@ -14,7 +14,7 @@ public:
     // Preform an action based on th token's relevance.
     // @param token: Current token from stream to handle.
     // @return: None.
-    void HandleToken(Token& token) noexcept;
+    void HandleToken(const Token& token) noexcept;
 
 
 private:
@@ -24,11 +24,6 @@ private:
     // @param token: Current token from stream to check it relevance.
     // @return: True => Token is relevant (not a trivia/unknown type token), False => Otherwise.
     bool IsRelevantToken(const Token& token) const noexcept;
-
-    // Ignore irrelevant tokens.
-    // @param token: Current token from stream to handle.
-    // @return: None.
-    void SkipIrelevantToken(const Token& token) const noexcept;
 
     // Adds the relevant tokens to the tokens stream.
     // @param token: Current token from stream to handle.
