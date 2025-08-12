@@ -7,9 +7,17 @@
 
 
 // TODO: check the maximum scope of the vector
-const std::vector<const std::string> k_tokenTypevector =
-{ "PUNCTUATION", "KEYWORD", "VALUE", "OPERATOR",
-"IDENTIFIER", "TRIVIA", "EOF", "UNKNOWN" };
+namespace TokenTypes
+{
+    inline constexpr std::string_view PUNCTUATION = "PUNCTUATION";
+    inline constexpr std::string_view KEYWORD     = "KEYWORD";
+    inline constexpr std::string_view VALUE       = "VALUE";
+    inline constexpr std::string_view OPERATOR    = "OPERATOR";
+    inline constexpr std::string_view IDENTIFIER  = "IDENTIFIER";
+    inline constexpr std::string_view TRIVIA      = "TRIVIA";
+    inline constexpr std::string_view EOF_TOKEN   = "EOF";
+    inline constexpr std::string_view UNKNOWN     = "UNKNOWN";
+}
 
 
 // Represent a token in the stream
@@ -32,4 +40,16 @@ private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
+
+    // Set a single character token.
+    // @param sTokenValue: New value of the token.
+    // @param ulTypeIndex: 
+    // @return: True => The token is finished, False => Otherwise.
+    bool AssignToken(const std::string& sTokenValue, size_t ulTypeIndex);
+
+    // Tries to append the new character to the Token unless it's a char for
+    // @param sTokenValue: New value of the token.
+    // @param ulTypeIndex: 
+    // @return: True => The token is finished, False => Otherwise.
+    bool AssignIfEmptyOrFinish(const std::string& sTokenValue, size_t ulTypeIndex);
 };
