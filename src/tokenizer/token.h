@@ -32,9 +32,9 @@ public:
      // @return: True => The token is finished, False => Otherwise.
     bool Append(char cAddedChar) noexcept;
 
-    std::string GetValue() const noexcept; 
-    std::string GetType() const noexcept;
-    std::string GetLine() const noexcept;
+    const std::string& GetValue() const noexcept; 
+    const std::string& GetType() const noexcept;
+    const std::string& GetLine() const noexcept;
 
 private:
     std::string m_sValue;
@@ -45,11 +45,11 @@ private:
     // @param sTokenValue: New value of the token.
     // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
-    bool AssignToken(const std::string& sTokenValue, const std::string& sTokenType);
+    bool AssignToken(const std::string& sTokenValue, std::string_view sTokenType);
 
     // Tries to append the new character to the Token unless it's a char for
     // @param sTokenValue: New value of the token.
     // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
-    bool AssignIfEmptyOrFinish(const std::string& sTokenValue, const std::string& sTokenType);
+    bool AssignIfEmptyOrFinish(const std::string& sTokenValue, std::string_view sTokenType);
 };

@@ -65,17 +65,24 @@ bool Token::Append(char cAddedChar) noexcept
     return AssignToken(sTempToken, TokenTypes::UNKNOWN);
 }
 
-std::string Token::GetValue() const noexcept
+const std::string& Token::GetValue() const noexcept
 {
     return this->m_sValue;
 }
 
-std::string Token::GetType() const noexcept
+const std::string& Token::GetType() const noexcept
 {
     return this->m_sType;
 }
 
-std::string Token::GetLine() const noexcept
+const std::string& Token::GetLine() const noexcept
 {
     return std::to_string(this->m_ulLine);
+}
+
+bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType)
+{
+    this->m_sValue = sTokenValue;
+    this->m_sType = sTokenType;
+    return false;
 }
