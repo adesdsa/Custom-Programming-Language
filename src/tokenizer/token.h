@@ -43,13 +43,13 @@ private:
 
     // Set a single character token.
     // @param sTokenValue: New value of the token.
-    // @param ulTypeIndex: 
+    // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
-    bool AssignToken(const std::string& sTokenValue, size_t ulTypeIndex);
+    bool AssignToken(const std::string& sTokenValue, const std::string& sTokenType);
 
     // Tries to append the new character to the Token unless it's a char for
     // @param sTokenValue: New value of the token.
-    // @param ulTypeIndex: 
+    // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
-    bool AssignIfEmptyOrFinish(const std::string& sTokenValue, size_t ulTypeIndex);
+    bool AssignIfEmptyOrFinish(const std::string& sTokenValue, const std::string& sTokenType);
 };
