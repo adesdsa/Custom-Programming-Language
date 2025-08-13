@@ -156,7 +156,6 @@ namespace RegexPatterns
     {
         static const std::regex r([]()
         {
-            std::cout << "Here!" << std::endl;
             try 
             {
                 return std::regex(R"((\s+|//[^\n]*|/\*([^*]|\*+[^*/])*\*/))", std::regex::optimize);
