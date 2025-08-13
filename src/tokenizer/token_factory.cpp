@@ -13,7 +13,10 @@ Token &TokenFactory::CreateToken() noexcept
             this->m_ulLineCounter++;
         }
 
-        this->m_mappedSRC.Seek();
+        if (!this->m_mappedSRC.Seek())  // If seek failed
+        {
+            return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter);
+        }
     }
 
     return token;
