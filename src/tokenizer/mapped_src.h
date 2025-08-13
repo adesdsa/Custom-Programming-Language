@@ -9,7 +9,7 @@ constexpr int k_nSOF = 0;
 class MappedSRC
 {
 public:
-    MappedSRC(std::ifstream& fSrc);
+    MappedSRC(std::ifstream fSrc);
 
     ~MappedSRC() = default;
 
