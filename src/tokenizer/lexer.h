@@ -23,18 +23,5 @@ private:
 
     // Opens the input file stream.
     // @return: Return the opened file.
-    static std::ifstream OpenInputFile()
-    {
-        std::ifstream file(k_sInputFile);
-
-        if (!file) 
-        {
-            throw std::runtime_error(
-                std::string(FUNCTION_THROWER) + 
-                k_sFileFailedToOpenError + 
-                k_sInputFile);
-        }
-
-        return file;
-    }
+    static std::ifstream OpenInputFile();
 };

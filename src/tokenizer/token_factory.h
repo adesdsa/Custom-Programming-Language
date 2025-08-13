@@ -7,7 +7,7 @@
 class TokenFactory
 {
 public:
-    TokenFactory(std::ifstream& fSrc);
+    TokenFactory(std::ifstream fSrc);
 
     ~TokenFactory() = default;
 
