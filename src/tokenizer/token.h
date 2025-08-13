@@ -34,6 +34,7 @@ class Token
 {
 public:
     Token(size_t ulLine);
+    Token(std::string_view sTokenType, size_t ulLine);
 
      // Tries to append the new character to the Token unless it's a char for
      // the next token than it defines the token type.

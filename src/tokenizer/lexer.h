@@ -10,6 +10,7 @@ class Lexer
 {
 public:
     Lexer();
+    
     ~Lexer() = default;
 
     // Get every token from the source file and push it to the stream

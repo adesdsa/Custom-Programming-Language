@@ -1,6 +1,11 @@
 #include "token.h"
 
-Token::Token(size_t ulLine) : m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
+Token::Token(size_t ulLine) : m_sValue("") , m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
+
+Token::Token(std::string_view sTokenType, size_t ulLine) : 
+    m_sValue(""), 
+    m_ulLine(ulLine), 
+    m_sType(sTokenType) {};
 
 bool Token::Append(char cAddedChar) noexcept
 {   

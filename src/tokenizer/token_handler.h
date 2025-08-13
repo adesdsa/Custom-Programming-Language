@@ -16,6 +16,7 @@ class TokenHandler
 {
 public:
     TokenHandler();
+    
     ~TokenHandler() = default;
 
     // Preform an action based on th token's relevance.
