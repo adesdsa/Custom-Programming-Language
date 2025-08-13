@@ -6,7 +6,7 @@
 
 #define FUNCTION_THROWER __func__
 
-constexpr const char* k_sOutputFile = "tokens_out.txt";
+constexpr const char* k_sOutputFile = "../src/tokenizer/tokens_out.txt";
 constexpr const char* k_sTriviaType = "TRIVIA";
 constexpr const char* k_sUnknownType = "UNKNOWN";
 constexpr const char* k_sFileFailedToOpenError = " - ERROR: Failed to open file: ";
