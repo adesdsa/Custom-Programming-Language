@@ -5,7 +5,7 @@ project(Custom-Programming-Language)  # project name
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 
 # Create the executable
-add_executable(Custom-Programming-Language main.cpp ${SRC_FILES})
+add_executable(Custom-Programming-Language src/main.cpp ${SRC_FILES})
 
 # Require C++17
 set_target_properties(

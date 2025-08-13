@@ -65,14 +65,14 @@ const std::string& Token::GetLine() const noexcept
     return std::to_string(this->m_ulLine);
 }
 
-bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType)
+bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept
 {
     this->m_sValue = sTokenValue;
     this->m_sType = sTokenType;
     return TokenStatus::UNFINISHED;
 }
 
-bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType)
+bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType) noexcept
 {
     // Checking if there was already a token
     if (this->m_sValue.empty())
