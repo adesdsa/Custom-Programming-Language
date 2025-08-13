@@ -4,6 +4,11 @@ TokenFactory::TokenFactory(std::ifstream fSrc) : m_mappedSRC(std::move(fSrc)), m
 
 Token TokenFactory::CreateToken() noexcept
 {
+    if (this->m_mappedSRC.IsEOF())
+    {
+        return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter);
+    }
+
     Token token(this->m_ulLineCounter);
 
     while(!token.Append(this->m_mappedSRC.Get()))
@@ -13,10 +18,7 @@ Token TokenFactory::CreateToken() noexcept
             this->m_ulLineCounter++;
         }
 
-        if (!this->m_mappedSRC.Seek())  // If seek failed
-        {
-            return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter);
-        }
+        (void)this->m_mappedSRC.Seek();
     }
 
     return token;
