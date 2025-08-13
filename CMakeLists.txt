@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10)  # minimum CMake version
 project(Custom-Programming-Language)  # project name
 
-# Search for all .cpp files recursively inside src/
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 
-# Create the executable
-add_executable(Custom-Programming-Language src/main.cpp ${SRC_FILES})
+list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")  # exclude main.cpp
+
+add_executable(Custom-Programming-Language main.cpp ${SRC_FILES})
 
 # Require C++17
 set_target_properties(

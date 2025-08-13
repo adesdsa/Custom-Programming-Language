@@ -13,7 +13,7 @@ public:
 
     // Will build a new token. 
     // @return: The fully initialized token. 
-    Token& CreateToken() noexcept;
+    Token CreateToken() noexcept;
 
     // Checks if file is in EOF.
     // @return: True => , False => .
