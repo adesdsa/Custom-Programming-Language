@@ -12,37 +12,37 @@ bool Token::Append(char cAddedChar) noexcept
     // New token value
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Trivia)) 
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Trivia())) 
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier)) 
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier())) 
     {
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
     }
 
-    if (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation)) 
+    if (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation())) 
     {
         return this->AssignIfEmptyOrFinish(std::string(1, cAddedChar), TokenTypes::PUNCTUATION);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Value))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::VALUE);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordSymbol))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordSymbol()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordOperator))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordOperator()))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::OPERATOR);
     }
