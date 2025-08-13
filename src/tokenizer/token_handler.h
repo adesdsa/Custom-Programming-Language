@@ -9,7 +9,7 @@
 constexpr const char* k_sOutputFile = "tokens_out.txt";
 constexpr const char* k_sTriviaType = "TRIVIA";
 constexpr const char* k_sUnknownType = "UNKNOWN";
-constexpr const char* k_sFileFailedToOpenError = " - ERROR: Failed to open output file: ";
+constexpr const char* k_sFileFailedToOpenError = " - ERROR: Failed to open file: ";
 
 // Responsible for filter tokens from input stream to output stream  
 class TokenHandler
