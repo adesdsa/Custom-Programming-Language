@@ -14,7 +14,7 @@ std::ifstream Lexer::OpenInputFile()
 {
     std::ifstream streamSrcFile(k_sInputFile);
 
-    if (!streamSrcFile) 
+    if (!streamSrcFile.is_open()) 
     {
         throw std::runtime_error(
             std::string(FUNCTION_THROWER) + 
