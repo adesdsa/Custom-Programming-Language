@@ -156,9 +156,10 @@ namespace RegexPatterns
     {
         static const std::regex r([]()
         {
+            std::cout << "Here!" << std::endl;
             try 
             {
-                return std::regex(R"(?:\s+|//[^\n]*|/\*[\s\S]*?\*/)", std::regex::optimize);
+                return std::regex(R"((\s+|//[^\n]*|/\*([^*]|\*+[^*/])*\*/))", std::regex::optimize);
             } catch (const std::regex_error& e) 
             {
                 std::cerr << "Regex k_Trivia failed: " << e.what() << std::endl;
