@@ -69,7 +69,7 @@ bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenT
 {
     this->m_sValue = sTokenValue;
     this->m_sType = sTokenType;
-    return TokenStatus::UNFINISHED;
+    return TokenStatus::k_bFinished;
 }
 
 bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType) noexcept
@@ -79,5 +79,5 @@ bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_vi
     {
         return AssignToken(sTokenValue, sTokenType);
     }
-    return TokenStatus::FINISHED;
+    return TokenStatus::k_bFinished;
 }

@@ -24,8 +24,8 @@ namespace TokenTypes
 // Token status holds which part of the building process the token at
 namespace TokenStatus
 {
-    inline constexpr bool FINISHED = true;
-    inline constexpr bool UNFINISHED = false;
+    inline constexpr const bool k_bFinished = true;
+    inline constexpr const bool k_bUnfinished = false;
 }
 
 
@@ -36,6 +36,8 @@ public:
     Token(size_t ulLine);
     Token(std::string_view sTokenType, size_t ulLine);
 
+    ~Token() = default;
+
      // Tries to append the new character to the Token unless it's a char for
      // the next token than it defines the token type.
      // @param cAddedChar: The character we add to the token right now.
@@ -45,6 +47,7 @@ public:
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
     const std::string& GetLine() const noexcept;
+
 
 private:
     std::string m_sValue;
