@@ -21,7 +21,7 @@ bool Token::Append(char cAddedChar) noexcept
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Punctuation()) ||
         std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()))
     {
-        return this->AssignIfEmptyOrFinish(std::string(1, cAddedChar), TokenTypes::PUNCTUATION);
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword()))
@@ -45,6 +45,11 @@ bool Token::Append(char cAddedChar) noexcept
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
     }
 
+    if (cAddedChar == '\0')
+    {
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::EOF_TOKEN);
+    }
+
     return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN);  // UNKNOWN token
 }
 
@@ -63,10 +68,13 @@ const std::string& Token::GetLine() const noexcept
     return std::to_string(this->m_ulLine);
 }
 
-bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept
+bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType, bool bNeedChange = true) noexcept
 {
-    this->m_sValue = sTokenValue;
-    this->m_sType = sTokenType;
+    if (bNeedChange)
+    {
+        this->m_sValue = sTokenValue;
+        this->m_sType = sTokenType;
+    }
     return TokenStatus::k_bUnfinished;
 }
 
@@ -75,7 +83,7 @@ bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_vi
     // Checking if there was already a token
     if (this->m_sValue.empty())
     {
-        return AssignToken(sTokenValue, sTokenType);
+        return AssignToken(sTokenValue, sTokenType, false);
     }
     return TokenStatus::k_bFinished;
 }

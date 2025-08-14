@@ -11,7 +11,7 @@ Token TokenFactory::CreateToken() noexcept
 
     Token token(this->m_ulLineCounter);
 
-    while (!token.Append(this->m_mappedSRC.Get()))
+    while (!token.Append(this->m_mappedSRC.Get()) && !this->m_mappedSRC.IsEOF())
     {
         if(this->m_mappedSRC.Get() == '\n')
         {
