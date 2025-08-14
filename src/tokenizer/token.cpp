@@ -17,11 +17,6 @@ bool Token::Append(char cAddedChar) noexcept
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier())) 
-    {
-        return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
-    }
-
     if (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation())) 
     {
         return this->AssignIfEmptyOrFinish(std::string(1, cAddedChar), TokenTypes::PUNCTUATION);
@@ -32,11 +27,6 @@ bool Token::Append(char cAddedChar) noexcept
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
-    {
-        return this->AssignToken(k_sTempToken, TokenTypes::VALUE);
-    }
-
     if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordSymbol()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
@@ -45,6 +35,16 @@ bool Token::Append(char cAddedChar) noexcept
     if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordOperator()))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::OPERATOR);
+    }
+
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
+    {
+        return this->AssignToken(k_sTempToken, TokenTypes::VALUE);
+    }
+
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier()))
+    {
+        return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
     }
 
     return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN);  // UNKNOWN token
