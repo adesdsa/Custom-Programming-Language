@@ -12,8 +12,15 @@ bool Token::Append(char cAddedChar) noexcept
     // New token value
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
+    // The reason some of the if's have for e.g (std::regex_match(std::string(1, \
+    // cAddedChar), RegexPatterns::k_Trivia()) && this->m_sType != \
+    // TokenTypes::TRIVIA) is beacause it can be the first char of this type \
+    // only if before that it wasnt this type
+
+
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Trivia()) ||
-        std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()))
+        (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()) && 
+        this->m_sType != TokenTypes::TRIVIA))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
@@ -23,7 +30,8 @@ bool Token::Append(char cAddedChar) noexcept
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Punctuation()) ||
-        std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()))
+        (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()) &&
+        this->m_sType != TokenTypes::PUNCTUATION))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
     }
@@ -38,7 +46,8 @@ bool Token::Append(char cAddedChar) noexcept
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Operator()) ||
-        std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Operator()))
+        (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Operator()) &&
+        this->m_sType != TokenTypes::OPERATOR))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
     }
