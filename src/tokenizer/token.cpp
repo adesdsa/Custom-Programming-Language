@@ -12,16 +12,32 @@ bool Token::Append(char cAddedChar) noexcept
     // New token value
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
+    // The reason some of the if's have for e.g (std::regex_match(std::string(1, \
+    // cAddedChar), RegexPatterns::k_Trivia()) && this->m_sType != \
+    // TokenTypes::TRIVIA) is beacause it can be the first char of this type \
+    // only if before that it wasnt this type
+
+
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Trivia()) ||
-        std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()))
+        (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()) && 
+        this->m_sType != TokenTypes::TRIVIA))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
+    else if (this->m_sType == TokenTypes::TRIVIA) // if it was the given type and now we finished with it
+    {
+        return true;
+    }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Punctuation()) ||
-        std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()))
+        (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()) &&
+        this->m_sType != TokenTypes::PUNCTUATION))
     {
-        return this->AssignIfEmptyOrFinish(std::string(1, cAddedChar), TokenTypes::PUNCTUATION);
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
+    }
+    else if (this->m_sType == TokenTypes::PUNCTUATION) // if it was the given type and now we finished with it
+    {
+        return true;
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword()))
@@ -30,9 +46,14 @@ bool Token::Append(char cAddedChar) noexcept
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Operator()) ||
-        std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Operator()))
+        (std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Operator()) &&
+        this->m_sType != TokenTypes::OPERATOR))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
+    }
+    else if (this->m_sType == TokenTypes::OPERATOR) // if it was the given type and now we finished with it
+    {
+        return true;
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
@@ -43,6 +64,11 @@ bool Token::Append(char cAddedChar) noexcept
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
+    }
+
+    if (cAddedChar == '\0')
+    {
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::EOF_TOKEN);
     }
 
     return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN);  // UNKNOWN token
@@ -73,7 +99,7 @@ bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenT
 bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType) noexcept
 {
     // Checking if there was already a token
-    if (this->m_sValue.empty())
+    if (this->m_sValue.empty() || this->m_sType == TokenTypes::UNKNOWN || this->m_sType == sTokenType)
     {
         return AssignToken(sTokenValue, sTokenType);
     }

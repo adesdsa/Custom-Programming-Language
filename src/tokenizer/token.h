@@ -65,4 +65,5 @@ private:
     // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
     bool AssignIfEmptyOrFinish(const std::string& sTokenValue, std::string_view sTokenType) noexcept;
+
 };
