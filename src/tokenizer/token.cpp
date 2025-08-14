@@ -68,7 +68,7 @@ const std::string& Token::GetLine() const noexcept
     return std::to_string(this->m_ulLine);
 }
 
-bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType, bool bNeedChange = true) noexcept
+bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType, bool bNeedChange) noexcept
 {
     if (bNeedChange)
     {
