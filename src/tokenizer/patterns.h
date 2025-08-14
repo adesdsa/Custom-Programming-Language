@@ -45,7 +45,7 @@ namespace RegexPatterns
         {
             try 
             {
-                return std::regex(R"(::|->|##|;|,|\.|:|\?|#|\{|\}|\(|\)|\[|\])", std::regex::optimize);
+                return std::regex(R"(::|->\*|->|\.{3}|\.\*|##|[;,.:\?#\{\}\(\)\[\]~])", std::regex::optimize);
             } 
             catch (const std::regex_error& e) 
             {
@@ -115,24 +115,7 @@ namespace RegexPatterns
         return r;
     }
 
-    inline const std::regex& k_KeywordOperator() 
-    {
-        static const std::regex r([]()
-        {
-            try 
-            
-            {
-                return std::regex(R"(\b(?:sizeof|alignof|typeid|decltype|new|delete|co_await)\b)", std::regex::optimize);
-            } catch (const std::regex_error& e) 
-            {
-                std::cerr << "Regex k_KeywordOperator failed: " << e.what() << std::endl;
-                throw;
-            }
-        }());
-        return r;
-    }
-
-    inline const std::regex& k_KeywordSymbol() 
+    inline const std::regex& k_Operator()
     {
         static const std::regex r([]()
         {

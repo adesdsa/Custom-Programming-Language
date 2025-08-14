@@ -27,14 +27,9 @@ bool Token::Append(char cAddedChar) noexcept
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordSymbol()))
+    if (std::regex_match(k_sTempToken, RegexPatterns::k_Operator()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
-    }
-
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_KeywordOperator()))
-    {
-        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::OPERATOR);
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
