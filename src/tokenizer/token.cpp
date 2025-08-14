@@ -17,11 +17,19 @@ bool Token::Append(char cAddedChar) noexcept
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
+    else if (this->m_sType == TokenTypes::TRIVIA) // if it was the given type and now we finished with it
+    {
+        return true;
+    }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Punctuation()) ||
         std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
+    }
+    else if (this->m_sType == TokenTypes::PUNCTUATION) // if it was the given type and now we finished with it
+    {
+        return true;
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword()))
@@ -33,6 +41,10 @@ bool Token::Append(char cAddedChar) noexcept
         std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Operator()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
+    }
+    else if (this->m_sType == TokenTypes::OPERATOR) // if it was the given type and now we finished with it
+    {
+        return true;
     }
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
@@ -68,22 +80,19 @@ const std::string& Token::GetLine() const noexcept
     return std::to_string(this->m_ulLine);
 }
 
-bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType, bool bNeedChange) noexcept
+bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept
 {
-    if (bNeedChange)
-    {
-        this->m_sValue = sTokenValue;
-        this->m_sType = sTokenType;
-    }
+    this->m_sValue = sTokenValue;
+    this->m_sType = sTokenType;
     return TokenStatus::k_bUnfinished;
 }
 
 bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType) noexcept
 {
     // Checking if there was already a token
-    if (this->m_sValue.empty())
+    if (this->m_sValue.empty() || this->m_sType == TokenTypes::UNKNOWN || this->m_sType == sTokenType)
     {
-        return AssignToken(sTokenValue, sTokenType, false);
+        return AssignToken(sTokenValue, sTokenType);
     }
     return TokenStatus::k_bFinished;
 }

@@ -58,11 +58,12 @@ private:
     // @param sTokenValue: New value of the token.
     // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
-    bool AssignToken(const std::string& sTokenValue, std::string_view sTokenType, bool bNeedChange = true) noexcept;
+    bool AssignToken(const std::string& sTokenValue, std::string_view sTokenType) noexcept;
 
     // Tries to append the new character to the Token unless it's a char for
     // @param sTokenValue: New value of the token.
     // @param sTokenType: Type of the token.
     // @return: True => The token is finished, False => Otherwise.
     bool AssignIfEmptyOrFinish(const std::string& sTokenValue, std::string_view sTokenType) noexcept;
+
 };
