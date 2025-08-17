@@ -12,10 +12,16 @@ bool Token::Append(char cAddedChar) noexcept
     // New token value
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
-    // The reason some of the if's have for e.g (std::regex_match(std::string(1, \
-    // cAddedChar), RegexPatterns::k_Trivia()) && this->m_sType != \
-    // TokenTypes::TRIVIA) is beacause it can be the first char of this type \
-    // only if before that it wasnt this type
+    // Some of the conditions have checks like:
+    //   std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()) 
+    //       && this->m_sType != TokenTypes::TRIVIA
+    //
+    // The purpose of this is to handle cases where `cAddedChar` could be the *first* 
+    // character of a new token type. It should only be treated as the start of that 
+    // token if the previous token type (`m_sType`) was different. 
+    //
+    // In other words, a character can begin a new token of type X only if we are not 
+    // already inside a token of type X.
 
 
     if (
