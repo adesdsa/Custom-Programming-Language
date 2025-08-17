@@ -16,15 +16,33 @@ TokenHandler::TokenHandler()
 
 void TokenHandler::HandleToken(const Token &token) noexcept
 {
-    if (this->IsRelevantToken(token))
+    bool bIsRelevantToken = false;
+
+    // Incase of unkown token error thrown
+    try
+    {
+        bIsRelevantToken = this->IsRelevantToken(token);
+    }
+    catch(const std::exception& e)
+    {
+        return;
+    }
+    
+    if(bIsRelevantToken)
     {
         this->ProcessRelevantToken(token);
     }
 }
 
-bool TokenHandler::IsRelevantToken(const Token &token) const noexcept
+bool TokenHandler::IsRelevantToken(const Token &token) const
 {
-    return !(token.GetType() == k_sTriviaType|| token.GetType() == k_sUnknownType);
+    const std::string& sTokenType = token.GetType();
+
+    if (sTokenType == k_sUnknownType)
+    {
+        throw std::exception(k_sTypeError);
+    }
+    return !(sTokenType == k_sTriviaType|| sTokenType == k_sEOFType);
 }
 
 void TokenHandler::ProcessRelevantToken(const Token &token) noexcept
