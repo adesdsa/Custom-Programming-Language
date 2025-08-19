@@ -1,9 +1,28 @@
-#example code
-#cmake_minimum_required(VERSION 3.10)   # minimum CMake version
-#project(MyProject)                     # project name
+cmake_minimum_required(VERSION 3.10)  # minimum CMake version
+project(Custom-Programming-Language)  # project name
 
-#add_executable(MyProject main.cpp)    # build executable named MyProject from main.cpp
-#how to run in terminal
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
+
+list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")  # exclude main.cpp
+
+add_executable(Custom-Programming-Language main.cpp ${SRC_FILES})
+
+# Require C++17
+set_target_properties(
+    Custom-Programming-Language PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
+
+# Enable warnings
+if (MSVC)
+    target_compile_options(Custom-Programming-Language PRIVATE /W4 /permissive-)
+else()
+    target_compile_options(Custom-Programming-Language PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+# How to run in terminal:
 #mkdir build
 #cd build
 #cmake ..
