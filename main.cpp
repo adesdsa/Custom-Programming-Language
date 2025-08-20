@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "src/tokenizer/lexer.h"
+#include "tokenizer/lexer.h"
 
 namespace ReturnCode
 {
