@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "tokenizer/lexer.h"
 
 Lexer::Lexer() : m_tokenHandler(), m_tokenFactory(OpenInputFile()) {};
 
