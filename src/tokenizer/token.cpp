@@ -1,4 +1,4 @@
-#include "token.h"
+#include "tokenizer/token.h"
 
 Token::Token(size_t ulLine) : m_sValue("") , m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
 

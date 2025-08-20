@@ -15,6 +15,11 @@ set_target_properties(
     CXX_EXTENSIONS NO
 )
 
+# Add includes/ directory for headers
+target_include_directories(Custom-Programming-Language PRIVATE
+    ${CMAKE_SOURCE_DIR}/includes
+)
+
 # Enable warnings
 if (MSVC)
     target_compile_options(Custom-Programming-Language PRIVATE /W4 /permissive-)
@@ -23,7 +28,6 @@ else()
 endif()
 
 # How to run in terminal:
-#mkdir build
 #cd build
 #cmake ..
 #cmake --build .
