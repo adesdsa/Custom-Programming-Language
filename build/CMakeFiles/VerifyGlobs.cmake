@@ -15,7 +15,7 @@ if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   file(TOUCH_NOCREATE "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/cmake.verify_globs")
 endif()
 
-# TEST_SOURCES at CMakeLists.txt:55 (file)
+# TEST_SOURCES at CMakeLists.txt:58 (file)
 file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/tests/*.cpp")
 set(OLD_GLOB
   "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/tests/lexer_test.cpp"
