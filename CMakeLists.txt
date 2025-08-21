@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.10)
-project(Custom-Programming-Language)
+cmake_minimum_required(VERSION 3.10)  # minimum CMake version
+project(Custom-Programming-Language)  # project name
 
 # =============================
 # Source Files - src/
@@ -25,6 +25,7 @@ set_target_properties(CPLib PROPERTIES
     CXX_EXTENSIONS NO
 )
 
+# Enable warnings
 if (MSVC)
     target_compile_options(CPLib PRIVATE /W4 /permissive-)
 else()
@@ -59,3 +60,17 @@ if (BUILD_TESTS)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
+
+# =============================
+# Usage
+# =============================
+# Normal build (no tests):
+#   cd build
+#   cmake ..
+#   cmake --build .
+#
+# Build with tests:
+#   cd build
+#   cmake -DBUILD_TESTS=ON ..
+#   cmake --build .
+#   ctest
