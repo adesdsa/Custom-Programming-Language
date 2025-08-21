@@ -10,6 +10,7 @@ class Lexer
 {
 public:
     Lexer();
+    Lexer(const std::string& sInputFile);
     
     ~Lexer() = default;
 
@@ -24,5 +25,5 @@ private:
 
     // Opens the input file stream.
     // @return: Return the opened file.
-    static std::ifstream OpenInputFile();
+    static std::ifstream OpenInputFile(const std::string& sInputFile);
 };
