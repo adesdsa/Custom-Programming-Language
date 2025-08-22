@@ -39,21 +39,8 @@ TEST(LexerTest, EmptyInput)
 // EXPECTED: No tokens created.
 TEST(LexerTest, OnlyTriviaTokens) 
 {
-    std::ofstream streamSrcFile(k_sInputFile);
-    ASSERT_TRUE(streamSrcFile.is_open());
-    
-    streamSrcFile << ;
-    streamSrcFile.close();
-
-    Lexer lexer;
+    Lexer lexer("../tests/inputs/test2.txt");
     lexer.Tokenize();
 
-    std::ifstream streamOutputFile(k_sOutputFile);
-    ASSERT_TRUE(streamOutputFile.is_open());
-
-    std::string tokens;
-    std::getline(streamOutputFile, tokens);
-    streamOutputFile.close();
-
-    EXPECT_TRUE(tokens.empty()); 
+    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test2.txt"));
 }
