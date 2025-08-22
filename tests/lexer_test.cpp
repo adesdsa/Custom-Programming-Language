@@ -31,9 +31,7 @@ TEST(LexerTest, EmptyInput)
     Lexer lexer("../tests/inputs/test1.txt");
     lexer.Tokenize();
 
-    std::ifstream streamExpectedOutputFile("../tests/expected/test1.txt");
-
-    EXPECT_EQ();
+    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test1.txt"));
 }
 
 // TEST: Only trivia tokens in source file.
