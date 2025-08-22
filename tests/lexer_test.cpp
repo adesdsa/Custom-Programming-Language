@@ -1,11 +1,26 @@
 #include <gtest/gtest.h>
 
-#include <filesystem>
+#include <sstream>
 
 #include "tokenizer/lexer.h"
 
 
+// Return the content of the file.
+// @param path: Path to target file.
+// @return: Content of the file.
+const std::string& ReadFile(const std::string& path)
+{
+    std::ifstream file(path);
 
+    if(!file.is_open())
+    {
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
 
 
 // TEST: Empty source file.
@@ -13,22 +28,12 @@
 // EXPECTED: No tokens created.
 TEST(LexerTest, EmptyInput) 
 {
-    std::ofstream streamSrcFile("../tests/inputs/test1.txt");
-    ASSERT_TRUE(streamSrcFile.is_open());
-
-    streamSrcFile.close();
-
-    Lexer lexer;
+    Lexer lexer("../tests/inputs/test1.txt");
     lexer.Tokenize();
 
-    std::ifstream streamOutputFile("../tests/expected/test1.txt");
-    ASSERT_TRUE(streamOutputFile.is_open());
+    std::ifstream streamExpectedOutputFile("../tests/expected/test1.txt");
 
-    std::string tokens;
-    std::getline(streamOutputFile, tokens);
-    streamOutputFile.close();
-
-    EXPECT_EQ(tokens.empty());
+    EXPECT_EQ();
 }
 
 // TEST: Only trivia tokens in source file.
