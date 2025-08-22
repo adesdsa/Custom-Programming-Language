@@ -97,12 +97,12 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    std::string(R"(\b(?:true|false|nullptr|NULL)\b)") + 
-                    R"(|(?:0b[01]+|0x[0-9A-Fa-f]+|0[0-7]+|[0-9]+)(?:[uU]?(?:l{1,2}|L{1,2})?)?)" +
-                    R"(|\d+\.\d*(?:[eE][+-]?\d+)?[fFlL]?)" +
-                    R"(|\d+(?:[eE][+-]?\d+)[fFlL]?)" + 
-                    R"(|'(?:\\.|[^\\'])')" + 
-                    R"(|"(?:\\.|[^\\"])*")",
+                    R"(\b(?:true|false|nullptr|NULL)\b)"
+                    R"(|(?:0b[01]+|0x[0-9A-Fa-f]+|0[0-7]+|[0-9]+)(?:[uU]?(?:l{1,2}|L{1,2})?)?)"
+                    R"(|\d+\.\d*(?:[eE][+-]?\d+)?[fFlL]?)"
+                    R"(|\d+(?:[eE][+-]?\d+)[fFlL]?)"
+                    R"(|'(?:\\.|[^\\'])'?)"
+                    R"(|"(?:\\.|[^\\"])*"?)",
                     std::regex::optimize
                 );
             } 
@@ -135,13 +135,13 @@ namespace RegexPatterns
         return r;
     }
 
-    inline const std::regex& k_Trivia() 
+    inline const std::regex& k_TriviaComments() 
     {
         static const std::regex r([]()
         {
             try 
             {
-                return std::regex(R"((\s+|//[^\n]*|/\*([^*]|\*+[^*/])*\*/))", std::regex::optimize);
+                return std::regex(R"(//[^\n]*|/\*(?:[^*]|\*+[^*/])*?\*/?|/\*[^*]*$)", std::regex::optimize);
             } catch (const std::regex_error& e) 
             {
                 std::cerr << "Regex k_Trivia failed: " << e.what() << std::endl;
@@ -150,4 +150,23 @@ namespace RegexPatterns
         }());
         return r;
     }
+
+    inline const std::regex& k_TriviaWhiteSpaces()
+    {
+        static const std::regex r([]()
+            {
+                try
+                {
+                    return std::regex(R"(\s+)", std::regex::optimize);
+                }
+                catch (const std::regex_error& e)
+                {
+                    std::cerr << "Regex k_Trivia failed: " << e.what() << std::endl;
+                    throw;
+                }
+            }());
+        return r;
+    }
+
+
 }

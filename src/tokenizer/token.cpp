@@ -1,4 +1,4 @@
-#include "tokenizer/token.h"
+#include "../../includes/tokenizer/token.h"
 
 Token::Token(size_t ulLine) : m_sValue("") , m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
 
@@ -25,12 +25,21 @@ bool Token::Append(char cAddedChar) noexcept
 
 
     if (
-        std::regex_match(k_sTempToken, RegexPatterns::k_Trivia()) ||
-        (
-            std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()) && 
-            this->m_sType != TokenTypes::TRIVIA
-        )
+        std::regex_match(k_sTempToken, RegexPatterns::k_TriviaComments())
     )
+    {
+        return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
+    }
+    else if (this->m_sType == TokenTypes::UNFINISHED_TRIVIA)
+    {
+        this->m_sType = TokenTypes::TRIVIA;
+        return TokenStatus::k_bFinished;
+    }
+
+    if (
+        std::regex_match(k_sTempToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
+        CheckSoloLetters(cAddedChar, RegexPatterns::k_TriviaWhiteSpaces(), TokenTypes::TRIVIA)
+        )
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
@@ -41,15 +50,12 @@ bool Token::Append(char cAddedChar) noexcept
 
     if (
         std::regex_match(k_sTempToken, RegexPatterns::k_Punctuation()) ||
-        (
-            std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Punctuation()) &&
-            this->m_sType != TokenTypes::PUNCTUATION
-        )
-    )
+        CheckSoloLetters(cAddedChar, RegexPatterns::k_Punctuation(), TokenTypes::PUNCTUATION))
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
     }
-    else if (this->m_sType == TokenTypes::PUNCTUATION)
+    else if (this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'')
+        // if it's " or a ' it means we start a string/char litteral and we dont need to stop this token
     {
         return TokenStatus::k_bFinished;
     }
@@ -61,10 +67,7 @@ bool Token::Append(char cAddedChar) noexcept
 
     if (
         std::regex_match(k_sTempToken, RegexPatterns::k_Operator()) ||
-        (
-            std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Operator()) &&
-            this->m_sType != TokenTypes::OPERATOR
-        )
+        CheckSoloLetters(cAddedChar, RegexPatterns::k_Operator(), TokenTypes::OPERATOR)
     )
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
@@ -73,12 +76,12 @@ bool Token::Append(char cAddedChar) noexcept
     {
         return TokenStatus::k_bFinished;
     }
-
+    
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
     {
-        return this->AssignToken(k_sTempToken, TokenTypes::VALUE);
+        return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
     }
-
+    
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier()))
     {
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
@@ -122,4 +125,22 @@ bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_vi
         return AssignToken(sTokenValue, sTokenType);
     }
     return TokenStatus::k_bFinished;
+}
+
+std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char cLastLetter) noexcept
+{
+    if (cFirstLetter == '\"' && cLastLetter != '\"') return TokenTypes::UNKNOWN;
+    
+    if (cFirstLetter == '\'' && cLastLetter != '\'') return TokenTypes::UNKNOWN;
+
+    return TokenTypes::VALUE;
+}
+
+bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexCheck, const std::string_view& k_sCurrentType) noexcept
+{
+    // A guarnteed stop will happen if the char is part of the regex, the token made isn't already it's type
+    // and the current token isn't an edge case (currently only a string literal or char literal being made are edge cases).
+    return std::regex_match(std::string(1, k_cAddedChar), k_regexCheck) &&
+        this->m_sType != k_sCurrentType &&
+        !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''));
 }

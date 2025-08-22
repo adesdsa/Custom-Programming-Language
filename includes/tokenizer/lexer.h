@@ -3,7 +3,7 @@
 #include "token_factory.h"
 #include "token_handler.h"
 
-constexpr const char* k_sInputFile = "../src/tokenizer/tokens_in.txt";
+constexpr const char* k_sInputFile = "tokens_in.txt"; //../src/tokenizer/tokens_in.txt
 
 // Responsible for managing all Token entityies to convert src to stream of tokens
 class Lexer
