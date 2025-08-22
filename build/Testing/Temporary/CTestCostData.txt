@@ -1,3 +1,6 @@
-LexerTest.EmptyInput 3 0.00368197
-LexerTest.OnlyTriviaTokens 1 0.0148902
+LexerTest.EmptyInput 9 0.00125438
+LexerTest.OnlyTriviaTokens 6 0
+LexerTest.SmallCodeExample 0 0
 ---
+LexerTest.OnlyTriviaTokens
+LexerTest.SmallCodeExample

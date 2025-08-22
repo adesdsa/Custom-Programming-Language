@@ -12,8 +12,9 @@ const std::string ReadFile(const std::string& path)
 {
     std::ifstream file(path);
 
-    if(!file.is_open())
+    if (!file.is_open())
     {
+        std::cerr << "Failed to open file: " << path << std::endl;
         return "";
     }
 
@@ -43,4 +44,15 @@ TEST(LexerTest, OnlyTriviaTokens)
     lexer.Tokenize();
 
     EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test2.txt"));
+}
+
+// TEST: A small code example (code with trivia)
+// INPUT: Source file with small code example.
+// EXPECTED: Tokens of the code and delete trivia part.
+TEST(LexerTest, SmallCodeExample) 
+{
+    Lexer lexer("../tests/inputs/test3.txt");
+    lexer.Tokenize();
+
+    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test3.txt"));
 }

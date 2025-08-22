@@ -2,4 +2,6 @@ add_test([=[LexerTest.EmptyInput]=]  C:/Users/zopo10/Desktop/Custom-Programming-
 set_tests_properties([=[LexerTest.EmptyInput]=]  PROPERTIES WORKING_DIRECTORY C:/Users/zopo10/Desktop/Custom-Programming-Language/build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
 add_test([=[LexerTest.OnlyTriviaTokens]=]  C:/Users/zopo10/Desktop/Custom-Programming-Language/build/Debug/unit_tests.exe [==[--gtest_filter=LexerTest.OnlyTriviaTokens]==] --gtest_also_run_disabled_tests)
 set_tests_properties([=[LexerTest.OnlyTriviaTokens]=]  PROPERTIES WORKING_DIRECTORY C:/Users/zopo10/Desktop/Custom-Programming-Language/build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-set(  unit_tests_TESTS LexerTest.EmptyInput LexerTest.OnlyTriviaTokens)
+add_test([=[LexerTest.SmallCodeExample]=]  C:/Users/zopo10/Desktop/Custom-Programming-Language/build/Debug/unit_tests.exe [==[--gtest_filter=LexerTest.SmallCodeExample]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[LexerTest.SmallCodeExample]=]  PROPERTIES WORKING_DIRECTORY C:/Users/zopo10/Desktop/Custom-Programming-Language/build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+set(  unit_tests_TESTS LexerTest.EmptyInput LexerTest.OnlyTriviaTokens LexerTest.SmallCodeExample)
