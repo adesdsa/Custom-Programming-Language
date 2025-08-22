@@ -28,6 +28,9 @@ public:
     // @return: None.
     void HandleToken(const Token& token) noexcept;
 
+    // Close stream of tokens.
+    // @return: None.
+    void CloseStream();
 
 private:
     std::ofstream m_streamTokens;

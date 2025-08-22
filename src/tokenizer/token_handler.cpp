@@ -34,6 +34,11 @@ void TokenHandler::HandleToken(const Token &token) noexcept
     }
 }
 
+void TokenHandler::CloseStream()
+{
+    this->m_streamTokens.close();
+}
+
 bool TokenHandler::IsRelevantToken(const Token &token) const
 {
     const std::string& sTokenType = token.GetType();

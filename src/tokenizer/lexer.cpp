@@ -10,6 +10,8 @@ void Lexer::Tokenize()
     {
         this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
     }
+
+    this->m_tokenHandler.CloseStream();  // Close stream after finish updating
 }
 
 std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)

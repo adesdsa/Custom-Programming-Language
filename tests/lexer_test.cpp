@@ -8,12 +8,13 @@
 // Return the content of the file.
 // @param path: Path to target file.
 // @return: Content of the file.
-const std::string& ReadFile(const std::string& path)
+const std::string ReadFile(const std::string& path)
 {
     std::ifstream file(path);
 
-    if(!file.is_open())
+    if (!file.is_open())
     {
+        std::cerr << "Failed to open file: " << path << std::endl;
         return "";
     }
 
@@ -31,9 +32,7 @@ TEST(LexerTest, EmptyInput)
     Lexer lexer("../tests/inputs/test1.txt");
     lexer.Tokenize();
 
-    std::ifstream streamExpectedOutputFile("../tests/expected/test1.txt");
-
-    EXPECT_EQ();
+    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test1.txt"));
 }
 
 // TEST: Only trivia tokens in source file.
@@ -41,21 +40,19 @@ TEST(LexerTest, EmptyInput)
 // EXPECTED: No tokens created.
 TEST(LexerTest, OnlyTriviaTokens) 
 {
-    std::ofstream streamSrcFile(k_sInputFile);
-    ASSERT_TRUE(streamSrcFile.is_open());
-    
-    streamSrcFile << ;
-    streamSrcFile.close();
-
-    Lexer lexer;
+    Lexer lexer("../tests/inputs/test2.txt");
     lexer.Tokenize();
 
-    std::ifstream streamOutputFile(k_sOutputFile);
-    ASSERT_TRUE(streamOutputFile.is_open());
+    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test2.txt"));
+}
 
-    std::string tokens;
-    std::getline(streamOutputFile, tokens);
-    streamOutputFile.close();
+// TEST: A small code example (code with trivia)
+// INPUT: Source file with small code example.
+// EXPECTED: Tokens of the code and delete trivia part.
+TEST(LexerTest, SmallCodeExample) 
+{
+    Lexer lexer("../tests/inputs/test3.txt");
+    lexer.Tokenize();
 
-    EXPECT_TRUE(tokens.empty()); 
+    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("../tests/expected/test3.txt"));
 }
