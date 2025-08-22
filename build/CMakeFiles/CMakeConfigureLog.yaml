@@ -7,7 +7,7 @@ events:
       - "C:/Program Files/CMake/share/cmake-4.1/Modules/CMakeDetermineSystem.cmake:212 (message)"
       - "CMakeLists.txt:2 (project)"
     message: |
-      The system is: Windows - 10.0.26100 - AMD64
+      The system is: Windows - 10.0.21996 - AMD64
   -
     kind: "find-v1"
     backtrace:
@@ -35,36 +35,29 @@ events:
     found: "C:/Program Files/CMake/share/cmake-4.1/Modules/CMakeCCompilerId.c.in"
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "message-v1"
     backtrace:
@@ -80,10 +73,10 @@ events:
       
       The output was:
       0
-      MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-      Build started 13/08/2025 10:39:41.
+      MSBuild version 17.14.10+8b8e13593 for .NET Framework
+      Build started 22/08/2025 16:02:41.
       
-      Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdC\\CompilerIdC.vcxproj" on node 1 (default targets).
+      Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdC\\CompilerIdC.vcxproj" on node 1 (default targets).
       PrepareForBuild:
         Creating directory "Debug\\".
         Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
@@ -92,25 +85,25 @@ events:
         Creating "Debug\\CompilerIdC.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
         Touching "Debug\\CompilerIdC.tlog\\unsuccessfulbuild".
       ClCompile:
-        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TC /FC /errorReport:queue CMakeCCompilerId.c
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TC /FC /errorReport:queue CMakeCCompilerId.c
         CMakeCCompilerId.c
       Link:
-        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdC.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdC.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdC.lib" /MACHINE:X64 Debug\\CMakeCCompilerId.obj
-        CompilerIdC.vcxproj -> C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdC\\CompilerIdC.exe
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdC.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdC.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdC.lib" /MACHINE:X64 Debug\\CMakeCCompilerId.obj
+        CompilerIdC.vcxproj -> C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdC\\CompilerIdC.exe
       PostBuildEvent:
         for %%i in (cl.exe) do @echo CMAKE_C_COMPILER=%%~$PATH:i
         :VCEnd
-        CMAKE_C_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\Hostx64\\x64\\cl.exe
+        CMAKE_C_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe
       FinalizeBuildStatus:
         Deleting file "Debug\\CompilerIdC.tlog\\unsuccessfulbuild".
         Touching "Debug\\CompilerIdC.tlog\\CompilerIdC.lastbuildstate".
-      Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdC\\CompilerIdC.vcxproj" (default targets).
+      Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdC\\CompilerIdC.vcxproj" (default targets).
       
       Build succeeded.
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:01.10
+      Time Elapsed 00:00:00.64
       
       
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -118,7 +111,7 @@ events:
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.vcxproj"
       
       The C compiler identification is MSVC, found in:
-        C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/4.1.0/CompilerIdC/CompilerIdC.exe
+        C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/4.1.0/CompilerIdC/CompilerIdC.exe
       
   -
     kind: "find-v1"
@@ -142,71 +135,57 @@ events:
     names:
       - "link"
     candidate_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
     searched_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/link.com"
-    found: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/link.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/link.com"
+    found: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/link.exe"
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "find-v1"
     backtrace:
@@ -229,58 +208,42 @@ events:
     names:
       - "lld-link"
     candidate_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
     searched_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lld-link.com"
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lld-link.exe"
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lld-link"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/lld-link.com"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/lld-link.exe"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/lld-link"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link.com"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/lld-link.com"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/lld-link.exe"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/lld-link"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/lld-link.com"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/lld-link.exe"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/lld-link"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/lld-link.com"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/lld-link.exe"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/lld-link"
-      - "C:/Program Files/Python38/Scripts/lld-link.com"
-      - "C:/Program Files/Python38/Scripts/lld-link.exe"
-      - "C:/Program Files/Python38/Scripts/lld-link"
-      - "C:/Program Files/Python38/lld-link.com"
-      - "C:/Program Files/Python38/lld-link.exe"
-      - "C:/Program Files/Python38/lld-link"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/lld-link.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/lld-link.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/lld-link"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/lld-link.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/lld-link.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/lld-link"
       - "C:/Windows/System32/lld-link.com"
       - "C:/Windows/System32/lld-link.exe"
       - "C:/Windows/System32/lld-link"
@@ -296,93 +259,74 @@ events:
       - "C:/Windows/System32/OpenSSH/lld-link.com"
       - "C:/Windows/System32/OpenSSH/lld-link.exe"
       - "C:/Windows/System32/OpenSSH/lld-link"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/lld-link.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/lld-link.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/lld-link"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/lld-link.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/lld-link.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/lld-link"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/lld-link.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/lld-link.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/lld-link"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/lld-link.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/lld-link.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/lld-link"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/lld-link.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/lld-link.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/lld-link"
+      - "C:/Program Files/dotnet/lld-link.com"
+      - "C:/Program Files/dotnet/lld-link.exe"
+      - "C:/Program Files/dotnet/lld-link"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link.com"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link.exe"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link"
       - "C:/Program Files/Git/cmd/lld-link.com"
       - "C:/Program Files/Git/cmd/lld-link.exe"
       - "C:/Program Files/Git/cmd/lld-link"
-      - "C:/mingw32/bin/lld-link.com"
-      - "C:/mingw32/bin/lld-link.exe"
-      - "C:/mingw32/bin/lld-link"
-      - "C:/opencv/build/x64/vc15/bin/lld-link.com"
-      - "C:/opencv/build/x64/vc15/bin/lld-link.exe"
-      - "C:/opencv/build/x64/vc15/bin/lld-link"
-      - "C:/Program Files/dotnet/lld-link.com"
-      - "C:/Program Files/dotnet/lld-link.exe"
-      - "C:/Program Files/dotnet/lld-link"
       - "C:/Program Files/CMake/bin/lld-link.com"
       - "C:/Program Files/CMake/bin/lld-link.exe"
       - "C:/Program Files/CMake/bin/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/lld-link"
-      - "C:/Users/Cyber_User/.cargo/bin/lld-link.com"
-      - "C:/Users/Cyber_User/.cargo/bin/lld-link.exe"
-      - "C:/Users/Cyber_User/.cargo/bin/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/lld-link"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/lld-link.com"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/lld-link.exe"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/lld-link"
-      - "C:/Program Files (x86)/Nmap/lld-link.com"
-      - "C:/Program Files (x86)/Nmap/lld-link.exe"
-      - "C:/Program Files (x86)/Nmap/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/lld-link"
-      - "C:/Program Files (x86)/Dr. Memory/bin/lld-link.com"
-      - "C:/Program Files (x86)/Dr. Memory/bin/lld-link.exe"
-      - "C:/Program Files (x86)/Dr. Memory/bin/lld-link"
-      - "C:/Users/Cyber_User/.dotnet/tools/lld-link.com"
-      - "C:/Users/Cyber_User/.dotnet/tools/lld-link.exe"
-      - "C:/Users/Cyber_User/.dotnet/tools/lld-link"
-      - "C:/nasm/lld-link.com"
-      - "C:/nasm/lld-link.exe"
-      - "C:/nasm/lld-link"
-      - "C:/python37/lld-link.com"
-      - "C:/python37/lld-link.exe"
-      - "C:/python37/lld-link"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/lld-link.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/lld-link.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/lld-link"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/lld-link.com"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/lld-link.exe"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/lld-link"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/lld-link"
+      - "C:/Users/zopo10/.dotnet/tools/lld-link.com"
+      - "C:/Users/zopo10/.dotnet/tools/lld-link.exe"
+      - "C:/Users/zopo10/.dotnet/tools/lld-link"
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "find-v1"
     backtrace:
@@ -403,71 +347,57 @@ events:
     names:
       - "link"
     candidate_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
     searched_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/link.com"
-    found: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/link.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/link.com"
+    found: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/link.exe"
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "find-v1"
     backtrace:
@@ -488,58 +418,42 @@ events:
     names:
       - "mt"
     candidate_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
     searched_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/mt.com"
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/mt.exe"
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/mt"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/mt.com"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/mt.exe"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/mt"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/mt.com"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/mt.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/mt"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/mt.com"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/mt.exe"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/mt"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/mt.com"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/mt.exe"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/mt"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/mt.com"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/mt.exe"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/mt"
-      - "C:/Program Files/Python38/Scripts/mt.com"
-      - "C:/Program Files/Python38/Scripts/mt.exe"
-      - "C:/Program Files/Python38/Scripts/mt"
-      - "C:/Program Files/Python38/mt.com"
-      - "C:/Program Files/Python38/mt.exe"
-      - "C:/Program Files/Python38/mt"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/mt.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/mt.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/mt"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/mt.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/mt.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/mt"
       - "C:/Windows/System32/mt.com"
       - "C:/Windows/System32/mt.exe"
       - "C:/Windows/System32/mt"
@@ -555,93 +469,74 @@ events:
       - "C:/Windows/System32/OpenSSH/mt.com"
       - "C:/Windows/System32/OpenSSH/mt.exe"
       - "C:/Windows/System32/OpenSSH/mt"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/mt.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/mt.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/mt"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/mt.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/mt.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/mt"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/mt.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/mt.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/mt"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/mt.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/mt.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/mt"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/mt.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/mt.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/mt"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/mt.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/mt.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/mt"
+      - "C:/Program Files/dotnet/mt.com"
+      - "C:/Program Files/dotnet/mt.exe"
+      - "C:/Program Files/dotnet/mt"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/mt.com"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/mt.exe"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/mt"
       - "C:/Program Files/Git/cmd/mt.com"
       - "C:/Program Files/Git/cmd/mt.exe"
       - "C:/Program Files/Git/cmd/mt"
-      - "C:/mingw32/bin/mt.com"
-      - "C:/mingw32/bin/mt.exe"
-      - "C:/mingw32/bin/mt"
-      - "C:/opencv/build/x64/vc15/bin/mt.com"
-      - "C:/opencv/build/x64/vc15/bin/mt.exe"
-      - "C:/opencv/build/x64/vc15/bin/mt"
-      - "C:/Program Files/dotnet/mt.com"
-      - "C:/Program Files/dotnet/mt.exe"
-      - "C:/Program Files/dotnet/mt"
       - "C:/Program Files/CMake/bin/mt.com"
       - "C:/Program Files/CMake/bin/mt.exe"
       - "C:/Program Files/CMake/bin/mt"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/mt.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/mt.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/mt"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/mt.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/mt.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/mt"
-      - "C:/Users/Cyber_User/.cargo/bin/mt.com"
-      - "C:/Users/Cyber_User/.cargo/bin/mt.exe"
-      - "C:/Users/Cyber_User/.cargo/bin/mt"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/mt.com"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/mt.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/mt"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/mt.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/mt.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/mt"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/mt.com"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/mt.exe"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/mt"
-      - "C:/Program Files (x86)/Nmap/mt.com"
-      - "C:/Program Files (x86)/Nmap/mt.exe"
-      - "C:/Program Files (x86)/Nmap/mt"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/mt.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/mt.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/mt"
-      - "C:/Program Files (x86)/Dr. Memory/bin/mt.com"
-      - "C:/Program Files (x86)/Dr. Memory/bin/mt.exe"
-      - "C:/Program Files (x86)/Dr. Memory/bin/mt"
-      - "C:/Users/Cyber_User/.dotnet/tools/mt.com"
-      - "C:/Users/Cyber_User/.dotnet/tools/mt.exe"
-      - "C:/Users/Cyber_User/.dotnet/tools/mt"
-      - "C:/nasm/mt.com"
-      - "C:/nasm/mt.exe"
-      - "C:/nasm/mt"
-      - "C:/python37/mt.com"
-      - "C:/python37/mt.exe"
-      - "C:/python37/mt"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/mt.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/mt.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/mt"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/mt.com"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/mt.exe"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/mt"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/mt.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/mt.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/mt"
+      - "C:/Users/zopo10/.dotnet/tools/mt.com"
+      - "C:/Users/zopo10/.dotnet/tools/mt.exe"
+      - "C:/Users/zopo10/.dotnet/tools/mt"
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "find-v1"
     backtrace:
@@ -662,71 +557,57 @@ events:
     names:
       - "lib"
     candidate_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
     searched_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lib.com"
-    found: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lib.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lib.com"
+    found: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lib.exe"
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "find-v1"
     backtrace:
@@ -754,36 +635,29 @@ events:
     found: "C:/Program Files/CMake/share/cmake-4.1/Modules/CMakeCXXCompilerId.cpp.in"
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "message-v1"
     backtrace:
@@ -799,10 +673,10 @@ events:
       
       The output was:
       0
-      MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-      Build started 13/08/2025 10:39:43.
+      MSBuild version 17.14.10+8b8e13593 for .NET Framework
+      Build started 22/08/2025 16:02:42.
       
-      Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
+      Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
       PrepareForBuild:
         Creating directory "Debug\\".
         Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
@@ -811,25 +685,25 @@ events:
         Creating "Debug\\CompilerIdCXX.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
         Touching "Debug\\CompilerIdCXX.tlog\\unsuccessfulbuild".
       ClCompile:
-        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TP /FC /errorReport:queue CMakeCXXCompilerId.cpp
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TP /FC /errorReport:queue CMakeCXXCompilerId.cpp
         CMakeCXXCompilerId.cpp
       Link:
-        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCXX.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCXX.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCXX.lib" /MACHINE:X64 Debug\\CMakeCXXCompilerId.obj
-        CompilerIdCXX.vcxproj -> C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdCXX\\CompilerIdCXX.exe
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCXX.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCXX.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCXX.lib" /MACHINE:X64 Debug\\CMakeCXXCompilerId.obj
+        CompilerIdCXX.vcxproj -> C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdCXX\\CompilerIdCXX.exe
       PostBuildEvent:
         for %%i in (cl.exe) do @echo CMAKE_CXX_COMPILER=%%~$PATH:i
         :VCEnd
-        CMAKE_CXX_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\Hostx64\\x64\\cl.exe
+        CMAKE_CXX_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe
       FinalizeBuildStatus:
         Deleting file "Debug\\CompilerIdCXX.tlog\\unsuccessfulbuild".
         Touching "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.lastbuildstate".
-      Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" (default targets).
+      Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\4.1.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" (default targets).
       
       Build succeeded.
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.68
+      Time Elapsed 00:00:00.61
       
       
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -837,7 +711,7 @@ events:
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.vcxproj"
       
       The CXX compiler identification is MSVC, found in:
-        C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/4.1.0/CompilerIdCXX/CompilerIdCXX.exe
+        C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/4.1.0/CompilerIdCXX/CompilerIdCXX.exe
       
   -
     kind: "find-v1"
@@ -861,58 +735,42 @@ events:
     names:
       - "lld-link"
     candidate_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
     searched_directories:
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lld-link.com"
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lld-link.exe"
-      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/lld-link"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/lld-link.com"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/lld-link.exe"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/lld-link"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link.com"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/lld-link.com"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/lld-link.exe"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/lld-link"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/lld-link.com"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/lld-link.exe"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/lld-link"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/lld-link.com"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/lld-link.exe"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/lld-link"
-      - "C:/Program Files/Python38/Scripts/lld-link.com"
-      - "C:/Program Files/Python38/Scripts/lld-link.exe"
-      - "C:/Program Files/Python38/Scripts/lld-link"
-      - "C:/Program Files/Python38/lld-link.com"
-      - "C:/Program Files/Python38/lld-link.exe"
-      - "C:/Program Files/Python38/lld-link"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/lld-link.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/lld-link.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/lld-link"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/lld-link.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/lld-link.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/lld-link"
       - "C:/Windows/System32/lld-link.com"
       - "C:/Windows/System32/lld-link.exe"
       - "C:/Windows/System32/lld-link"
@@ -928,93 +786,74 @@ events:
       - "C:/Windows/System32/OpenSSH/lld-link.com"
       - "C:/Windows/System32/OpenSSH/lld-link.exe"
       - "C:/Windows/System32/OpenSSH/lld-link"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/lld-link.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/lld-link.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/lld-link"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/lld-link.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/lld-link.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/lld-link"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/lld-link.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/lld-link.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/lld-link"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/lld-link.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/lld-link.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/lld-link"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/lld-link.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/lld-link.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/lld-link"
+      - "C:/Program Files/dotnet/lld-link.com"
+      - "C:/Program Files/dotnet/lld-link.exe"
+      - "C:/Program Files/dotnet/lld-link"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link.com"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link.exe"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link"
       - "C:/Program Files/Git/cmd/lld-link.com"
       - "C:/Program Files/Git/cmd/lld-link.exe"
       - "C:/Program Files/Git/cmd/lld-link"
-      - "C:/mingw32/bin/lld-link.com"
-      - "C:/mingw32/bin/lld-link.exe"
-      - "C:/mingw32/bin/lld-link"
-      - "C:/opencv/build/x64/vc15/bin/lld-link.com"
-      - "C:/opencv/build/x64/vc15/bin/lld-link.exe"
-      - "C:/opencv/build/x64/vc15/bin/lld-link"
-      - "C:/Program Files/dotnet/lld-link.com"
-      - "C:/Program Files/dotnet/lld-link.exe"
-      - "C:/Program Files/dotnet/lld-link"
       - "C:/Program Files/CMake/bin/lld-link.com"
       - "C:/Program Files/CMake/bin/lld-link.exe"
       - "C:/Program Files/CMake/bin/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/lld-link"
-      - "C:/Users/Cyber_User/.cargo/bin/lld-link.com"
-      - "C:/Users/Cyber_User/.cargo/bin/lld-link.exe"
-      - "C:/Users/Cyber_User/.cargo/bin/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/lld-link"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/lld-link.com"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/lld-link.exe"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/lld-link"
-      - "C:/Program Files (x86)/Nmap/lld-link.com"
-      - "C:/Program Files (x86)/Nmap/lld-link.exe"
-      - "C:/Program Files (x86)/Nmap/lld-link"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/lld-link"
-      - "C:/Program Files (x86)/Dr. Memory/bin/lld-link.com"
-      - "C:/Program Files (x86)/Dr. Memory/bin/lld-link.exe"
-      - "C:/Program Files (x86)/Dr. Memory/bin/lld-link"
-      - "C:/Users/Cyber_User/.dotnet/tools/lld-link.com"
-      - "C:/Users/Cyber_User/.dotnet/tools/lld-link.exe"
-      - "C:/Users/Cyber_User/.dotnet/tools/lld-link"
-      - "C:/nasm/lld-link.com"
-      - "C:/nasm/lld-link.exe"
-      - "C:/nasm/lld-link"
-      - "C:/python37/lld-link.com"
-      - "C:/python37/lld-link.exe"
-      - "C:/python37/lld-link"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/lld-link.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/lld-link.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/lld-link"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/lld-link.com"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/lld-link.exe"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/lld-link"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/lld-link"
+      - "C:/Users/zopo10/.dotnet/tools/lld-link.com"
+      - "C:/Users/zopo10/.dotnet/tools/lld-link.exe"
+      - "C:/Users/zopo10/.dotnet/tools/lld-link"
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
   -
     kind: "find-v1"
     backtrace:
@@ -1038,35 +877,28 @@ events:
     names:
       - "rc"
     candidate_directories:
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/"
-      - "C:/Program Files/Python38/Scripts/"
-      - "C:/Program Files/Python38/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/"
       - "C:/Windows/System32/"
       - "C:/Windows/"
       - "C:/Windows/System32/wbem/"
       - "C:/Windows/System32/WindowsPowerShell/v1.0/"
       - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files/dotnet/"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
       - "C:/Program Files/Git/cmd/"
-      - "C:/mingw32/bin/"
-      - "C:/opencv/build/x64/vc15/bin/"
-      - "C:/Program Files/dotnet/"
       - "C:/Program Files/CMake/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/"
-      - "C:/Users/Cyber_User/.cargo/bin/"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/"
-      - "C:/Program Files (x86)/Nmap/"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/"
-      - "C:/Program Files (x86)/Dr. Memory/bin/"
-      - "C:/Users/Cyber_User/.dotnet/tools/"
-      - "C:/nasm/"
-      - "C:/python37/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/zopo10/.dotnet/tools/"
       - "C:/Program Files/bin/"
       - "C:/Program Files/sbin/"
       - "C:/Program Files/"
@@ -1080,24 +912,15 @@ events:
       - "C:/Program Files (x86)/Custom-Programming-Language/sbin/"
       - "C:/Program Files (x86)/Custom-Programming-Language/"
     searched_directories:
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/rc.com"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/rc.exe"
-      - "C:/Program Files (x86)/Common Files/Oracle/Java/java8path/rc"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/rc.com"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/rc.exe"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/rc"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/rc.com"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/rc.exe"
-      - "C:/Program Files/Eclipse Foundation/jdk-8.0.302.8-hotspot/bin/rc"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/rc.com"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/rc.exe"
-      - "C:/Program Files (x86)/VMware/VMware Player/bin/rc"
-      - "C:/Program Files/Python38/Scripts/rc.com"
-      - "C:/Program Files/Python38/Scripts/rc.exe"
-      - "C:/Program Files/Python38/Scripts/rc"
-      - "C:/Program Files/Python38/rc.com"
-      - "C:/Program Files/Python38/rc.exe"
-      - "C:/Program Files/Python38/rc"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/rc.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/rc.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/rc"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/rc.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/rc.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/iCLS/rc"
       - "C:/Windows/System32/rc.com"
       - "C:/Windows/System32/rc.exe"
       - "C:/Windows/System32/rc"
@@ -1113,60 +936,48 @@ events:
       - "C:/Windows/System32/OpenSSH/rc.com"
       - "C:/Windows/System32/OpenSSH/rc.exe"
       - "C:/Windows/System32/OpenSSH/rc"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/rc.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/rc.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL/rc"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/rc.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/rc.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/DAL/rc"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/rc.com"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/rc.exe"
+      - "C:/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT/rc"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/rc.com"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/rc.exe"
+      - "C:/Program Files/Intel/Intel(R) Management Engine Components/IPT/rc"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/rc.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/rc.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/rc"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/rc.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/rc.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/rc"
+      - "C:/Program Files/dotnet/rc.com"
+      - "C:/Program Files/dotnet/rc.exe"
+      - "C:/Program Files/dotnet/rc"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/rc.com"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/rc.exe"
       - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/rc"
       - "C:/Program Files/Git/cmd/rc.com"
       - "C:/Program Files/Git/cmd/rc.exe"
       - "C:/Program Files/Git/cmd/rc"
-      - "C:/mingw32/bin/rc.com"
-      - "C:/mingw32/bin/rc.exe"
-      - "C:/mingw32/bin/rc"
-      - "C:/opencv/build/x64/vc15/bin/rc.com"
-      - "C:/opencv/build/x64/vc15/bin/rc.exe"
-      - "C:/opencv/build/x64/vc15/bin/rc"
-      - "C:/Program Files/dotnet/rc.com"
-      - "C:/Program Files/dotnet/rc.exe"
-      - "C:/Program Files/dotnet/rc"
       - "C:/Program Files/CMake/bin/rc.com"
       - "C:/Program Files/CMake/bin/rc.exe"
       - "C:/Program Files/CMake/bin/rc"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/rc.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/rc.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/Scripts/rc"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/rc.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/rc.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Python/Python37/rc"
-      - "C:/Users/Cyber_User/.cargo/bin/rc.com"
-      - "C:/Users/Cyber_User/.cargo/bin/rc.exe"
-      - "C:/Users/Cyber_User/.cargo/bin/rc"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/rc.com"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/rc.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Microsoft/WindowsApps/rc"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/rc.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/rc.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Fiddler/rc"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/rc.com"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/rc.exe"
-      - "C:/Program Files/JetBrains/PyCharm Edu 2020.3.3/bin/rc"
-      - "C:/Program Files (x86)/Nmap/rc.com"
-      - "C:/Program Files (x86)/Nmap/rc.exe"
-      - "C:/Program Files (x86)/Nmap/rc"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/rc.com"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/rc.exe"
-      - "C:/Users/Cyber_User/AppData/Local/Programs/Microsoft VS Code/bin/rc"
-      - "C:/Program Files (x86)/Dr. Memory/bin/rc.com"
-      - "C:/Program Files (x86)/Dr. Memory/bin/rc.exe"
-      - "C:/Program Files (x86)/Dr. Memory/bin/rc"
-      - "C:/Users/Cyber_User/.dotnet/tools/rc.com"
-      - "C:/Users/Cyber_User/.dotnet/tools/rc.exe"
-      - "C:/Users/Cyber_User/.dotnet/tools/rc"
-      - "C:/nasm/rc.com"
-      - "C:/nasm/rc.exe"
-      - "C:/nasm/rc"
-      - "C:/python37/rc.com"
-      - "C:/python37/rc.exe"
-      - "C:/python37/rc"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/rc.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/rc.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Python/Launcher/rc"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/rc.com"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/rc.exe"
+      - "C:/Users/zopo10/AppData/Local/Microsoft/WindowsApps/rc"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/rc.com"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/rc.exe"
+      - "C:/Users/zopo10/AppData/Local/Programs/Microsoft VS Code/bin/rc"
+      - "C:/Users/zopo10/.dotnet/tools/rc.com"
+      - "C:/Users/zopo10/.dotnet/tools/rc.exe"
+      - "C:/Users/zopo10/.dotnet/tools/rc"
       - "C:/Program Files/bin/rc.com"
       - "C:/Program Files/bin/rc.exe"
       - "C:/Program Files/bin/rc"
@@ -1206,36 +1017,29 @@ events:
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
-        - "C:\\Program Files\\Eclipse Foundation\\jdk-8.0.302.8-hotspot\\bin"
-        - "C:\\Program Files (x86)\\VMware\\VMware Player\\bin\\"
-        - "C:\\Program Files\\Python38\\Scripts\\"
-        - "C:\\Program Files\\Python38\\"
-        - "C:\\WINDOWS\\system32"
-        - "C:\\WINDOWS"
-        - "C:\\WINDOWS\\System32\\Wbem"
-        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
-        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS\\"
+        - "C:\\Windows\\system32"
+        - "C:\\Windows"
+        - "C:\\Windows\\System32\\Wbem"
+        - "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\Windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL"
+        - "C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR"
+        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
         - "C:\\Program Files\\Git\\cmd"
-        - "C:\\mingw32\\bin"
-        - "C:\\opencv\\build\\x64\\vc15\\bin"
-        - "C:\\Program Files\\dotnet\\"
         - "C:\\Program Files\\CMake\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\Scripts\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Python\\Python37\\"
-        - "C:\\Users\\Cyber_User\\.cargo\\bin"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Fiddler"
-        - "C:\\Program Files\\JetBrains\\PyCharm Edu 2020.3.3\\bin"
-        - "C:\\Program Files (x86)\\Nmap"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
-        - "C:\\Program Files (x86)\\Dr. Memory\\bin\\"
-        - "C:\\Users\\Cyber_User\\AppData\\Local\\Microsoft\\WindowsApps"
-        - "C:\\Users\\Cyber_User\\.dotnet\\tools"
-        - "C:\\nasm"
-        - "C:\\python37"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Python\\Launcher\\"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\zopo10\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\zopo10\\.dotnet\\tools"
+        - "C:\\Program Files\\CMake\\bin"
       CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Custom-Programming-Language"
       CMAKE_SYSTEM_PREFIX_PATH:
         - "C:/Program Files"
@@ -1251,8 +1055,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-u3jqp7"
-      binary: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-u3jqp7"
+      source: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-id0suu"
+      binary: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-id0suu"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS /W3"
       CMAKE_C_FLAGS_DEBUG: "/MDd /Zi /Ob0 /Od /RTC1"
@@ -1261,40 +1065,40 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-u3jqp7'
+        Change Dir: 'C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-id0suu'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_216ed.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-        Build started 13/08/2025 10:39:44.
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_15fcd.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 22/08/2025 16:02:43.
         
-        Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-u3jqp7\\cmTC_216ed.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-id0suu\\cmTC_15fcd.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_216ed.dir\\Debug\\".
+          Creating directory "cmTC_15fcd.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-u3jqp7\\Debug\\".
-          Creating directory "cmTC_216ed.dir\\Debug\\cmTC_216ed.tlog\\".
+          Creating directory "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-id0suu\\Debug\\".
+          Creating directory "cmTC_15fcd.dir\\Debug\\cmTC_15fcd.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_216ed.dir\\Debug\\cmTC_216ed.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_216ed.dir\\Debug\\cmTC_216ed.tlog\\unsuccessfulbuild".
+          Creating "cmTC_15fcd.dir\\Debug\\cmTC_15fcd.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_15fcd.dir\\Debug\\cmTC_15fcd.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_216ed.dir\\Debug\\\\" /Fd"cmTC_216ed.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCCompilerABI.c"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34123 for x64
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_15fcd.dir\\Debug\\\\" /Fd"cmTC_15fcd.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCCompilerABI.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_216ed.dir\\Debug\\\\" /Fd"cmTC_216ed.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCCompilerABI.c"
+          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_15fcd.dir\\Debug\\\\" /Fd"cmTC_15fcd.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCCompilerABI.c"
           CMakeCCompilerABI.c
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-u3jqp7\\Debug\\cmTC_216ed.exe" /INCREMENTAL /ILK:"cmTC_216ed.dir\\Debug\\cmTC_216ed.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-u3jqp7/Debug/cmTC_216ed.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-u3jqp7/Debug/cmTC_216ed.lib" /MACHINE:X64  /machine:x64 cmTC_216ed.dir\\Debug\\CMakeCCompilerABI.obj
-          cmTC_216ed.vcxproj -> C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-u3jqp7\\Debug\\cmTC_216ed.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-id0suu\\Debug\\cmTC_15fcd.exe" /INCREMENTAL /ILK:"cmTC_15fcd.dir\\Debug\\cmTC_15fcd.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-id0suu/Debug/cmTC_15fcd.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-id0suu/Debug/cmTC_15fcd.lib" /MACHINE:X64  /machine:x64 cmTC_15fcd.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_15fcd.vcxproj -> C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-id0suu\\Debug\\cmTC_15fcd.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_216ed.dir\\Debug\\cmTC_216ed.tlog\\unsuccessfulbuild".
-          Touching "cmTC_216ed.dir\\Debug\\cmTC_216ed.tlog\\cmTC_216ed.lastbuildstate".
-        Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-u3jqp7\\cmTC_216ed.vcxproj" (default targets).
+          Deleting file "cmTC_15fcd.dir\\Debug\\cmTC_15fcd.tlog\\unsuccessfulbuild".
+          Touching "cmTC_15fcd.dir\\Debug\\cmTC_15fcd.tlog\\cmTC_15fcd.lastbuildstate".
+        Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-id0suu\\cmTC_15fcd.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.52
+        Time Elapsed 00:00:00.58
         
       exitCode: 0
   -
@@ -1307,7 +1111,7 @@ events:
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
-        linker tool for 'C': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/HostX64/x64/link.exe
+        linker tool for 'C': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe
         implicit libs: []
         implicit objs: []
         implicit dirs: []
@@ -1322,8 +1126,8 @@ events:
       - "C:/Program Files/CMake/share/cmake-4.1/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
       - "CMakeLists.txt:2 (project)"
     message: |
-      Running the C compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/HostX64/x64/link.exe" "-v"
-      Microsoft (R) Incremental Linker Version 14.41.34123.0
+      Running the C compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.44.35209.0
       Copyright (C) Microsoft Corporation.  All rights reserved.
   -
     kind: "try_compile-v1"
@@ -1334,8 +1138,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-53j4if"
-      binary: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-53j4if"
+      source: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-xozqt2"
+      binary: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-xozqt2"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /W3 /GR /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/MDd /Zi /Ob0 /Od /RTC1"
@@ -1345,40 +1149,40 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-53j4if'
+        Change Dir: 'C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-xozqt2'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_44a31.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-        Build started 13/08/2025 10:39:45.
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_d63be.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 22/08/2025 16:02:44.
         
-        Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-53j4if\\cmTC_44a31.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xozqt2\\cmTC_d63be.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_44a31.dir\\Debug\\".
+          Creating directory "cmTC_d63be.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-53j4if\\Debug\\".
-          Creating directory "cmTC_44a31.dir\\Debug\\cmTC_44a31.tlog\\".
+          Creating directory "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xozqt2\\Debug\\".
+          Creating directory "cmTC_d63be.dir\\Debug\\cmTC_d63be.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_44a31.dir\\Debug\\cmTC_44a31.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_44a31.dir\\Debug\\cmTC_44a31.tlog\\unsuccessfulbuild".
+          Creating "cmTC_d63be.dir\\Debug\\cmTC_d63be.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_d63be.dir\\Debug\\cmTC_d63be.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /GR /Fo"cmTC_44a31.dir\\Debug\\\\" /Fd"cmTC_44a31.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCXXCompilerABI.cpp"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34123 for x64
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /GR /Fo"cmTC_d63be.dir\\Debug\\\\" /Fd"cmTC_d63be.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCXXCompilerABI.cpp"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /GR /Fo"cmTC_44a31.dir\\Debug\\\\" /Fd"cmTC_44a31.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /GR /Fo"cmTC_d63be.dir\\Debug\\\\" /Fd"cmTC_d63be.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.1\\Modules\\CMakeCXXCompilerABI.cpp"
           CMakeCXXCompilerABI.cpp
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-53j4if\\Debug\\cmTC_44a31.exe" /INCREMENTAL /ILK:"cmTC_44a31.dir\\Debug\\cmTC_44a31.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-53j4if/Debug/cmTC_44a31.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-53j4if/Debug/cmTC_44a31.lib" /MACHINE:X64  /machine:x64 cmTC_44a31.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_44a31.vcxproj -> C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-53j4if\\Debug\\cmTC_44a31.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xozqt2\\Debug\\cmTC_d63be.exe" /INCREMENTAL /ILK:"cmTC_d63be.dir\\Debug\\cmTC_d63be.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-xozqt2/Debug/cmTC_d63be.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-xozqt2/Debug/cmTC_d63be.lib" /MACHINE:X64  /machine:x64 cmTC_d63be.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_d63be.vcxproj -> C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xozqt2\\Debug\\cmTC_d63be.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_44a31.dir\\Debug\\cmTC_44a31.tlog\\unsuccessfulbuild".
-          Touching "cmTC_44a31.dir\\Debug\\cmTC_44a31.tlog\\cmTC_44a31.lastbuildstate".
-        Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-53j4if\\cmTC_44a31.vcxproj" (default targets).
+          Deleting file "cmTC_d63be.dir\\Debug\\cmTC_d63be.tlog\\unsuccessfulbuild".
+          Touching "cmTC_d63be.dir\\Debug\\cmTC_d63be.tlog\\cmTC_d63be.lastbuildstate".
+        Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xozqt2\\cmTC_d63be.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.57
+        Time Elapsed 00:00:00.60
         
       exitCode: 0
   -
@@ -1391,7 +1195,7 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
-        linker tool for 'CXX': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/HostX64/x64/link.exe
+        linker tool for 'CXX': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe
         implicit libs: []
         implicit objs: []
         implicit dirs: []
@@ -1406,8 +1210,8 @@ events:
       - "C:/Program Files/CMake/share/cmake-4.1/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
       - "CMakeLists.txt:2 (project)"
     message: |
-      Running the CXX compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/HostX64/x64/link.exe" "-v"
-      Microsoft (R) Incremental Linker Version 14.41.34123.0
+      Running the CXX compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.44.35209.0
       Copyright (C) Microsoft Corporation.  All rights reserved.
 ...
 
@@ -1425,8 +1229,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-yxfrvp"
-      binary: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-yxfrvp"
+      source: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-gtiqip"
+      binary: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-gtiqip"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS /W3"
       CMAKE_C_FLAGS_DEBUG: "/MDd /Zi /Ob0 /Od /RTC1"
@@ -1435,40 +1239,40 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-yxfrvp'
+        Change Dir: 'C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-gtiqip'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_e99a7.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-        Build started 21/08/2025 12:45:21.
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_0dbb3.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 22/08/2025 16:02:55.
         
-        Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\cmTC_e99a7.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\cmTC_0dbb3.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_e99a7.dir\\Debug\\".
+          Creating directory "cmTC_0dbb3.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\Debug\\".
-          Creating directory "cmTC_e99a7.dir\\Debug\\cmTC_e99a7.tlog\\".
+          Creating directory "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\Debug\\".
+          Creating directory "cmTC_0dbb3.dir\\Debug\\cmTC_0dbb3.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_e99a7.dir\\Debug\\cmTC_e99a7.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_e99a7.dir\\Debug\\cmTC_e99a7.tlog\\unsuccessfulbuild".
+          Creating "cmTC_0dbb3.dir\\Debug\\cmTC_0dbb3.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_0dbb3.dir\\Debug\\cmTC_0dbb3.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_e99a7.dir\\Debug\\\\" /Fd"cmTC_e99a7.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\src.c"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34123 for x64
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_0dbb3.dir\\Debug\\\\" /Fd"cmTC_0dbb3.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\src.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_e99a7.dir\\Debug\\\\" /Fd"cmTC_e99a7.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\src.c"
+          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_0dbb3.dir\\Debug\\\\" /Fd"cmTC_0dbb3.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\src.c"
           src.c
-        C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\cmTC_e99a7.vcxproj]
-        Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\cmTC_e99a7.vcxproj" (default targets) -- FAILED.
+        C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\cmTC_0dbb3.vcxproj]
+        Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\cmTC_0dbb3.vcxproj" (default targets) -- FAILED.
         
         Build FAILED.
         
-        "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\cmTC_e99a7.vcxproj" (default target) (1) ->
+        "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\cmTC_0dbb3.vcxproj" (default target) (1) ->
         (ClCompile target) -> 
-          C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-yxfrvp\\cmTC_e99a7.vcxproj]
+          C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gtiqip\\cmTC_0dbb3.vcxproj]
         
             0 Warning(s)
             1 Error(s)
         
-        Time Elapsed 00:00:00.48
+        Time Elapsed 00:00:00.66
         
       exitCode: 1
   -
@@ -1482,8 +1286,8 @@ events:
     checks:
       - "Looking for pthread_create in pthreads"
     directories:
-      source: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-degufg"
-      binary: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-degufg"
+      source: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-6ja6so"
+      binary: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-6ja6so"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS /W3"
       CMAKE_C_FLAGS_DEBUG: "/MDd /Zi /Ob0 /Od /RTC1"
@@ -1492,42 +1296,42 @@ events:
       variable: "CMAKE_HAVE_PTHREADS_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-degufg'
+        Change Dir: 'C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-6ja6so'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_77cd9.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-        Build started 21/08/2025 12:45:22.
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_9e1a3.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 22/08/2025 16:02:56.
         
-        Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\cmTC_77cd9.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\cmTC_9e1a3.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_77cd9.dir\\Debug\\".
+          Creating directory "cmTC_9e1a3.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\Debug\\".
-          Creating directory "cmTC_77cd9.dir\\Debug\\cmTC_77cd9.tlog\\".
+          Creating directory "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\Debug\\".
+          Creating directory "cmTC_9e1a3.dir\\Debug\\cmTC_9e1a3.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_77cd9.dir\\Debug\\cmTC_77cd9.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_77cd9.dir\\Debug\\cmTC_77cd9.tlog\\unsuccessfulbuild".
+          Creating "cmTC_9e1a3.dir\\Debug\\cmTC_9e1a3.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_9e1a3.dir\\Debug\\cmTC_9e1a3.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_77cd9.dir\\Debug\\\\" /Fd"cmTC_77cd9.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\CheckFunctionExists.c"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34123 for x64
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_9e1a3.dir\\Debug\\\\" /Fd"cmTC_9e1a3.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\CheckFunctionExists.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_77cd9.dir\\Debug\\\\" /Fd"cmTC_77cd9.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\CheckFunctionExists.c"
+          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_9e1a3.dir\\Debug\\\\" /Fd"cmTC_9e1a3.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\CheckFunctionExists.c"
           CheckFunctionExists.c
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\Debug\\cmTC_77cd9.exe" /INCREMENTAL /ILK:"cmTC_77cd9.dir\\Debug\\cmTC_77cd9.ilk" /NOLOGO pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-degufg/Debug/cmTC_77cd9.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-degufg/Debug/cmTC_77cd9.lib" /MACHINE:X64  /machine:x64 cmTC_77cd9.dir\\Debug\\CheckFunctionExists.obj
-        LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\cmTC_77cd9.vcxproj]
-        Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\cmTC_77cd9.vcxproj" (default targets) -- FAILED.
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\Debug\\cmTC_9e1a3.exe" /INCREMENTAL /ILK:"cmTC_9e1a3.dir\\Debug\\cmTC_9e1a3.ilk" /NOLOGO pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-6ja6so/Debug/cmTC_9e1a3.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-6ja6so/Debug/cmTC_9e1a3.lib" /MACHINE:X64  /machine:x64 cmTC_9e1a3.dir\\Debug\\CheckFunctionExists.obj
+        LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\cmTC_9e1a3.vcxproj]
+        Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\cmTC_9e1a3.vcxproj" (default targets) -- FAILED.
         
         Build FAILED.
         
-        "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\cmTC_77cd9.vcxproj" (default target) (1) ->
+        "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\cmTC_9e1a3.vcxproj" (default target) (1) ->
         (Link target) -> 
-          LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-degufg\\cmTC_77cd9.vcxproj]
+          LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-6ja6so\\cmTC_9e1a3.vcxproj]
         
             0 Warning(s)
             1 Error(s)
         
-        Time Elapsed 00:00:00.64
+        Time Elapsed 00:00:00.51
         
       exitCode: 1
   -
@@ -1541,8 +1345,8 @@ events:
     checks:
       - "Looking for pthread_create in pthread"
     directories:
-      source: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-7yu5l8"
-      binary: "C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-7yu5l8"
+      source: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-tn38nc"
+      binary: "C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-tn38nc"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS /W3"
       CMAKE_C_FLAGS_DEBUG: "/MDd /Zi /Ob0 /Od /RTC1"
@@ -1551,42 +1355,42 @@ events:
       variable: "CMAKE_HAVE_PTHREAD_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-7yu5l8'
+        Change Dir: 'C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-tn38nc'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_d0674.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
-        Build started 21/08/2025 12:45:23.
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_f738e.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 22/08/2025 16:02:57.
         
-        Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\cmTC_d0674.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\cmTC_f738e.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_d0674.dir\\Debug\\".
+          Creating directory "cmTC_f738e.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\Debug\\".
-          Creating directory "cmTC_d0674.dir\\Debug\\cmTC_d0674.tlog\\".
+          Creating directory "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\Debug\\".
+          Creating directory "cmTC_f738e.dir\\Debug\\cmTC_f738e.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_d0674.dir\\Debug\\cmTC_d0674.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_d0674.dir\\Debug\\cmTC_d0674.tlog\\unsuccessfulbuild".
+          Creating "cmTC_f738e.dir\\Debug\\cmTC_f738e.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_f738e.dir\\Debug\\cmTC_f738e.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_d0674.dir\\Debug\\\\" /Fd"cmTC_d0674.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\CheckFunctionExists.c"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34123 for x64
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_f738e.dir\\Debug\\\\" /Fd"cmTC_f738e.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\CheckFunctionExists.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_d0674.dir\\Debug\\\\" /Fd"cmTC_d0674.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\CheckFunctionExists.c"
+          cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Fo"cmTC_f738e.dir\\Debug\\\\" /Fd"cmTC_f738e.dir\\Debug\\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\CheckFunctionExists.c"
           CheckFunctionExists.c
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.41.34120\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\Debug\\cmTC_d0674.exe" /INCREMENTAL /ILK:"cmTC_d0674.dir\\Debug\\cmTC_d0674.ilk" /NOLOGO pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-7yu5l8/Debug/cmTC_d0674.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-7yu5l8/Debug/cmTC_d0674.lib" /MACHINE:X64  /machine:x64 cmTC_d0674.dir\\Debug\\CheckFunctionExists.obj
-        LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\cmTC_d0674.vcxproj]
-        Done Building Project "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\cmTC_d0674.vcxproj" (default targets) -- FAILED.
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\Debug\\cmTC_f738e.exe" /INCREMENTAL /ILK:"cmTC_f738e.dir\\Debug\\cmTC_f738e.ilk" /NOLOGO pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-tn38nc/Debug/cmTC_f738e.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/zopo10/Desktop/Custom-Programming-Language/build/CMakeFiles/CMakeScratch/TryCompile-tn38nc/Debug/cmTC_f738e.lib" /MACHINE:X64  /machine:x64 cmTC_f738e.dir\\Debug\\CheckFunctionExists.obj
+        LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\cmTC_f738e.vcxproj]
+        Done Building Project "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\cmTC_f738e.vcxproj" (default targets) -- FAILED.
         
         Build FAILED.
         
-        "C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\cmTC_d0674.vcxproj" (default target) (1) ->
+        "C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\cmTC_f738e.vcxproj" (default target) (1) ->
         (Link target) -> 
-          LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\Cyber_User\\Magshimim\\Final Project\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-7yu5l8\\cmTC_d0674.vcxproj]
+          LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\zopo10\\Desktop\\Custom-Programming-Language\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tn38nc\\cmTC_f738e.vcxproj]
         
             0 Warning(s)
             1 Error(s)
         
-        Time Elapsed 00:00:00.34
+        Time Elapsed 00:00:00.58
         
       exitCode: 1
 ...

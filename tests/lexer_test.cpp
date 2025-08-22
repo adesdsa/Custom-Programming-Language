@@ -8,7 +8,7 @@
 // Return the content of the file.
 // @param path: Path to target file.
 // @return: Content of the file.
-const std::string& ReadFile(const std::string& path)
+const std::string ReadFile(const std::string& path)
 {
     std::ifstream file(path);
 
