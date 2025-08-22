@@ -5,34 +5,39 @@ project(Custom-Programming-Language)  # project name
 # Source Files - src/
 # =============================
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
-list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")  # exclude main.cpp
-
-# Make .exe out of main.cpp
-add_executable(Custom-Programming-Language main.cpp ${SRC_FILES})
-
-# Require C++17
-set_target_properties(
-    Custom-Programming-Language PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO
-)
+list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")
 
 # =============================
 # Headers - includes/
 # =============================
-target_include_directories(Custom-Programming-Language PRIVATE
-    ${CMAKE_SOURCE_DIR}/includes
-)
+add_library(CPLib ${SRC_FILES})
+target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR}/includes)
 
+
+# =============================
+# Settings
+# =============================
+
+# Require C++17 and warnings
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+target_compile_features(CPLib PUBLIC cxx_std_17)
 
 # Enable warnings
 if (MSVC)
-    target_compile_options(Custom-Programming-Language PRIVATE /W4 /permissive-)
+    target_compile_options(CPLib PRIVATE /W4 /permissive-)
 else()
-    target_compile_options(Custom-Programming-Language PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(CPLib PRIVATE -Wall -Wextra -pedantic)
 endif()
 
+# =============================
+# Main executable
+# =============================
+add_executable(Custom-Programming-Language main.cpp)
+target_link_libraries(Custom-Programming-Language PRIVATE CPLib)
+target_compile_features(Custom-Programming-Language PUBLIC cxx_std_17)
 
 # =============================
 # GoogleTest - tests/
@@ -41,33 +46,23 @@ option(BUILD_TESTS "Build unit tests" OFF)
 
 if (BUILD_TESTS)
     include(FetchContent)
-
-    # Download GoogleTest at configure time
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/heads/main.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(googletest)
 
     enable_testing()
-
-    # Collect test sources
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
 
-    # Define test executable
     add_executable(unit_tests ${TEST_SOURCES})
-
-    # Link with gtest and your project library
-    target_link_libraries(unit_tests
-        PRIVATE
-        gtest_main
-        Custom-Programming-Language
-    )
-
+    target_link_libraries(unit_tests PRIVATE gtest_main CPLib)
+    target_compile_features(unit_tests PUBLIC cxx_std_17)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
-
 
 # =============================
 # Usage

@@ -3,13 +3,14 @@
 #include "token_factory.h"
 #include "token_handler.h"
 
-constexpr const char* k_sInputFile = "../../src/tokenizer/tokens_in.txt";
+constexpr const char* k_sInputFile = "../src/tokenizer/tokens_in.txt";
 
 // Responsible for managing all Token entityies to convert src to stream of tokens
 class Lexer
 {
 public:
     Lexer();
+    Lexer(const std::string& sInputFile);
     
     ~Lexer() = default;
 
@@ -24,5 +25,5 @@ private:
 
     // Opens the input file stream.
     // @return: Return the opened file.
-    static std::ifstream OpenInputFile();
+    static std::ifstream OpenInputFile(const std::string& sInputFile);
 };
