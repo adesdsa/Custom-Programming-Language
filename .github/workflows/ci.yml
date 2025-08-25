@@ -23,7 +23,7 @@ jobs:
 
     # Only run Lexer tests by default
     - name: Run Lexer Tests
-      run: ./build/unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:build/test_results/lexer.xml
+      run: ./unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:build/test_results/lexer.xml
 
     # Run all tests
     #- name: Run tests
