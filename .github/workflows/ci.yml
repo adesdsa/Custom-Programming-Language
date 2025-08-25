@@ -67,7 +67,7 @@ jobs:
       with:
         name: Lexer Tests
         path: build/test_results/lexer.xml
-        reporter: junit
+        reporter: java-junit
 
 # =====================
 # Coding Conventions Checker
