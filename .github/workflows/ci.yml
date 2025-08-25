@@ -44,6 +44,9 @@ jobs:
         name: build
         path: build
 
+    - name: Restore execute permissions
+      run: chmod +x build/unit_tests
+
     - name: Run Lexer Tests
       run: |
         mkdir -p test_results
