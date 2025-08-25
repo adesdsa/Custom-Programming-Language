@@ -33,8 +33,9 @@ jobs:
     - name: Publish test results
       uses: dorny/test-reporter@v1
       with:
-        test-results: build/test_results/*.xml
-        format: JUnit
+        name: Unit Tests
+        path: build/test_results/*.xml
+        reporter: junit
 
   lint:
     runs-on: ubuntu-latest
