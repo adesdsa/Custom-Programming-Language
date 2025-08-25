@@ -44,6 +44,9 @@ jobs:
         name: build
         path: build
 
+    - name: Fix test input paths
+      run: sudo ln -s ${{ github.workspace }}/tests /tests
+      
     - name: Restore execute permissions
       run: chmod +x build/unit_tests
 
