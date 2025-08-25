@@ -16,7 +16,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y cmake g++
 
     - name: Configure
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=ON
 
     - name: Build
       run: cmake --build build
