@@ -23,11 +23,17 @@ jobs:
 
     # Only run Lexer tests by default
     - name: Run Lexer Tests
-      run: ./build/unit_tests --gtest_filter=LexerTest.*
+      run: ./build/unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:build/test_results/lexer.xml
 
     # Run all tests
     #- name: Run tests
       #run: ctest --test-dir build --output-on-failure
+
+    - name: Publish test results
+      uses: mikepenz/upload-test-report@v1
+      with:
+        test-results: build/test_results/*.xml
+        format: JUnit
 
   lint:
     runs-on: ubuntu-latest
