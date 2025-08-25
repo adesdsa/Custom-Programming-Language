@@ -21,12 +21,9 @@ jobs:
     - name: Build
       run: cmake --build build
 
+    # Only run Lexer tests by default
     - name: Run Lexer Tests
-      # Only run Lexer tests by default
-      run: |
-        echo "::group::Lexer Tests"
-        ./build/unit_tests --gtest_filter=LexerTest.*
-        echo "::endgroup::"
+      run: ./build/unit_tests --gtest_filter=LexerTest.*
 
     # Run all tests
     #- name: Run tests
