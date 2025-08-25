@@ -1,4 +1,0 @@
-LexerTest.EmptyInput 17 0.00285988
-LexerTest.OnlyTriviaTokens 13 0.00339989
-LexerTest.SmallCodeExample 3 0.0868293
----
