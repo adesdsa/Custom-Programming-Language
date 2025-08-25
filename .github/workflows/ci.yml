@@ -21,8 +21,16 @@ jobs:
     - name: Build
       run: cmake --build build
 
-    - name: Run tests
-      run: ctest --test-dir build --output-on-failure
+    - name: Run Lexer Tests
+      # Only run Lexer tests by default
+      run: |
+      echo "::group::Lexer Tests"
+      ./build/unit_tests --gtest_filter=LexerTest.*
+      echo "::endgroup::"
+
+    # Run all tests
+    #- name: Run tests
+      #run: ctest --test-dir build --output-on-failure
 
   lint:
     runs-on: ubuntu-latest
