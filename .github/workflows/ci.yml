@@ -2,18 +2,20 @@ name: Build & Test
 
 on:
   push:
-    branches: [ "**" ]   # run on all branches
-  pull_request:          # run on PRs into any branch
+    branches: [ "**" ]
+  pull_request:
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      build-dir: build
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Install deps
-      run: sudo apt-get update && sudo apt-get install -y cmake g++
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ valgrind python3-pip
 
     - name: Configure
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
@@ -21,32 +23,67 @@ jobs:
     - name: Build
       run: cmake --build build
 
-    # Only run Lexer tests by default
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: build
+        path: build
+
+# =====================
+# Lexer Tests
+# =====================
+  test-lexer:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download build
+      uses: actions/download-artifact@v3
+      with:
+        name: build
+
     - name: Run Lexer Tests
       working-directory: build
-      run: ./unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:build/test_results/lexer.xml
+      run: |
+        mkdir -p test_results
+        ./unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:test_results/lexer.xml
 
-    # Run all tests
-    #- name: Run tests
-      #run: ctest --test-dir build --output-on-failure
+    - name: Lexer Memory Check
+      working-directory: build
+      run: |
+        valgrind --leak-check=full ./unit_tests --gtest_filter=LexerTest.*
 
-    - name: Publish test results
+    - name: Publish Lexer Test Results
       uses: dorny/test-reporter@v1.0.4
       with:
-        name: Unit Tests
-        path: build/test_results/*.xml
+        name: Lexer Tests
+        path: build/test_results/lexer.xml
         reporter: junit
 
-  lint:
+# =====================
+# Coding Conventions Checker
+# =====================
+  check-conventions:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'   # only run on PRs
     steps:
     - uses: actions/checkout@v3
 
     - name: Install cpplint
       run: pip install cpplint
 
-    - name: Run cpplint
+    - name: Run Conventions Check
       run: |
-        cpplint --recursive src/ include/ tests/ \
-          || true   # don't hard-fail, unless you want PRs to fail on lint errors
+        mkdir -p conventions_results
+        cpplint --recursive src/ include/ tests/ 2>&1 | tee conventions_results/cpplint.log
+        # Exit with failure if there are any lint errors
+        if grep -q "Total errors found:" conventions_results/cpplint.log; then
+          exit 1
+        fi
+
+    - name: Publish Conventions Results
+      uses: dorny/test-reporter@v1.0.4
+      with:
+        name: Coding Conventions
+        path: conventions_results/cpplint.log
+        reporter: gcc
