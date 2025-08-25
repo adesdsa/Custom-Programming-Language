@@ -1,6 +1,6 @@
 #include "../../includes/tokenizer/lexer.h"
 
-Lexer::Lexer() : m_tokenHandler(), m_tokenFactory(OpenInputFile(k_sInputFile)) {};
+Lexer::Lexer() : m_tokenFactory(OpenInputFile(k_sInputFile)), m_tokenHandler() {};
 
 Lexer::Lexer(const std::string& sInputFile) : m_tokenHandler(), m_tokenFactory(OpenInputFile(sInputFile)) {};
 
