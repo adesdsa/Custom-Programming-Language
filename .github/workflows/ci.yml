@@ -30,7 +30,7 @@ jobs:
       #run: ctest --test-dir build --output-on-failure
 
     - name: Publish test results
-      uses: mikepenz/upload-test-report@v1
+      uses: dorny/test-reporter@v1
       with:
         test-results: build/test_results/*.xml
         format: JUnit
