@@ -24,9 +24,9 @@ jobs:
     - name: Run Lexer Tests
       # Only run Lexer tests by default
       run: |
-      echo "::group::Lexer Tests"
-      ./build/unit_tests --gtest_filter=LexerTest.*
-      echo "::endgroup::"
+        echo "::group::Lexer Tests"
+        ./build/unit_tests --gtest_filter=LexerTest.*
+        echo "::endgroup::"
 
     # Run all tests
     #- name: Run tests
