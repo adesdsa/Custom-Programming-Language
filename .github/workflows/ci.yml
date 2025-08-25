@@ -95,3 +95,9 @@ jobs:
         name: Coding Conventions
         path: conventions_results/cpplint.log
         reporter: gcc
+
+  hi:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
