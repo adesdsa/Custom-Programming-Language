@@ -42,17 +42,16 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build
+        path: build
 
     - name: Run Lexer Tests
-      working-directory: build
       run: |
         mkdir -p test_results
-        ./unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:test_results/lexer.xml
+        ./build/unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:test_results/lexer.xml
 
     - name: Lexer Memory Check
-      working-directory: build
       run: |
-        valgrind --leak-check=full ./unit_tests --gtest_filter=LexerTest.*
+        valgrind --leak-check=full ./build/unit_tests --gtest_filter=LexerTest.*
 
     - name: Publish Lexer Test Results
       uses: dorny/test-reporter@v2
