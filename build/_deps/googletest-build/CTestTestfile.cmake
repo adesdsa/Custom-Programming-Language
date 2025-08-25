@@ -1,6 +1,6 @@
 # CMake generated Testfile for 
-# Source directory: C:/Users/אלברט/Documents/GitHub/Custom-Programming-Language/build/_deps/googletest-src
-# Build directory: C:/Users/אלברט/Documents/GitHub/Custom-Programming-Language/build/_deps/googletest-build
+# Source directory: C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/_deps/googletest-src
+# Build directory: C:/Users/Cyber_User/Magshimim/Final Project/Custom-Programming-Language/build/_deps/googletest-build
 # 
 # This file includes the relevant testing commands required for 
 # testing this directory and lists subdirectories to be tested as well.

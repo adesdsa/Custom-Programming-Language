@@ -1,0 +1,39 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ "**" ]   # run on all branches
+  pull_request:          # run on PRs into any branch
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install deps
+      run: sudo apt-get update && sudo apt-get install -y cmake g++
+
+    - name: Configure
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Run tests
+      run: ctest --test-dir build --output-on-failure
+
+  lint:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'   # only run on PRs
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install cpplint
+      run: pip install cpplint
+
+    - name: Run cpplint
+      run: |
+        cpplint --recursive src/ include/ tests/ \
+          || true   # don't hard-fail, unless you want PRs to fail on lint errors
