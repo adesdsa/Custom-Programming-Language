@@ -54,11 +54,13 @@ bool Token::Append(char cAddedChar) noexcept
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
     }
+    /*
     else if (this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'')
         // if it's " or a ' it means we start a string/char litteral and we dont need to stop this token
     {
         return TokenStatus::k_bFinished;
     }
+    */
 
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword()))
     {
