@@ -12,7 +12,7 @@ jobs:
       build-dir: build
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install deps
       run: sudo apt-get update && sudo apt-get install -y cmake g++ valgrind python3-pip
@@ -24,7 +24,7 @@ jobs:
       run: cmake --build build
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build
         path: build
@@ -36,10 +36,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Download build
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: build
 
@@ -55,7 +55,7 @@ jobs:
         valgrind --leak-check=full ./unit_tests --gtest_filter=LexerTest.*
 
     - name: Publish Lexer Test Results
-      uses: dorny/test-reporter@v1.0.4
+      uses: dorny/test-reporter@v2
       with:
         name: Lexer Tests
         path: build/test_results/lexer.xml
@@ -67,7 +67,7 @@ jobs:
   check-conventions:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install cpplint
       run: pip install cpplint
@@ -82,7 +82,7 @@ jobs:
         fi
 
     - name: Publish Conventions Results
-      uses: dorny/test-reporter@v1.0.4
+      uses: dorny/test-reporter@v2
       with:
         name: Coding Conventions
         path: conventions_results/cpplint.log
