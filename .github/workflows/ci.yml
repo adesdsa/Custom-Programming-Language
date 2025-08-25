@@ -55,8 +55,8 @@ jobs:
 
     - name: Run Lexer Tests
       run: |
-        mkdir -p test_results
-        ./build/unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:test_results/lexer.xml
+        mkdir -p build/test_results
+        ./build/unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:build/test_results/lexer.xml
 
     - name: Lexer Memory Check
       run: |
