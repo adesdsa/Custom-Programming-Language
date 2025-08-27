@@ -126,10 +126,6 @@ jobs:
         actions: read
         contents: read
 
-      strategy:
-        matrix:
-          language: [ 'cpp' ]
-
       steps:
       - name: Checkout repository
         uses: actions/checkout@v4
