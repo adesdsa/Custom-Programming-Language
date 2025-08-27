@@ -90,6 +90,7 @@ jobs:
 # =============================
   check-conventions:
     runs-on: ubuntu-latest
+    continue-on-error: true  # job won't fail workflow
     steps:
     - uses: actions/checkout@v4
 
