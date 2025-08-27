@@ -1,6 +1,6 @@
 #include "../../includes/tokenizer/token.h"
 
-Token::Token(size_t ulLine) : m_sValue("") , m_ulLine(ulLine), m_sType(TokenTypes::UNKNOWN) {};
+Token::Token(size_t ulLine) : m_sValue("") , m_sType(TokenTypes::UNKNOWN), m_ulLine(ulLine) {};
 
 Token::Token(std::string_view sTokenType, size_t ulLine) : 
     m_sValue(""), 
