@@ -1,9 +1,24 @@
+# ===========================================
+# GitHub Actions Workflow - CI Pipeline
+# ===========================================
+# This workflow defines the Continuous Integration (CI) process for the project.
+# It runs automatically on pushes and pull requests.
+#
+# The pipeline performs:
+#   1. Build                    → ensures code compiles
+#   2.1 Unit Tests              → check for any logic errors
+#   2.2 Memory Management Check → runs Valgrind for memory leaks and errors
+#   3. Coding Conventions       → runs cpplint to enforce style guidelines
+#
+# Goal: Detect issues early and guarantee code correctness, stability, 
+#       and style compliance before merging and deploy.
+
 name: Build & Test
 
 on:
   push:
-    branches: [ "**" ]
-  pull_request:
+    branches: [ "**" ]  # For any push at any branch the yml will be called
+  pull_request:  
 
 jobs:
   build:
@@ -69,9 +84,10 @@ jobs:
         path: build/test_results/lexer.xml
         reporter: java-junit
 
-# =====================
+
+# =============================
 # Coding Conventions Checker
-# =====================
+# =============================
   check-conventions:
     runs-on: ubuntu-latest
     steps:
@@ -95,9 +111,3 @@ jobs:
         name: Coding Conventions
         path: conventions_results/cpplint.log
         reporter: gcc
-
-  hi:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
