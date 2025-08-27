@@ -9,6 +9,7 @@
 #   2.1 Unit Tests              → check for any logic errors
 #   2.2 Memory Management Check → runs Valgrind for memory leaks and errors
 #   3. Coding Conventions       → runs cpplint to enforce style guidelines
+#   4. Security issues          → runs codeql to find any security vulnerabilities
 #
 # Goal: Detect issues early and guarantee code correctness, stability, 
 #       and style compliance before merging and deploy.
@@ -112,3 +113,34 @@ jobs:
         name: Coding Conventions
         path: conventions_results/cpplint.log
         reporter: gcc
+
+
+# =============================
+# Security Issues Checker
+# =============================
+  check-security-issues:
+      name: Analyze
+      runs-on: ubuntu-latest
+      permissions:
+        security-events: write
+        actions: read
+        contents: read
+
+      strategy:
+        matrix:
+          language: [ 'cpp' ]
+
+      steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
