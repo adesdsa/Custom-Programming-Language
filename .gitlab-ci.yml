@@ -27,7 +27,7 @@ build:
   stage: build
   image: ubuntu:22.04
   script:
-    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip
+    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git
     - rm -rf build
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON | tee build/cmake_output.log
     - cmake --build build | tee build/build_output.log
