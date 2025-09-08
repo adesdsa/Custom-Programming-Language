@@ -42,7 +42,9 @@ build:
 test-lexer:
   stage: test
   image: ubuntu:22.04
-  needs: ["build"]
+  needs:
+    - job: build
+      artifacts: true 
   script:
     - apt-get update && apt-get install -y valgrind
     - ln -s $CI_PROJECT_DIR/tests /tests
