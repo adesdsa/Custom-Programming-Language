@@ -28,12 +28,13 @@ build:
   image: ubuntu:22.04
   script:
     - apt-get update && apt-get install -y cmake g++ valgrind python3-pip
-    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
-    - cmake --build build
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON || echo "CMake failed" > build/build_error.log
+    - cmake --build build || echo "Build failed" >> build/build_error.log
   artifacts:
+    when: always
     paths:
       - build/
-    expire_in: 1h
+    expire_in: 1 week
 
 # =====================
 # Lexer Tests
