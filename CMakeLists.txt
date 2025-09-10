@@ -49,9 +49,10 @@ if (BUILD_TESTS)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_Declare(
         googletest
-        URL https://github.com/google/googletest/archive/refs/heads/main.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG main
     )
+    set(FETCHCONTENT_QUIET FALSE)
     FetchContent_MakeAvailable(googletest)
 
     enable_testing()
