@@ -14,11 +14,13 @@
 # Goal: Detect issues early and guarantee code correctness, stability,
 #       and style compliance before merging and deploy.
 
+# All pipeline jobs/tasks
 stages:
+  - lint
   - build
   - test
-  - lint
   - security
+
 
 # =====================
 # Build
@@ -69,7 +71,7 @@ test-lexer:
 check-conventions:
   stage: lint
   image: python:3.11
-  allow_failure: true   # job won't fail pipeline if lint fails
+  allow_failure: true  # job won't fail pipeline if lint fails
   script:
     - pip install cpplint
     - mkdir -p conventions_results
