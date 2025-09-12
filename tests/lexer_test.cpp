@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "tokenizer/lexer.h"
-#include "includes/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 
 // TEST: Empty source file.
