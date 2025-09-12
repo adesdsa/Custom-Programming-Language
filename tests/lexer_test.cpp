@@ -12,7 +12,7 @@ TEST(LexerTest, EmptyInput)
     Lexer lexer("/tests/inputs/test1.txt");
     lexer.Tokenize();
 
-    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("/tests/expected/test1.txt"));
+    EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test1.txt"));
 }
 
 // TEST: Only trivia tokens in source file.
@@ -23,7 +23,7 @@ TEST(LexerTest, OnlyTriviaTokens)
     Lexer lexer("/tests/inputs/test2.txt");
     lexer.Tokenize();
 
-    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("/tests/expected/test2.txt"));
+    EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test2.txt"));
 }
 
 // TEST: A small code example (code with trivia)
@@ -34,5 +34,5 @@ TEST(LexerTest, SmallCodeExample)
     Lexer lexer("/tests/inputs/test3.txt");
     lexer.Tokenize();
 
-    EXPECT_EQ(ReadFile(k_sOutputFile), ReadFile("/tests/expected/test3.txt"));
+    EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test3.txt"));
 }
