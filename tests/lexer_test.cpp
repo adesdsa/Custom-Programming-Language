@@ -1,27 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <sstream>
-
 #include "tokenizer/lexer.h"
-
-
-// Return the content of the file.
-// @param path: Path to target file.
-// @return: Content of the file.
-const std::string ReadFile(const std::string& path)
-{
-    std::ifstream file(path);
-
-    if (!file.is_open())
-    {
-        std::cerr << "Failed to open file: " << path << std::endl;
-        return "";
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
+#include "includes/utils/file_utils.h"
 
 
 // TEST: Empty source file.
