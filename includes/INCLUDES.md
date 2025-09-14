@@ -15,7 +15,7 @@ Implementation details should remain in the `src/` directory.
   (future) Headers for parsing and syntax tree generation.
 
 - `utils/`  
-  (future) Shared utility headers such as logging, error handling, etc.
+  Shared utility headers such as logging, error handling, etc.
 
 ---
 
