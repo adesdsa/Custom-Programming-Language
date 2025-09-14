@@ -79,7 +79,7 @@ The project includes built-in tests that can be executed locally:
     ```
 ---
 
-## Troubleshooting and Support
+## Troubleshooting & Support
 If you encounter issues when running tests, here are some common problems and solutions:
 
 - **CMake cannot find GoogleTest**
