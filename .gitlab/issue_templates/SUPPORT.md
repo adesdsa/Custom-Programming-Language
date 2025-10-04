@@ -6,20 +6,16 @@ Hello,
 
 ---
 
-**Summary:**  
-
----
-
 ### Context
-**Related File(s) / Module(s):** 
+- **Related File(s) / Module(s):** 
 
-**BackGround:**
+- **BackGround:**
 
-**Description:**  
+- **Description:**  
 
-**Expected Behavior:**  
+- **Expected Behavior:**  
 
-**Actual Behavior / Error:**  
+- **Actual Behavior / Error:**  
 
 ---
 
