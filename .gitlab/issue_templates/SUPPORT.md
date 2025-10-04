@@ -25,9 +25,9 @@ Hello,
 
 ### Steps Already Taken
 
-- [] 
-- [] 
-- []
+- [ ] Checked documentation  
+- [ ] Searched existing issues  
+- [ ] Verified configuration  
 
 ---
 
