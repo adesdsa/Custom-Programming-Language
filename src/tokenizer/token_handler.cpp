@@ -1,4 +1,4 @@
-#include "tokenizer/token_handler.h"
+#include "../../includes/tokenizer/token_handler.h"
 
 TokenHandler::TokenHandler()
 {
@@ -34,13 +34,18 @@ void TokenHandler::HandleToken(const Token &token) noexcept
     }
 }
 
+void TokenHandler::CloseStream()
+{
+    this->m_streamTokens.close();
+}
+
 bool TokenHandler::IsRelevantToken(const Token &token) const
 {
     const std::string& sTokenType = token.GetType();
 
     if (sTokenType == k_sUnknownType)
     {
-        throw std::exception(k_sTypeError);
+        throw std::runtime_error(k_sTypeError);
     }
     return !(sTokenType == k_sTriviaType|| sTokenType == k_sEOFType);
 }

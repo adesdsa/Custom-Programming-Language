@@ -46,6 +46,11 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+build/
+CMakeFiles/
+CMakeCache.txt
+_deps/
+
 # User-specific files
 *.rsuser
 *.suo

@@ -1,0 +1,94 @@
+# ===========================================
+# GitLab CI/CD Pipeline
+# ===========================================
+# This pipeline defines the Continuous Integration (CI) process for the project.
+# It runs automatically on pushes and merge requests.
+#
+# The pipeline performs:
+#   1. Build                    → ensures code compiles
+#   2.1 Unit Tests              → check for any logic errors
+#   2.2 Memory Management Check → runs Valgrind for memory leaks and errors
+#   3. Coding Conventions       → runs cpplint to enforce style guidelines
+#   4. Security issues          → uses GitLab SAST (CodeQL-based) to find vulnerabilities
+#
+# Goal: Detect issues early and guarantee code correctness, stability,
+#       and style compliance before merging and deploy.
+
+# All pipeline jobs/tasks
+stages:
+  - lint
+  - build
+  - test
+  - security
+
+
+# =====================
+# Build
+# =====================
+build:
+  stage: build
+  image: ubuntu:22.04
+  script:
+    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git
+    - rm -rf build
+    - mkdir -p build
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON | tee build/cmake_output.log
+    - cmake --build build | tee build/build_output.log
+  artifacts:
+    when: always
+    paths:
+      - build/
+    expire_in: 1 week
+
+# =====================
+# Lexer Tests
+# =====================
+test-lexer:
+  stage: test
+  image: ubuntu:22.04
+  needs:
+    - job: build
+      artifacts: true 
+  script:
+    - apt-get update && apt-get install -y valgrind
+    - ln -s $CI_PROJECT_DIR/tests /tests
+    - chmod +x build/unit_tests
+    # Run tests
+    - mkdir -p build/test_results
+    - ./build/unit_tests --gtest_filter=LexerTest.* --gtest_output=xml:build/test_results/lexer.xml
+    # Memory check
+    - valgrind --leak-check=full ./build/unit_tests --gtest_filter=LexerTest.*
+  artifacts:
+    reports:
+      junit: build/test_results/lexer.xml
+    paths:
+      - build/test_results/
+    expire_in: 1h
+
+# =============================
+# Coding Conventions Checker
+# =============================
+check-conventions:
+  stage: lint
+  image: python:3.11
+  allow_failure: true  # job won't fail pipeline if lint fails
+  script:
+    - pip install cpplint
+    - mkdir -p conventions_results
+    - cpplint --recursive src/ include/ tests/ 2>&1 | tee conventions_results/cpplint.log
+    # Fail explicitly if lint errors detected
+    - if grep -q "Total errors found:" conventions_results/cpplint.log; then exit 1; fi
+  artifacts:
+    paths:
+      - conventions_results/cpplint.log
+    expire_in: 1h
+
+# =============================
+# Security Issues Checker (SAST)
+# =============================
+include:
+  - template: Security/SAST.gitlab-ci.yml
+
+sast:
+  stage: security
+  needs: []

@@ -1,6 +1,8 @@
-#include "tokenizer/lexer.h"
+#include "../../includes/tokenizer/lexer.h"
 
-Lexer::Lexer() : m_tokenHandler(), m_tokenFactory(OpenInputFile()) {};
+Lexer::Lexer() : m_tokenFactory(OpenInputFile(k_sInputFile)), m_tokenHandler() {};
+
+Lexer::Lexer(const std::string& sInputFile) : m_tokenHandler(), m_tokenFactory(OpenInputFile(sInputFile)) {};
 
 void Lexer::Tokenize() 
 {
@@ -8,18 +10,20 @@ void Lexer::Tokenize()
     {
         this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
     }
+
+    this->m_tokenHandler.CloseStream();  // Close stream after finish updating
 }
 
-std::ifstream Lexer::OpenInputFile()
+std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)
 {
-    std::ifstream streamSrcFile(k_sInputFile);
+    std::ifstream streamSrcFile(sInputFile);
 
     if (!streamSrcFile.is_open()) 
     {
         throw std::runtime_error(
             std::string(FUNCTION_THROWER) + 
             k_sFileFailedToOpenError + 
-            k_sInputFile);
+            sInputFile);
     }
 
     return streamSrcFile;
