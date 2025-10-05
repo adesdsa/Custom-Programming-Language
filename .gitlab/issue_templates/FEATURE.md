@@ -55,9 +55,3 @@ Include any context about how this affects workflow, usability, or performance. 
 
 ### Additional Notes
 <!-- Add references, diagrams, or external links that might be helpful -->
-
----
-
-Looking forward to your review and feedback.  
-
-Best regards,
