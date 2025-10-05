@@ -5,7 +5,7 @@
 
 ---
 
-### Overview:
+### Overview
 <!-- Describe the bug you encountered -->
 
 ---
