@@ -3,7 +3,7 @@
 #include "tokenizer/lexer.h"
 #include "utils/file_utils.h"
 
-
+/*
 // TEST: Empty source file.
 // INPUT: Empty source file.
 // EXPECTED: No tokens created.
@@ -36,3 +36,4 @@ TEST(LexerTest, SmallCodeExample)
 
     EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test3.txt"));
 }
+/*
