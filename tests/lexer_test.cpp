@@ -9,7 +9,7 @@
 // EXPECTED: No tokens created.
 TEST(LexerTest, EmptyInput) 
 {
-    Lexer lexer("/tests/inputs/test1.txt");
+    Lexer lexer();
     lexer.Tokenize();
 
     EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test1.txt"));
@@ -20,7 +20,7 @@ TEST(LexerTest, EmptyInput)
 // EXPECTED: No tokens created.
 TEST(LexerTest, OnlyTriviaTokens) 
 {
-    Lexer lexer("/tests/inputs/test2.txt");
+    Lexer lexer();
     lexer.Tokenize();
 
     EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test2.txt"));
@@ -31,7 +31,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 // EXPECTED: Tokens of the code and delete trivia part.
 TEST(LexerTest, SmallCodeExample) 
 {
-    Lexer lexer("/tests/inputs/test3.txt");
+    Lexer lexer();
     lexer.Tokenize();
 
     EXPECT_EQ(FileUtils::ReadFile(k_sOutputFile), FileUtils::ReadFile("/tests/expected/test3.txt"));
