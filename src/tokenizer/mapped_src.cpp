@@ -9,9 +9,7 @@ MappedSRC::MappedSRC(std::ifstream fSrc) : m_ulIndex(0)
 
 char MappedSRC::Get() const noexcept
 {
-    if (this->IsEOF()) { return '\0'; }
-
-    return this->m_sContent[this->m_ulIndex];
+    return this->IsEOF() ? '\0' : this->m_sContent[this->m_ulIndex];
 }
 
 bool MappedSRC::Seek() noexcept

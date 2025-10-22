@@ -15,10 +15,9 @@ public:
     
     ~Lexer() = default;
 
-    // Get every token from the source file and push it to the stream
-    // @return: None.
-    std::optional<std::reference_wrapper<const Token>> Tokenize();
-
+    // Get every token from the source file and push it to the stream.
+    // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
+    std::optional<std::reference_wrapper<const Token>>Tokenize();
 
 private:
     TokenFactory m_tokenFactory;

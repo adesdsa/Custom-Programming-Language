@@ -26,5 +26,5 @@ bool TokenHandler::IsRelevantToken(const Token &token) const
     {
         throw std::runtime_error(k_sTypeError);
     }
-    return !(sTokenType == k_sTriviaType|| sTokenType == k_sEOFType);
+    return sTokenType != k_sTriviaType && sTokenType != k_sEOFType;
 }
