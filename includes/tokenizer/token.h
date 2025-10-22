@@ -48,7 +48,7 @@ public:
 
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
-    const std::string GetLine() const noexcept;
+    size_t GetLine() const noexcept;
 
 
 private:

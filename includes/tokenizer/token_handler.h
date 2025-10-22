@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <optional>
 
 #include "token.h"
 
@@ -24,7 +25,7 @@ public:
     // Preform an action based on th token's relevance.
     // @param token: Current token from stream to handle.
     // @return: None.
-    void HandleToken(const Token& token) noexcept;
+    std::optional<std::reference_wrapper<const Token>> HandleToken(const Token& token) noexcept;
 
 private:
     // Checks for token relevance.

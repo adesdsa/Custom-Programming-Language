@@ -1,19 +1,21 @@
 #include "../../includes/tokenizer/token_handler.h"
 
-void TokenHandler::HandleToken(const Token &token) noexcept
+std::optional<std::reference_wrapper<const Token>>
+TokenHandler::HandleToken(const Token& token) noexcept
 {
-    bool bIsRelevantToken = false;
-
     try
     {
-        bIsRelevantToken = this->IsRelevantToken(token);
+        if (this->IsRelevantToken(token))
+        {
+            return token;
+        }
     }
-    catch(const std::exception& e)
+    catch (const std::exception& e)
     {
-        return;
+        //
     }
-    
-    return bIsRelevantToken ? token : nullptr;
+
+    return std::nullopt;
 }
 
 bool TokenHandler::IsRelevantToken(const Token &token) const

@@ -10,14 +10,14 @@ class Lexer
 {
 public:
     Lexer();
-    
+
     Lexer(const std::string& sInputFile);
     
     ~Lexer() = default;
 
     // Get every token from the source file and push it to the stream
     // @return: None.
-    const Token& Tokenize();
+    std::optional<std::reference_wrapper<const Token>> Tokenize();
 
 
 private:
