@@ -12,4 +12,3 @@ give developers control and flexibility while remaining simple and readable by a
 ## Build Requirements
 - C++ v.17 or newer 
 - cmake v.3.1.0 or newer
-- gtest

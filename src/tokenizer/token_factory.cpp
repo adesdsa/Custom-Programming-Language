@@ -4,7 +4,7 @@ TokenFactory::TokenFactory(std::ifstream fSrc) : m_mappedSRC(std::move(fSrc)), m
 
 Token TokenFactory::CreateToken() noexcept
 {
-    if (this->m_mappedSRC.IsEOF())
+    if (this->IsFinishedReadingSRC())
     {
         return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter);
     }

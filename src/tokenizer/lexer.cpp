@@ -4,14 +4,12 @@ Lexer::Lexer() : m_tokenFactory(OpenInputFile(k_sInputFile)), m_tokenHandler() {
 
 Lexer::Lexer(const std::string& sInputFile) : m_tokenHandler(), m_tokenFactory(OpenInputFile(sInputFile)) {};
 
-void Lexer::Tokenize() 
+const Token& Lexer::Tokenize() 
 {
     while(!this->m_tokenFactory.IsFinishedReadingSRC())
     {
         this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
     }
-
-    this->m_tokenHandler.CloseStream();  // Close stream after finish updating
 }
 
 std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)
