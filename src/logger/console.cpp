@@ -1,7 +1,6 @@
 #include "../../includes/logger/console.h"
 
 #include "../../includes/utils/time_utils.h"
-#include "console.h"
 
 LogMessage Console::BuildAndSendLogMessage(const Entity &entity, const DebugLevel &debugLevel, const std::string msg)
 {
