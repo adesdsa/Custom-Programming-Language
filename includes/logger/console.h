@@ -10,5 +10,7 @@ public:
 
     ~Console() = default;
 
+    LogMessage BuildAndSendLogMessage(const Entity& entity, const DebugLevel& debugLevel, const std::string msg);
+
     void Log(LogMessage& logMessage);
 };

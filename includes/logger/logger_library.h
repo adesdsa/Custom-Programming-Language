@@ -24,4 +24,8 @@ struct LogMessage
     DebugLevel debugLevel;
     std::string sTimeStamp;
     std::string sContent;
+
+    LogMessage(const Entity& entity, const DebugLevel& debugLevel, 
+        const std::string& sTimeStamp, const std::string sContent)
+        : entity(entity), debugLevel(debugLevel), sTimeStamp(sTimeStamp), sContent(sContent) {}
 };
