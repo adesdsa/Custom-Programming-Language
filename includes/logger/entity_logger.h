@@ -16,6 +16,5 @@ public:
 
 
 private:
-    // Debugger& m_pDebugger;
     Entity m_entity;
 };

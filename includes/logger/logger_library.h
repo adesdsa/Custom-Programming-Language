@@ -5,6 +5,13 @@
 ********************************************************************************/
 
 #include <string>
+#include <unordered_map>
+
+const std::unordered_map<LogLevel, std::string> DEBUG_COLORS = {
+    { "error",   "\033[31m" },   // Red
+    { "warn",    "\033[33m" },  // Yellow
+    { "info",    "\033[34m" }  // Blue
+};
 
 struct Entity
 {
