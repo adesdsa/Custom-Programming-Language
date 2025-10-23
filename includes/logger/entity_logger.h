@@ -2,6 +2,8 @@
 
 #include "logger_library.h"
 
+#include <iostream>
+
 // Will attach for each component in the compiler and will be his logger
 class EntityLogger
 {
