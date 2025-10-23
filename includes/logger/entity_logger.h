@@ -6,7 +6,7 @@
 class EntityLogger
 {
 public:
-    EntityLogger() = default;
+    EntityLogger(const std::string sEntityName);
 
     ~EntityLogger() = default;
 

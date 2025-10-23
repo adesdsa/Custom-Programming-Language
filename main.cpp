@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "includes/tokenizer/lexer.h"
+#include "includes/logger/entity_logger.h"
 
 namespace ReturnCode
 {
@@ -14,8 +15,12 @@ int main(void)
 
     try
     {
-        Lexer lexer;
-        lexer.Tokenize();
+        EntityLogger el("lexer");
+        el.Info("This is info msg");
+        el.Warnning("This is warnning msg");
+        el.Error("This is error msg");   
+        //Lexer lexer;
+        //lexer.Tokenize();
     }
 
     catch(const std::runtime_error& runtimeError)

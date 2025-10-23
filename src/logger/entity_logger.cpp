@@ -3,6 +3,9 @@
 #include "../../includes/logger/console.h"
 #include "entity_logger.h"
 
+EntityLogger::EntityLogger(const std::string sEntityName) : 
+m_entity(sEntityName, ENTITY_COLORS.at(sEntityName))
+
 void EntityLogger::Info(const std::string &msg)
 {
     Console::BuildAndSendLogMessage(this->m_entity, DEBUG_COLORS.at("info"), msg);

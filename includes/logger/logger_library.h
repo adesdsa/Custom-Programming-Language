@@ -7,6 +7,13 @@
 #include <string>
 #include <unordered_map>
 
+constexpr std::string k_sReset = "\033[0m";
+
+const std::unordered_map<LogLevel, std::string> ENTITY_COLORS = {
+    { "lexer",   "\033[32m" },   // Green
+    { "parser",    "\033[36m" },  // Cyan
+};
+
 const std::unordered_map<LogLevel, std::string> DEBUG_COLORS = {
     { "error",   "\033[31m" },   // Red
     { "warn",    "\033[33m" },  // Yellow
@@ -17,6 +24,9 @@ struct Entity
 {
     std::string sName;
     std::string sColor;
+
+    Entity(const std::string& name, const std::string& color)
+        : sName(name), sColor(sColor) {}
 };
 
 struct DebugLevel
