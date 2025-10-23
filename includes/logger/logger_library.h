@@ -17,3 +17,11 @@ struct DebugLevel
     std::string sName;
     std::string sColor;
 };
+
+struct LogMessage
+{
+    Entity entity;
+    DebugLevel debugLevel;
+    std::string sTimeStamp;
+    std::string sContent;
+};

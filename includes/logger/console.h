@@ -5,9 +5,10 @@
 // Responsible to log the messages
 class Console
 {
+public:
     Console() = default;
 
     ~Console() = default;
 
-    // void BuildLogMessage(const DebugLevel& debugLevel, const Entity& entity, const std::string& sTimeStamps);
+    void Log(LogMessage& logMessage);
 };

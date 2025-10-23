@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger_library.h"
+#include "console.h"
 
 // Responsible to build the log messages
 class Debugger
@@ -14,7 +14,7 @@ public:
 
 
 private:
-    // Console& m_pConsole;
+    Console& m_pConsole;
 
     std::string  GetCurrentTime();
 };
