@@ -8,6 +8,7 @@ struct DebugLevel
     std::string sColor;
 };
 
+// Responsible to build the log messages
 class Debugger
 {
 public:

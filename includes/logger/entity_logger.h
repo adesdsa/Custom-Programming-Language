@@ -8,7 +8,7 @@ struct Entity
     std::string sColor;
 };
 
-
+// Will attach for each component in the compiler and will be his logger
 class EntityLogger
 {
 public:
