@@ -2,6 +2,8 @@
 
 #include "logger_library.h"
 
+#include <iostream>
+
 // Responsible to log the messages
 class Console
 {
