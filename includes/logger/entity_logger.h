@@ -1,12 +1,6 @@
 #pragma once
 
-#include <string>
-
-struct Entity
-{
-    std::string sName;
-    std::string sColor;
-};
+#include "logger_library.h"
 
 // Will attach for each component in the compiler and will be his logger
 class EntityLogger
@@ -16,9 +10,9 @@ public:
 
     ~EntityLogger() = default;
 
-    void Info(std::string msg);
-    void Warnning(std::string msg);
-    void Error(std::string msg);
+    void Info(const std::string& msg);
+    void Warnning(const std::string& msg);
+    void Error(const std::string& msg);
 
 
 private:

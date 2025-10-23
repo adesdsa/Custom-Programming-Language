@@ -1,12 +1,6 @@
 #pragma once
 
-#include <string>
-
-struct DebugLevel
-{
-    std::string sName;
-    std::string sColor;
-};
+#include "logger_library.h"
 
 // Responsible to build the log messages
 class Debugger
