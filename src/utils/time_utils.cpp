@@ -2,7 +2,7 @@
 
 namespace TimeUtils
 {
-    std::string TimeUtils::GetCurrentTime()
+    std::string GetCurrentTime()
     {
         // Get current time
         auto now = std::chrono::system_clock::now();
