@@ -16,8 +16,8 @@ void Console::Log(LogMessage &logMessage)
         << k_sReset                                      // Reset Entity color
         << logMessage.debugLevel.sColor                  // Level color
         << "[" << logMessage.debugLevel.sName << "]"     // Level name (string, not enum)
-        << RESET << "\t"                                 // Reset level color
+        << k_sReset << "\t"                                 // Reset level color
         << logMessage.entity.sColor                      // Restore entity color
         << logMessage.sContent                           // Log message content
-        << RESET << std::endl;                           // Reset & Flush message
+        << k_sReset << std::endl;                           // Reset & Flush message
 }
