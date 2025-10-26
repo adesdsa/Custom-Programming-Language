@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-constexpr std::string k_sReset = "\033[0m";
+constexpr const char* k_sReset = "\033[0m";
 
 const std::unordered_map<std::string, std::string> ENTITY_COLORS = {
     { "lexer",   "\033[32m" },   // Green
