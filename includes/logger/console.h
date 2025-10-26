@@ -1,20 +1,25 @@
 #pragma once
 
-#include "logger_library.h"
-
 #include <iostream>
+
+#include "logger_library.h"
 
 // Responsible to log the messages
 class Console
 {
 public:
-    Console() = default;
+    // Delete copy/move to prevent duplicates
+    Console(const Console&) = delete;
+    Console& operator=(const Console&) = delete;
 
-    ~Console() = default;
+    // Access the single instance
+    static Console& GetInstance();
 
-    static LogMessage BuildAndSendLogMessage(const Entity& entity, const DebugLevel& debugLevel, const std::string msg);
-
+    void BuildAndSendLogMessage(const Entity& entity, const DebugLevel& debugLevel, const std::string msg);
 
 private:
-    void Log(LogMessage& logMessage);
+    Console() = default;
+    ~Console() = default;
+
+    void Log(const LogMessage& logMessage);
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger_library.h"
+#include "console.h"
 
 // Will attach for each component in the compiler and will be his logger
 class EntityLogger
@@ -17,4 +17,5 @@ public:
 
 private:
     Entity m_entity;
+    Console& m_console;
 };

@@ -2,22 +2,34 @@
 
 #include "../../includes/utils/time_utils.h"
 
-LogMessage Console::BuildAndSendLogMessage(const Entity &entity, const DebugLevel &debugLevel, const std::string msg)
+Console& Console::GetInstance()
 {
-    return LogMessage(entity, debugLevel, TimeUtils::GetCurrentTime(), msg);
+    static Console instance; // Created on first call
+    return instance;
 }
 
-void Console::Log(LogMessage &logMessage)
+void Console::BuildAndSendLogMessage(const Entity &entity, const DebugLevel &debugLevel, const std::string msg)
 {
+    this->Log(LogMessage(entity, debugLevel, TimeUtils::GetCurrentTime(), msg));
+}
+
+void Console::Log(const LogMessage& logMessage)
+{
+    // Widths for padding **outside** brackets
+    const int entityWidth = 12;
+    const int levelWidth  = 8;
+
     std::cout 
-        << logMessage.entity.sColor                      // Entity color
-        << logMessage.sTimeStamp << "\t"                 // Timestamp
-        << "[" << logMessage.entity.sName << "]" << "\t" // Entity name
-        << k_sReset                                      // Reset Entity color
-        << logMessage.debugLevel.sColor                  // Level color
-        << "[" << logMessage.debugLevel.sName << "]"     // Level name (string, not enum)
-        << k_sReset << "\t"                                 // Reset level color
-        << logMessage.entity.sColor                      // Restore entity color
-        << logMessage.sContent                           // Log message content
-        << k_sReset << std::endl;                           // Reset & Flush message
+        << logMessage.entity.sColor
+        << logMessage.sTimeStamp << "\t"
+        << "[" << logMessage.entity.sName << "]"
+        << std::setw(entityWidth - logMessage.entity.sName.size()) << "" // padding outside brackets
+        << k_sReset
+        << logMessage.debugLevel.sColor
+        << "[" << logMessage.debugLevel.sName << "]"
+        << std::setw(levelWidth - logMessage.debugLevel.sName.size()) << "" // padding outside brackets
+        << k_sReset << "\t"
+        << logMessage.entity.sColor
+        << logMessage.sContent
+        << k_sReset << std::endl;
 }

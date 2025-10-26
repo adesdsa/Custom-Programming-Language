@@ -15,10 +15,14 @@ int main(void)
 
     try
     {
-        EntityLogger el("lexer");
-        el.Info("This is info msg");
-        el.Warnning("This is warnning msg");
-        el.Error("This is error msg");   
+        EntityLogger el1("lexer");
+        EntityLogger el2("parser");
+        el1.Info("This is info msg");
+        el2.Error("This is error msg");   
+        el1.Info("This is info msg");
+        el2.Warnning("This is warnning msg");
+        el1.Error("This is error msg"); 
+        el2.Warnning("This is warnning msg");
         //Lexer lexer;
         //lexer.Tokenize();
     }
