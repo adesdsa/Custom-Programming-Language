@@ -9,12 +9,12 @@
 
 constexpr std::string k_sReset = "\033[0m";
 
-const std::unordered_map<LogLevel, std::string> ENTITY_COLORS = {
+const std::unordered_map<std::string, std::string> ENTITY_COLORS = {
     { "lexer",   "\033[32m" },   // Green
-    { "parser",    "\033[36m" },  // Cyan
+    { "parser",    "\033[36m" }  // Cyan
 };
 
-const std::unordered_map<LogLevel, std::string> DEBUG_COLORS = {
+const std::unordered_map<std::string, std::string> DEBUG_COLORS = {
     { "error",   "\033[31m" },   // Red
     { "warn",    "\033[33m" },  // Yellow
     { "info",    "\033[34m" }  // Blue
