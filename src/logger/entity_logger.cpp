@@ -3,7 +3,7 @@
 #include "../../includes/logger/console.h"
 
 EntityLogger::EntityLogger(const std::string sEntityName) : 
-    m_entity(sEntityName, ENTITY_COLORS.at(sEntityName))
+    m_entity(sEntityName, ENTITY_COLORS.at(sEntityName)) {}
 
 void EntityLogger::Info(const std::string &msg)
 {
