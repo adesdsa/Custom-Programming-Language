@@ -7,16 +7,22 @@ EntityLogger::EntityLogger(const std::string sEntityName) :
 
 void EntityLogger::Info(const std::string &msg)
 {
-    Console::BuildAndSendLogMessage(this->m_entity, DEBUG_COLORS.at("info"), msg);
+    Console::BuildAndSendLogMessage(
+        this->m_entity, DebugLevel("INFO", DEBUG_COLORS.at("info")), msg
+    );
 }
 
 void EntityLogger::Warnning(const std::string &msg)
 {
-    Console::BuildAndSendLogMessage(this->m_entity, DEBUG_COLORS.at("warn"), msg);
+    Console::BuildAndSendLogMessage(
+        this->m_entity, DebugLevel("WARN", DEBUG_COLORS.at("warn")), msg
+    );
 
 }
 
 void EntityLogger::Error(const std::string &msg)
 {
-    Console::BuildAndSendLogMessage(this->m_entity, DEBUG_COLORS.at("error"), msg);
+    Console::BuildAndSendLogMessage(
+        this->m_entity, DebugLevel("ERROR", DEBUG_COLORS.at("error")), msg
+    );
 }

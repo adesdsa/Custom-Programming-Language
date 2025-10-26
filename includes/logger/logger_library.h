@@ -26,13 +26,16 @@ struct Entity
     std::string sColor;
 
     Entity(const std::string& name, const std::string& color)
-        : sName(name), sColor(sColor) {}
+        : sName(name), sColor(color) {}
 };
 
 struct DebugLevel
 {
     std::string sName;
     std::string sColor;
+
+    DebugLevel(const std::string& name, const std::string& color)
+        : sName(name), sColor(color) {}
 };
 
 struct LogMessage
