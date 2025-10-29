@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 namespace FileUtils
 {
