@@ -3,6 +3,16 @@
 #include <iostream>
 
 #include "logger_library.h"
+#include "../utils/time_utils.h"
+
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+    #include <cstdio>
+#endif
+
 
 // Responsible to log the messages
 class Console
@@ -24,11 +34,15 @@ public:
 
 
 private:
+    bool m_supportsColor;
+
     // Private constructor and destructor so that no one could create instance of this class
-    Console() = default;
+    Console();
     ~Console() = default;
 
     // Log message into console.
     // @param logMessage: Message to log with all the information built (entity sender, message type and the content).
     void Log(const LogMessage& logMessage);
+
+    static bool DetectColorSupport();
 };

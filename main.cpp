@@ -15,11 +15,9 @@ int main(void)
 
     try
     {
-        EntityLogger el("lexer");
-        el.Info("Check");
-        //Lexer lexer;
+        Lexer lexer;
         
-        //while(lexer.Tokenize() != std::nullopt);
+        while(lexer.Tokenize() != std::nullopt);
     }
 
     catch(const std::runtime_error& runtimeError)
