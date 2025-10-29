@@ -7,7 +7,7 @@
 class TokenFactory
 {
 public:
-    TokenFactory(std::ifstream fSrc);
+    TokenFactory(std::ifstream fSrc, const EntityLogger& entityLogger);
 
     ~TokenFactory() = default;
 
@@ -23,4 +23,5 @@ public:
 private:
     MappedSRC m_mappedSRC;
     size_t m_ulLineCounter;
+    const EntityLogger& m_entityLogger;
 };

@@ -1,11 +1,12 @@
 #include "../../includes/tokenizer/token.h"
 
-Token::Token(size_t ulLine) : m_sValue("") , m_sType(TokenTypes::UNKNOWN), m_ulLine(ulLine) {};
+Token::Token(size_t ulLine, const EntityLogger& entityLogger) : m_sValue("") , m_sType(TokenTypes::UNKNOWN), m_ulLine(ulLine), m_entityLogger(entityLogger) {}
 
-Token::Token(std::string_view sTokenType, size_t ulLine) : 
+Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
     m_ulLine(ulLine), 
-    m_sType(sTokenType) {};
+    m_sType(sTokenType),
+    m_entityLogger(entityLogger) {}
 
 bool Token::Append(char cAddedChar) noexcept
 {   
@@ -23,6 +24,7 @@ bool Token::Append(char cAddedChar) noexcept
     // In other words, a character can begin a new token of type X only if we are not 
     // already inside a token of type X.
 
+    this->m_entityLogger.Info("Append new part to the token");
 
     if (
         std::regex_match(k_sTempToken, RegexPatterns::k_TriviaComments())
