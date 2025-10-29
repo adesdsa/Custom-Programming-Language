@@ -6,12 +6,20 @@
 class EntityLogger
 {
 public:
-    EntityLogger(const std::string sEntityName);
+    EntityLogger(const std::string& sEntityName);
 
     ~EntityLogger() = default;
 
+    // Log info message.
+    // @param msg: The content of the message.
     void Info(const std::string& msg);
+
+    // Log warnning message.
+    // @param msg: The content of the message.
     void Warnning(const std::string& msg);
+
+    // Log error message.
+    // @param msg: The content of the message.
     void Error(const std::string& msg);
 
 

@@ -22,6 +22,7 @@ public:
     // @param msg: The message content.
     void BuildAndSendLogMessage(const Entity& entity, const DebugLevel& debugLevel, const std::string msg);
 
+
 private:
     // Private constructor and destructor so that no one could create instance of this class
     Console() = default;

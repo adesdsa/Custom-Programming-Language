@@ -21,6 +21,7 @@ const std::unordered_map<std::string, std::string> DEBUG_COLORS = {
     { "info",    "\033[34m" }  // Blue
 };
 
+// Entity that sends the message
 struct Entity
 {
     std::string sName;
@@ -30,6 +31,7 @@ struct Entity
         : sName(name), sColor(color) {}
 };
 
+// Type of message Info/Warnning/Error
 struct DebugLevel
 {
     std::string sName;
@@ -39,6 +41,7 @@ struct DebugLevel
         : sName(name), sColor(color) {}
 };
 
+// Message to log with all the information built (entity sender, message type and the content).
 struct LogMessage
 {
     Entity entity;

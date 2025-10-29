@@ -2,7 +2,7 @@
 
 #include "../../includes/logger/console.h"
 
-EntityLogger::EntityLogger(const std::string sEntityName) : 
+EntityLogger::EntityLogger(const std::string& sEntityName) : 
     m_entity(sEntityName, ENTITY_COLORS.at(sEntityName)), 
     m_console(Console::GetInstance()) {}
 
