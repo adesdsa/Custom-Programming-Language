@@ -18,7 +18,7 @@ constexpr const char* k_sTypeError = " - ERROR: Type is not valid";
 class TokenHandler
 {
 public:
-    TokenHandler() = default;
+    TokenHandler(const EntityLogger& entityLogger);
     
     ~TokenHandler() = default;
 
@@ -29,6 +29,8 @@ public:
 
 
 private:
+    const EntityLogger& m_entityLogger;
+
     // Checks for token relevance.
     // @param token: Current token from stream to check it relevance.
     // @return: True => Token is relevant (not a trivia/unknown type token), False => Otherwise.

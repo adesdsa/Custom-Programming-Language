@@ -1,11 +1,12 @@
 #include "../../includes/tokenizer/lexer.h"
 
-Lexer::Lexer() : m_tokenFactory(OpenInputFile(k_sInputFile)), m_tokenHandler() {};
+Lexer::Lexer() : m_entityLogger("lexer"), m_tokenFactory(OpenInputFile(k_sInputFile), m_entityLogger), m_tokenHandler(m_entityLogger) {}
 
-Lexer::Lexer(const std::string& sInputFile) : m_tokenHandler(), m_tokenFactory(OpenInputFile(sInputFile)) {};
+Lexer::Lexer(const std::string& sInputFile) : m_entityLogger("lexer"), m_tokenHandler(m_entityLogger), m_tokenFactory(OpenInputFile(sInputFile), m_entityLogger) {}
 
 std::optional<std::reference_wrapper<const Token>> Lexer::Tokenize() 
 {
+    this->m_entityLogger.Info("Start Creating new token...");
     return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
 }
 
