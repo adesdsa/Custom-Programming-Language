@@ -82,24 +82,24 @@ TEST(LexerTest, SmallCodeExample)
 
     std::vector<std::optional<Token>> results;
     std::vector<std::optional<Token>> expected = {
-        Token("int","KEYWORD",7),
-        Token("Add", "IDENTIFIER",7),
-        Token("(", "PUNCTUATION",7),
-        Token("int","KEYWORD",7),
-        Token("a","IDENTIFIER",7),
-        Token(",","PUNCTUATION",7),
-        Token("int","KEYWORD",7),
-        Token("b","IDENTIFIER",7),
-        Token(")","PUNCTUATION",7),
-        Token("{","PUNCTUATION",8),
-        Token("print","IDENTIFIER",9),
-        Token("(", "PUNCTUATION",9),
-        Token("\"Hello, this is a test!\"","VALUE",9),
-        Token(")","PUNCTUATION",9),
-        Token(";","PUNCTUATION",9),
-        Token("}","PUNCTUATION",10),
+        Token("int",TokenTypes::KEYWORD,7),
+        Token("Add", TokenTypes::IDENTIFIER,7),
+        Token("(", TokenTypes::PUNCTUATION,7),
+        Token("int",TokenTypes::KEYWORD,7),
+        Token("a",TokenTypes::IDENTIFIER,7),
+        Token(",",TokenTypes::PUNCTUATION,7),
+        Token("int",TokenTypes::KEYWORD,7),
+        Token("b",TokenTypes::IDENTIFIER,7),
+        Token(")",TokenTypes::PUNCTUATION,7),
+        Token("{",TokenTypes::PUNCTUATION,8),
+        Token("print",TokenTypes::IDENTIFIER,9),
+        Token("(", TokenTypes::PUNCTUATION,9),
+        Token("\"Hello, this is a test!\"",TokenTypes::VALUE,9),
+        Token(")",TokenTypes::PUNCTUATION,9),
+        Token(";",TokenTypes::PUNCTUATION,9),
+        Token("}",TokenTypes::PUNCTUATION,10),
     };
-    
+
     while(!lexer.IsFinishedReadingSRC())
     {
         auto token = lexer.Tokenize();

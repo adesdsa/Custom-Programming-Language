@@ -37,7 +37,7 @@ class Token
 public:
     Token(size_t ulLine);
     Token(std::string_view sTokenType, size_t ulLine);
-    Token(std::string_view sTokenValue, std::string_view sTokenType, size_t ulLine);
+    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine);
 
     ~Token() = default;
 

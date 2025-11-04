@@ -7,7 +7,7 @@ Token::Token(std::string_view sTokenType, size_t ulLine) :
     m_ulLine(ulLine), 
     m_sType(sTokenType) {}
 
-Token::Token(std::string_view sTokenValue, std::string_view sTokenType, size_t ulLine) :
+Token::Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine) :
     m_sValue(sTokenValue),
     m_sType(sTokenType),
     m_ulLine(ulLine) {}
