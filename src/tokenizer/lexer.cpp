@@ -1,4 +1,5 @@
 #include "../../includes/tokenizer/lexer.h"
+#include "lexer.h"
 
 Lexer::Lexer() : m_tokenFactory(OpenInputFile(k_sInputFile)), m_tokenHandler() {};
 
@@ -7,6 +8,11 @@ Lexer::Lexer(const std::string& sInputFile) : m_tokenHandler(), m_tokenFactory(O
 std::optional<std::reference_wrapper<const Token>> Lexer::Tokenize() 
 {
     return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
+}
+
+bool Lexer::IsFinishedReadingSRC() const noexcept
+{
+    return this->m_tokenFactory.IsFinishedReadingSRC();
 }
 
 std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)

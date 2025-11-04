@@ -19,6 +19,11 @@ public:
     // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
     std::optional<std::reference_wrapper<const Token>>Tokenize();
 
+    // Checks if file is in EOF.
+    // @return: True => , False => .
+    bool IsFinishedReadingSRC() const noexcept;
+
+
 private:
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;

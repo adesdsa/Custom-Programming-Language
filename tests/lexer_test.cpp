@@ -14,24 +14,15 @@ TEST(LexerTest, EmptyInput)
 {
     Lexer lexer("../inputs/test1.txt");
 
-    std::vector<std::optional<Token>> results{};
-    std::vector<std::optional<Token>> expcted{};
+    std::vector<std::optional<Token>> results;
+    std::vector<std::optional<Token>> expected;
     
-    while(!lexer.m_tokenFactory.IsFinishedReadingSRC())
+    while(!lexer.IsFinishedReadingSRC())
     {
-        auto token = lexer.Tokenize();
-
-        if(token == std::nullopt)
-        {
-            results.push_back(std::nullopt);
-        }
-        else
-        {
-            results.push_back(token);
-        }
+        results.push_back(lexer.Tokenize());
     }
 
-    ASSERT_EQ(results.size(), expected.size());
+    ASSERT_EQ(results.size(), expected.size()) << "Result and expected token counts differ.";
 
     for (size_t i = 0; i < results.size(); i++) 
     {
