@@ -1,11 +1,17 @@
 #include "../../includes/tokenizer/token.h"
 
-Token::Token(size_t ulLine) : m_sValue("") , m_sType(TokenTypes::UNKNOWN), m_ulLine(ulLine) {};
+Token::Token(size_t ulLine) : m_sValue("") , m_sType(TokenTypes::UNKNOWN), m_ulLine(ulLine) {}
 
 Token::Token(std::string_view sTokenType, size_t ulLine) : 
     m_sValue(""), 
     m_ulLine(ulLine), 
-    m_sType(sTokenType) {};
+    m_sType(sTokenType) {}
+
+Token::Token(std::string_view sTokenValue, std::string_view sTokenType, size_t ulLine) :
+    m_sValue(sTokenValue),
+    m_sType(sTokenType),
+    m_ulLine(ulLine) {}
+
 
 bool Token::Append(char cAddedChar) noexcept
 {   

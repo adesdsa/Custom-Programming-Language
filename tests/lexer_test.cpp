@@ -81,13 +81,30 @@ TEST(LexerTest, SmallCodeExample)
     Lexer lexer("/tests/inputs/test3.txt");
 
     std::vector<std::optional<Token>> results;
-    std::vector<std::optional<Token>> expected;
+    std::vector<std::optional<Token>> expected = {
+        Token("int","KEYWORD",7),
+        Token("Add", "IDENTIFIER",7),
+        Token("(", "PUNCTUATION",7),
+        Token("int","KEYWORD",7),
+        Token("a","IDENTIFIER",7),
+        Token(",","PUNCTUATION",7),
+        Token("int","KEYWORD",7),
+        Token("b","IDENTIFIER",7),
+        Token(")","PUNCTUATION",7),
+        Token("{","PUNCTUATION",8),
+        Token("print","IDENTIFIER",9),
+        Token("(", "PUNCTUATION",9),
+        Token("\"Hello, this is a test!\"","VALUE",9),
+        Token(")","PUNCTUATION",9),
+        Token(";","PUNCTUATION",9),
+        Token("}","PUNCTUATION",10),
+    };
     
     while(!lexer.IsFinishedReadingSRC())
     {
         auto token = lexer.Tokenize();
 
-        if(token != std::nullopt)
+        if(token != std::nullopt)   
         {
             results.push_back(token);
         }
