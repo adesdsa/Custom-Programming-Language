@@ -81,7 +81,7 @@ TEST(LexerTest, SmallCodeExample)
     Lexer lexer("/tests/inputs/test3.txt");
 
     std::vector<std::optional<Token>> results;
-    std::vector<std::optional<Token>> expected(16, Token());
+    std::vector<std::optional<Token>> expected;
     
     while(!lexer.IsFinishedReadingSRC())
     {
