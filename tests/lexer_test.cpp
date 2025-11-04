@@ -45,11 +45,16 @@ TEST(LexerTest, OnlyTriviaTokens)
     Lexer lexer("/tests/inputs/test2.txt");
 
     std::vector<std::optional<Token>> results;
-    std::vector<std::optional<Token>> expected(7, std::nullopt);
+    std::vector<std::optional<Token>> expected;
     
     while(!lexer.IsFinishedReadingSRC())
     {
-        results.push_back(lexer.Tokenize());
+        auto token = lexer.Tokenize();
+
+        if(token != std::nullopt)
+        {
+            results.push_back(token);
+        }
     }
 
     ASSERT_EQ(results.size(), expected.size()) << "Result and expected token counts differ.";
@@ -76,7 +81,7 @@ TEST(LexerTest, SmallCodeExample)
     Lexer lexer("/tests/inputs/test3.txt");
 
     std::vector<std::optional<Token>> results;
-    std::vector<std::optional<Token>> expected(16, std::nullopt);
+    std::vector<std::optional<Token>> expected(16, Token());
     
     while(!lexer.IsFinishedReadingSRC())
     {
