@@ -50,6 +50,8 @@ public:
     const std::string& GetType() const noexcept;
     size_t GetLine() const noexcept;
 
+    bool operator==(const Token& other) const;
+
 
 private:
     std::string m_sValue;
