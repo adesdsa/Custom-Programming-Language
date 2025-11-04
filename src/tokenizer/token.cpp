@@ -110,6 +110,11 @@ size_t Token::GetLine() const noexcept
     return this->m_ulLine;
 }
 
+bool Token::operator==(const Token& other) const
+{
+    return this->m_sType == other.m_sType && this->m_sValue == other.m_sValue;
+}
+
 bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept
 {
     this->m_sValue = sTokenValue;

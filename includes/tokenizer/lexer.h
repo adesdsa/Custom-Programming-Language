@@ -23,7 +23,6 @@ public:
     // @return: True => , False => .
     bool IsFinishedReadingSRC() const noexcept;
 
-
 private:
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;

@@ -14,6 +14,11 @@ bool Lexer::IsFinishedReadingSRC() const noexcept
     return this->m_tokenFactory.IsFinishedReadingSRC();
 }
 
+bool operator==(const Token& other) const 
+{
+    return _type == other._type && _value == other._value;
+}
+
 std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)
 {
     std::ifstream streamSrcFile(sInputFile);
