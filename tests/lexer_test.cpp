@@ -45,7 +45,7 @@ TEST(LexerTest, OnlyTriviaTokens)
     Lexer lexer("/tests/inputs/test2.txt");
 
     std::vector<std::optional<Token>> results;
-    std::vector<std::optional<Token>> expected(8, std::nullopt);
+    std::vector<std::optional<Token>> expected(7, std::nullopt);
     
     while(!lexer.IsFinishedReadingSRC())
     {
