@@ -1,6 +1,6 @@
 #include "../../includes/tokenizer/token_factory.h"
 
-TokenFactory::TokenFactory(std::ifstream fSrc) : m_mappedSRC(std::move(fSrc)), m_ulLineCounter(0) {};
+TokenFactory::TokenFactory(std::ifstream fSrc) : m_mappedSRC(std::move(fSrc)), m_ulLineCounter(1) {};
 
 Token TokenFactory::CreateToken() noexcept
 {

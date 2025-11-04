@@ -82,7 +82,7 @@ TEST(LexerTest, SmallCodeExample)
 
     std::vector<std::optional<Token>> results;
     std::vector<std::optional<Token>> expected = {
-        Token("int",TokenTypes::KEYWORD,7),
+        Token("void",TokenTypes::KEYWORD,7),
         Token("Add", TokenTypes::IDENTIFIER,7),
         Token("(", TokenTypes::PUNCTUATION,7),
         Token("int",TokenTypes::KEYWORD,7),

@@ -1,7 +1,6 @@
 #include "../../includes/tokenizer/token_handler.h"
 
-std::optional<std::reference_wrapper<const Token>>
-TokenHandler::HandleToken(const Token& token) noexcept
+std::optional<Token> TokenHandler::HandleToken(const Token& token) noexcept
 {
     try
     {

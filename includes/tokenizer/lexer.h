@@ -17,7 +17,7 @@ public:
 
     // Get every token from the source file and push it to the stream.
     // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
-    std::optional<std::reference_wrapper<const Token>>Tokenize();
+    std::optional<Token> Tokenize();
 
     // Checks if file is in EOF.
     // @return: True => , False => .

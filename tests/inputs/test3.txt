@@ -4,7 +4,7 @@
     @param b: The second integer to be added.
     @return: The sum of a and b.
 */
-int Add(int a, int b)
+void Add(int a, int b)
 {
     print("Hello, this is a test!");  // Comment
 }

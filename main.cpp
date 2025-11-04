@@ -15,16 +15,20 @@ int main(void)
 
     try
     {
-        EntityLogger el1("lexer");
-        EntityLogger el2("parser");
-        el1.Info("This is info msg");
-        el2.Error("This is error msg");   
-        el1.Info("This is info msg");
-        el2.Warnning("This is warnning msg");
-        el1.Error("This is error msg"); 
-        el2.Warnning("This is warnning msg");
-        //Lexer lexer;
-        //lexer.Tokenize();
+        Lexer lexer("../../tests/inputs/test3.txt");
+
+        while(!lexer.IsFinishedReadingSRC())
+        {
+            auto token = lexer.Tokenize();
+
+            if(token)
+            {
+                const Token& t = token.value();
+                std::cout << t.GetValue() << "-";
+                std::cout << t.GetType() << "-";
+                std::cout << t.GetLine() << std::endl;
+            }
+        }
     }
 
     catch(const std::runtime_error& runtimeError)
