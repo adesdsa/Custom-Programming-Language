@@ -11,7 +11,7 @@
 // EXPECTED: No tokens created.
 TEST(LexerTest, EmptyInput) 
 {
-    Lexer lexer("../tests/inputs/test1.txt");
+    Lexer lexer("/tests/inputs/test1.txt");
 
     std::vector<std::optional<Token>> results;
     std::vector<std::optional<Token>> expected;
