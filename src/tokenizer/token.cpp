@@ -9,10 +9,10 @@ Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& ent
     m_entityLogger(entityLogger) {}
 
 Token::Token(
-    const std::string& sTokenValue, 
-    std::string_view sTokenType, 
-    size_t ulLine, 
-    const EntityLogger& entityLogger
+        const std::string& sTokenValue, 
+        std::string_view sTokenType, 
+        size_t ulLine, 
+        const EntityLogger& entityLogger
     ) :
         m_sValue(sTokenValue),
         m_sType(sTokenType),
