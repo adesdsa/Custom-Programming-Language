@@ -1,8 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <optional>
-#include <vector>
-
 #include "tokenizer/lexer.h"
 #include "utils/tests_utils.h"
 

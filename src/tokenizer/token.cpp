@@ -120,7 +120,7 @@ bool Token::operator==(const Token& other) const
 {
     return this->m_sType == other.m_sType && 
         this->m_sValue == other.m_sValue &&
-        this->m_ulLine == this->m_ulLine;
+        this->m_ulLine == other.m_ulLine;
 }
 
 bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept
