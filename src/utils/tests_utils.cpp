@@ -1,5 +1,7 @@
 #include "../../includes/utils/tests_utils.h"
 
+#include <gtest/gtest.h>
+
 namespace TestsUtils
 {
     std::string ReadFile(const std::string& path)
@@ -17,7 +19,7 @@ namespace TestsUtils
         return buffer.str();
     }
 
-    std::vector<Token> FileUtils::CollectTokens(Lexer &lexer)
+    std::vector<Token> CollectTokens(Lexer &lexer)
     {
         std::vector<Token> tokens;
 
@@ -39,14 +41,14 @@ namespace TestsUtils
 
         for (size_t i = 0; i < results.size(); i++) 
         {
-            if (!expected[i].has_value()) 
+            if (!expected[i]) 
             {
-                EXPECT_FALSE(results[i].has_value()) << "Expected nullopt at index " << i;
+                EXPECT_FALSE(results[i]) << "Expected nullopt at index " << i;
             } 
             else 
             {
-                ASSERT_TRUE(results[i].has_value()) << "Expected a Token at index " << i;
-                EXPECT_EQ(results[i].value(), expected[i].value()) << "Mismatch at token index " << i;
+                ASSERT_TRUE(results[i]) << "Expected a Token at index " << i;
+                EXPECT_EQ(results[i], expected[i]) << "Mismatch at token index " << i;
             }
         }
     }
