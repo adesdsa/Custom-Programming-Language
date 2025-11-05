@@ -10,10 +10,10 @@
 // EXPECTED: No tokens created.
 TEST(LexerTest, EmptyInput) 
 {
-    std::vector<std::optional<Token>> expected;
+    std::vector<Token> expected;
 
     Lexer lexer("/tests/inputs/test1.txt");
-    std::vector<std::optional<Token>> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
 
     TestsUtils::CompareTokens(results, expected);
 }
@@ -23,10 +23,10 @@ TEST(LexerTest, EmptyInput)
 // EXPECTED: No tokens created.
 TEST(LexerTest, OnlyTriviaTokens) 
 {
-    std::vector<std::optional<Token>> expected;
+    std::vector<Token> expected;
 
     Lexer lexer("/tests/inputs/test2.txt");
-    std::vector<std::optional<Token>> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
     
     TestsUtils::CompareTokens(results, expected);
 }
@@ -36,7 +36,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 // EXPECTED: Tokens of the code and delete trivia part.
 TEST(LexerTest, SmallCodeExample) 
 {
-    std::vector<std::optional<Token>> expected = {
+    std::vector<Token> expected = {
         Token("void",TokenTypes::KEYWORD,7),
         Token("Add", TokenTypes::IDENTIFIER,7),
         Token("(", TokenTypes::PUNCTUATION,7),
@@ -56,7 +56,7 @@ TEST(LexerTest, SmallCodeExample)
     };
 
     Lexer lexer("/tests/inputs/test3.txt");
-    std::vector<std::optional<Token>> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
 
     TestsUtils::CompareTokens(results, expected);
 }
