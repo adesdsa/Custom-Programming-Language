@@ -8,7 +8,7 @@ TEST(LexerTest, EmptyInput)
 {
     std::vector<Token> expected;
 
-    Lexer lexer("/tests/inputs/test1.txt");
+    Lexer lexer("../tests/inputs/test1.txt");
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
 
     TestsUtils::CompareTokens(results, expected);
@@ -19,7 +19,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 {
     std::vector<Token> expected;
 
-    Lexer lexer("/tests/inputs/test2.txt");
+    Lexer lexer("../tests/inputs/test2.txt");
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
     
     TestsUtils::CompareTokens(results, expected);
@@ -28,32 +28,37 @@ TEST(LexerTest, OnlyTriviaTokens)
 // TEST: A small code example
 TEST(LexerTest, SmallCodeExample) 
 {
-    Lexer lexer("/tests/inputs/test3.txt");
+    Lexer lexer("../tests/inputs/test3.txt");
 
     std::vector<Token> expected = {
+        // Line 5
+        Token("Add", TokenTypes::IDENTIFIER,5,lexer.GetEntityLogger()),
+        Token("(", TokenTypes::PUNCTUATION,5,lexer.GetEntityLogger()),
+        Token("let",TokenTypes::KEYWORD,5,lexer.GetEntityLogger()),
+        Token("a",TokenTypes::IDENTIFIER,5,lexer.GetEntityLogger()),
+        Token(":",TokenTypes::PUNCTUATION,5,lexer.GetEntityLogger()),
+        Token("int",TokenTypes::KEYWORD,5,lexer.GetEntityLogger()),
+        Token(",",TokenTypes::PUNCTUATION,5,lexer.GetEntityLogger()),
+        Token("let",TokenTypes::KEYWORD,5,lexer.GetEntityLogger()),
+        Token("b",TokenTypes::IDENTIFIER,5,lexer.GetEntityLogger()),
+        Token(":",TokenTypes::PUNCTUATION,5,lexer.GetEntityLogger()),
+        Token("int",TokenTypes::KEYWORD,5,lexer.GetEntityLogger()),
+        Token(")",TokenTypes::PUNCTUATION,5,lexer.GetEntityLogger()),
+        Token("->",TokenTypes::PUNCTUATION,5,lexer.GetEntityLogger()),
+        Token("void",TokenTypes::KEYWORD,5,lexer.GetEntityLogger()),
+
+        // Line 6
+        Token("{",TokenTypes::PUNCTUATION,6,lexer.GetEntityLogger()),
+
         // Line 7
-        Token("void",TokenTypes::KEYWORD,7,lexer.GetEntityLogger()),
-        Token("Add", TokenTypes::IDENTIFIER,7,lexer.GetEntityLogger()),
+        Token("print",TokenTypes::IDENTIFIER,7,lexer.GetEntityLogger()),
         Token("(", TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
-        Token("int",TokenTypes::KEYWORD,7,lexer.GetEntityLogger()),
-        Token("a",TokenTypes::IDENTIFIER,7,lexer.GetEntityLogger()),
-        Token(",",TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
-        Token("int",TokenTypes::KEYWORD,7,lexer.GetEntityLogger()),
-        Token("b",TokenTypes::IDENTIFIER,7,lexer.GetEntityLogger()),
+        Token("\"Hello, this is a test!\"",TokenTypes::VALUE,7,lexer.GetEntityLogger()),
         Token(")",TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
+        Token(";",TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
 
         // Line 8
-        Token("{",TokenTypes::PUNCTUATION,8,lexer.GetEntityLogger()),
-
-        // Line 9
-        Token("print",TokenTypes::IDENTIFIER,9,lexer.GetEntityLogger()),
-        Token("(", TokenTypes::PUNCTUATION,9,lexer.GetEntityLogger()),
-        Token("\"Hello, this is a test!\"",TokenTypes::VALUE,9,lexer.GetEntityLogger()),
-        Token(")",TokenTypes::PUNCTUATION,9,lexer.GetEntityLogger()),
-        Token(";",TokenTypes::PUNCTUATION,9,lexer.GetEntityLogger()),
-
-        // Line 10
-        Token("}",TokenTypes::PUNCTUATION,10,lexer.GetEntityLogger()),
+        Token("}",TokenTypes::PUNCTUATION,8,lexer.GetEntityLogger()),
     };
 
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
@@ -64,7 +69,7 @@ TEST(LexerTest, SmallCodeExample)
 // TEST: Full program example
 TEST(LexerTest, FullProgram) 
 {
-    Lexer lexer("/tests/inputs/test4.txt");
+    Lexer lexer("../tests/inputs/test4.txt");
 
     std::vector<Token> expected = {
         // Line 1
