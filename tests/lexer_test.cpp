@@ -56,7 +56,7 @@ TEST(LexerTest, SmallCodeExample)
 }
 
 // TEST: Full program example
-TEST(LexerTest, SmallCodeExample) 
+TEST(LexerTest, FullProgram) 
 {
     std::vector<Token> expected = {
         // Line 1
