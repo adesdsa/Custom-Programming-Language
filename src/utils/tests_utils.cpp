@@ -41,15 +41,7 @@ namespace TestsUtils
 
         for (size_t i = 0; i < results.size(); i++) 
         {
-            if (expected[i] != std::nullopt) 
-            {
-                EXPECT_FALSE(results[i] != std::nullopt) << "Expected nullopt at index " << i;
-            } 
-            else 
-            {
-                ASSERT_TRUE(results[i] != std::nullopt) << "Expected a Token at index " << i;
-                EXPECT_EQ(results[i], expected[i]) << "Mismatch at token index " << i;
-            }
+            EXPECT_EQ(results[i], expected[i]) << "Mismatch at token index " << i;
         }
     }
 }
