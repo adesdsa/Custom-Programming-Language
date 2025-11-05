@@ -15,6 +15,11 @@ bool Lexer::IsFinishedReadingSRC() const noexcept
     return this->m_tokenFactory.IsFinishedReadingSRC();
 }
 
+const EntityLogger& Lexer::GetEntityLogger()
+{
+    return this->m_entityLogger;
+}
+
 std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)
 {
     std::ifstream streamSrcFile(sInputFile);
