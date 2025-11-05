@@ -6,6 +6,8 @@
 #include <fstream>
 #include <vector>
 
+#include "../tokenizer/lexer.h"
+
 namespace TestsUtils
 {
     // Return the content of the file.
