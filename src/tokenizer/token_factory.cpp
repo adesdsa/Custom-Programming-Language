@@ -1,15 +1,15 @@
 #include "../../includes/tokenizer/token_factory.h"
 
-TokenFactory::TokenFactory(std::ifstream fSrc) : m_mappedSRC(std::move(fSrc)), m_ulLineCounter(1) {};
+TokenFactory::TokenFactory(std::ifstream fSrc, const EntityLogger& entityLogger) : m_mappedSRC(std::move(fSrc)), m_ulLineCounter(0), m_entityLogger(entityLogger) {}
 
 Token TokenFactory::CreateToken() noexcept
 {
     if (this->IsFinishedReadingSRC())
     {
-        return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter);
+        return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter, this->m_entityLogger);
     }
 
-    Token token(this->m_ulLineCounter);
+    Token token(this->m_ulLineCounter, this->m_entityLogger);
 
     while (!token.Append(this->m_mappedSRC.Get()))
     {

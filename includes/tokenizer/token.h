@@ -5,6 +5,7 @@
 #include <regex>
 
 #include "patterns.h"
+#include "../logger/entity_logger.h"
 
 
 // TODO: check the minimum scope of the vector
@@ -35,9 +36,9 @@ namespace TokenStatus
 class Token
 {
 public:
-    Token(size_t ulLine);
-    Token(std::string_view sTokenType, size_t ulLine);
-    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine);
+    Token(size_t ulLine, const EntityLogger& entityLogger);
+    Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
+    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
 
     ~Token() = default;
 
@@ -58,6 +59,7 @@ private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
+    const EntityLogger& m_entityLogger;
 
     // Set a single character token.
     // @param sTokenValue: New value of the token.
