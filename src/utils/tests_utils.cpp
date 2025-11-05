@@ -43,11 +43,11 @@ namespace TestsUtils
         {
             if (expected[i] != std::nullopt) 
             {
-                EXPECT_FALSE(results[i]) << "Expected nullopt at index " << i;
+                EXPECT_FALSE(results[i] != std::nullopt) << "Expected nullopt at index " << i;
             } 
             else 
             {
-                ASSERT_TRUE(results[i]) << "Expected a Token at index " << i;
+                ASSERT_TRUE(results[i] != std::nullopt) << "Expected a Token at index " << i;
                 EXPECT_EQ(results[i], expected[i]) << "Mismatch at token index " << i;
             }
         }
