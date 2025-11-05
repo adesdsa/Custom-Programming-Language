@@ -64,6 +64,7 @@ if (BUILD_TESTS)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
     target_link_libraries(CPLib PUBLIC gtest)
+    
 endif()
 
 # =============================

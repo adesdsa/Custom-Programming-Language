@@ -41,7 +41,7 @@ namespace TestsUtils
 
         for (size_t i = 0; i < results.size(); i++) 
         {
-            if (!expected[i]) 
+            if (expected[i] != std::nullopt) 
             {
                 EXPECT_FALSE(results[i]) << "Expected nullopt at index " << i;
             } 
