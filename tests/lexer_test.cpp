@@ -3,8 +3,6 @@
 #include "tokenizer/lexer.h"
 #include "utils/tests_utils.h"
 
-/// TODO: Add forth test for full program (see drive for example)
-
 // TEST: Empty source file
 TEST(LexerTest, EmptyInput) 
 {
