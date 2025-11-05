@@ -8,6 +8,17 @@ Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& ent
     m_sType(sTokenType),
     m_entityLogger(entityLogger) {}
 
+Token::Token(
+    const std::string& sTokenValue, 
+    std::string_view sTokenType, 
+    size_t ulLine, 
+    const EntityLogger& entityLogger
+    ) :
+        m_sValue(sTokenValue),
+        m_sType(sTokenType),
+        m_ulLine(ulLine),
+        m_entityLogger(entityLogger) {}
+
 bool Token::Append(char cAddedChar) noexcept
 {   
     // New token value

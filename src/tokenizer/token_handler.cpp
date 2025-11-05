@@ -1,12 +1,8 @@
 #include "../../includes/tokenizer/token_handler.h"
 
-<<<<<<< src/tokenizer/token_handler.cpp
-std::optional<Token> TokenHandler::HandleToken(const Token& token) noexcept
-=======
 TokenHandler::TokenHandler(const EntityLogger& entityLogger) : m_entityLogger(entityLogger) {}
 
 std::optional<Token> TokenHandler::HandleToken(const Token& token) noexcept
->>>>>>> src/tokenizer/token_handler.cpp
 {
     this->m_entityLogger.Info("Handle token");
     try

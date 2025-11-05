@@ -8,8 +8,6 @@
 #include "../logger/entity_logger.h"
 
 
-// TODO: check the minimum scope of the vector
-
 // All supported token types
 namespace TokenTypes
 {
