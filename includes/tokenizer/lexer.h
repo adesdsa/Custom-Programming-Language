@@ -16,9 +16,13 @@ public:
     
     ~Lexer() = default;
 
-    // Create a new token from stream.
-    // @return: New token or nullopt if token is irrelevant.  
-    std::optional<std::reference_wrapper<const Token>>Tokenize();
+    // Get every token from the source file and push it to the stream.
+    // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
+    std::optional<Token> Tokenize();
+
+    // Checks if file is in EOF.
+    // @return: True => , False => .
+    bool IsFinishedReadingSRC() const noexcept;
 
 private:
     TokenFactory m_tokenFactory;
