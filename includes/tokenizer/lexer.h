@@ -24,6 +24,8 @@ public:
     // @return: True => , False => .
     bool IsFinishedReadingSRC() const noexcept;
 
+    const EntityLogger& GetEntityLogger();
+
 private:
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;
