@@ -25,65 +25,54 @@ bool Token::Append(char cAddedChar) noexcept
 
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
+    // Check #1: Comments
     if (this->IsCommentToken())
-    {
         return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
-    }
+
     else if (this->m_sType == TokenTypes::UNFINISHED_TRIVIA)
     {
         this->m_sType = TokenTypes::TRIVIA;
         return TokenStatus::k_bFinished;
     }
 
+    // Check #2: Whitespace
     if (this->IsWhiteSpaceToken())
-    {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
-    }
+
     else if (this->m_sType == TokenTypes::TRIVIA)
-    {
         return TokenStatus::k_bFinished;
-    }
 
+    // Check #3: Punctuation and String Literals
     if (this->IsPunctuationToken())
-    { 
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
-    }
-    else if (this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'')
-        // if it's " or a ' it means we start a string/char litteral and we dont need to stop this token
-    {
-        return TokenStatus::k_bFinished;
-    }
 
+    else if (this.IsStringLiteralToken())
+        return TokenStatus::k_bFinished;
+
+    // Check #4: Keyword
     if (this->IsKeywordToken())
-    {
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
-    }
 
+    // Check #5 Operator
     if (this->IsOperatorToken())
-    {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
-    }
+
     else if (this->m_sType == TokenTypes::OPERATOR) 
-    {
         return TokenStatus::k_bFinished;
-    }
     
+    // Check #6: Value
     if (this->IsValueToken())
-    {
         return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
-    }
     
+    // Check #7: Identifier
     if (this->IsIdentifierToken())
-    {
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
-    }
 
+    // Check #8: EOF
     if (cAddedChar == '\0')
-    {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::EOF_TOKEN);
-    }
 
-    return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN);
+    return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN); // If all checks failed -> Unknown token
 }
 
 const std::string& Token::GetValue() const noexcept
@@ -143,12 +132,12 @@ bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexC
         !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''));
 }
 
-bool Token::IsCommentToken(const std::string &sToken)
+bool Token::IsCommentToken(const std::string &sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_TriviaComments());
 }
 
-bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar)
+bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
@@ -156,7 +145,7 @@ bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar)
     )
 }
 
-bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
+bool Token::IsPunctuationToken(const std::string& sToken, char newChar) const
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_Punctuation()) ||
@@ -164,12 +153,17 @@ bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
     )
 }
 
-bool Token::IsKeywordToken(const std::string& sToken)
+bool Token::IsStringLiteralToken() const
+{
+    return this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'';
+}
+
+bool Token::IsKeywordToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Keyword());
 }
 
-bool Token::IsOperatorToken(const std::string& sToken, char newChar)
+bool Token::IsOperatorToken(const std::string& sToken, char newChar) const
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_Operator()) ||
@@ -177,12 +171,12 @@ bool Token::IsOperatorToken(const std::string& sToken, char newChar)
     )
 }
 
-bool Token::IsValueToken(const std::string& sToken)
+bool Token::IsValueToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Value());
 }
 
-bool Token::IsIdentifierToken(const std::string& sToken)
+bool Token::IsIdentifierToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Identifier());
 }
