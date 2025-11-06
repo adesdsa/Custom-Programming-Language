@@ -26,7 +26,7 @@ bool Token::Append(char cAddedChar) noexcept
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
     // Check #1: Comments
-    if (this->IsCommentToken())
+    if (this->IsCommentToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
 
     else if (this->m_sType == TokenTypes::UNFINISHED_TRIVIA)
@@ -36,36 +36,36 @@ bool Token::Append(char cAddedChar) noexcept
     }
 
     // Check #2: Whitespace
-    if (this->IsWhiteSpaceToken())
+    if (this->IsWhiteSpaceToken(k_sTempToken, cAddedChar))
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
 
     else if (this->m_sType == TokenTypes::TRIVIA)
         return TokenStatus::k_bFinished;
 
     // Check #3: Punctuation and String Literals
-    if (this->IsPunctuationToken())
+    if (this->IsPunctuationToken(k_sTempToken, cAddedChar))
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
 
     else if (this.IsStringLiteralToken())
         return TokenStatus::k_bFinished;
 
     // Check #4: Keyword
-    if (this->IsKeywordToken())
+    if (this->IsKeywordToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
 
     // Check #5 Operator
-    if (this->IsOperatorToken())
+    if (this->IsOperatorToken(k_sTempToken, cAddedChar))
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
 
     else if (this->m_sType == TokenTypes::OPERATOR) 
         return TokenStatus::k_bFinished;
     
     // Check #6: Value
-    if (this->IsValueToken())
+    if (this->IsValueToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
     
     // Check #7: Identifier
-    if (this->IsIdentifierToken())
+    if (this->IsIdentifierToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
 
     // Check #8: EOF
