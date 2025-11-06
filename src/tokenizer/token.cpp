@@ -132,12 +132,12 @@ bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexC
         !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''));
 }
 
-bool Token::IsCommentToken(const std::string &sToken) const
+bool Token::IsCommentToken(const std::string &sToken)
 {
     return std::regex_match(sToken, RegexPatterns::k_TriviaComments());
 }
 
-bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const
+bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar)
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
@@ -145,7 +145,7 @@ bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const
     );
 }
 
-bool Token::IsPunctuationToken(const std::string& sToken, char newChar) const
+bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_Punctuation()) ||
@@ -153,17 +153,17 @@ bool Token::IsPunctuationToken(const std::string& sToken, char newChar) const
     );
 }
 
-bool Token::IsStringLiteralToken() const
+bool Token::IsStringLiteralToken()
 {
     return this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'';
 }
 
-bool Token::IsKeywordToken(const std::string& sToken) const
+bool Token::IsKeywordToken(const std::string& sToken)
 {
     return std::regex_match(sToken, RegexPatterns::k_Keyword());
 }
 
-bool Token::IsOperatorToken(const std::string& sToken, char newChar) const
+bool Token::IsOperatorToken(const std::string& sToken, char newChar)
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_Operator()) ||
@@ -171,12 +171,12 @@ bool Token::IsOperatorToken(const std::string& sToken, char newChar) const
     );
 }
 
-bool Token::IsValueToken(const std::string& sToken) const
+bool Token::IsValueToken(const std::string& sToken)
 {
     return std::regex_match(sToken, RegexPatterns::k_Value());
 }
 
-bool Token::IsIdentifierToken(const std::string& sToken) const
+bool Token::IsIdentifierToken(const std::string& sToken)
 {
     return std::regex_match(sToken, RegexPatterns::k_Identifier());
 }

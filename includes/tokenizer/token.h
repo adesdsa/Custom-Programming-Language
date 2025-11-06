@@ -84,13 +84,13 @@ private:
     bool CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexCheck, const std::string_view& k_sCurrentType) noexcept;
 
     // Following Method share same logic: Check if given token matches pattern X (e.g., keyword, trivia etc...)
-    
-    bool IsCommentToken(const std::string& sToken) const;
-    bool IsWhiteSpaceToken(const std::string& sToken, char newChar) const;
-    bool IsPunctuationToken(const std::string& sToken, char newChar) const;
-    bool IsStringLiteralToken() const;
-    bool IsKeywordToken(const std::string& sToken) const;
-    bool IsOperatorToken(const std::string& sToken, char newChar) const ;
-    bool IsValueToken(const std::string& sToken) const;
-    bool IsIdentifierToken(const std::string& sToken) const;
+
+    bool IsCommentToken(const std::string& sToken);
+    bool IsWhiteSpaceToken(const std::string& sToken, char newChar);
+    bool IsPunctuationToken(const std::string& sToken, char newChar);
+    bool IsStringLiteralToken();
+    bool IsKeywordToken(const std::string& sToken);
+    bool IsOperatorToken(const std::string& sToken, char newChar);
+    bool IsValueToken(const std::string& sToken);
+    bool IsIdentifierToken(const std::string& sToken);
 };
