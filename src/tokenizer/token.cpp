@@ -46,7 +46,7 @@ bool Token::Append(char cAddedChar) noexcept
     if (this->IsPunctuationToken(k_sTempToken, cAddedChar))
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
 
-    else if (this.IsStringLiteralToken())
+    else if (this->IsStringLiteralToken())
         return TokenStatus::k_bFinished;
 
     // Check #4: Keyword
@@ -142,7 +142,7 @@ bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const
     return (
         std::regex_match(sToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
         CheckSoloLetters(newChar, RegexPatterns::k_TriviaWhiteSpaces(), TokenTypes::TRIVIA)
-    )
+    );
 }
 
 bool Token::IsPunctuationToken(const std::string& sToken, char newChar) const
@@ -150,7 +150,7 @@ bool Token::IsPunctuationToken(const std::string& sToken, char newChar) const
     return (
         std::regex_match(sToken, RegexPatterns::k_Punctuation()) ||
         CheckSoloLetters(newChar, RegexPatterns::k_Punctuation(), TokenTypes::PUNCTUATION)
-    )
+    );
 }
 
 bool Token::IsStringLiteralToken() const
@@ -168,7 +168,7 @@ bool Token::IsOperatorToken(const std::string& sToken, char newChar) const
     return (
         std::regex_match(sToken, RegexPatterns::k_Operator()) ||
         CheckSoloLetters(newChar, RegexPatterns::k_Operator(), TokenTypes::OPERATOR)
-    )
+    );
 }
 
 bool Token::IsValueToken(const std::string& sToken) const
