@@ -21,25 +21,11 @@ Token::Token(
 
 bool Token::Append(char cAddedChar) noexcept
 {   
-    // New token value
-    const std::string k_sTempToken = m_sValue + cAddedChar;
-
-    // Some of the conditions have checks like:
-    //   std::regex_match(std::string(1, cAddedChar), RegexPatterns::k_Trivia()) 
-    //       && this->m_sType != TokenTypes::TRIVIA
-    //
-    // The purpose of this is to handle cases where `cAddedChar` could be the *first* 
-    // character of a new token type. It should only be treated as the start of that 
-    // token if the previous token type (`m_sType`) was different. 
-    //
-    // In other words, a character can begin a new token of type X only if we are not 
-    // already inside a token of type X.
-
     this->m_entityLogger.Info("Append new part to the token");
 
-    if (
-        std::regex_match(k_sTempToken, RegexPatterns::k_TriviaComments())
-    )
+    const std::string k_sTempToken = m_sValue + cAddedChar;
+
+    if (this->IsCommentToken())
     {
         return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
     }
@@ -49,10 +35,7 @@ bool Token::Append(char cAddedChar) noexcept
         return TokenStatus::k_bFinished;
     }
 
-    if (
-        std::regex_match(k_sTempToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
-        CheckSoloLetters(cAddedChar, RegexPatterns::k_TriviaWhiteSpaces(), TokenTypes::TRIVIA)
-        )
+    if (this->IsWhiteSpaceToken())
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
     }
@@ -61,10 +44,8 @@ bool Token::Append(char cAddedChar) noexcept
         return TokenStatus::k_bFinished;
     }
 
-    if (
-        std::regex_match(k_sTempToken, RegexPatterns::k_Punctuation()) ||
-        CheckSoloLetters(cAddedChar, RegexPatterns::k_Punctuation(), TokenTypes::PUNCTUATION))
-    {
+    if (this->IsPunctuationToken())
+    { 
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
     }
     else if (this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'')
@@ -73,15 +54,12 @@ bool Token::Append(char cAddedChar) noexcept
         return TokenStatus::k_bFinished;
     }
 
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Keyword()))
+    if (this->IsKeywordToken())
     {
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
     }
 
-    if (
-        std::regex_match(k_sTempToken, RegexPatterns::k_Operator()) ||
-        CheckSoloLetters(cAddedChar, RegexPatterns::k_Operator(), TokenTypes::OPERATOR)
-    )
+    if (this->IsOperatorToken())
     {
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
     }
@@ -90,12 +68,12 @@ bool Token::Append(char cAddedChar) noexcept
         return TokenStatus::k_bFinished;
     }
     
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
+    if (this->IsValueToken())
     {
         return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
     }
     
-    if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier()))
+    if (this->IsIdentifierToken())
     {
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
     }
@@ -163,4 +141,48 @@ bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexC
     return std::regex_match(std::string(1, k_cAddedChar), k_regexCheck) &&
         this->m_sType != k_sCurrentType &&
         !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''));
+}
+
+bool Token::IsCommentToken(const std::string &sToken)
+{
+    return std::regex_match(sToken, RegexPatterns::k_TriviaComments());
+}
+
+bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar)
+{
+    return (
+        std::regex_match(sToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
+        CheckSoloLetters(newChar, RegexPatterns::k_TriviaWhiteSpaces(), TokenTypes::TRIVIA)
+    )
+}
+
+bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
+{
+    return (
+        std::regex_match(sToken, RegexPatterns::k_Punctuation()) ||
+        CheckSoloLetters(newChar, RegexPatterns::k_Punctuation(), TokenTypes::PUNCTUATION)
+    )
+}
+
+bool Token::IsKeywordToken(const std::string& sToken)
+{
+    return std::regex_match(sToken, RegexPatterns::k_Keyword());
+}
+
+bool Token::IsOperatorToken(const std::string& sToken, char newChar)
+{
+    return (
+        std::regex_match(sToken, RegexPatterns::k_Operator()) ||
+        CheckSoloLetters(newChar, RegexPatterns::k_Operator(), TokenTypes::OPERATOR)
+    )
+}
+
+bool Token::IsValueToken(const std::string& sToken)
+{
+    return std::regex_match(sToken, RegexPatterns::k_Value());
+}
+
+bool Token::IsIdentifierToken(const std::string& sToken)
+{
+    return std::regex_match(sToken, RegexPatterns::k_Identifier());
 }
