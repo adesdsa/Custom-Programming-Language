@@ -77,8 +77,7 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "xstddef": "cpp",
-        "cstdarg": "cpp"
+        "xstddef": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
