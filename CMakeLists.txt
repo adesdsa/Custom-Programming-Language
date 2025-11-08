@@ -63,8 +63,6 @@ if (BUILD_TESTS)
     target_compile_features(unit_tests PUBLIC cxx_std_17)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
-    target_link_libraries(CPLib PUBLIC gtest)
-    
 endif()
 
 # =============================
