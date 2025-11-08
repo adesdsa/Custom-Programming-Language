@@ -30,8 +30,4 @@ private:
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;
     EntityLogger m_entityLogger;
-
-    // Opens the input file stream.
-    // @return: Return the opened file.
-    static boost::iostreams::mapped_file_source OpenInputFile(const std::string& sInputFile);
 };

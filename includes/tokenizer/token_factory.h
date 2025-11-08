@@ -2,13 +2,12 @@
 
 #include "mapped_src.h"
 #include "token.h"
-#include <boost/iostreams/device/mapped_file.hpp>
 
 // Will create and build tokens from the stream
 class TokenFactory
 {
 public:
-    TokenFactory(boost::iostreams::mapped_file_source fSrc, const EntityLogger& entityLogger);
+    TokenFactory(const std::string sFilePath, const EntityLogger& entityLogger);
 
     ~TokenFactory() = default;
 

@@ -1,16 +1,19 @@
 #pragma once
 
 #include <string>
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <string_view>
+#include <system_error>
+#include <stdexcept>
+#include <filesystem>
+#include "mio/mmap.hpp"
 
 constexpr int k_nSOF = 0;
+constexpr int k_nChunkSize = 1024;
 
 // Responsible for holding and managing the source file
 class MappedSRC
 {
 public:
-    MappedSRC(boost::iostreams::mapped_file_source&& fSrc);
+    MappedSRC(const std::string sFilePath);
 
     ~MappedSRC() = default;
 
@@ -30,10 +33,18 @@ public:
     // @return: True => Index is EOF, False => Otherwise.
     bool IsEOF() const noexcept;
 
+    // The func loads a memory chunk into memory.
+    // @param: bOption: True => next chunck, False => perv chunk.
+    // @return: True => EOF, False => otherwise.
+    bool GetChunk(bool bOption);
+
 
 private:
-    boost::iostreams::mapped_file_source& m_fSrc;
-    const char* m_sContent;
-    const size_t m_uSize;
-    size_t m_ulIndex;
+    mio::basic_mmap_source<char, mio::access_mode::read> m_fSrc;
+    char* m_sChunkContent;     // Holds the current chunck's content.
+    size_t m_ulIndex;           // Holds the current chunck's content index.
+    size_t m_uChunkOffset;
+    std::error_code m_ec;       // Holds the error code (used by mio).
+    std::string m_sFilePath;    
+    size_t m_uFileSize;
 };
