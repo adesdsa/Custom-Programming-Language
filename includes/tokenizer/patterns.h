@@ -63,9 +63,9 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    std::string(R"(\b(and|or|not|xor|break|continue|return|if|
-                        elif|else|for|while|pass|sizeof|is|const|readonly|void|
-                        bool|unsigned|int|double|global|var|let)\b)",
+                    R"(\b(and|or|not|xor|break|continue|return|if|
+                    elif|else|for|while|pass|sizeof|is|const|readonly|void|
+                    bool|unsigned|int|double|global|var|let)\b)",
                     std::regex::optimize
                 );
             } 
