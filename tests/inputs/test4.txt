@@ -2,8 +2,8 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void;
 
 main(void) -> int
 {
-	let low: int = get_int("Enter low number in range");
-	let high: int  = get_int("Enter high number in range");
+	let low: int = get_int();
+	let high: int  = get_int();
 	
 	displayAllPrimeNumbersInRange(low, high);
 	return 0;
@@ -33,7 +33,7 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
 
 		if(is_prime)
 		{
-			print(low + ", ");  # Prints without \n
+			println(low);  # Prints with \n
 		}
 
 		low = low + 1;

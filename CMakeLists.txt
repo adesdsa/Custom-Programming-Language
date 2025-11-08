@@ -29,8 +29,13 @@ FetchContent_MakeAvailable(googletest)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")
 
+# Exclude test utilities from normal build
+if (NOT BUILD_TESTS)
+    list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/utils/tests_utils.cpp")
+endif()
+
 # =============================
-# Headers - includes/
+# Library (CPLib)
 # =============================
 add_library(CPLib ${SRC_FILES})
 target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR}/includes)
@@ -67,6 +72,7 @@ if(BUILD_TESTS)
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE gtest_main CPLib)
     target_compile_features(unit_tests PUBLIC cxx_std_17)
+
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
