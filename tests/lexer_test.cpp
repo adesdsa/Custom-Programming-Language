@@ -51,9 +51,13 @@ TEST(LexerTest, SmallCodeExample)
         Token("{",TokenTypes::PUNCTUATION,6,lexer.GetEntityLogger()),
 
         // Line 7
-        Token("print",TokenTypes::IDENTIFIER,7,lexer.GetEntityLogger()),
+        Token("println",TokenTypes::IDENTIFIER,7,lexer.GetEntityLogger()),
         Token("(", TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
-        Token("\"Hello, this is a test!\"",TokenTypes::VALUE,7,lexer.GetEntityLogger()),
+        Token("3", TokenTypes::VALUE,7,lexer.GetEntityLogger()),
+        Token("+", TokenTypes::OPERATOR,7,lexer.GetEntityLogger()),
+        Token("2", TokenTypes::VALUE,7,lexer.GetEntityLogger()),
+        Token("==", TokenTypes::OPERATOR,7,lexer.GetEntityLogger()),
+        Token("5", TokenTypes::VALUE,7,lexer.GetEntityLogger()),
         Token(")",TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
         Token(";",TokenTypes::PUNCTUATION,7,lexer.GetEntityLogger()),
 
@@ -106,7 +110,6 @@ TEST(LexerTest, FullProgram)
         Token("=", TokenTypes::OPERATOR, 5, lexer.GetEntityLogger()),
         Token("get_int", TokenTypes::IDENTIFIER, 5, lexer.GetEntityLogger()),
         Token("(", TokenTypes::PUNCTUATION, 5, lexer.GetEntityLogger()),
-        Token("\"Enter low number in range\"", TokenTypes::VALUE, 5, lexer.GetEntityLogger()),
         Token(")", TokenTypes::PUNCTUATION, 5, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 5, lexer.GetEntityLogger()),
 
@@ -118,7 +121,6 @@ TEST(LexerTest, FullProgram)
         Token("=", TokenTypes::OPERATOR, 6, lexer.GetEntityLogger()),
         Token("get_int", TokenTypes::IDENTIFIER, 6, lexer.GetEntityLogger()),
         Token("(", TokenTypes::PUNCTUATION, 6, lexer.GetEntityLogger()),
-        Token("\"Enter high number in range\"", TokenTypes::VALUE, 6, lexer.GetEntityLogger()),
         Token(")", TokenTypes::PUNCTUATION, 6, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 6, lexer.GetEntityLogger()),
 
@@ -265,11 +267,9 @@ TEST(LexerTest, FullProgram)
         Token("{", TokenTypes::PUNCTUATION, 35, lexer.GetEntityLogger()),
 
         // Line 36
-        Token("print", TokenTypes::IDENTIFIER, 36, lexer.GetEntityLogger()),
+        Token("println", TokenTypes::IDENTIFIER, 36, lexer.GetEntityLogger()),
         Token("(", TokenTypes::PUNCTUATION, 36, lexer.GetEntityLogger()),
         Token("low", TokenTypes::IDENTIFIER, 36, lexer.GetEntityLogger()),
-        Token("+", TokenTypes::OPERATOR, 36, lexer.GetEntityLogger()),
-        Token("\" , \"", TokenTypes::VALUE, 36, lexer.GetEntityLogger()),
         Token(")", TokenTypes::PUNCTUATION, 36, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 36, lexer.GetEntityLogger()),
 
