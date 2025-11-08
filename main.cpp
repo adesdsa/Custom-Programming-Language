@@ -1,8 +1,6 @@
 #include <iostream>
-#include <fstream> //
 
 #include "includes/tokenizer/lexer.h"
-#include "includes/tokenizer/token.h" //
 #include "includes/logger/entity_logger.h"
 
 namespace ReturnCode
@@ -18,18 +16,8 @@ int main(void)
     try
     {
         Lexer lexer;
-        std::ofstream file("output.txt");
         
-        //while(lexer.Tokenize() != std::nullopt);
-        for(int i = 0; i < 36; i++)
-        {
-            auto tokenOpt = lexer.Tokenize();
-            if(tokenOpt != std::nullopt)
-            {
-                std::cout << 1 << std::endl;
-                file << tokenOpt->GetType() << "(" << tokenOpt->GetValue() << ")" << tokenOpt->GetLine() << " ";
-            }
-        }
+        while(lexer.Tokenize() != std::nullopt);
     }
 
     catch(const std::runtime_error& runtimeError)
