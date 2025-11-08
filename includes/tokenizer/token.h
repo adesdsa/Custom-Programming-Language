@@ -7,6 +7,9 @@
 #include "patterns.h"
 #include "../logger/entity_logger.h"
 
+
+// TODO: check the minimum scope of the vector
+
 // All supported token types
 namespace TokenTypes
 {
@@ -35,7 +38,6 @@ class Token
 public:
     Token(size_t ulLine, const EntityLogger& entityLogger);
     Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
-    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
 
     ~Token() = default;
 
@@ -48,8 +50,6 @@ public:
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
     size_t GetLine() const noexcept;
-
-    bool operator==(const Token& other) const;
 
 
 private:
