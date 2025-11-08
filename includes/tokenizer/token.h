@@ -82,4 +82,14 @@ private:
     // @param k_sCurrentType: The current type.
     // @return: True => The added char is a guarnteed stop, False => Otherwise.
     bool CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexCheck, const std::string_view& k_sCurrentType) noexcept;
+
+    // Following Method share same logic: Check if given token matches pattern X (e.g., keyword, trivia etc...):
+    bool IsCommentToken(const std::string& sToken);
+    bool IsWhiteSpaceToken(const std::string& sToken, char newChar);
+    bool IsPunctuationToken(const std::string& sToken, char newChar);
+    bool IsStringLiteralToken();
+    bool IsKeywordToken(const std::string& sToken);
+    bool IsOperatorToken(const std::string& sToken, char newChar);
+    bool IsValueToken(const std::string& sToken);
+    bool IsIdentifierToken(const std::string& sToken);
 };
