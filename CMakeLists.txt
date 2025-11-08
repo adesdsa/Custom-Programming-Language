@@ -1,5 +1,10 @@
-cmake_minimum_required(VERSION 3.10)  # minimum CMake version
-project(Custom-Programming-Language)  # project name
+cmake_minimum_required(VERSION 3.10)
+project(Custom-Programming-Language)
+
+# =============================
+# Options
+# =============================
+option(BUILD_TESTS "Build unit tests" OFF)
 
 # =============================
 # Source Files - src/
@@ -7,25 +12,23 @@ project(Custom-Programming-Language)  # project name
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")
 
+# Exclude test utilities from normal build
+if (NOT BUILD_TESTS)
+    list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/utils/tests_utils.cpp")
+endif()
+
 # =============================
-# Headers - includes/
+# Library (CPLib)
 # =============================
 add_library(CPLib ${SRC_FILES})
 target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR}/includes)
-
-
-# =============================
-# Settings
-# =============================
 
 # Require C++17 and warnings
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
 target_compile_features(CPLib PUBLIC cxx_std_17)
 
-# Enable warnings
 if (MSVC)
     target_compile_options(CPLib PRIVATE /W4 /permissive-)
 else()
@@ -42,8 +45,6 @@ target_compile_features(Custom-Programming-Language PUBLIC cxx_std_17)
 # =============================
 # GoogleTest - tests/
 # =============================
-option(BUILD_TESTS "Build unit tests" OFF)
-
 if (BUILD_TESTS)
     include(FetchContent)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -61,10 +62,9 @@ if (BUILD_TESTS)
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE gtest_main CPLib)
     target_compile_features(unit_tests PUBLIC cxx_std_17)
+
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
-    target_link_libraries(CPLib PUBLIC gtest)
-    
 endif()
 
 # =============================

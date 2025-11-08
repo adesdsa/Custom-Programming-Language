@@ -15,9 +15,17 @@ int main(void)
 
     try
     {
-        Lexer lexer;
+        Lexer lexer("../../tests/inputs/test3.txt");
         
-        while(lexer.Tokenize() != std::nullopt);
+        while(!lexer.IsFinishedReadingSRC()) 
+        {
+            auto token = lexer.Tokenize();
+
+            if(token.has_value())
+            {
+                std::cout << token.value().GetType() << " - " << token.value().GetValue() << " - " << token.value().GetLine() << std::endl;
+            }
+        }
     }
 
     catch(const std::runtime_error& runtimeError)
