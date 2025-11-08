@@ -2,8 +2,7 @@
 
 TokenHandler::TokenHandler(const EntityLogger& entityLogger) : m_entityLogger(entityLogger) {}
 
-std::optional<std::reference_wrapper<const Token>>
-TokenHandler::HandleToken(const Token& token) noexcept
+std::optional<Token> TokenHandler::HandleToken(const Token& token) noexcept
 {
     this->m_entityLogger.Info("Handle token");
     try

@@ -8,6 +8,17 @@ Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& ent
     m_sType(sTokenType),
     m_entityLogger(entityLogger) {}
 
+Token::Token(
+        const std::string& sTokenValue, 
+        std::string_view sTokenType, 
+        size_t ulLine, 
+        const EntityLogger& entityLogger
+    ) :
+        m_sValue(sTokenValue),
+        m_sType(sTokenType),
+        m_ulLine(ulLine),
+        m_entityLogger(entityLogger) {}
+
 bool Token::Append(char cAddedChar) noexcept
 {   
     // New token value
@@ -56,7 +67,8 @@ bool Token::Append(char cAddedChar) noexcept
     {
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
     }
-    else if (this->m_sType == TokenTypes::PUNCTUATION)
+    else if (this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'')
+        // if it's " or a ' it means we start a string/char litteral and we dont need to stop this token
     {
         return TokenStatus::k_bFinished;
     }
@@ -80,7 +92,7 @@ bool Token::Append(char cAddedChar) noexcept
     
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Value()))
     {
-        return this->AssignToken(k_sTempToken, TokenTypes::VALUE);
+        return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
     }
     
     if (std::regex_match(k_sTempToken, RegexPatterns::k_Identifier()))
@@ -109,6 +121,13 @@ const std::string& Token::GetType() const noexcept
 size_t Token::GetLine() const noexcept
 {
     return this->m_ulLine;
+}
+
+bool Token::operator==(const Token& other) const
+{
+    return this->m_sType == other.m_sType && 
+        this->m_sValue == other.m_sValue &&
+        this->m_ulLine == other.m_ulLine;
 }
 
 bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept

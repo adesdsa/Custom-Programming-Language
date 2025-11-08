@@ -1,0 +1,42 @@
+displayAllPrimeNumbersInRange(low: int, high: int) -> void;
+
+main(void) -> int
+{
+	let low: int = get_int("Enter low number in range");
+	let high: int  = get_int("Enter high number in range");
+	
+	displayAllPrimeNumbersInRange(low, high);
+	return 0;
+}
+
+# Display all prime numbers in range from low param to high param.
+displayAllPrimeNumbersInRange(low: int, high: int) -> void
+{
+	while(low < high)
+	{
+		let is_prime: bool = true;
+		
+		# 0 and 1 are not prime numbers
+		if(low == 0 or low == 1)
+		{
+			is_prime = false;
+		}
+
+		for(let i: int = 2; i <=  low // 2; i = i + 1)
+		{
+			if(low % i == 0)
+			{
+				is_prime = false;
+				break;
+			}
+		}
+
+		if(is_prime)
+		{
+			print(low + ", ");  # Prints without \n
+		}
+
+		low = low + 1;
+	}
+	println(); // Display with \n
+}

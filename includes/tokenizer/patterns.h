@@ -45,7 +45,7 @@ namespace RegexPatterns
         {
             try 
             {
-                return std::regex(R"([:\->,\(\)\{\}\[\];\.#])", std::regex::optimize);
+                return std::regex(R"(::|->\*|->|\.{3}|\.\*|##|[;,.:\?#\{\}\(\)\[\]~])", std::regex::optimize);
             } 
             catch (const std::regex_error& e) 
             {
@@ -85,7 +85,12 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(\b(true|false|null)\b|-?\d+\.\d+|-?\d+)",
+                    R"(\b(?:true|false|nullptr|NULL)\b)"
+                    R"(|(?:0b[01]+|0x[0-9A-Fa-f]+|0[0-7]+|[0-9]+)(?:[uU]?(?:l{1,2}|L{1,2})?)?)"
+                    R"(|\d+\.\d*(?:[eE][+-]?\d+)?[fFlL]?)"
+                    R"(|\d+(?:[eE][+-]?\d+)[fFlL]?)"
+                    R"(|'(?:\\.|[^\\'])'?)"
+                    R"(|"(?:\\.|[^\\"])*"?)",
                     std::regex::optimize
                 );
             } 
@@ -105,7 +110,7 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(//|==|[+\-*/%=<>])",
+                    R"((?:\+\+|--|==|!=|<=|>=|&&|\|\||\+=|-=|\*=|/=|%=|\^=|&=|\|=|<<=|>>=|<<|>>|->\*|->|\.|\.\*|::|[+\-*/%^&|~!<>=?:]))",
                     std::regex::optimize
                 );
             } 
@@ -124,7 +129,7 @@ namespace RegexPatterns
         {
             try 
             {
-                return std::regex(R"(#[^\n]*|/\*(?:[^*]|\*+[^*/])*?\*/?|/\*[^*]*$)", std::regex::optimize);
+                return std::regex(R"(//[^\n]*|/\*(?:[^*]|\*+[^*/])*?\*/?|/\*[^*]*$)", std::regex::optimize);
             } catch (const std::regex_error& e) 
             {
                 std::cerr << "Regex k_Trivia failed: " << e.what() << std::endl;
