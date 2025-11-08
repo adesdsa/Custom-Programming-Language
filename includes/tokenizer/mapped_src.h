@@ -1,7 +1,8 @@
 #pragma once
 
 #include <string>
-#include <fstream>
+#include <boost/iostreams/device/mapped_file.hpp>
+#include <string_view>
 
 constexpr int k_nSOF = 0;
 
@@ -9,7 +10,7 @@ constexpr int k_nSOF = 0;
 class MappedSRC
 {
 public:
-    MappedSRC(std::ifstream fSrc);
+    MappedSRC(boost::iostreams::mapped_file_source&& fSrc);
 
     ~MappedSRC() = default;
 
@@ -31,6 +32,8 @@ public:
 
 
 private:
-    std::string m_sContent;
+    boost::iostreams::mapped_file_source& m_fSrc;
+    const char* m_sContent;
+    const size_t m_uSize;
     size_t m_ulIndex;
 };

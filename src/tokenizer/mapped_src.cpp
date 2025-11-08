@@ -1,20 +1,20 @@
 #include "../../includes/tokenizer/mapped_src.h"
 
-MappedSRC::MappedSRC(std::ifstream fSrc) : m_ulIndex(0)
+MappedSRC::MappedSRC(boost::iostreams::mapped_file_source&& fSrc) :
+m_ulIndex(0), m_fSrc(fSrc), m_uSize(m_fSrc.size())
 {
-    // TODO: Change this line to map the src into memory and not read it
-    // Reads the entire content of the stream fSrc into the string m_sContent
-    this->m_sContent.assign(std::istreambuf_iterator<char>(fSrc), {});
+    m_sContent = std::string_view(m_fSrc.data(), m_fSrc.size());
 }
 
 char MappedSRC::Get() const noexcept
 {
-    return this->IsEOF() ? '\0' : this->m_sContent[this->m_ulIndex];
+    if (!IsEOF()) return this->m_sContent[m_ulIndex];
+    return this->m_sContent[0]; // Shouldn't get to this at first place.
 }
 
 bool MappedSRC::Seek() noexcept
 {
-    if (this->IsEOF()) { return false; }
+    if (this->m_ulIndex + 1 >= this->m_uSize) { return false; }
 
     this->m_ulIndex++;
     return true;
@@ -30,5 +30,5 @@ bool MappedSRC::Rewind() noexcept
 
 bool MappedSRC::IsEOF() const noexcept
 {
-    return this->m_ulIndex == this->m_sContent.size();
+    return this->m_ulIndex >= this->m_uSize;
 }

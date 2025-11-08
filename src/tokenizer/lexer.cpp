@@ -20,11 +20,11 @@ const EntityLogger& Lexer::GetEntityLogger()
     return this->m_entityLogger;
 }
 
-std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)
+boost::iostreams::mapped_file_source Lexer::OpenInputFile(const std::string& sInputFile)
 {
-    std::ifstream streamSrcFile(sInputFile);
+    boost::iostreams::mapped_file_source streamSrcFile(sInputFile);
 
-    if (!streamSrcFile.is_open()) 
+    if(!streamSrcFile.is_open())
     {
         throw std::runtime_error(
             std::string(FUNCTION_THROWER) + 

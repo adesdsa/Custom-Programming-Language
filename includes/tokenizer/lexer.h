@@ -33,5 +33,5 @@ private:
 
     // Opens the input file stream.
     // @return: Return the opened file.
-    static std::ifstream OpenInputFile(const std::string& sInputFile);
+    static boost::iostreams::mapped_file_source OpenInputFile(const std::string& sInputFile);
 };
