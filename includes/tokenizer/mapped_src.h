@@ -4,7 +4,7 @@
 #include <system_error>
 #include <stdexcept>
 #include <filesystem>
-#include "mio/mmap.hpp"
+#include "../mio/mmap.hpp"
 
 constexpr int k_nSOF = 0;
 constexpr int k_nChunkSize = 1024;
@@ -40,8 +40,8 @@ public:
 
 
 private:
-    mio::basic_mmap_source<char, mio::access_mode::read> m_fSrc;
-    char* m_sChunkContent;     // Holds the current chunck's content.
+    mio::mmap_source m_fSrc;
+    const char* m_sChunkContent;     // Holds the current chunck's content.
     size_t m_ulIndex;           // Holds the current chunck's content index.
     size_t m_uChunkOffset;
     std::error_code m_ec;       // Holds the error code (used by mio).

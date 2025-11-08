@@ -39,7 +39,7 @@ bool MappedSRC::Rewind() noexcept
 
 bool MappedSRC::IsEOF() const noexcept
 {
-    return this->m_ulIndex + this->m_uChunkOffset >= m_uFileSize - 1;
+    return this->m_ulIndex + this->m_uChunkOffset >= m_uFileSize;
 }
 
 bool MappedSRC::GetChunk(bool bOption)
@@ -50,7 +50,9 @@ bool MappedSRC::GetChunk(bool bOption)
         else this->m_uChunkOffset -= k_nChunkSize;
     }
 
-    this->m_fSrc = mio::basic_mmap_source<char, mio::access_mode::read>(this->m_sFilePath, this->m_uChunkOffset, k_nChunkSize, this->m_ec);
+    mio::mmap_source temp;
+    size_t chunkLength = static_cast<size_t>(k_nChunkSize) > m_uFileSize - m_uChunkOffset ? m_uFileSize - m_uChunkOffset: static_cast<size_t>(k_nChunkSize);
+    temp.map(this->m_sFilePath, this->m_uChunkOffset, chunkLength, this->m_ec);
 
     if (this->m_ec) 
     {
@@ -60,6 +62,7 @@ bool MappedSRC::GetChunk(bool bOption)
         } else throw std::runtime_error("File mapping failed: " + this->m_ec.message());
     }
 
+    m_fSrc.swap(temp);
     this->m_sChunkContent = this->m_fSrc.data();
     this->m_ulIndex = 0;
 

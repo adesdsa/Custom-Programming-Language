@@ -33,22 +33,6 @@ else()
 endif()
 
 # =============================
-# mio - memory-mapped files
-# =============================
-include(FetchContent)
-
-FetchContent_Declare(
-    mio
-    GIT_REPOSITORY https://github.com/mandreyel/mio.git
-    GIT_TAG        main
-)
-
-FetchContent_MakeAvailable(mio)
-
-# Add the include directory for CPLib
-target_include_directories(CPLib PUBLIC ${mio_SOURCE_DIR}/include)
-
-# =============================
 # Main executable
 # =============================
 add_executable(Custom-Programming-Language main.cpp)
