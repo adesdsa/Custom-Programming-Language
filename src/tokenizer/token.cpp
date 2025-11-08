@@ -46,8 +46,8 @@ bool Token::Append(char cAddedChar) noexcept
     if (this->IsPunctuationToken(k_sTempToken, cAddedChar))
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
 
-    else if (this->IsStringLiteralToken())
-        return TokenStatus::k_bFinished;
+    /*else if (this->IsStringLiteralToken())
+        return TokenStatus::k_bFinished;*/ // String arent implemented yet
 
     // Check #4: Keyword
     if (this->IsKeywordToken(k_sTempToken))
@@ -116,9 +116,9 @@ bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_vi
 
 std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char cLastLetter) noexcept
 {
-    if (cFirstLetter == '\"' && cLastLetter != '\"') return TokenTypes::UNKNOWN;
+    /*if (cFirstLetter == '\"' && cLastLetter != '\"') return TokenTypes::UNKNOWN;
     
-    if (cFirstLetter == '\'' && cLastLetter != '\'') return TokenTypes::UNKNOWN;
+    if (cFirstLetter == '\'' && cLastLetter != '\'') return TokenTypes::UNKNOWN;*///strings and chars arent supported yet
 
     return TokenTypes::VALUE;
 }
@@ -128,8 +128,8 @@ bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexC
     // A guarnteed stop will happen if the char is part of the regex, the token made isn't already it's type
     // and the current token isn't an edge case (currently only a string literal or char literal being made are edge cases).
     return std::regex_match(std::string(1, k_cAddedChar), k_regexCheck) &&
-        this->m_sType != k_sCurrentType &&
-        !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''));
+        this->m_sType != k_sCurrentType /*&&
+        !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''))*///string and chars arent supported yet;
 }
 
 bool Token::IsCommentToken(const std::string &sToken)
