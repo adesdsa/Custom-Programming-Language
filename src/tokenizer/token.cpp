@@ -44,12 +44,12 @@ bool Token::Append(char cAddedChar) noexcept
 
     // Check #3: Punctuation and String Literals
     if (this->IsPunctuationToken(k_sTempToken, cAddedChar))
+        // Checks if the punctuation is -> then we have to make it not an operator but a punctuation.
         return (cAddedChar == '>' && this->m_sValue == "-") 
         ? this->AssignToken(k_sTempToken, TokenTypes::PUNCTUATION) 
         : this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
 
     else if (this->m_sType == TokenTypes::PUNCTUATION)
-        // When implementing strings do else if (this->IsStringLiteralToken())
         return TokenStatus::k_bFinished;
 
     // Check #4: Keyword
@@ -156,11 +156,6 @@ bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
         std::regex_match(sToken, RegexPatterns::k_Punctuation()) ||
         CheckSoloLetters(newChar, RegexPatterns::k_Punctuation(), TokenTypes::PUNCTUATION)
     );
-}
-
-bool Token::IsStringLiteralToken()
-{
-    return this->m_sType == TokenTypes::PUNCTUATION && this->m_sValue[0] != '\"' && this->m_sValue[0] != '\'';
 }
 
 bool Token::IsKeywordToken(const std::string& sToken)
