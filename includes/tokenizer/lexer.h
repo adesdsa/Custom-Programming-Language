@@ -12,7 +12,7 @@ class Lexer
 public:
     Lexer();
 
-    Lexer(const std::string& sInputFile);
+    Lexer(const std::string& sFilePath);
     
     ~Lexer() = default;
 
@@ -20,8 +20,8 @@ public:
     // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
     std::optional<Token> Tokenize();
 
-    // Checks if file is in EOF.
-    // @return: True => , False => .
+    // Checks If file has ended by reaching EOF.
+    // @return: True => File has ended (EOF), False => Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
 
     const EntityLogger& GetEntityLogger();
@@ -30,8 +30,4 @@ private:
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;
     EntityLogger m_entityLogger;
-
-    // Opens the input file stream.
-    // @return: Return the opened file.
-    static std::ifstream OpenInputFile(const std::string& sInputFile);
 };
