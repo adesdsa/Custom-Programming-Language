@@ -45,7 +45,7 @@ namespace RegexPatterns
         {
             try 
             {
-                return std::regex(R"([:\->,\(\)\{\}\[\];\.#])", std::regex::optimize);
+                return std::regex(R"(->|[:,\(\)\{\}\[\];#])", std::regex::optimize);
             } 
             catch (const std::regex_error& e) 
             {
@@ -63,9 +63,7 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(\b(and|or|not|xor|break|continue|return|if|
-                    elif|else|for|while|pass|sizeof|is|const|readonly|void|
-                    bool|unsigned|int|double|global|var|let)\b)",
+                    R"(\b(and|or|not|xor|break|continue|return|if|elif|else|for|while|pass|sizeof|is|const|readonly|void|bool|unsigned|int|double|global|var|let)\b)", // MUST BE IN A SINGLE LINE!
                     std::regex::optimize
                 );
             } 
