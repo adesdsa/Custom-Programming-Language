@@ -6,14 +6,17 @@
 #include <filesystem>
 #include <mio/mmap.hpp>
 
-constexpr int k_nSOF = 0;
-constexpr int k_nChunkSize = 1024;
+constexpr const int k_nSOF = 0;
+constexpr const int k_nChunkSize = 1024;
+
+constexpr const bool k_bNextChunk = true;
+constexpr const bool k_bPrevChunk = false;
 
 // Responsible for holding and managing the source file
 class MappedSRC
 {
 public:
-    MappedSRC(const std::string sFilePath);
+    MappedSRC(const std::string& sFilePath);
 
     ~MappedSRC() = default;
 
@@ -34,17 +37,16 @@ public:
     bool IsEOF() const noexcept;
 
     // The func loads a memory chunk into memory.
-    // @param: bOption: True => next chunck, False => perv chunk.
+    // @param: bLoadOption: True => next chunck, False => perv chunk.
     // @return: True => EOF, False => otherwise.
-    bool GetChunk(bool bOption);
+    bool GetChunk(bool bLoadOption);
 
 
 private:
-    mio::mmap_source m_fSrc;
-    const char* m_sChunkContent;     // Holds the current chunck's content.
-    size_t m_ulIndex;           // Holds the current chunck's content index.
-    size_t m_uChunkOffset;
-    std::error_code m_ec;       // Holds the error code (used by mio).
-    std::string m_sFilePath;    
-    size_t m_uFileSize;
+    mio::mmap_source m_mappedChunk;     // The currently memory-mapped portion of the file.
+    const char* m_sChunkContent;       // Pointer to the chunk's data inside the mapped region.
+    size_t m_ulIndex;                 // Current index (position) within the chunk.
+    size_t m_uChunkOffset;           // Offset in the file where this chunk begins.
+    std::string m_sFilePath;        // Relative path to the mapped file.  
+    size_t m_uFileSize;            // Total size of the file in bytes.
 };

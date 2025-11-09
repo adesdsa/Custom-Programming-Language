@@ -12,7 +12,7 @@ class Lexer
 public:
     Lexer();
 
-    Lexer(const std::string& sInputFile);
+    Lexer(const std::string& sFilePath);
     
     ~Lexer() = default;
 
@@ -20,8 +20,8 @@ public:
     // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
     std::optional<Token> Tokenize();
 
-    // Checks if file is in EOF.
-    // @return: True => , False => .
+    // Checks If file has ended by reaching EOF.
+    // @return: True => File has ended (EOF), False => Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
 
     const EntityLogger& GetEntityLogger();

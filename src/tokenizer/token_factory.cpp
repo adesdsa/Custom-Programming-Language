@@ -1,6 +1,6 @@
 #include "../../includes/tokenizer/token_factory.h"
 
-TokenFactory::TokenFactory(const std::string sFilePath, const EntityLogger& entityLogger) : m_mappedSRC(sFilePath), m_ulLineCounter(0), m_entityLogger(entityLogger) {}
+TokenFactory::TokenFactory(const std::string& sFilePath, const EntityLogger& entityLogger) : m_mappedSRC(sFilePath), m_ulLineCounter(0), m_entityLogger(entityLogger) {}
 
 Token TokenFactory::CreateToken() noexcept
 {
