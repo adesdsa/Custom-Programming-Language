@@ -4,5 +4,5 @@
 # @return: The sum of a and b.
 Add(let a: int, let b: int) -> void
 {
-    println("Hello, this is a test!");  # Comment
+    println(1 + 1.3);  # Comment
 }

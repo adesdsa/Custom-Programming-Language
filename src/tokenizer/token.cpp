@@ -48,8 +48,9 @@ bool Token::Append(char cAddedChar) noexcept
         ? this->AssignToken(k_sTempToken, TokenTypes::PUNCTUATION) 
         : this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
 
-    /*else if (this->IsStringLiteralToken())
-        return TokenStatus::k_bFinished;*/ // String arent implemented yet
+    else if (this->m_sType == TokenTypes::PUNCTUATION)
+        // When implementing strings do else if (this->IsStringLiteralToken())
+        return TokenStatus::k_bFinished;
 
     // Check #4: Keyword
     if (this->IsKeywordToken(k_sTempToken))
