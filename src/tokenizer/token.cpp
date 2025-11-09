@@ -44,9 +44,9 @@ bool Token::Append(char cAddedChar) noexcept
 
     // Check #3: Punctuation and String Literals
     if (this->IsPunctuationToken(k_sTempToken, cAddedChar))
-        return cAddedChar == '>' && this->m_sValue == '-' ? 
-        this->AssignToken(TokenTypes::PUNCTUATION) : 
-        this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
+        return (cAddedChar == '>' && this->m_sValue == "-") 
+        ? this->AssignToken(k_sTempToken, TokenTypes::PUNCTUATION) 
+        : this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
 
     /*else if (this->IsStringLiteralToken())
         return TokenStatus::k_bFinished;*/ // String arent implemented yet
