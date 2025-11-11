@@ -15,13 +15,20 @@ char MappedSRC::Get() const noexcept
     return IsEOF() ? '\0' : this->m_sChunkContent[m_ulIndex];
 }
 
-bool MappedSRC::Seek() noexcept
+bool MappedSRC::Seek()
 {
     if (this->IsEOF()) return false;
 
     if (this->m_ulIndex == k_nChunkSize - 1)  // if this is last char in buffer
     {
-        GetChunk(k_bNextChunk);
+        try
+        {
+            GetChunk(k_bNextChunk);
+        }
+        catch(const std::runtime_error&)
+        {
+            throw;
+        }
     }
     else
     {
@@ -31,13 +38,21 @@ bool MappedSRC::Seek() noexcept
     return true;
 }
 
-bool MappedSRC::Rewind() noexcept
+bool MappedSRC::Rewind()
 {
     if (this->m_uChunkOffset + this->m_ulIndex <= k_nSOF) return true;
 
     if (this->m_ulIndex == 0) // if we are on the start of chunk.
     {
-        GetChunk(k_bPrevChunk);
+        try
+        {
+            GetChunk(k_bPrevChunk);
+        }
+        catch(const std::runtime_error&)
+        {
+            throw;
+        }
+        
         this->m_ulIndex = k_nChunkSize - 1;
     }
     else 

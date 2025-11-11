@@ -25,11 +25,11 @@ public:
 
     // Skip a single character from the mapped file by changing the cursor index.
     // @return: true -> Index is not EOF, false -> Otherwise.
-    bool Seek() noexcept;
+    bool Seek();
 
     // Go back a single character from the mapped file by changing the stream index.
     // @return: true -> Index is SOF, false -> Otherwise.
-    bool Rewind() noexcept;
+    bool Rewind();
 
     // Check if the cursor index is at EOF.
     // @return: true -> Index is EOF, false -> Otherwise.
