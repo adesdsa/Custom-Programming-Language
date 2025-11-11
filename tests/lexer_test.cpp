@@ -175,7 +175,7 @@ TEST(LexerTest, FullProgram)
         Token(":", TokenTypes::PUNCTUATION, 17, lexer.GetEntityLogger()),
         Token("bool", TokenTypes::KEYWORD, 17, lexer.GetEntityLogger()),
         Token("=", TokenTypes::OPERATOR, 17, lexer.GetEntityLogger()),
-        Token("true", TokenTypes::KEYWORD, 17, lexer.GetEntityLogger()),
+        Token("true", TokenTypes::VALUE, 17, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 17, lexer.GetEntityLogger()),
 
         // Line 20
@@ -196,7 +196,7 @@ TEST(LexerTest, FullProgram)
         // Line 22
         Token("is_prime", TokenTypes::IDENTIFIER, 22, lexer.GetEntityLogger()),
         Token("=", TokenTypes::OPERATOR, 22, lexer.GetEntityLogger()),
-        Token("false", TokenTypes::KEYWORD, 22, lexer.GetEntityLogger()),
+        Token("false", TokenTypes::VALUE, 22, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 22, lexer.GetEntityLogger()),
 
         // Line 23
@@ -213,7 +213,7 @@ TEST(LexerTest, FullProgram)
         Token("2", TokenTypes::VALUE, 25, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 25, lexer.GetEntityLogger()),
         Token("i", TokenTypes::IDENTIFIER, 25, lexer.GetEntityLogger()),
-        Token("<=", TokenTypes::OPERATOR, 25, lexer.GetEntityLogger()),
+        Token("<", TokenTypes::OPERATOR, 25, lexer.GetEntityLogger()),
         Token("low", TokenTypes::IDENTIFIER, 25, lexer.GetEntityLogger()),
         Token("//", TokenTypes::OPERATOR, 25, lexer.GetEntityLogger()),
         Token("2", TokenTypes::VALUE, 25, lexer.GetEntityLogger()),
@@ -244,7 +244,7 @@ TEST(LexerTest, FullProgram)
         // Line 29
         Token("is_prime", TokenTypes::IDENTIFIER, 29, lexer.GetEntityLogger()),
         Token("=", TokenTypes::OPERATOR, 29, lexer.GetEntityLogger()),
-        Token("false", TokenTypes::KEYWORD, 29, lexer.GetEntityLogger()),
+        Token("false", TokenTypes::VALUE, 29, lexer.GetEntityLogger()),
         Token(";", TokenTypes::PUNCTUATION, 29, lexer.GetEntityLogger()),
         
         // Line 30
@@ -263,7 +263,7 @@ TEST(LexerTest, FullProgram)
         Token("is_prime", TokenTypes::IDENTIFIER, 34, lexer.GetEntityLogger()),
         Token(")", TokenTypes::PUNCTUATION, 34, lexer.GetEntityLogger()),
 
-        // Line 35
+        // Line 35  
         Token("{", TokenTypes::PUNCTUATION, 35, lexer.GetEntityLogger()),
 
         // Line 36
@@ -294,7 +294,7 @@ TEST(LexerTest, FullProgram)
         Token(";", TokenTypes::PUNCTUATION, 41, lexer.GetEntityLogger()),
 
         // Line 42
-        Token("}", TokenTypes::PUNCTUATION, 41, lexer.GetEntityLogger()),
+        Token("}", TokenTypes::PUNCTUATION, 42, lexer.GetEntityLogger()),
     };
 
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);

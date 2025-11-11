@@ -15,7 +15,7 @@ int main(void)
 
     try
     {
-        Lexer lexer("../../tests/inputs/test3.txt");
+        Lexer lexer("../../tests/inputs/test4.txt");
         
         while(!lexer.IsFinishedReadingSRC()) 
         {
