@@ -1,12 +1,22 @@
 #include "../../includes/tokenizer/token_factory.h"
 
-TokenFactory::TokenFactory(const std::string& sFilePath, const EntityLogger& entityLogger) : m_mappedSRC(sFilePath), m_ulLineCounter(1), m_entityLogger(entityLogger) {}
+TokenFactory::TokenFactory(
+    const std::string& sFilePath,
+    const EntityLogger& entityLogger
+) :
+    m_mappedSRC(sFilePath),
+    m_ulLineCounter(1), 
+    m_entityLogger(entityLogger) {}
 
 Token TokenFactory::CreateToken() noexcept
 {
     if (this->IsFinishedReadingSRC())
     {
-        return Token(TokenTypes::EOF_TOKEN, this->m_ulLineCounter, this->m_entityLogger);
+        return Token(
+            TokenTypes::EOF_TOKEN, 
+            this->m_ulLineCounter, 
+            this->m_entityLogger
+        );
     }
 
     Token token(this->m_ulLineCounter, this->m_entityLogger);

@@ -5,14 +5,12 @@
 #include "logger_library.h"
 #include "../utils/time_utils.h"
 
-
 #ifdef _WIN32
     #include <windows.h>
 #else
     #include <unistd.h>
     #include <cstdio>
 #endif
-
 
 // Responsible to log the messages
 class Console

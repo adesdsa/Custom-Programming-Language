@@ -1,6 +1,6 @@
 #include "../../includes/tokenizer/token.h"
 
-Token::Token(size_t ulLine, const EntityLogger& entityLogger) : 
+Token::Token(size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
     m_sType(TokenTypes::UNKNOWN), 
     m_ulLine(ulLine), 
@@ -13,9 +13,9 @@ Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& ent
     m_entityLogger(entityLogger) {}
 
 Token::Token(
-        const std::string& sTokenValue, 
-        std::string_view sTokenType, 
-        size_t ulLine, 
+        const std::string& sTokenValue,
+        std::string_view sTokenType,
+        size_t ulLine,
         const EntityLogger& entityLogger
     ) :
         m_sValue(sTokenValue),
@@ -39,16 +39,17 @@ bool Token::Append(char cAddedChar) noexcept
         return TokenStatus::k_bFinished;
     }
 
-    // Check #2: Whitespace
+    // check #2: Whitespace
     if (this->IsWhiteSpaceToken(k_sTempToken, cAddedChar))
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::TRIVIA);
 
     else if (this->m_sType == TokenTypes::TRIVIA)
         return TokenStatus::k_bFinished;
 
-    // Check #3: Punctuation and String Literals
+    // check #3: Punctuation and String Literals
     if (this->IsPunctuationToken(k_sTempToken, cAddedChar))
-        // Checks if the punctuation is -> then we have to make it not an operator but a punctuation.
+        // checks if the punctuation is -> then we have to make it not an 
+        // operator but a punctuation.
         return (cAddedChar == '>' && this->m_sValue == "-") 
         ? this->AssignToken(k_sTempToken, TokenTypes::PUNCTUATION) 
         : this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::PUNCTUATION);
@@ -60,26 +61,27 @@ bool Token::Append(char cAddedChar) noexcept
     if (this->IsKeywordToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::KEYWORD);
 
-    // Check #5 Operator
+    // check #5 Operator
     if (this->IsOperatorToken(k_sTempToken, cAddedChar))
         return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
 
     else if (this->m_sType == TokenTypes::OPERATOR) 
         return TokenStatus::k_bFinished;
     
-    // Check #6: Value
+    // check #6: Value
     if (this->IsValueToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
     
-    // Check #7: Identifier
+    // check #7: Identifier
     if (this->IsIdentifierToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::IDENTIFIER);
 
-    // Check #8: EOF
+    // check #8: EOF
     if (cAddedChar == '\0')
         return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::EOF_TOKEN);
 
-    return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN); // If all checks failed -> Unknown token
+    // if all checks failed -> Unknown token
+    return this->AssignToken(k_sTempToken, TokenTypes::UNKNOWN);
 }
 
 const std::string& Token::GetValue() const noexcept
@@ -104,17 +106,27 @@ bool Token::operator==(const Token& other) const
         this->m_ulLine == other.m_ulLine;
 }
 
-bool Token::AssignToken(const std::string &sTokenValue, std::string_view sTokenType) noexcept
+bool Token::AssignToken(
+    const std::string &sTokenValue, 
+    std::string_view sTokenType
+) noexcept
 {
     this->m_sValue = sTokenValue;
     this->m_sType = sTokenType;
     return TokenStatus::k_bUnfinished;
 }
 
-bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_view sTokenType) noexcept
+bool Token::AssignIfEmptyOrFinish(
+    const std::string &sTokenValue, 
+    std::string_view sTokenType
+) noexcept
 {
-    // Checking if there was already a token
-    if (this->m_sValue.empty() || this->m_sType == TokenTypes::UNKNOWN || this->m_sType == sTokenType)
+    // checking if there was already a token
+    if (
+        this->m_sValue.empty() || 
+        this->m_sType == TokenTypes::UNKNOWN || 
+        this->m_sType == sTokenType
+    )
     {
         return AssignToken(sTokenValue, sTokenType);
     }
@@ -130,10 +142,16 @@ std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char 
     return TokenTypes::VALUE;
 }
 
-bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexCheck, const std::string_view& k_sCurrentType) const noexcept
+bool Token::CheckSoloLetters(
+    const char k_cAddedChar, 
+    const std::regex& k_regexCheck, 
+    const std::string_view& k_sCurrentType
+) const noexcept
 {
-    // A guarnteed stop will happen if the char is part of the regex, the token made isn't already it's type
-    // and the current token isn't an edge case (currently only a string literal or char literal being made are edge cases).
+    // A guarnteed stop will happen if the char is part of the regex, 
+    // the token made isn't already it's type
+    // and the current token isn't an edge case 
+    // (currently only a string literal or char literal being made are edge cases).
     return (
         std::regex_match(std::string(1, k_cAddedChar), k_regexCheck) &&
         this->m_sType != k_sCurrentType

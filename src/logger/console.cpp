@@ -1,20 +1,26 @@
 #include "../../includes/logger/console.h"
 
 
-Console::Console() 
+Console::Console()
 {
     this->m_supportsColor = DetectColorSupport();
 }
 
 Console& Console::GetInstance() noexcept
 {
-    static Console instance; // Created on first call
+    static Console instance;  // created on first call
     return instance;
 }
 
-void Console::BuildAndSendLogMessage(const Entity &entity, const DebugLevel &debugLevel, const std::string msg) const noexcept
+void Console::BuildAndSendLogMessage(
+    const Entity &entity, 
+    const DebugLevel &debugLevel, 
+    const std::string msg
+) const noexcept
 {
-    this->Log(LogMessage(entity, debugLevel, TimeUtils::GetFullCurrentTime(), msg));
+    this->Log(
+        LogMessage(entity, debugLevel, TimeUtils::GetFullCurrentTime(), msg)
+    );
 }
 
 void Console::Log(const LogMessage& logMessage) const noexcept
