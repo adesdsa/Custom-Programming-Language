@@ -54,9 +54,11 @@ bool MappedSRC::IsEOF() const noexcept
 
 bool MappedSRC::GetChunk(bool bLoadOption)
 {
-    if (this->m_uFileSize == 0) return true;  // incase it's the file is empty
+    // incase the file is empty
+    if (this->m_uFileSize == 0) return true; 
 
-    std::error_code mappingErrorCode;  // holds any mapping error (from mio)
+    // holds any mapping error (from mio)
+    std::error_code mappingErrorCode;
 
     // for constructor call, don't need to change offset yet
     if (this->m_sChunkContent) 
@@ -71,7 +73,7 @@ bool MappedSRC::GetChunk(bool bLoadOption)
         }
     }
 
-    // calculate how many bytes remain from the current offset to the end of the file
+    // calculate how many bytes remain from the current offset until eof
     size_t remainingBytes = m_uFileSize - m_uChunkOffset;
 
     // cast chunk size to size_t
@@ -82,7 +84,12 @@ bool MappedSRC::GetChunk(bool bLoadOption)
 
     // map new chunk
     mio::mmap_source temp;
-    temp.map(this->m_sFilePath, this->m_uChunkOffset, chunkLength, mappingErrorCode);
+    temp.map(
+        this->m_sFilePath, 
+        this->m_uChunkOffset, 
+        chunkLength, 
+        mappingErrorCode
+    );
 
     if (mappingErrorCode)  // if error has occur
     {

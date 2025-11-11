@@ -70,7 +70,7 @@ bool Token::Append(char cAddedChar) noexcept
     
     // check #6: Value
     if (this->IsValueToken(k_sTempToken))
-        return this->AssignToken(k_sTempToken, CheckIfValueIsKnown(k_sTempToken[0], cAddedChar));
+        return this->AssignToken(k_sTempToken, CheckIfValueIsKnown());
     
     // check #7: Identifier
     if (this->IsIdentifierToken(k_sTempToken))
