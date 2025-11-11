@@ -8,8 +8,8 @@ Token::Token(size_t ulLine, const EntityLogger& entityLogger) :
 
 Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
-    m_ulLine(ulLine), 
     m_sType(sTokenType),
+    m_ulLine(ulLine), 
     m_entityLogger(entityLogger) {}
 
 Token::Token(
@@ -133,7 +133,7 @@ bool Token::AssignIfEmptyOrFinish(
     return TokenStatus::k_bFinished;
 }
 
-std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char cLastLetter) const noexcept
+std::string_view Token::CheckIfValueIsKnown() const noexcept
 {
     /*if (cFirstLetter == '\"' && cLastLetter != '\"') return TokenTypes::UNKNOWN;
     

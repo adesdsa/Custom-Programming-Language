@@ -70,7 +70,7 @@ private:
     // @param cFirstLetter: The first letter of the value token.
     // @param cLastLetter: THe last letter of the vlue token.
     // @return: VALUE Token Type -> Valid value, UNKOWN Token Type -> Otherwie.
-    std::string_view CheckIfValueIsKnown(const char cFirstLetter, const char cLastLetter) const noexcept;
+    std::string_view CheckIfValueIsKnown() const noexcept;
 
     // Will check if the letter added right now is a guarnteed stop.
     // @param k_cAddedChar: The letter being added right now.

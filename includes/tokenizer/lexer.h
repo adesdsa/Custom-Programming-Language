@@ -23,7 +23,7 @@ public:
     const EntityLogger& GetEntityLogger() const noexcept;
 
 private:
+    EntityLogger m_entityLogger;
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;
-    EntityLogger m_entityLogger;
 };

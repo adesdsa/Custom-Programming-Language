@@ -3,8 +3,8 @@
 MappedSRC::MappedSRC(const std::string& sFilePath) :
     m_sChunkContent(nullptr),
     m_ulIndex(0),
-    m_sFilePath(sFilePath),
     m_uChunkOffset(0),
+    m_sFilePath(sFilePath),
     m_uFileSize(std::filesystem::file_size(m_sFilePath))
 {
     GetChunk(k_bNextChunk);

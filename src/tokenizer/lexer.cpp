@@ -2,8 +2,8 @@
 
 Lexer::Lexer(const std::string& sInputFile) : 
     m_entityLogger("lexer"), 
-    m_tokenHandler(m_entityLogger), 
-    m_tokenFactory(sInputFile, m_entityLogger) {}
+    m_tokenFactory(sInputFile, m_entityLogger),
+    m_tokenHandler(m_entityLogger) {}
 
 std::optional<Token> Lexer::Tokenize() noexcept
 {
