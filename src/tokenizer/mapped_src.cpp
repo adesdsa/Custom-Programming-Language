@@ -44,7 +44,6 @@ bool MappedSRC::Rewind() noexcept
     {
         this->m_ulIndex--;
     }
-
     return false;
 }
 

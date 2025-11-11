@@ -1,6 +1,10 @@
 #include "../../includes/tokenizer/token.h"
 
-Token::Token(size_t ulLine, const EntityLogger& entityLogger) : m_sValue("") , m_sType(TokenTypes::UNKNOWN), m_ulLine(ulLine), m_entityLogger(entityLogger) {}
+Token::Token(size_t ulLine, const EntityLogger& entityLogger) : 
+    m_sValue(""), 
+    m_sType(TokenTypes::UNKNOWN), 
+    m_ulLine(ulLine), 
+    m_entityLogger(entityLogger) {}
 
 Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
@@ -117,7 +121,7 @@ bool Token::AssignIfEmptyOrFinish(const std::string &sTokenValue, std::string_vi
     return TokenStatus::k_bFinished;
 }
 
-std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char cLastLetter) noexcept
+std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char cLastLetter) const noexcept
 {
     /*if (cFirstLetter == '\"' && cLastLetter != '\"') return TokenTypes::UNKNOWN;
     
@@ -126,7 +130,7 @@ std::string_view Token::CheckIfValueIsKnown(const char cFirstLetter, const char 
     return TokenTypes::VALUE;
 }
 
-bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexCheck, const std::string_view& k_sCurrentType) noexcept
+bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexCheck, const std::string_view& k_sCurrentType) const noexcept
 {
     // A guarnteed stop will happen if the char is part of the regex, the token made isn't already it's type
     // and the current token isn't an edge case (currently only a string literal or char literal being made are edge cases).
@@ -137,12 +141,12 @@ bool Token::CheckSoloLetters(const char k_cAddedChar, const std::regex& k_regexC
     /*&& !(this->m_sType == TokenTypes::UNKNOWN && (this->m_sValue[0] == '\"' || this->m_sValue[0] == '\''))*/ //string and chars arent supported yet;
 }
 
-bool Token::IsCommentToken(const std::string &sToken)
+bool Token::IsCommentToken(const std::string &sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_TriviaComments());
 }
 
-bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar)
+bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_TriviaWhiteSpaces()) ||
@@ -150,7 +154,7 @@ bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar)
     );
 }
 
-bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
+bool Token::IsPunctuationToken(const std::string& sToken, char newChar) const
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_Punctuation()) ||
@@ -158,12 +162,12 @@ bool Token::IsPunctuationToken(const std::string& sToken, char newChar)
     );
 }
 
-bool Token::IsKeywordToken(const std::string& sToken)
+bool Token::IsKeywordToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Keyword());
 }
 
-bool Token::IsOperatorToken(const std::string& sToken, char newChar)
+bool Token::IsOperatorToken(const std::string& sToken, char newChar) const
 {
     return (
         std::regex_match(sToken, RegexPatterns::k_Operator()) ||
@@ -171,12 +175,12 @@ bool Token::IsOperatorToken(const std::string& sToken, char newChar)
     );
 }
 
-bool Token::IsValueToken(const std::string& sToken)
+bool Token::IsValueToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Value());
 }
 
-bool Token::IsIdentifierToken(const std::string& sToken)
+bool Token::IsIdentifierToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Identifier());
 }

@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-
+#define FUNCTION_THROWER __func__
 constexpr const char* k_sReset = "\033[0m";
 
 const std::unordered_map<std::string, std::string> ENTITY_COLORS = {

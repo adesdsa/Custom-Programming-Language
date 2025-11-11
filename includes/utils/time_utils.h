@@ -10,5 +10,5 @@ namespace TimeUtils
 {
     // Get current time in format: dd/mm/yyyy hh/mm/ss.
     // @return: string that hold current time in format: dd/mm/yyyy hh/mm/ss.
-    std::string  GetFullCurrentTime();
+    std::string GetFullCurrentTime();
 }
