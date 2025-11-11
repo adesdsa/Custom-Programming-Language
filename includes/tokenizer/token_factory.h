@@ -13,12 +13,11 @@ public:
 
     // Will build a new token. 
     // @return: The fully initialized token. 
-    Token CreateToken() noexcept;
+    Token CreateToken();
 
     // Checks If file has ended by reaching EOF.
-    // @return: True => File has ended (EOF), False => Otherwise.
+    // @return: true -> File has ended (EOF reached), false -> Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
-
 
 private:
     MappedSRC m_mappedSRC;

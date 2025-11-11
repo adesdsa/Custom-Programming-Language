@@ -4,14 +4,10 @@
 #include "token_handler.h"
 #include "../logger/entity_logger.h"
 
-constexpr const char* k_sInputFile = "../../src/tokenizer/tokens_in.txt"; // "tokens_in.txt"
-
 // Responsible for managing all Token entityies to convert src to stream of tokens
 class Lexer
 {
 public:
-    Lexer();
-
     Lexer(const std::string& sFilePath);
     
     ~Lexer() = default;
@@ -24,10 +20,10 @@ public:
     // @return: True => File has ended (EOF), False => Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
 
-    const EntityLogger& GetEntityLogger();
+    const EntityLogger& GetEntityLogger() const noexcept;
 
 private:
+    EntityLogger m_entityLogger;
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;
-    EntityLogger m_entityLogger;
 };

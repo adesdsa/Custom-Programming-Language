@@ -4,11 +4,11 @@ namespace TimeUtils
 {
     std::string GetFullCurrentTime()
     {
-        // Get current time
+        // get current time
         auto now = std::chrono::system_clock::now();
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
 
-        // Convert to local time
+        // convert to local time
         std::tm localTime{};
 
         #ifdef _WIN32

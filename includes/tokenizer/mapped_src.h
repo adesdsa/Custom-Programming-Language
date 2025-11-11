@@ -20,27 +20,25 @@ public:
 
     ~MappedSRC() = default;
 
-    // Gets current character from the stream based on the index.
-    // @return: Current characters from the stream.
+    // Gets current character from the mapped file based on the cursor index.
     char Get() const noexcept;
 
-    // Skip a single character from the stream by changing the stream index.
-    // @return: True => Index is not EOF, False => Otherwise.
-    bool Seek() noexcept;
+    // Skip a single character from the mapped file by changing the cursor index.
+    // @return: true -> Index is not EOF, false -> Otherwise.
+    bool Seek();
 
-    // Go back a single character from the stream by changing the stream index.
-    // @return: True => Index is SOF, False => Otherwise.
-    bool Rewind() noexcept;
+    // Go back a single character from the mapped file by changing the stream index.
+    // @return: true -> Index is SOF, false -> Otherwise.
+    bool Rewind();
 
-    // Check if the stream index is at the end of the file.
-    // @return: True => Index is EOF, False => Otherwise.
+    // Check if the cursor index is at EOF.
+    // @return: true -> Index is EOF, false -> Otherwise.
     bool IsEOF() const noexcept;
 
     // The func loads a memory chunk into memory.
-    // @param: bLoadOption: True => next chunck, False => perv chunk.
-    // @return: True => EOF, False => otherwise.
+    // @param: bLoadOption: true -> next chunck, false -> perv chunk.
+    // @return: true -> EOF, false -> otherwise.
     bool GetChunk(bool bLoadOption);
-
 
 private:
     mio::mmap_source m_mappedChunk;     // The currently memory-mapped portion of the file.

@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 
-// TODO: Change regexs according to the language syntax
 // Group of all the regex patterns supported by lexer
 namespace RegexPatterns
 {
