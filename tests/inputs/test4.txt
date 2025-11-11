@@ -22,7 +22,7 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
 			is_prime = false;
 		}
 
-		for(let i: int = 2; i <=  low // 2; i = i + 1)
+		for(let i: int = 2; i <  low // 2; i = i + 1)
 		{
 			if(low % i == 0)
 			{
@@ -38,5 +38,5 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
 
 		low = low + 1;
 	}
-	println(); // Display with \n
+	println(); # Display with \n
 }
