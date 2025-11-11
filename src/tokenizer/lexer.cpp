@@ -12,7 +12,7 @@ std::optional<Token> Lexer::Tokenize()
     {
         return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
     }
-    catch(const std::runtime_error)
+    catch(const std::runtime_error&)
     {
         throw;
     }
