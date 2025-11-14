@@ -16,6 +16,10 @@ namespace CommandTypes
     inline constexpr std::string_view FILLED_FUNC_DECLARATION   = "FILLED_FUNC_DECLARATION";
     inline constexpr std::string_view ARROW_FUNC_DECLARATION    = "ARROW_FUNC_DECLARATION";
     inline constexpr std::string_view FUNC_DECLARATION          = "FUNC_DECLARATION";
+    inline constexpr std::string_view ACCESS_RIGHTS             = "ACCESS_RIGHTS";
+    inline constexpr std::string_view SCOPE                     = "SCOPE";
+    inline constexpr std::string_view VAR_DECLARATION_START     = "VAR_DECLARATION_START";
+    inline constexpr std::string_view VAR_DECLARATION           = "VAR_DECLARATION";
 }
 
 class Command 
@@ -34,5 +38,8 @@ private:
     bool CheckParamsCalls();
     bool CheckParamsDeclarations();
     bool IsType();
+    bool IsAccessRights();
+    bool IsScope();
+    bool FoundUnknown(); //m_sType = CommandTypes::UNKNOWN; return true;
 
 }
