@@ -1,4 +1,4 @@
-#include "../../includes/logger/console.h"
+#include "logger/console.h"
 
 
 Console::Console()

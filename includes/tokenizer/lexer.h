@@ -2,7 +2,7 @@
 
 #include "token_factory.h"
 #include "token_handler.h"
-#include "../logger/entity_logger.h"
+#include "logger/entity_logger.h"
 
 // Responsible for managing all Token entityies to convert src to stream of tokens
 class Lexer
