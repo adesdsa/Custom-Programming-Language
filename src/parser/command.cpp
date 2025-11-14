@@ -27,7 +27,11 @@ bool Command::Append(Token currToken, Token nextToken)
     {
         if (currToken.GetValue() == ")")
         {
-            if (CheckParamsValues()) m_sType = CommandTypes::FUNC_CALL;
+            if (CheckParamsValues()) 
+            {
+                m_sType = CommandTypes::FUNC_CALL;
+                return true;
+            }
             else if (CheckParamsDeclarations) m_sType = CommandTypes::FILLED_FUNC_DECLARATION;
             else return FoundUnknown();
         }//todo: add the func params handling also handle void
@@ -39,7 +43,11 @@ bool Command::Append(Token currToken, Token nextToken)
     }
     else if (m_sType == CommandTypes::ARROW_FUNC_DECLARATION)
     {
-        if (IsType()) m_sType = CommandTypes::FUNC_DECLARATION;
+        if (IsType()) 
+        {
+            m_sType = CommandTypes::FUNC_DECLARATION;
+            return true;
+        }
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::ACCESS_RIGHTS)
@@ -72,4 +80,10 @@ bool Command::Append(Token currToken, Token nextToken)
         if(CheckParamsValues()) m_sType = CommandTypes::VAR_ASSIGNMENT;
         else return FoundUnknown();
     }
+    else if (nextToken.GetValue() == "xor"){}//todo: handle
+    //todo: handle {}
+    //todo: handle arrays
+    //todo: handle if statements
+    //todo: handle loops
+    //todo: handle math and boolean
 }

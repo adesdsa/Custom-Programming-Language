@@ -45,6 +45,12 @@ private:
     bool IsAccessRights();
     bool IsScope();
     bool FoundUnknown(); //m_sType = CommandTypes::UNKNOWN; return true;
+    bool IsBoolean(); // includes bool keywords and bool operators
+    bool IsControlStatement(); // includes continue pass and break
+    bool IsLoopStatement(); // includes for and while
+    bool IsLogicStatement(); // includes if elif and else
+    // only return sizeof is xor are not handled
+
     // todo: create a [] operator for a foreach loop for easier param access
 
 }
