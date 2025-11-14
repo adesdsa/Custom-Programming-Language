@@ -1,15 +1,30 @@
 #pragma once
 
-#include "../tokenizer/token.h"
+#include "ast_node.h"
+// #include <cstddef>
 
-// Left-child right-sibling ast representation
-class ASTNode
+// The AST itself. Hold all Nodes of the source file.
+class AST
 {
 public:
-    ASTNode(const Token& token);
+    ASTArena() = default;
+
+    ~ASTArena() { Clear(); }
+
+    template <typename... Args>
+    class ASTNode* AllocateNode(Args&&... args)
+    {
+        nodes.emplace_back(new ASTNode(std::forward<Args>(args)...));
+        return nodes.back();
+    }
+
+    void Clear()
+    {
+        for (auto* n : nodes)
+            delete n;
+        nodes.clear();
+    }
 
 private:
-    Token m_token;
-    ASTNode* m_nodeFirstChild;
-    ASTNode* m_nodeNextSibling;
+    std::vector<class ASTNode*> nodes;
 };
