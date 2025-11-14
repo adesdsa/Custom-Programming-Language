@@ -7,24 +7,14 @@
 class AST
 {
 public:
-    ASTArena() = default;
+    AST() = default;
+    ~AST();
 
-    ~ASTArena() { Clear(); }
+    ASTNode* AllocateNode(const Token& token);
 
-    template <typename... Args>
-    class ASTNode* AllocateNode(Args&&... args)
-    {
-        nodes.emplace_back(new ASTNode(std::forward<Args>(args)...));
-        return nodes.back();
-    }
-
-    void Clear()
-    {
-        for (auto* n : nodes)
-            delete n;
-        nodes.clear();
-    }
+    // Free all allocated nodes in the ast and remove them from the nodes vector
+    void Clear();
 
 private:
-    std::vector<class ASTNode*> nodes;
+    std::vector<class ASTNode*> m_nodes;
 };

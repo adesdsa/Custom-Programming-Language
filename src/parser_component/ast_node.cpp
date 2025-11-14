@@ -5,21 +5,25 @@ ASTNode::ASTNode(const Token& token) :
     m_nodeFirstChild(nullptr), 
     m_nodeNextSibling(nullptr) {}
 
-void ASTNode::StoreFullCommand(ASTArena& arena, std::vector<Token>& fullCommand)
+void ASTNode::StoreFullCommand(AST& ast, std::vector<Token>& fullCommand)
+{
+    if (fullCommand.empty()) return;
+
+    // keeps track of prev node to than link the next sibling with it
+    ASTNode* prevChild = nullptr;
+
+    for (auto& token : fullCommand)
     {
-        if (fullCommand.empty()) return;
+        ASTNode* newNode = ast.AllocateNode(token);
 
-        ASTNode* prevChild = nullptr;
-
-        for (auto& tok : fullCommand)
+        if (!this->m_nodeFirstChild)
         {
-            ASTNode* newNode = arena.AllocateNode(tok);
-
-            if (!m_nodeFirstChild)
-                m_nodeFirstChild = newNode;
-            else
-                prevChild->m_nodeNextSibling = newNode;
-
-            prevChild = newNode;
+            this->m_nodeFirstChild = newNode;
         }
+        else
+        {
+            prevChild->m_nodeNextSibling = newNode;
+        }
+        prevChild = newNode;
     }
+}

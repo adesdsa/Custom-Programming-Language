@@ -12,7 +12,7 @@ public:
     ~ASTNode() = default;
 
     // Adds a command subtree from fullCommand tokens
-    void StoreFullCommand(ASTArena& arena, std::vector<Token>& fullCommand);
+    void StoreFullCommand(AST& ast, std::vector<Token>& fullCommand);
 
     Token m_token;
     ASTNode* m_nodeFirstChild;
