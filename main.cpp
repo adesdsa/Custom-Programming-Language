@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "includes/tokenizer/lexer.h"
+#include "includes/logger/entity_logger.h"
 
 namespace ReturnCode
 {
@@ -14,8 +15,17 @@ int main(void)
 
     try
     {
-        Lexer lexer;
-        lexer.Tokenize();
+        Lexer lexer("../../tests/inputs/test4.txt");
+        
+        while(!lexer.IsFinishedReadingSRC()) 
+        {
+            auto token = lexer.Tokenize();
+
+            if(token.has_value())
+            {
+                std::cout << token.value().GetType() << " - " << token.value().GetValue() << " - " << token.value().GetLine() << std::endl;
+            }
+        }
     }
 
     catch(const std::runtime_error& runtimeError)

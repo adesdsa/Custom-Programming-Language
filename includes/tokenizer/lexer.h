@@ -2,28 +2,28 @@
 
 #include "token_factory.h"
 #include "token_handler.h"
-
-constexpr const char* k_sInputFile = "tokens_in.txt"; //../src/tokenizer/tokens_in.txt
+#include "../logger/entity_logger.h"
 
 // Responsible for managing all Token entityies to convert src to stream of tokens
 class Lexer
 {
 public:
-    Lexer();
-
-    Lexer(const std::string& sInputFile);
+    Lexer(const std::string& sFilePath);
     
     ~Lexer() = default;
 
     // Get every token from the source file and push it to the stream.
     // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
-    std::optional<std::reference_wrapper<const Token>>Tokenize();
+    std::optional<Token> Tokenize();
+
+    // Checks If file has ended by reaching EOF.
+    // @return: True => File has ended (EOF), False => Otherwise.
+    bool IsFinishedReadingSRC() const noexcept;
+
+    const EntityLogger& GetEntityLogger() const noexcept;
 
 private:
+    EntityLogger m_entityLogger;
     TokenFactory m_tokenFactory;
     TokenHandler m_tokenHandler;
-
-    // Opens the input file stream.
-    // @return: Return the opened file.
-    static std::ifstream OpenInputFile(const std::string& sInputFile);
 };

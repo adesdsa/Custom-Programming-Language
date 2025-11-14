@@ -7,20 +7,20 @@
 class TokenFactory
 {
 public:
-    TokenFactory(std::ifstream fSrc);
+    TokenFactory(const std::string& sFilePath, const EntityLogger& entityLogger);
 
     ~TokenFactory() = default;
 
     // Will build a new token. 
     // @return: The fully initialized token. 
-    Token CreateToken() noexcept;
+    Token CreateToken();
 
-    // Checks if file is in EOF.
-    // @return: True => , False => .
+    // Checks If file has ended by reaching EOF.
+    // @return: true -> File has ended (EOF reached), false -> Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
-
 
 private:
     MappedSRC m_mappedSRC;
     size_t m_ulLineCounter;
+    const EntityLogger& m_entityLogger;
 };

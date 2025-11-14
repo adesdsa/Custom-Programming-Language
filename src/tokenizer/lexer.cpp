@@ -1,25 +1,29 @@
 #include "../../includes/tokenizer/lexer.h"
 
-Lexer::Lexer() : m_tokenFactory(OpenInputFile(k_sInputFile)), m_tokenHandler() {};
+Lexer::Lexer(const std::string& sInputFile) : 
+    m_entityLogger("lexer"), 
+    m_tokenFactory(sInputFile, m_entityLogger),
+    m_tokenHandler(m_entityLogger) {}
 
-Lexer::Lexer(const std::string& sInputFile) : m_tokenHandler(), m_tokenFactory(OpenInputFile(sInputFile)) {};
-
-std::optional<std::reference_wrapper<const Token>> Lexer::Tokenize() 
+std::optional<Token> Lexer::Tokenize()
 {
-    return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
+    this->m_entityLogger.Info("Start Creating new token...");
+    try
+    {
+        return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
+    }
+    catch(const std::runtime_error&)
+    {
+        throw;
+    }
 }
 
-std::ifstream Lexer::OpenInputFile(const std::string& sInputFile)
+bool Lexer::IsFinishedReadingSRC() const noexcept
 {
-    std::ifstream streamSrcFile(sInputFile);
+    return this->m_tokenFactory.IsFinishedReadingSRC();
+}
 
-    if (!streamSrcFile.is_open()) 
-    {
-        throw std::runtime_error(
-            std::string(FUNCTION_THROWER) + 
-            k_sFileFailedToOpenError + 
-            sInputFile);
-    }
-
-    return streamSrcFile;
+const EntityLogger& Lexer::GetEntityLogger() const noexcept
+{
+    return this->m_entityLogger;
 }

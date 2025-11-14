@@ -1,8 +1,11 @@
 #include "../../includes/tokenizer/token_handler.h"
 
-std::optional<std::reference_wrapper<const Token>>
-TokenHandler::HandleToken(const Token& token) noexcept
+TokenHandler::TokenHandler(const EntityLogger& entityLogger) : 
+    m_entityLogger(entityLogger) {}
+
+std::optional<Token> TokenHandler::HandleToken(const Token& token) noexcept
 {
+    this->m_entityLogger.Info("Handle token");
     try
     {
         if (this->IsRelevantToken(token))
@@ -10,21 +13,22 @@ TokenHandler::HandleToken(const Token& token) noexcept
             return token;
         }
     }
-    catch (const std::exception& e)
-    {
-        //
-    }
+    catch (const std::exception&) { /*skip*/ }
 
     return std::nullopt;
 }
 
 bool TokenHandler::IsRelevantToken(const Token &token) const
 {
+    this->m_entityLogger.Info("Check for token relevance");
     const std::string& sTokenType = token.GetType();
 
-    if (sTokenType == k_sUnknownType)
+    if (sTokenType == TokenTypes::UNKNOWN)
     {
-        throw std::runtime_error(k_sTypeError);
+        this->m_entityLogger.Error(
+            std::string("ERROR: Unknown Token - ") + FUNCTION_THROWER
+        );
+        throw std::runtime_error("ERROR: Not supported type");
     }
-    return sTokenType != k_sTriviaType && sTokenType != k_sEOFType;
+    return sTokenType != TokenTypes::TRIVIA && sTokenType != TokenTypes::EOF_TOKEN;
 }
