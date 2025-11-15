@@ -39,6 +39,7 @@ namespace CommandTypes
     inline constexpr std::string_view WHILE_START                   = "WHILE_START";
     inline constexpr std::string_view FOR                           = "FOR";
     inline constexpr std::string_view WHILE                         = "WHILE";
+    inline constexpr std::string_view RETURN_START                  = "RETURN_START";
 }
 
 class Command 

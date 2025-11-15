@@ -21,6 +21,11 @@ bool Command::Append(Token currToken, Token nextToken)
         else if (currToken.GetValue() == "elif") m_sType = CommandTypes::ELIF_CALL;
         else if (currToken.GetValue() == "for") m_sType = CommandTypes::FOR_CALL;
         else if (currToken.GetValue() == "while") m_sType = CommandTypes::WHILE_CALL;
+        else if (currToken.GetValue() == "return") // for now an empty return is illegal grammer
+        {
+            if (nextToken.GetType() != TokenTypes::VALUE || nextToken.GetType() != TokenTypes::IDENTIFIER || nextToken.GetValue() == "-") return FoundUnknown(); // possible to change this to return void
+            else m_sType = CommandTypes::RETURN_START;
+        }
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::IDENTIFIER)
@@ -106,8 +111,7 @@ bool Command::Append(Token currToken, Token nextToken)
         else return FoundUnknown();
     }
 
-    //todo: handle loops
     //todo: handle math and boolean
-    //todo: handle returns
+    //todo: handle arrays
     m_tokens.push_back(currToken);
 }
