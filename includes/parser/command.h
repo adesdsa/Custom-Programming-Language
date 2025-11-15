@@ -40,12 +40,15 @@ namespace CommandTypes
     inline constexpr std::string_view FOR                           = "FOR";
     inline constexpr std::string_view WHILE                         = "WHILE";
     inline constexpr std::string_view RETURN_START                  = "RETURN_START";
+    inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
+    inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
+    inline constexpr std::string_view PARANTHESES                   = "PARANTHESES";
 }
 
 class Command 
 {
 public:
-    Command();
+    Command(); // todo: handle this shit later
     // The func tries adding a new token to the command to make 
     bool Append(Token currToken, Token nextToken);
 
@@ -54,6 +57,9 @@ private:
     std::vector<Command> m_parameters;
     size_t m_uParameterIndex;
     std::string m_sType;
+    const EntityLogger& m_entityLogger;
+    bool m_bBuildingParam;
+    unsigned int m_uParanthesesCounter;
 
     bool CheckParamsValues();
     bool CheckParamsDeclarations();
@@ -65,7 +71,12 @@ private:
     bool IsControlStatement(); // includes continue pass and break
     bool IsLoopStatement(); // includes for and while
     bool IsLogicStatement(); // includes if elif and else
+    bool IsExpressionStart();
     // only return sizeof is xor are not handled
+
+    // true->legal,false->illegal
+    bool HandleParams(Token currToken, Token nextToken);
+    bool HandleParantheses(Token currToken, Token nextToken);
 
     // todo: create a [] operator for a foreach loop for easier param access
 

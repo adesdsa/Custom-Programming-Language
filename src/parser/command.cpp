@@ -23,8 +23,14 @@ bool Command::Append(Token currToken, Token nextToken)
         else if (currToken.GetValue() == "while") m_sType = CommandTypes::WHILE_CALL;
         else if (currToken.GetValue() == "return") // for now an empty return is illegal grammer
         {
-            if (nextToken.GetType() != TokenTypes::VALUE || nextToken.GetType() != TokenTypes::IDENTIFIER || nextToken.GetValue() == "-") return FoundUnknown(); // possible to change this to return void
+            if (IsExpressionStart(nextToken)) return FoundUnknown(); // possible to change this to return void
+            // todo: handle params
             else m_sType = CommandTypes::RETURN_START;
+        }
+        else if (IsExpressionStart(currToken))
+        {
+            if (currToken.GetValue() == "-") m_sType = CommandTypes::EXPRESSION_OPERATOR;
+            else m_sType = CommandTypes::EXPRESSION_VALUE;
         }
         else return FoundUnknown();
     }
@@ -33,6 +39,7 @@ bool Command::Append(Token currToken, Token nextToken)
         if (currToken.GetValue() == "(") m_sType = CommandTypes::FUNC_START;
         else if (currToken.GetValue() == ":") m_sType = CommandTypes::VAR_DECLARATION_START;
         else if (currToken.GetValue() == "=") m_sType = CommandTypes::VAR_ASSIGNMENT;
+        else if (nextToken.GetType() == TokenTypes::PUNCTUATION) return true;
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::FUNC_START)
@@ -110,8 +117,138 @@ bool Command::Append(Token currToken, Token nextToken)
         else if (false) pass //todo: handle params
         else return FoundUnknown();
     }
+    else if (m_sType == CommandTypes::EXPRESSION_VALUE)
+    {
+        if (currToken.GetType() == TokenTypes::OPERATOR)
+        {
+            if (nextToken.GetValue() == "(") m_sType = CommandTypes::PARANTHESES;
+            else m_sType = CommandTypes::EXPRESSION_OPERATOR;
+        }
+        else return FoundUnknown();
+    }
+    else if (m_sType == CommandTypes::EXPRESSION_OPERATOR)
+    {
+        if (m_bBuildingParam) 
+        {
+            if (!HandleParams(currToken, nextToken))
+            {
+                if (nextToken.GetValue() != ")") m_sType = CommandTypes::UNKNOWN;
+                else m_sType = CommandTypes::EXPRESSION_VALUE;
+            }
+        }
+        else if (currToken.GetType() == TokenTypes::VALUE) m_sType = CommandTypes::EXPRESSION_VALUE;
+        else if (currToken.GetType() == TokenTypes::IDENTIFIER)
+        {
+            if (nextToken.GetValue() == "(")
+            {
+                m_bBuildingParam = true;
+                HandleParams(currToken, nextToken);
+            }
+            else m_sType = CommandTypes::EXPRESSION_VALUE;
+        }
+        else return FoundUnknown();
+    }
+    else if (m_sType == CommandTypes::PARANTHESES)
+    {
+        if (currToken.GetValue() == "(")
+        {
+            if(m_uParanthesesCounter == 0)
+            {
+                m_uParanthesesCounter++;
+                if (!IsExpressionStart(nextToken))
+                {
+                    m_sType = CommandTypes::UNKNOWN;
+                }
+                else 
+                {
+                    m_bBuildingParam = true;
+                }
+            }
+            else m_uParanthesesCounter++;
+        }
+        else if (currToken.GetValue() == ")")
+        {
+            m_uParanthesesCounter--;
+        }
+
+        if (m_uParanthesesCounter == 0)
+        {
+            m_bBuildingParam = false;
+        }
+        if (m_bBuildingParam)
+        {
+            HandleParantheses(currToken, nextToken);
+        }
+    }
 
     //todo: handle math and boolean
     //todo: handle arrays
-    m_tokens.push_back(currToken);
+    m_tokens.push_back(currToken); // there is no support for int a, b, c=0;
+    // add logs at the end
+}
+
+bool Command::HandleParams(Token currToken, Token nextToken)
+{
+    if (m_bBuildingParam && currToken.GetValue() == ",")
+    {
+        m_tokens.push_back(currToken);
+        m_uParameterIndex++;
+    }
+    else if (m_bBuildingParam)
+    {
+        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
+        {
+            m_bBuildingParam = false;
+            m_uParameterIndex++;
+        }
+    }
+    else if (IsExpressionStart(currToken)) // Started building the param
+    {
+        m_bBuildingParam = true;
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger)); //todo: handle so that the token wont be appended in append()
+        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
+        {
+            m_bBuildingParam = false;
+            m_uParameterIndex++;
+        }
+    }
+    else if (currToken.GetValue() != ",") return false;
+
+    return true;
+}
+
+bool Command::HandleParantheses(Token currToken, Token nextToken)
+{
+    if (m_bBuildingParam)
+    {
+        m_tokens.push_back(currToken);
+        m_uParameterIndex++;
+    }
+    else if (m_bBuildingParam)
+    {
+        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
+        {
+            m_bBuildingParam = false;
+            m_uParameterIndex++;
+        }
+    }
+    else if (IsExpressionStart(currToken)) // Started building the param
+    {
+        m_bBuildingParam = true;
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger)); //todo: handle so that the token wont be appended in append()
+        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
+        {
+            m_bBuildingParam = false;
+            m_uParameterIndex++;
+        }
+    }
+    else return false;
+
+    return true;
+}
+}
+
+bool IsExpressionStart(Token check)
+{
+    return check.GetType() == TokenTypes::IDENTIFIER || check.GetType() == TokenTypes::VALUE || check.GetValue() == "-"
 }
