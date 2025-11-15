@@ -14,6 +14,8 @@ bool Command::Append(Token currToken, Token nextToken)
         else if (IsAccessRights()) m_sType = CommandTypes::ACCESS_RIGHTS;
         else if (IsScope()) m_sType = CommandTypes::SCOPE;
         else if (currToken.GetValue() == ";") m_sType = CommandTypes::END_OF_COMMAND;
+        else if (currToken.GetValue() == "{") m_sType = CommandTypes::BLOCK_START;
+        else if (currToken.GetValue() == "{") m_sType = CommandTypes::BLOCK_END;
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::IDENTIFIER)
@@ -81,9 +83,10 @@ bool Command::Append(Token currToken, Token nextToken)
         else return FoundUnknown();
     }
     else if (nextToken.GetValue() == "xor"){}//todo: handle
-    //todo: handle {}
+    
     //todo: handle arrays
     //todo: handle if statements
     //todo: handle loops
     //todo: handle math and boolean
+    //todo: handle returns
 }

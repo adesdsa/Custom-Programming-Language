@@ -24,6 +24,8 @@ namespace CommandTypes
     inline constexpr std::string_view VAR_DECLARATION_ASSIGNMENT    = "VAR_DECLARATION_ASSIGNMENT";
     inline constexpr std::string_view VAR_ASSIGNMENT                = "VAR_ASSIGNMENT";
     inline constexpr std::string_view VAR_ASSIGNMENT_START          = "VAR_ASSIGNMENT_START";
+    inline constexpr std::string_view BLOCK_START                   = "BLOCK_START";
+    inline constexpr std::string_view BLOCK_END                     = "BLOCK_END";
 }
 
 class Command 
