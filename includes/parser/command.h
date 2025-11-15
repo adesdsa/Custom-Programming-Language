@@ -26,6 +26,13 @@ namespace CommandTypes
     inline constexpr std::string_view VAR_ASSIGNMENT_START          = "VAR_ASSIGNMENT_START";
     inline constexpr std::string_view BLOCK_START                   = "BLOCK_START";
     inline constexpr std::string_view BLOCK_END                     = "BLOCK_END";
+    inline constexpr std::string_view ELSE                          = "ELSE";
+    inline constexpr std::string_view ELIF_CALL                     = "ELIF_CALL";
+    inline constexpr std::string_view IF_CALL                       = "IF_CALL";
+    inline constexpr std::string_view ELIF_START                    = "ELIF_START";
+    inline constexpr std::string_view IF_START                      = "IF_START";
+    inline constexpr std::string_view ELIF                          = "ELIF";
+    inline constexpr std::string_view IF                            = "IF";
 }
 
 class Command 
@@ -47,7 +54,7 @@ private:
     bool IsAccessRights();
     bool IsScope();
     bool FoundUnknown(); //m_sType = CommandTypes::UNKNOWN; return true;
-    bool IsBoolean(); // includes bool keywords and bool operators
+    bool IsBoolean(); // includes bool keywords and bool operators and bool values
     bool IsControlStatement(); // includes continue pass and break
     bool IsLoopStatement(); // includes for and while
     bool IsLogicStatement(); // includes if elif and else

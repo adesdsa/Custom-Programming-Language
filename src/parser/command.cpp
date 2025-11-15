@@ -16,6 +16,9 @@ bool Command::Append(Token currToken, Token nextToken)
         else if (currToken.GetValue() == ";") m_sType = CommandTypes::END_OF_COMMAND;
         else if (currToken.GetValue() == "{") m_sType = CommandTypes::BLOCK_START;
         else if (currToken.GetValue() == "{") m_sType = CommandTypes::BLOCK_END;
+        else if (currToken.GetValue() == "else") m_sType = CommandTypes::ELSE;
+        else if (currToken.GetValue() == "if") m_sType = CommandTypes::IF_CALL;
+        else if (currToken.GetValue() == "elif") m_sType = CommandTypes::ELIF_CALL;
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::IDENTIFIER)
@@ -72,21 +75,33 @@ bool Command::Append(Token currToken, Token nextToken)
     }
     else if (m_sType == CommandTypes::VAR_DECLARATION)
     {
-        //todo: handle assignment parameters
-        if(CheckParamsValues()) m_sType = CommandTypes::VAR_DECLARATION_ASSIGNMENT;
+        //todo: handle assignment parameters and array if needed
+        if (CheckParamsValues()) m_sType = CommandTypes::VAR_DECLARATION_ASSIGNMENT;
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::VAR_ASSIGNMENT_START)
     {
-        //todo: handle assignment parameters
-        if(CheckParamsValues()) m_sType = CommandTypes::VAR_ASSIGNMENT;
+        //todo: handle assignment parameters and array if needed
+        if (CheckParamsValues()) m_sType = CommandTypes::VAR_ASSIGNMENT;
         else return FoundUnknown();
     }
     else if (nextToken.GetValue() == "xor"){}//todo: handle
-    
-    //todo: handle arrays
+    else if (m_sType == CommandTypes::ELIF_CALL || m_sType == CommandTypes::IF_CALL)
+    {
+        if (currToken.GetValue() == "(" && m_sType == CommandTypes::ELIF_CALL) m_sType = CommandTypes::ELIF_START;
+        else if (currToken.GetValue() == "(" && m_sType == CommandTypes::IF_CALL) m_sType = CommandTypes::IF_START;
+        else return FoundUnknown();
+    }
+    else if (m_sType == CommandTypes::ELIF_START || m_sType == CommandTypes::IF_START)
+    {
+        if (currToken.GetValue() == ")" && m_sType == CommandTypes::ELIF_START) m_sType = CommandTypes::ELIF;
+        else if (currToken.GetValue() == ")" && m_sType == CommandTypes::IF_START) m_sType = CommandTypes::IF;
+        else if (false) pass //todo: handle if params
+        else return FoundUnknown();
+    }
     //todo: handle if statements
     //todo: handle loops
     //todo: handle math and boolean
     //todo: handle returns
+    m_tokens.push_back(currToken);
 }
