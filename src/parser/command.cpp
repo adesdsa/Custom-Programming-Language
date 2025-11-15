@@ -16,73 +16,25 @@ bool Command::Append(Token currToken, Token nextToken)
         //todo: handle CommandTypes::ASSIGNMENT, 
         //todo: remove assignment, it should only be identifier = and then and expression
         //todo: handle void in func params
+        //todo: check boolean again
         case CommandTypes::UNIDENTIFIED: return ParseUnidentified(currToken, nextToken);
+        case CommandTypes::ACCESS_RIGHTS: return ParseAccessRights(currToken, nextToken);
+        case CommandTypes::SCOPE: return ParseScope(currToken, nextToken);
         case CommandTypes::IDENTIFIER: return ParseIdentifier(currToken, nextToken);
         case CommandTypes::FUNC_START: return ParseFuncStart(currToken, nextToken);
+        case CommandTypes::FILLED_FUNC_DECLARATION: return ParseFilledFuncDeclaration(currToken, nextToken);
+        case CommandTypes::ARROW_FUNC_DECLARATION: return ParseArrowFuncDeclaration(currToken, nextToken);
+        case CommandTypes::VAR_DECLARATION_START: return ParseVarDeclarationStart(currToken, nextToken);
+        case CommandTypes::ELIF_CALL: return ParseParameterKeywordCall(currToken, nextToken);
+        case CommandTypes::IF_CALL: return ParseParameterKeywordCall(currToken, nextToken);
+        case CommandTypes::FOR_CALL: return ParseParameterKeywordCall(currToken, nextToken);
+        case CommandTypes::WHILE_CALL: return ParseParameterKeywordCall(currToken, nextToken);
+        case CommandTypes::ELIF_START: return ParseParameterKeywordStart(currToken, nextToken);
+        case CommandTypes::IF_START: return ParseParameterKeywordStart(currToken, nextToken);
+        case CommandTypes::FOR_START: return ParseParameterKeywordStart(currToken, nextToken);
+        case CommandTypes::WHILE_START: return ParseParameterKeywordStart(currToken, nextToken);
     }
 
-
-    else if (m_sType == CommandTypes::FILLED_FUNC_DECLARATION)
-    {
-        if (currToken.GetValue() == "->") m_sType = CommandTypes::ARROW_FUNC_DECLARATION;
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::ARROW_FUNC_DECLARATION)
-    {
-        if (IsType()) 
-        {
-            m_sType = CommandTypes::FUNC_DECLARATION;
-            return true;
-        }
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::ACCESS_RIGHTS)
-    {
-        if (IsScope()) m_sType = CommandTypes::SCOPE;
-        else if (currToken.GetType() == TokenTypes::IDENTIFIER) TurnToIdentifier(nextToken);
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::SCOPE)
-    {
-        if (currToken.GetType() == TokenTypes::IDENTIFIER) TurnToIdentifier(nextToken);
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::VAR_DECLARATION_START)
-    {
-        if (IsType()) m_sType = CommandTypes::VAR_DECLARATION;
-        else return FoundUnknown();
-
-        if(nextToken.GetValue() != "=") return true;
-    }
-    else if (m_sType == CommandTypes::VAR_DECLARATION)
-    {
-        //todo: handle assignment parameters and array if needed
-        if (CheckParamsValues()) m_sType = CommandTypes::VAR_DECLARATION_ASSIGNMENT;
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::VAR_ASSIGNMENT_START)
-    {
-        //todo: handle assignment parameters and array if needed
-        if (CheckParamsValues()) m_sType = CommandTypes::VAR_ASSIGNMENT;
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::ELIF_CALL || m_sType == CommandTypes::IF_CALL || m_sType == CommandTypes::FOR_CALL || m_sType == CommandTypes::WHILE_CALL)
-    {
-        if (currToken.GetValue() == "(" && m_sType == CommandTypes::ELIF_CALL) m_sType = CommandTypes::ELIF_START;
-        else if (currToken.GetValue() == "(" && m_sType == CommandTypes::IF_CALL) m_sType = CommandTypes::IF_START;
-        if (currToken.GetValue() == "(" && m_sType == CommandTypes::FOR_CALL) m_sType = CommandTypes::FOR_START;
-        else if (currToken.GetValue() == "(" && m_sType == CommandTypes::WHILE_CALL) m_sType = CommandTypes::WHILE_START;
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::ELIF_START || m_sType == CommandTypes::IF_START || m_sType == CommandTypes::FOR_START || m_sType == CommandTypes::WHILE_START)
-    {
-        if (currToken.GetValue() == ")" && m_sType == CommandTypes::ELIF_START) m_sType = CommandTypes::ELIF;
-        else if (currToken.GetValue() == ")" && m_sType == CommandTypes::IF_START) m_sType = CommandTypes::IF;
-        if (currToken.GetValue() == ")" && m_sType == CommandTypes::FOR_START) m_sType = CommandTypes::FOR;
-        else if (currToken.GetValue() == ")" && m_sType == CommandTypes::WHILE_START) m_sType = CommandTypes::WHILE;
-        else if (false) pass //todo: handle params
-        else return FoundUnknown();
-    }
     else if (m_sType == CommandTypes::EXPRESSION_VALUE)
     {
         if (currToken.GetType() == TokenTypes::OPERATOR)
@@ -209,19 +161,82 @@ bool Command::ParseFuncStart(Token currToken, Token nextToken)
         m_uParameterIndex--;
         if (m_uParameterIndex == 0)
         {
-            if (CheckParamsValues())//todo:change func name
-            {
-                m_sType = CommandTypes::FUNC_CALL;
-                return true;
-            }
-            else if (CheckParamsDeclarations) m_sType = CommandTypes::FILLED_FUNC_DECLARATION;//todo:change func name
-            else return FoundUnknown();
+            //todo: add the next checks:
+            //check that the parameters are legal(divided bu ,)
+            //check if the func is a calling or a declaration
+            //if it's a calling it should be returned as finished command
         }
-    }//todo: add the func params handling also handle void
-    else
-    {
-        //im here
     }
+    else HandleParams(currToken, nextToken);
+}
+
+bool Command::ParseFilledFuncDeclaration(Token currToken, Token nextToken)
+{
+    if (IsValue(currToken, "->")) m_sType = CommandTypes::ARROW_FUNC_DECLARATION;
+    else return FoundUnknown();
+    return false;
+}
+
+bool Command::ParseArrowFuncDeclaration(Token currToken, Tpken nextToken)
+{
+    if (IsType()) return FinishAndAssignType(CommandTypes::FUNC_DECLARATION);
+    else return FoundUnknown();
+}
+
+bool Command::ParseAccessRights(Token currToken, Token nextToken)
+{
+    if (IsScope()) m_sType = CommandTypes::SCOPE;
+    else if (IsType(currToken, TokenTypes::IDENTIFIER)) TurnToIdentifier(nextToken);
+    else return FoundUnknown();
+    return false;
+}
+
+bool Command::ParseScope(Token currToken, Token nextToken)
+{
+    if (IsType(currToken, TokenTypes::IDENTIFIER)) TurnToIdentifier(nextToken);
+    else return FoundUnknown();
+    return false;
+}
+
+bool Command::ParseVarDeclarationStart(Token currToken, Token nextToken)
+{
+    if (IsType()) return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
+    else return FoundUnknown();
+}
+
+bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
+{
+    if (IsValue(currToken, "("))
+    {
+        m_uParameterIndex++;
+        switch(m_sType)
+        {
+            case CommandTypes::ELIF_CALL: return NoFinishAndAssignType(ELIF_START);
+            case CommandTypes::IF_CALL: return NoFinishAndAssignType(IF_START);
+            case CommandTypes::FOR_CALL: return NoFinishAndAssignType(FOR_START);
+            case CommandTypes::WHILE_CALL: return NoFinishAndAssignType(WHILE_START);
+        }
+    }
+    else return FoundUnknown();
+}
+
+bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
+{
+    if (IsValue(currToken, ")")) m_uParameterIndex--;
+    else HandleParams(currToken, nextToken); //todo: you need to check this again
+
+    if (m_uParameterIndex == 0)
+    {
+        switch(m_sType)
+        {
+            case CommandTypes::ELIF_CALL: return FinishAndAssignType(ELIF);
+            case CommandTypes::IF_CALL: return FinishAndAssignType(IF);
+            case CommandTypes::FOR_CALL: return FinishAndAssignType(FOR);
+            case CommandTypes::WHILE_CALL: return FinishAndAssignType(WHILE);
+        }
+    }
+    else return FoundUnknown();
+    return false;
 }
 
 
@@ -262,40 +277,30 @@ inline bool Command::FinishAndAssignType(std::string_view sType)
     return true;
 }
 
+inline bool Command::NoFinishAndAssignType(std::string_view sType)
+{
+    m_sType = sType;
+    return false;
+}
+
 bool Command::FoundUnknown() 
 {
     m_sType = CommandTypes::UNKNOWN;
     return true;
 }
 
-bool Command::HandleParams(Token currToken, Token nextToken)
+void Command::HandleParams(Token currToken, Token nextToken)
 {
-    if (m_bBuildingParam && currToken.GetValue() == ",")
+    if (IsValue(currToken, ","))
     {
         m_tokens.push_back(currToken);
         m_uParameterIndex++;
     }
-    else if (m_bBuildingParam)
+    else if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
     {
-        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
-        {
-            m_bBuildingParam = false;
-            m_uParameterIndex++;
-        }
+        m_bBuildingParam = false;
+        m_uParameterIndex++;
     }
-    else if (IsExpressionStart(currToken)) // Started building the param
-    {
-        m_bBuildingParam = true;
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger)); //todo: handle so that the token wont be appended in append()
-        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
-        {
-            m_bBuildingParam = false;
-            m_uParameterIndex++;
-        }
-    }
-    else if (currToken.GetValue() != ",") return false;
-
-    return true;
 }
 
 bool Command::HandleParantheses(Token currToken, Token nextToken)

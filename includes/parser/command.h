@@ -6,6 +6,10 @@
 
 #include "tokenizer/token.h"
 
+///todo
+///             This Class Will Be Changed To Decorated Tokens And Then Will Make Command Class
+///
+
 namespace CommandTypes
 {
     inline constexpr std::string_view UNIDENTIFIED                  = "UNIDENTIFIED";
@@ -66,8 +70,15 @@ private:
     bool m_bIgnoreCurrToken;
 
     bool ParseUnidentified(Token currToken, Token nextToken);
+    bool ParseAccessRights(Token currToken, Token nextToken);
+    bool ParseScope(Token currToken, Token nextToken);
     bool ParseIdentifier(Token currToken, Token nextToken);
     bool ParseFuncStart(Token currToken, Token nextToken);
+    bool ParseFilledFuncDeclaration(Token currToken, Token nextToken);
+    bool ParseArrowFuncDeclaration(Token currToken, Tpken nextToken);
+    bool ParseVarDeclarationStart(Token currToken, Token nextToken);
+    bool ParseParameterKeywordCall(Token currToken, Token nextToken);
+    bool ParseParameterKeywordStart(Token currToken, Token nextToken);
 
     inline bool IsValue(Token token, std::string_view sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
@@ -77,6 +88,7 @@ private:
     bool IsExpressionStart();
 
     inline bool FinishAndAssignType(std::string_view sType);
+    inline bool NoFinishAndAssignType(std::string_view sType);
     bool CheckParamsValues();
     bool CheckParamsDeclarations();
     bool IsType();
@@ -87,7 +99,7 @@ private:
     bool IsLogicStatement(); // includes if elif and else
 
     // true->legal,false->illegal
-    bool HandleParams(Token currToken, Token nextToken);
+    void HandleParams(Token currToken, Token nextToken);
     bool HandleParantheses(Token currToken, Token nextToken);
     bool TurnToIdentifier(Token nextToken);
 
