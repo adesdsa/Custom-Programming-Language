@@ -181,7 +181,6 @@ bool Command::Append(Token currToken, Token nextToken)
         }
     }
 
-    //todo: handle math and boolean
     //todo: handle arrays
     m_tokens.push_back(currToken); // there is no support for int a, b, c=0;
     // add logs at the end
