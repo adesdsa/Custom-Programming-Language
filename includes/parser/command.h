@@ -33,6 +33,12 @@ namespace CommandTypes
     inline constexpr std::string_view IF_START                      = "IF_START";
     inline constexpr std::string_view ELIF                          = "ELIF";
     inline constexpr std::string_view IF                            = "IF";
+    inline constexpr std::string_view FOR_CALL                      = "FOR_CALL";
+    inline constexpr std::string_view WHILE_CALL                    = "WHILE_CALL";
+    inline constexpr std::string_view FOR_START                     = "FOR_START";
+    inline constexpr std::string_view WHILE_START                   = "WHILE_START";
+    inline constexpr std::string_view FOR                           = "FOR";
+    inline constexpr std::string_view WHILE                         = "WHILE";
 }
 
 class Command 

@@ -19,6 +19,8 @@ bool Command::Append(Token currToken, Token nextToken)
         else if (currToken.GetValue() == "else") m_sType = CommandTypes::ELSE;
         else if (currToken.GetValue() == "if") m_sType = CommandTypes::IF_CALL;
         else if (currToken.GetValue() == "elif") m_sType = CommandTypes::ELIF_CALL;
+        else if (currToken.GetValue() == "for") m_sType = CommandTypes::FOR_CALL;
+        else if (currToken.GetValue() == "while") m_sType = CommandTypes::WHILE_CALL;
         else return FoundUnknown();
     }
     else if (m_sType == CommandTypes::IDENTIFIER)
@@ -86,20 +88,24 @@ bool Command::Append(Token currToken, Token nextToken)
         else return FoundUnknown();
     }
     else if (nextToken.GetValue() == "xor"){}//todo: handle
-    else if (m_sType == CommandTypes::ELIF_CALL || m_sType == CommandTypes::IF_CALL)
+    else if (m_sType == CommandTypes::ELIF_CALL || m_sType == CommandTypes::IF_CALL || m_sType == CommandTypes::FOR_CALL || m_sType == CommandTypes::WHILE_CALL)
     {
         if (currToken.GetValue() == "(" && m_sType == CommandTypes::ELIF_CALL) m_sType = CommandTypes::ELIF_START;
         else if (currToken.GetValue() == "(" && m_sType == CommandTypes::IF_CALL) m_sType = CommandTypes::IF_START;
+        if (currToken.GetValue() == "(" && m_sType == CommandTypes::FOR_CALL) m_sType = CommandTypes::FOR_START;
+        else if (currToken.GetValue() == "(" && m_sType == CommandTypes::WHILE_CALL) m_sType = CommandTypes::WHILE_START;
         else return FoundUnknown();
     }
-    else if (m_sType == CommandTypes::ELIF_START || m_sType == CommandTypes::IF_START)
+    else if (m_sType == CommandTypes::ELIF_START || m_sType == CommandTypes::IF_START || m_sType == CommandTypes::FOR_START || m_sType == CommandTypes::WHILE_START)
     {
         if (currToken.GetValue() == ")" && m_sType == CommandTypes::ELIF_START) m_sType = CommandTypes::ELIF;
         else if (currToken.GetValue() == ")" && m_sType == CommandTypes::IF_START) m_sType = CommandTypes::IF;
-        else if (false) pass //todo: handle if params
+        if (currToken.GetValue() == ")" && m_sType == CommandTypes::FOR_START) m_sType = CommandTypes::FOR;
+        else if (currToken.GetValue() == ")" && m_sType == CommandTypes::WHILE_START) m_sType = CommandTypes::WHILE;
+        else if (false) pass //todo: handle params
         else return FoundUnknown();
     }
-    //todo: handle if statements
+
     //todo: handle loops
     //todo: handle math and boolean
     //todo: handle returns
