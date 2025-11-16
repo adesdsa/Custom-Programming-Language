@@ -1,5 +1,5 @@
-#include "../../includes/parser_component/ast_node.h"
-#include "../../includes/parser_component/ast.h"
+#include "parser_component/ast_node.h"
+#include "parser_component/ast.h"
 
 ASTNode::ASTNode(const Token& token) : 
     m_token(token), 
