@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../tokenizer/token.h"
+#include "tokenizer/token.h"
 // #include <cstddef>
 
 class AST;

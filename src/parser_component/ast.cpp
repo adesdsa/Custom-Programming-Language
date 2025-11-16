@@ -1,4 +1,4 @@
-#include "../../includes/parser_component/ast.h"
+#include "parser_component/ast.h"
 
 AST::~AST() 
 {
