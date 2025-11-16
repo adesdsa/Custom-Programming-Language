@@ -79,13 +79,17 @@ private:
     bool ParseVarDeclarationStart(Token currToken, Token nextToken);
     bool ParseParameterKeywordCall(Token currToken, Token nextToken);
     bool ParseParameterKeywordStart(Token currToken, Token nextToken);
+    bool ParseExpressionValue(Token currToken, Token nextToken);
+    bool ParseExpressionOperator(Token currToken, Token nextToken);
 
-    inline bool IsValue(Token token, std::string_view sCompare);
+    inline bool IsValue(Token token, std::string sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
     bool CompareNextExpected(Token token, std::string sCompare, std::string_view sValidType)
     bool IsAccessRights(Token currToken);
     bool IsScope(Token currToken);
     bool IsExpressionStart();
+    inline bool IsTokenExpressionOperator(Token currToken);
+    inline bool IsValueToken(Token token);
 
     inline bool FinishAndAssignType(std::string_view sType);
     inline bool NoFinishAndAssignType(std::string_view sType);
@@ -97,6 +101,8 @@ private:
     bool IsControlStatement(); // includes continue pass and break
     bool IsLoopStatement(); // includes for and while
     bool IsLogicStatement(); // includes if elif and else
+    inline bool AddToCurrParam(Token currToken, Token nextToken);
+    inline void StartParamSequence(Token currToken, Token nextToken);
 
     // true->legal,false->illegal
     void HandleParams(Token currToken, Token nextToken);

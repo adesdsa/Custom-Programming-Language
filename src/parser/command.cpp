@@ -17,6 +17,7 @@ bool Command::Append(Token currToken, Token nextToken)
         //todo: remove assignment, it should only be identifier = and then and expression
         //todo: handle void in func params
         //todo: check boolean again
+        //todo: handle * (pointers)
         case CommandTypes::UNIDENTIFIED: return ParseUnidentified(currToken, nextToken);
         case CommandTypes::ACCESS_RIGHTS: return ParseAccessRights(currToken, nextToken);
         case CommandTypes::SCOPE: return ParseScope(currToken, nextToken);
@@ -33,70 +34,8 @@ bool Command::Append(Token currToken, Token nextToken)
         case CommandTypes::IF_START: return ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::FOR_START: return ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::WHILE_START: return ParseParameterKeywordStart(currToken, nextToken);
-    }
-
-    else if (m_sType == CommandTypes::EXPRESSION_VALUE)
-    {
-        if (currToken.GetType() == TokenTypes::OPERATOR)
-        {
-            if (nextToken.GetValue() == "(") m_sType = CommandTypes::PARANTHESES;
-            else m_sType = CommandTypes::EXPRESSION_OPERATOR;
-        }
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::EXPRESSION_OPERATOR)
-    {
-        if (m_bBuildingParam) 
-        {
-            if (!HandleParams(currToken, nextToken))
-            {
-                if (nextToken.GetValue() != ")") m_sType = CommandTypes::UNKNOWN;
-                else m_sType = CommandTypes::EXPRESSION_VALUE;
-            }
-        }
-        else if (currToken.GetType() == TokenTypes::VALUE) m_sType = CommandTypes::EXPRESSION_VALUE;
-        else if (currToken.GetType() == TokenTypes::IDENTIFIER)
-        {
-            if (nextToken.GetValue() == "(")
-            {
-                m_bBuildingParam = true;
-                HandleParams(currToken, nextToken);
-            }
-            else m_sType = CommandTypes::EXPRESSION_VALUE;
-        }
-        else return FoundUnknown();
-    }
-    else if (m_sType == CommandTypes::PARANTHESES)
-    {
-        if (currToken.GetValue() == "(")
-        {
-            if(m_uParanthesesCounter == 0)
-            {
-                m_uParanthesesCounter++;
-                if (!IsExpressionStart(nextToken))
-                {
-                    m_sType = CommandTypes::UNKNOWN;
-                }
-                else 
-                {
-                    m_bBuildingParam = true;
-                }
-            }
-            else m_uParanthesesCounter++;
-        }
-        else if (currToken.GetValue() == ")")
-        {
-            m_uParanthesesCounter--;
-        }
-
-        if (m_uParanthesesCounter == 0)
-        {
-            m_bBuildingParam = false;
-        }
-        if (m_bBuildingParam)
-        {
-            HandleParantheses(currToken, nextToken);
-        }
+        case CommandTypes::EXPRESSION_VALUE: return ParseExpressionValue(currToken, nextToken);
+        case CommandTypes::EXPRESSION_OPERATOR: return ParseExpressionOperator(currToken, nextToken);
     }
 
     //todo: handle assignment
@@ -128,7 +67,7 @@ bool Command::ParseUnidentified(Token currToken, Token nextToken)
     else if (IsValue(currToken, "=")) FinishAndAssignType(CommandTypes::ASSIGNMENT);
     else if (IsExpressionStart(currToken))
     {
-        if (IsValue(currToken, "-")) m_sType = CommandTypes::EXPRESSION_OPERATOR;
+        if (IsValue(currToken, "-") || IsValue(currToken, "not")) m_sType = CommandTypes::EXPRESSION_OPERATOR;
         else m_sType = CommandTypes::EXPRESSION_VALUE;
     }
     else return FoundUnknown();
@@ -239,6 +178,46 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
     return false;
 }
 
+bool Command::ParseExpressionValue(Token currToken, Token nextToken)
+{
+    if (IsTokenExpressionOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
+    else return FoundUnknown()
+}
+
+bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
+{
+    if (m_bBuildingParam)
+    {
+        m_bIgnoreCurrToken = true;
+        if (AddToCurrParam(currToken, nextToken)) return FinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        else return false;
+    }
+    else if (IsValueToken(currToken))
+    {
+        switch (currToken.GetType())
+        {
+        case TokenTypes::IDENTIFIER:
+            if (IsValue(nextToken, "("))
+            {
+                m_bIgnoreCurrToken = true;
+                m_bBuildingParam = true;
+                return AddToCurrParam(currToken, nextToken);
+            }
+            else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        case TokenTypes::VALUE: return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        }
+    }
+    else if (IsValue(currToken, "("))
+    {
+        m_uParanthesesCounter++; //todo: remember that when it's and expression you need to check that the paranthesesCounter is 0 at the end
+        return false;
+    }
+    else if (IsValue(currToken, "not")) return false;
+    else return FoundUnknown();
+
+    return false;
+}
+
 
 inline bool Command::IsValue(Token token, std::string sCompare)
 {
@@ -268,6 +247,24 @@ bool Command::IsAccessRights(Token currToken)
 bool Command::IsScope(Token currToken)
 {
     return IsValue(currToken, "global") || IsValue(currToken, "var") || IsValue(currToken, "let");
+}
+
+bool Command::IsExpressionStart(Token check)
+{
+    return check.GetType() == TokenTypes::IDENTIFIER || check.GetType() == TokenTypes::VALUE
+        || check.GetValue() == "-" ||  || IsValue(currToken, "not");
+}
+
+inline bool Command::IsTokenExpressionOperator(Token currToken)
+{
+    return (IsType(currToken, TokenTypes::OPERATOR) && !IsValue(currToken, "="))
+        || IsValue(currToken, "and") || IsValue(currToken, "or") ||
+         IsValue(currToken, "xor");
+}
+
+inline bool Command::IsValueToken(Token token)
+{
+    return IsType(token, TokenTypes::IDENTIFIER) || IsType(token, TokenTypes::VALUE);
 }
 
 
@@ -328,13 +325,22 @@ bool Command::HandleParantheses(Token currToken, Token nextToken)
     return true;
 }
 
-bool Command::IsExpressionStart(Token check)
-{
-    return check.GetType() == TokenTypes::IDENTIFIER || check.GetType() == TokenTypes::VALUE || check.GetValue() == "-"
-}
-
 bool Command::TurnToIdentifier(Token nextToken)
 {
     m_sType = CommandTypes::IDENTIFIER;
     return nextToken.GetType() == TokenTypes::OPERATOR;
+}
+
+inline bool Command::AddToCurrParam(Token currToken, Token nextToken)
+{
+    return m_parameters[m_uParameterIndex].Append(currToken, nextToken);
+}
+
+inline void Command::StartParamSequence(Token currToken, Token nextToken)
+{
+    m_uParanthesesCounter++;
+    m_bBuildingParam = true;
+    m_bIgnoreCurrToken = true;
+    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+    AddToCurrParam(currToken, nextToken);
 }
