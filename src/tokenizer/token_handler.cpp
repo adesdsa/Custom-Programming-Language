@@ -1,4 +1,4 @@
-#include "../../includes/tokenizer/token_handler.h"
+#include "tokenizer/token_handler.h"
 
 TokenHandler::TokenHandler(const EntityLogger& entityLogger) : 
     m_entityLogger(entityLogger) {}
