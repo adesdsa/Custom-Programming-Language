@@ -25,11 +25,11 @@ namespace TestsUtils
 
         while (!lexer.IsFinishedReadingSRC())
         {
-            auto token = lexer.Tokenize();
+            Token token = lexer.Tokenize();
 
-            if (token.has_value())
-            { 
-                tokens.push_back(token.value());
+            if (token.GetType() != TokenTypes::EOF_TOKEN)
+            {
+                tokens.push_back(token);
             }
         }
         return tokens;

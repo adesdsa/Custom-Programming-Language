@@ -17,14 +17,12 @@ int main(void)
     {
         Lexer lexer("../../tests/inputs/test4.txt");
         
-        while(!lexer.IsFinishedReadingSRC()) 
+        while(true) 
         {
-            auto token = lexer.Tokenize();
+            Token token = lexer.Tokenize();
 
-            if(token.has_value())
-            {
-                std::cout << token.value().GetType() << " - " << token.value().GetValue() << " - " << token.value().GetLine() << std::endl;
-            }
+            std::cout << token.GetType() << " - " << token.GetValue() << " - " << token.GetLine() << std::endl;
+            if (token.GetType() == TokenTypes::EOF_TOKEN) break;
         }
     }
 
