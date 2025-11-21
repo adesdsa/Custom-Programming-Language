@@ -12,12 +12,11 @@ public:
     
     ~Lexer() = default;
 
-    // Get every token from the source file and push it to the stream.
-    // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
+    // @return: single relevant token (none trivia) from source file
     std::optional<Token> Tokenize();
 
     // Checks If file has ended by reaching EOF.
-    // @return: True => File has ended (EOF), False => Otherwise.
+    // @return: True -> File has ended (EOF), False -> Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
 
     const EntityLogger& GetEntityLogger() const noexcept;
