@@ -13,7 +13,7 @@ public:
     ~Lexer() = default;
 
     // @return: single relevant token (none trivia) from source file
-    Token Tokenize();
+    std::optional<Token> Tokenize();
 
     // Checks If file has ended by reaching EOF.
     // @return: True -> File has ended (EOF), False -> Otherwise.

@@ -5,29 +5,26 @@ Lexer::Lexer(const std::string& sInputFile) :
     m_tokenFactory(sInputFile, m_entityLogger),
     m_tokenHandler(m_entityLogger) {}
 
-Token Lexer::Tokenize()
+std::optional<Token> Lexer::Tokenize()
 {
     this->m_entityLogger.Info("Start Creating new token...");
 
-    try
+    while (!this->IsFinishedReadingSRC()) 
     {
-        while (!this->IsFinishedReadingSRC()) 
+        auto token = this->m_tokenHandler.HandleToken(
+            this->m_tokenFactory.CreateToken()
+        );
+        
+        if (token.has_value())
         {
-            auto token = this->m_tokenHandler.HandleToken(
-                this->m_tokenFactory.CreateToken()
-            );
-            
-            if (token.has_value())
-            {
-                return token.value();
-            }
+            return token;
         }
-
-        // Gets the EOF token
-        return this->m_tokenFactory.CreateToken();
     }
-    catch(std::runtime_error&) { throw; }
-    catch(std::exception&) { throw; }
+
+    // Gets the EOF token
+    return std::optional<Token>{ 
+        this->m_tokenFactory.CreateToken() 
+    };
 }
 
 bool Lexer::IsFinishedReadingSRC() const noexcept

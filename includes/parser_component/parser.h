@@ -13,4 +13,6 @@ private:
     Lexer m_lexer;
     Token m_currentToken;
     Token m_nextToken;
+
+    Token FetchToken();
 };

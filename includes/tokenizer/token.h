@@ -42,10 +42,12 @@ public:
     // @return: true -> The token is finished, false -> Otherwise.
     bool Append(char cAddedChar) noexcept;
 
+    // Getters
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
     size_t GetLine() const noexcept;
 
+    // Operators
     bool operator==(const Token& other) const;
 
 private:

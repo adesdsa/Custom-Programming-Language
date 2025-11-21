@@ -25,7 +25,11 @@ namespace TestsUtils
 
         while (!lexer.IsFinishedReadingSRC())
         {
-            Token token = lexer.Tokenize();
+            auto optToken = lexer.Tokenize();
+
+            if(!optToken) continue;
+
+            Token token = std::move(*optToken);
 
             if (token.GetType() != TokenTypes::EOF_TOKEN)
             {

@@ -20,7 +20,7 @@ Token::Token(
     ) :
         m_sValue(sTokenValue),
         m_sType(sTokenType),
-        m_ulLine(ulLine),
+        m_ulLine(),
         m_entityLogger(entityLogger) {}
 
 bool Token::Append(char cAddedChar) noexcept
@@ -98,7 +98,7 @@ size_t Token::GetLine() const noexcept
 {
     return this->m_ulLine;
 }
-
+    
 bool Token::operator==(const Token& other) const
 {
     return this->m_sType == other.m_sType && 
