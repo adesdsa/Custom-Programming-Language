@@ -8,6 +8,8 @@ public:
     Parser(const std::string& sFilePath);
     ~Parser() = default;
 
+    void Advance();
+
 private:
     EntityLogger m_entityLogger;
     Lexer m_lexer;

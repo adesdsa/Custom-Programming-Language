@@ -12,7 +12,15 @@ Token Parser::FetchToken()
 
     if (!token)
     {
+        this->m_entityLogger.Error("Failed to fetch new token from lexer");
         throw std::runtime_error("Lexer returned no token"); 
     }
     return std::move(*token);
+}
+
+void Parser::Advance()
+{
+    Token nextToken = this->FetchToken();
+    this->m_currentToken = std::move(this->m_nextToken);
+    this->m_nextToken = std::move(nextToken);
 }

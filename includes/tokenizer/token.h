@@ -30,9 +30,9 @@ namespace TokenStatus
 class Token
 {
 public:
-    Token(size_t ulLine, const EntityLogger& entityLogger);
-    Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
-    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
+    Token(size_t ulLine);
+    Token(std::string_view sTokenType, size_t ulLine);
+    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine);
 
     ~Token() = default;
 
@@ -54,7 +54,6 @@ private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
-    const EntityLogger& m_entityLogger;
 
     // Set a single character token.
     // @param sTokenValue: New value of the token.
