@@ -50,6 +50,8 @@ namespace CommandTypes
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS"; // Please notice that it's to tokens are only the identifier and the expression
     inline constexpr std::string_view ARRAY_ACCESS_START            = "ARRAY_ACCESS_START";
     inline constexpr std::string_view ASSIGNMENT                    = "ASSIGNMENT";
+    inline constexpr std::string_view VOID_COMMAND                  = "VOID_COMMAND";
+    inline constexpr std::string_view VAR_POINTER                   = "VAR_POINTER";
 }
 
 class Command 
@@ -81,6 +83,7 @@ private:
     bool ParseParameterKeywordStart(Token currToken, Token nextToken);
     bool ParseExpressionValue(Token currToken, Token nextToken);
     bool ParseExpressionOperator(Token currToken, Token nextToken);
+    bool ParseVarPointer(Token currToken, Token nextToken);
 
     inline bool IsValue(Token token, std::string sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
@@ -96,7 +99,7 @@ private:
     bool CheckParamsValues();
     bool CheckParamsDeclarations();
     bool IsType();
-    bool FoundUnknown(); //m_sType = CommandTypes::UNKNOWN; return true;
+    inline bool FoundUnknown(); //m_sType = CommandTypes::UNKNOWN; return true;
     bool IsBoolean(); // includes bool keywords and bool operators and bool values
     bool IsControlStatement(); // includes continue pass and break
     bool IsLoopStatement(); // includes for and while
