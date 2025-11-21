@@ -18,5 +18,6 @@ private:
     Token m_currentToken;
     Token m_nextToken;
 
+    // Gets new token from lexer
     Token FetchToken();
 };
