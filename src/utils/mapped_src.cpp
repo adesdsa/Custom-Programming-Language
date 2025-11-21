@@ -1,4 +1,4 @@
-#include "../../includes/tokenizer/mapped_src.h"
+#include "utils/mapped_src.h"
 
 MappedSRC::MappedSRC(const std::string& sFilePath) :
     m_sChunkContent(nullptr),
