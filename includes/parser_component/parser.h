@@ -8,6 +8,8 @@ public:
     Parser(const std::string& sFilePath);
     ~Parser() = default;
 
+    // Sets m_currentToken to be the m_nextToken
+    // and fetch new m_nextToken from lexer
     void Advance();
 
 private:
