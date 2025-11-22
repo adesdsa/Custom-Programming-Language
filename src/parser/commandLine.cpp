@@ -5,9 +5,19 @@ CommandLine::CommandLine(const EntityLogger& entityLogger): m_entityLogger(entit
     m_line.push_back(Command(m_entityLogger));
 }
 
-bool CommandLine::IsFinished()
+bool CommandLine::IsFinished() const
 {
     return m_bFinished;
+}
+
+bool CommandLine::IsLegal() const
+{
+    return m_bLegal;
+}
+
+const std::vector<Command>& CommandLine::GetLine() const
+{
+    return m_line;
 }
 
 bool CommandLine::AddToken(Token currToken, Token nextToken)
