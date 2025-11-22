@@ -15,7 +15,6 @@ namespace CommandTypes
     /// 
     ///             The next CommandTypes are the finished CommandTypes
     ///
-    inline constexpr std::string_view UNIDENTIFIED                  = "UNIDENTIFIED";
     inline constexpr std::string_view IDENTIFIER                    = "IDENTIFIER";
     inline constexpr std::string_view UNKNOWN                       = "UNKNOWN";
     inline constexpr std::string_view END_OF_COMMAND                = "END_OF_COMMAND";
@@ -33,19 +32,24 @@ namespace CommandTypes
     inline constexpr std::string_view VOID_COMMAND                  = "VOID_COMMAND";
     inline constexpr std::string_view POINTER_DECLARATION           = "POINTER_DECLARATION";
     inline constexpr std::string_view CONTROL_STATEMENT             = "CONTROL_STATEMENT";
+    inline constexpr std::string_view FINISHED_FUNC_DECLARATION     = "FINISHED_FUNC_DECLARATION";
+    inline constexpr std::string_view VAR_DECLARATION               = "VAR_DECLARATION";
+    inline constexpr std::string_view EOF_TOKEN                     = "EOF_TOKEN";
+    inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
+    inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
+    inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
 
 
     /// 
     ///             The next CommandTypes are the non finished CommandTypes
     ///
+    inline constexpr std::string_view UNIDENTIFIED                  = "UNIDENTIFIED";
     inline constexpr std::string_view FUNC_START                    = "FUNC_START";
     inline constexpr std::string_view FILLED_FUNC_DECLARATION       = "FILLED_FUNC_DECLARATION";
     inline constexpr std::string_view ARROW_FUNC_DECLARATION        = "ARROW_FUNC_DECLARATION";
-    inline constexpr std::string_view FUNC_DECLARATION              = "FUNC_DECLARATION";
     inline constexpr std::string_view ACCESS_RIGHTS                 = "ACCESS_RIGHTS";
     inline constexpr std::string_view SCOPE                         = "SCOPE";
     inline constexpr std::string_view VAR_DECLARATION_START         = "VAR_DECLARATION_START";
-    inline constexpr std::string_view VAR_DECLARATION               = "VAR_DECLARATION";
     inline constexpr std::string_view ELIF_CALL                     = "ELIF_CALL";
     inline constexpr std::string_view IF_CALL                       = "IF_CALL";
     inline constexpr std::string_view ELIF_START                    = "ELIF_START";
@@ -57,7 +61,6 @@ namespace CommandTypes
     inline constexpr std::string_view ARRAY_ACCESS_START            = "ARRAY_ACCESS_START";
     inline constexpr std::string_view NOT_FUNC_IDENTIFIER           = "NOT_FUNC_IDENTIFIER";
     inline constexpr std::string_view ARRAY_DECLARATION_START       = "ARRAY_DECLARATION_START";
-    inline constexpr std::string_view EOF_TOKEN                     = "EOF_TOKEN";
 }
 
 class Command 
@@ -74,6 +77,7 @@ private:
     std::string m_sType;                    // The Command's type.
     bool m_bBuildingParam;                  // Used to indicate if we are building a parameter right now.
     bool m_bIgnoreCurrToken;                // Used to indicate if we don't need to add the current token to the tokens vector.
+    bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line
     unsigned int m_uParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
 
@@ -263,6 +267,8 @@ private:
     // @param token: The token we are checking.
     // @return: True-> the Token is a control statement. False-> otherwise.
     bool IsControlStatement(Token token);
+
+    bool HandleKeywordParams(Token currToken, Token nextToken);
 
     // todo: create a [] operator for a foreach loop for easier param access
     // todo: add getters setters
