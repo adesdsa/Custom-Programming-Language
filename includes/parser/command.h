@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "tokenizer/token.h"
+#include "logger/entity_logger.h"
 
 ///todo
 ///             This Class Will Be Changed To Decorated Tokens And Then Will Make Command Class
@@ -66,15 +67,15 @@ namespace CommandTypes
 class Command 
 {
 public:
-    Command(); // todo: handle this shit later
+    Command(const EntityLogger& entityLogger);
     // The func tries adding a new token to the command to make 
     bool Append(Token currToken, Token nextToken);
 
 private:
-    const EntityLogger& m_entityLogger;
     std::vector<Token> m_tokens;            // Used for saving the tokens that the Command is made of.
     std::vector<Command> m_parameters;      // Used for saving the parameters of a command (for example the func params).
-    std::string m_sType;                    // The Command's type.
+    std::string_view m_sType;               // The Command's type.
+    const EntityLogger& m_entityLogger;
     bool m_bBuildingParam;                  // Used to indicate if we are building a parameter right now.
     bool m_bIgnoreCurrToken;                // Used to indicate if we don't need to add the current token to the tokens vector.
     bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line
@@ -272,4 +273,4 @@ private:
 
     // todo: create a [] operator for a foreach loop for easier param access
     // todo: add getters setters
-}
+};

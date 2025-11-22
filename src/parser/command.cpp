@@ -1,7 +1,9 @@
 #include "parser/command.h"
 
 
-Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0)
+Command::Command(const EntityLogger& entityLogger): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
+ m_bBuildingParam(false), m_bIgnoreCurrToken(false), m_bIgnoreEON(false),
+ m_uParanthesesCounter(0), m_entityLogger(entityLogger)
 {
 }
 
@@ -12,55 +14,27 @@ bool Command::Append(Token currToken, Token nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    switch (m_sType)
-    {
-        // todo: pass, sizeof
-        case CommandTypes::UNIDENTIFIED: bReturnValue = ParseUnidentified(currToken, nextToken);
-            break;
-        case CommandTypes::ACCESS_RIGHTS: bReturnValue = ParseAccessRights(currToken, nextToken);
-            break;
-        case CommandTypes::SCOPE: bReturnValue = ParseScope(currToken, nextToken);
-            break;
-        case CommandTypes::IDENTIFIER: bReturnValue = ParseIdentifier(currToken, nextToken);
-            break;
-        case CommandTypes::FUNC_START: bReturnValue = ParseFuncStart(currToken, nextToken);
-            break;
-        case CommandTypes::FILLED_FUNC_DECLARATION: bReturnValue = ParseFilledFuncDeclaration(currToken, nextToken);
-            break;
-        case CommandTypes::ARROW_FUNC_DECLARATION: bReturnValue = ParseArrowFuncDeclaration(currToken, nextToken);
-            break;
-        case CommandTypes::VAR_DECLARATION_START: bReturnValue = ParseVarDeclarationStart(currToken, nextToken);
-            break;
-        case CommandTypes::ELIF_CALL: bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
-            break;
-        case CommandTypes::IF_CALL: bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
-            break;
-        case CommandTypes::FOR_CALL: bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
-            break;
-        case CommandTypes::WHILE_CALL: bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
-            break;
-        case CommandTypes::ELIF_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
-            break;
-        case CommandTypes::IF_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
-            break;
-        case CommandTypes::FOR_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
-            break;
-        case CommandTypes::WHILE_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
-            break;
-        case CommandTypes::EXPRESSION_VALUE: bReturnValue = ParseExpressionValue(currToken, nextToken);
-            break;
-        case CommandTypes::EXPRESSION_OPERATOR: bReturnValue = ParseExpressionOperator(currToken, nextToken);
-            break;
-        case CommandTypes::POINTER_DECLARATION: bReturnValue = ParsePointerDeclaration(currToken, nextToken);
-            break;
-        case CommandTypes::NOT_FUNC_IDENTIFIER: bReturnValue = ParseNotFuncIdentifier(currToken, nextToken);
-            break;
-        case CommandTypes::ARRAY_ACCESS_START: bReturnValue = ParseArrayAccessStart(currToken, nextToken);
-            break;
-        case CommandTypes::ARRAY_DECLARATION_START: bReturnValue = ParseArrayDeclarationStart(currToken, nextToken);
-            break;
-        default: return FoundUnknown();
-    }
+    // todo: pass, sizeof
+    if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
+    else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
+    else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
+    else if (m_sType == CommandTypes::IDENTIFIER) bReturnValue = ParseIdentifier(currToken, nextToken);
+    else if (m_sType == CommandTypes::FUNC_START) bReturnValue = ParseFuncStart(currToken, nextToken);
+    else if (m_sType == CommandTypes::FILLED_FUNC_DECLARATION) bReturnValue = ParseFilledFuncDeclaration(currToken, nextToken);
+    else if (m_sType == CommandTypes::ARROW_FUNC_DECLARATION) bReturnValue = ParseArrowFuncDeclaration(currToken, nextToken);
+    else if (m_sType == CommandTypes::VAR_DECLARATION_START) bReturnValue = ParseVarDeclarationStart(currToken, nextToken);
+    else if (m_sType == CommandTypes::ELIF_CALL || m_sType == CommandTypes::IF_CALL ||
+            m_sType == CommandTypes::FOR_CALL || m_sType == CommandTypes::WHILE_CALL) bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
+    else if (m_sType == CommandTypes::ELIF_START || m_sType == CommandTypes::IF_START ||
+            m_sType == CommandTypes::FOR_START || m_sType == CommandTypes::WHILE_START) bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
+    else if (m_sType == CommandTypes::EXPRESSION_VALUE) bReturnValue = ParseExpressionValue(currToken, nextToken);
+    else if (m_sType == CommandTypes::EXPRESSION_OPERATOR) bReturnValue = ParseExpressionOperator(currToken, nextToken);
+    else if (m_sType == CommandTypes::POINTER_DECLARATION) bReturnValue = ParsePointerDeclaration(currToken, nextToken);
+    else if (m_sType == CommandTypes::NOT_FUNC_IDENTIFIER) bReturnValue = ParseNotFuncIdentifier(currToken, nextToken);
+    else if (m_sType == CommandTypes::ARRAY_ACCESS_START) bReturnValue = ParseArrayAccessStart(currToken, nextToken);
+    else if (m_sType == CommandTypes::ARRAY_DECLARATION_START) bReturnValue = ParseArrayDeclarationStart(currToken, nextToken);
+    else return FoundUnknown();
+
 
     if (m_bIgnoreCurrToken) m_tokens.push_back(currToken);
     if (IsValue(nextToken, ";") && !m_bIgnoreEON) bReturnValue = true;
@@ -120,7 +94,7 @@ bool Command::ParseIdentifier(Token currToken, Token nextToken)
         else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
     }
     else if (currToken.GetValue() == ":") return NoFinishAndAssignType(CommandTypes::VAR_DECLARATION_START);
-    else return FinishAndAssignType();
+    else return FoundUnknown();
 }
 
 bool Command::ParseFuncStart(Token currToken, Token nextToken)
@@ -165,7 +139,7 @@ bool Command::ParseArrowFuncDeclaration(Token currToken, Token nextToken)
 
 bool Command::ParseAccessRights(Token currToken, Token nextToken)
 {
-    if (IsScope()) return NoFinishAndAssignType(CommandTypes::SCOPE);
+    if (IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
     else if (IsType(currToken, TokenTypes::IDENTIFIER)) return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown();
 }
@@ -201,13 +175,10 @@ bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
         m_tokens.push_back(currToken);
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
         
-        switch(m_sType)
-        {
-            case CommandTypes::ELIF_CALL: return NoFinishAndAssignType(CommandTypes::ELIF_START);
-            case CommandTypes::IF_CALL: return NoFinishAndAssignType(CommandTypes::IF_START);
-            case CommandTypes::FOR_CALL: return NoFinishAndAssignType(CommandTypes::FOR_START);
-            case CommandTypes::WHILE_CALL: return NoFinishAndAssignType(CommandTypes::WHILE_START);
-        }
+        if (m_sType == CommandTypes::ELIF_CALL) return NoFinishAndAssignType(CommandTypes::ELIF_START);
+        else if (m_sType == CommandTypes::IF_CALL) return NoFinishAndAssignType(CommandTypes::IF_START);
+        else if (m_sType == CommandTypes::FOR_CALL) return NoFinishAndAssignType(CommandTypes::FOR_START);
+        else if (m_sType == CommandTypes::WHILE_CALL) return NoFinishAndAssignType(CommandTypes::WHILE_START);
     }
     else return FoundUnknown();
 }
@@ -220,13 +191,10 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
         if (m_uParanthesesCounter == 0)
         {
             m_bBuildingParam = false;
-            switch(m_sType)
-            {
-                case CommandTypes::ELIF_START: return FinishAndAssignType(CommandTypes::ELIF);
-                case CommandTypes::IF_START: return FinishAndAssignType(CommandTypes::IF);
-                case CommandTypes::FOR_START: return FinishAndAssignType(CommandTypes::FOR);
-                case CommandTypes::WHILE_START: return FinishAndAssignType(CommandTypes::WHILE);
-            }
+            if (m_sType == CommandTypes::ELIF_START) return FinishAndAssignType(CommandTypes::ELIF);
+            else if (m_sType == CommandTypes::IF_START) return FinishAndAssignType(CommandTypes::IF);
+            else if (m_sType == CommandTypes::FOR_START) return FinishAndAssignType(CommandTypes::FOR);
+            else if (m_sType == CommandTypes::WHILE_START) return FinishAndAssignType(CommandTypes::WHILE);
         }
     }
     else if (IsValue(currToken, "(")) m_uParanthesesCounter++;
@@ -258,19 +226,15 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
     }
     else if (IsValueToken(currToken))
     {
-        switch (currToken.GetType())
-        {
-        case TokenTypes::IDENTIFIER:
-            if (IsValue(nextToken, "(") || IsValue(nextToken, "["))
-            {
+        if (currToken.GetType() == TokenTypes::IDENTIFIER) {
+            if (IsValue(nextToken, "(") || IsValue(nextToken, "[")) {
                 m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
                 return AddToCurrParam(currToken, nextToken);
-            }
-            else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
-        case TokenTypes::VALUE: return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
-        }
+            } else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        } 
+        else if (currToken.GetType() == TokenTypes::VALUE) return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
     else if (IsValue(currToken, "("))
     {
