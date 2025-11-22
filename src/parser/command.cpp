@@ -15,6 +15,7 @@ bool Command::Append(Token currToken, Token nextToken)
     bool bReturnValue = false;
 
     // todo: pass, sizeof
+    // todo: make sure that the command vector doesnt need args for the constructor
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
