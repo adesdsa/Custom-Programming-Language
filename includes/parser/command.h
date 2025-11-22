@@ -53,6 +53,7 @@ namespace CommandTypes
     inline constexpr std::string_view VOID_COMMAND                  = "VOID_COMMAND";
     inline constexpr std::string_view VAR_POINTER                   = "VAR_POINTER";
     inline constexpr std::string_view POINTER_DECLARATION           = "POINTER_DECLARATION";
+    inline constexpr std::string_view NOT_FUNC_IDENTIFIER           = "NOT_FUNC_IDENTIFIER";
 }
 
 class Command 
@@ -86,6 +87,7 @@ private:
     bool ParseExpressionOperator(Token currToken, Token nextToken);
     bool ParseVarPointer(Token currToken, Token nextToken);
     inline bool ParsePointerDeclaration(Token currToken, Token nextToken);
+    bool ParseNotFuncIdentifier(Token currToken, Token nextToken);
 
     inline bool IsValue(Token token, std::string sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
@@ -95,6 +97,7 @@ private:
     bool IsExpressionStart();
     inline bool IsTokenExpressionOperator(Token currToken);
     inline bool IsValueToken(Token token);
+    bool IsOperator(Token token);
 
     inline bool FinishAndAssignType(std::string_view sType);
     inline bool NoFinishAndAssignType(std::string_view sType);
@@ -112,7 +115,6 @@ private:
     // true->legal,false->illegal
     void HandleParams(Token currToken, Token nextToken);
     bool HandleParantheses(Token currToken, Token nextToken);
-    bool TurnToIdentifier(Token nextToken);
 
     // todo: create a [] operator for a foreach loop for easier param access
 
