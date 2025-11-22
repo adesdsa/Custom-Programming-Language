@@ -13,7 +13,6 @@ bool Command::Append(Token currToken, Token nextToken)
 
     switch (m_sType)
     {
-        //todo: handle * (pointers) declaration
         //todo: handle funcs after acces right/scopes
         //todo: handle arrays
         case CommandTypes::UNIDENTIFIED: bReturnValue = ParseUnidentified(currToken, nextToken);
@@ -34,6 +33,7 @@ bool Command::Append(Token currToken, Token nextToken)
         case CommandTypes::WHILE_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::EXPRESSION_VALUE: bReturnValue = ParseExpressionValue(currToken, nextToken);
         case CommandTypes::VAR_POINTER: bReturnValue = ParseVarPointer(currToken, nextToken);
+        case CommandTypes::POINTER_DECLARATION: bReturnValue = ParsePointerDeclaration(currToken, nextToken);
     }
 
     if (!m_bIgnoreCurrToken) m_tokens.push_back(currToken);
@@ -44,8 +44,9 @@ bool Command::Append(Token currToken, Token nextToken)
 
     // estra rules:
     // there is no support for int a, b, c=0;
-    // & * (in the context of pointers) should appear after the identifier when they are called, and should come before the declaration
-    // & * (in the context of pointers) can only appear once before the variable
+    // & * (in the context of pointers) should appear after the identifier when they are called
+    // & * (in the context of pointers) can only appear once after the variable (no pointer to pointer)
+    // When declaring a pointer the * should appear after the type
     // In the command class you need to check the pointers
 }
 
@@ -143,7 +144,12 @@ bool Command::ParseScope(Token currToken, Token nextToken)
 
 bool Command::ParseVarDeclarationStart(Token currToken, Token nextToken)
 {
-    if (IsType()) return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
+
+    if (IsType()) 
+    {
+        if (IsValue(nextToken, "*")) return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
+        else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
+    }
     else return FoundUnknown();
 }
 
@@ -228,6 +234,11 @@ bool Command::ParseVarPointer(Token currToken, Token nextToken)
 {
     if (IsTokenExpressionOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
     else return FoundUnknown();
+}
+
+inline bool Command::ParsePointerDeclaration(Token currToken, Token nextToken)
+{
+    return FinishAndAssignType(CommandTypes::POINTER_DECLARATION);
 }
 
 

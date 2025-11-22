@@ -52,6 +52,7 @@ namespace CommandTypes
     inline constexpr std::string_view ASSIGNMENT                    = "ASSIGNMENT";
     inline constexpr std::string_view VOID_COMMAND                  = "VOID_COMMAND";
     inline constexpr std::string_view VAR_POINTER                   = "VAR_POINTER";
+    inline constexpr std::string_view POINTER_DECLARATION           = "POINTER_DECLARATION";
 }
 
 class Command 
@@ -84,6 +85,7 @@ private:
     bool ParseExpressionValue(Token currToken, Token nextToken);
     bool ParseExpressionOperator(Token currToken, Token nextToken);
     bool ParseVarPointer(Token currToken, Token nextToken);
+    inline bool ParsePointerDeclaration(Token currToken, Token nextToken);
 
     inline bool IsValue(Token token, std::string sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
