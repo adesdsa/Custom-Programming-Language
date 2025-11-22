@@ -30,9 +30,9 @@ namespace TokenStatus
 class Token
 {
 public:
-    Token(size_t ulLine, const EntityLogger& entityLogger);
-    Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
-    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
+    Token(size_t ulLine);
+    Token(std::string_view sTokenType, size_t ulLine);
+    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine);
 
     ~Token() = default;
 
@@ -42,17 +42,18 @@ public:
     // @return: true -> The token is finished, false -> Otherwise.
     bool Append(char cAddedChar) noexcept;
 
+    // Getters
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
     size_t GetLine() const noexcept;
 
+    // Operators
     bool operator==(const Token& other) const;
 
 private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
-    const EntityLogger& m_entityLogger;
 
     // Set a single character token.
     // @param sTokenValue: New value of the token.
