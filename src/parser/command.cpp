@@ -31,7 +31,6 @@ bool Command::Append(Token currToken, Token nextToken)
         case CommandTypes::FOR_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::WHILE_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::EXPRESSION_VALUE: bReturnValue = ParseExpressionValue(currToken, nextToken);
-        case CommandTypes::VAR_POINTER: bReturnValue = ParseVarPointer(currToken, nextToken);
         case CommandTypes::POINTER_DECLARATION: bReturnValue = ParsePointerDeclaration(currToken, nextToken);
         case CommandTypes::NOT_FUNC_IDENTIFIER: bReturnValue = ParseNotFuncIdentifier(currToken, nextToken);
         case CommandTypes::ARRAY_ACCESS_START: bReturnValue = ParseArrayAccessStart(currToken, nextToken);
@@ -46,9 +45,8 @@ bool Command::Append(Token currToken, Token nextToken)
 
     // estra rules:
     // there is no support for int a, b, c=0;
-    // & * (in the context of pointers) should appear after the identifier when they are called
-    // & * (in the context of pointers) can only appear once after the variable (no pointer to pointer)
-    // When declaring a pointer the * should appear after the type
+    // & * (in the context of pointers) should appear before the identifier when they are called
+    // When declaring a pointer the * should appear after the type 
     // In the command class you need to check the pointers
 }
 
@@ -212,7 +210,6 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
 bool Command::ParseExpressionValue(Token currToken, Token nextToken)
 {
     if (IsTokenExpressionOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
-    else if (IsValue(currToken, "*") || IsValue(currToken, "&")) return NoFinishAndAssignType(CommandTypes::VAR_POINTER); // todo: rework here
     else return FoundUnknown();
 }
 
@@ -221,7 +218,11 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
     if (m_bBuildingParam)
     {
         m_bIgnoreCurrToken = true;
-        if (AddToCurrParam(currToken, nextToken)) return FinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        if (AddToCurrParam(currToken, nextToken)) 
+        {
+            m_bBuildingParam = false;
+            return FinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        }
         else return false;
     }
     else if (IsValueToken(currToken))
@@ -242,19 +243,18 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
     }
     else if (IsValue(currToken, "("))
     {
-        m_uParanthesesCounter++; //todo: remember that when it's and expression you need to check that the paranthesesCounter is 0 at the end
+        m_uParanthesesCounter++; //todo: remember that when it's an expression you need to check that the paranthesesCounter is 0 at the end
         return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
-    else if (IsValue(currToken, "not")) return false;
+    else if (IsValue(currToken, ")"))
+    {
+        m_uParanthesesCounter--; //todo: remember that when it's an expression you need to check that the paranthesesCounter is 0 at the end
+        return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+    }
+    else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  IsValue(currToken, "&")) return false;
     else return FoundUnknown();
 
     return false;
-}
-
-bool Command::ParseVarPointer(Token currToken, Token nextToken)
-{
-    if (IsTokenExpressionOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
-    else return FoundUnknown();
 }
 
 inline bool Command::ParsePointerDeclaration(Token currToken, Token nextToken)
@@ -372,7 +372,7 @@ inline bool Command::IsTokenExpressionOperator(Token currToken)
 {
     return (IsType(currToken, TokenTypes::OPERATOR) && !(IsValue(currToken, "=") || IsValue(currToken, "&")))
         || IsValue(currToken, "and") || IsValue(currToken, "or") ||
-         IsValue(currToken, "xor");
+         IsValue(currToken, "xor") || IsValue(currToken, "is");
 }
 
 inline bool Command::IsValueToken(Token token)

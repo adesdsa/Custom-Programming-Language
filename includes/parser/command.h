@@ -85,7 +85,6 @@ private:
     bool ParseParameterKeywordStart(Token currToken, Token nextToken);
     bool ParseExpressionValue(Token currToken, Token nextToken);
     bool ParseExpressionOperator(Token currToken, Token nextToken);
-    bool ParseVarPointer(Token currToken, Token nextToken);
     inline bool ParsePointerDeclaration(Token currToken, Token nextToken);
     bool ParseNotFuncIdentifier(Token currToken, Token nextToken);
     bool ParseArrayAccessStart(Token currToken, Token nextToken);
