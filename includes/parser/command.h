@@ -76,7 +76,7 @@ public:
     std::string_view GetType() const;
     const std::vector<Token>& GetTokens() const;
     const std::vector<Command>& GetParams() const;
-    const unsigned int GetParanthesesCounter() const;
+    unsigned int GetParanthesesCounter() const;
 
 private:
     std::vector<Token> m_tokens;            // Used for saving the tokens that the Command is made of.

@@ -8,16 +8,16 @@ Command::Command(const EntityLogger& entityLogger): m_sType(CommandTypes::UNIDEN
 }
 
 
-std::string_view Command::GetType() {
-    const return m_sType;
+std::string_view Command::GetType() const {
+    return m_sType;
 }
 
-const std::vector<Token>& Command::GetTokens() {
-    const return m_tokens;
+const std::vector<Token>& Command::GetTokens() const {
+    return m_tokens;
 }
 
 const std::vector<Command>& Command::GetParams() const {
-    return return m_parameters;
+    return m_parameters;
 }
 
 unsigned int Command::GetParanthesesCounter() const {
