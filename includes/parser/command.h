@@ -68,8 +68,12 @@ class Command
 {
 public:
     Command(const EntityLogger& entityLogger);
-    // The func tries adding a new token to the command to make 
+
+    // todo: docs
     bool Append(Token currToken, Token nextToken);
+
+    // Getters And Setters
+    std::string_view GetType() const;
 
 private:
     std::vector<Token> m_tokens;            // Used for saving the tokens that the Command is made of.

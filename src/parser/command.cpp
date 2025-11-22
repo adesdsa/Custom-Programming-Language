@@ -16,6 +16,7 @@ bool Command::Append(Token currToken, Token nextToken)
 
     // todo: pass, sizeof
     // todo: make sure that the command vector doesnt need args for the constructor
+    // todo: handle array assignment(e.g. (1,2,3))
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -39,7 +40,7 @@ bool Command::Append(Token currToken, Token nextToken)
 
     if (m_bIgnoreCurrToken) m_tokens.push_back(currToken);
     if (IsValue(nextToken, ";") && !m_bIgnoreEON) bReturnValue = true;
-    if (IsValue(nextToken, "{")) bReturnValue = true;
+    if (IsValue(nextToken, "{") || IsValue(nextToken, "}")) bReturnValue = true;
 
     return bReturnValue;
     // todo: add logs at the end
