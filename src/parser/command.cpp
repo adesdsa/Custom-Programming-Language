@@ -13,7 +13,7 @@ bool Command::Append(Token currToken, Token nextToken)
 
     switch (m_sType)
     {
-        //todo: rework * derefrencing again
+        // todo: handle unsigned
         case CommandTypes::UNIDENTIFIED: bReturnValue = ParseUnidentified(currToken, nextToken);
         case CommandTypes::ACCESS_RIGHTS: bReturnValue = ParseAccessRights(currToken, nextToken);
         case CommandTypes::SCOPE: bReturnValue = ParseScope(currToken, nextToken);
@@ -31,6 +31,7 @@ bool Command::Append(Token currToken, Token nextToken)
         case CommandTypes::FOR_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::WHILE_START: bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
         case CommandTypes::EXPRESSION_VALUE: bReturnValue = ParseExpressionValue(currToken, nextToken);
+        case CommandTypes::EXPRESSION_OPERATOR: bReturnValue = ParseExpressionOperator(currToken, nextToken);
         case CommandTypes::POINTER_DECLARATION: bReturnValue = ParsePointerDeclaration(currToken, nextToken);
         case CommandTypes::NOT_FUNC_IDENTIFIER: bReturnValue = ParseNotFuncIdentifier(currToken, nextToken);
         case CommandTypes::ARRAY_ACCESS_START: bReturnValue = ParseArrayAccessStart(currToken, nextToken);
@@ -43,7 +44,7 @@ bool Command::Append(Token currToken, Token nextToken)
     return bReturnValue;
     // todo: add logs at the end
 
-    // estra rules:
+    // extra rules:
     // there is no support for int a, b, c=0;
     // & * (in the context of pointers) should appear before the identifier when they are called
     // When declaring a pointer the * should appear after the type 
@@ -59,11 +60,12 @@ bool Command::ParseUnidentified(Token currToken, Token nextToken)
         else if (IsAccessRights(currToken)) return NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
         else if (IsScope(currToken)) return NoFinishAndAssignType(m_sType = CommandTypes::SCOPE);
         else if (IsValue(currToken, "else")) return FinishAndAssignType(m_sType = CommandTypes::ELSE);
-        else if (IsValue(currToken, "if")) return CompareNextExpected(nextToken, "(", CommandTypes::IF_CALL);
-        else if (IsValue(currToken, "elif")) return CompareNextExpected(nextToken, "(", CommandTypes::ELIF_CALL);
-        else if (IsValue(currToken, "for")) return CompareNextExpected(nextToken, "(", CommandTypes::FOR_CALL);
-        else if (IsValue(currToken, "while")) return CompareNextExpected(nextToken, "(", CommandTypes::WHILE_CALL);
+        else if (IsValue(currToken, "if")) return CompareExpected(nextToken, "(", CommandTypes::IF_CALL);
+        else if (IsValue(currToken, "elif")) return CompareExpected(nextToken, "(", CommandTypes::ELIF_CALL);
+        else if (IsValue(currToken, "for")) return CompareExpected(nextToken, "(", CommandTypes::FOR_CALL);
+        else if (IsValue(currToken, "while")) return CompareExpected(nextToken, "(", CommandTypes::WHILE_CALL);
         else if (IsValue(currToken, "return")) return FinishAndAssignType(CommandTypes::RETURN);
+        else if (IsControlStatement(currToken)) return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
     }
     else if (IsType(currToken, TokenTypes::PUNCTUATION))
     {
@@ -77,7 +79,8 @@ bool Command::ParseUnidentified(Token currToken, Token nextToken)
         if (IsValue(currToken, "-") || IsValue(currToken, "not")) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
-    else return FoundUnknown();
+    else if (IsType(currToken, TokenTypes::EOF_TOKEN)) FinishAndAssignType(CommandTypes::EOF_TOKEN);
+    return FoundUnknown();
 }
 
 bool Command::ParseIdentifier(Token currToken, Token nextToken)
@@ -139,11 +142,7 @@ bool Command::ParseFilledFuncDeclaration(Token currToken, Token nextToken)
 
 bool Command::ParseArrowFuncDeclaration(Token currToken, Token nextToken)
 {
-    if (IsType()) 
-    {
-        if (IsValue(nextToken, "[")) return NoFinishAndAssignType(CommandTypes::ARRAY_DECLARATION_START);
-        return FinishAndAssignType(CommandTypes::FUNC_DECLARATION);
-    }
+    if (IsType(currToken)) return FinishAndAssignType(CommandTypes::FUNC_DECLARATION);
     else return FoundUnknown();
 }
 
@@ -163,8 +162,9 @@ bool Command::ParseScope(Token currToken, Token nextToken)
 
 bool Command::ParseVarDeclarationStart(Token currToken, Token nextToken)
 {
-    if (IsType())
+    if (IsType(currToken))
     {
+        if (IsValue(nextToken, "[")) return NoFinishAndAssignType(CommandTypes::ARRAY_DECLARATION_START);
         if (IsValue(nextToken, "*")) return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
@@ -179,10 +179,10 @@ bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
         m_uParameterIndex++;
         switch(m_sType)
         {
-            case CommandTypes::ELIF_CALL: return NoFinishAndAssignType(ELIF_START);
-            case CommandTypes::IF_CALL: return NoFinishAndAssignType(IF_START);
-            case CommandTypes::FOR_CALL: return NoFinishAndAssignType(FOR_START);
-            case CommandTypes::WHILE_CALL: return NoFinishAndAssignType(WHILE_START);
+            case CommandTypes::ELIF_CALL: return NoFinishAndAssignType(CommandTypes::ELIF_START);
+            case CommandTypes::IF_CALL: return NoFinishAndAssignType(CommandTypes::IF_START);
+            case CommandTypes::FOR_CALL: return NoFinishAndAssignType(CommandTypes::FOR_START);
+            case CommandTypes::WHILE_CALL: return NoFinishAndAssignType(CommandTypes::WHILE_START);
         }
     }
     else return FoundUnknown();
@@ -197,10 +197,10 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
     {
         switch(m_sType)
         {
-            case CommandTypes::ELIF_CALL: return FinishAndAssignType(ELIF);
-            case CommandTypes::IF_CALL: return FinishAndAssignType(IF);
-            case CommandTypes::FOR_CALL: return FinishAndAssignType(FOR);
-            case CommandTypes::WHILE_CALL: return FinishAndAssignType(WHILE);
+            case CommandTypes::ELIF_START: return FinishAndAssignType(CommandTypes::ELIF);
+            case CommandTypes::IF_START: return FinishAndAssignType(CommandTypes::IF);
+            case CommandTypes::FOR_START: return FinishAndAssignType(CommandTypes::FOR);
+            case CommandTypes::WHILE_START: return FinishAndAssignType(CommandTypes::WHILE);
         }
     }
     else return FoundUnknown();
@@ -209,7 +209,7 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
 
 bool Command::ParseExpressionValue(Token currToken, Token nextToken)
 {
-    if (IsTokenExpressionOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
+    if (IsOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
     else return FoundUnknown();
 }
 
@@ -342,7 +342,7 @@ inline bool Command::IsType(Token token, std::string_view sCompare)
     return token.GetType() == sCompare;
 }
 
-bool Command::CompareNextExpected(Token token, std::string sCompare, std::string_view sValidType)
+bool Command::CompareExpected(Token token, std::string sCompare, std::string_view sValidType)
 {
     if (IsValue(token, sCompare))
     {
@@ -352,39 +352,32 @@ bool Command::CompareNextExpected(Token token, std::string sCompare, std::string
     else return FoundUnknown();
 }
 
-bool Command::IsAccessRights(Token currToken)
+bool Command::IsAccessRights(Token token)
 {
-    return IsValue(currToken, "const") || IsValue(currToken, "readonly");
+    return IsValue(token, "const") || IsValue(token, "readonly");
 }
 
-bool Command::IsScope(Token currToken)
+bool Command::IsScope(Token token)
 {
-    return IsValue(currToken, "global") || IsValue(currToken, "var") || IsValue(currToken, "let");
+    return IsValue(token, "global") || IsValue(token, "var") || IsValue(token, "let");
 }
 
-bool Command::IsExpressionStart(Token check)
+bool Command::IsExpressionStart(Token token)
 {
-    return check.GetType() == TokenTypes::IDENTIFIER || check.GetType() == TokenTypes::VALUE
-        || check.GetValue() == "-" ||  || IsValue(currToken, "not");
+    return token.GetType() == TokenTypes::IDENTIFIER || token.GetType() == TokenTypes::VALUE
+        || token.GetValue() == "-" ||  || IsValue(token, "not");
 }
 
-inline bool Command::IsTokenExpressionOperator(Token currToken)
+inline bool Command::IsOperator(Token token)
 {
-    return (IsType(currToken, TokenTypes::OPERATOR) && !(IsValue(currToken, "=") || IsValue(currToken, "&")))
-        || IsValue(currToken, "and") || IsValue(currToken, "or") ||
-         IsValue(currToken, "xor") || IsValue(currToken, "is");
+    return (IsType(token, TokenTypes::OPERATOR) && !(IsValue(token, "=") || IsValue(token, "&")))
+        || IsValue(token, "and") || IsValue(token, "or") ||
+         IsValue(token, "xor") || IsValue(token, "is");
 }
 
 inline bool Command::IsValueToken(Token token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) || IsType(token, TokenTypes::VALUE);
-}
-
-bool Command::IsOperator(Token token)
-{
-    return IsValue(token, "and") || IsValue(token, "or") || IsValue(token, "not") || 
-    IsValue(token, "xor") || IsValue(token, "is") ||
-    (IsType(token, TokenTypes::OPERATOR) && !IsValue(token, "&"));
 }
 
 
@@ -398,6 +391,11 @@ inline bool Command::NoFinishAndAssignType(std::string_view sType)
 {
     m_sType = sType;
     return false;
+}
+
+inline bool Command::IsType(Token token)
+{
+    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
 }
 
 inline bool Command::FoundUnknown() 
@@ -423,11 +421,7 @@ inline bool Command::AddToCurrParam(Token currToken, Token nextToken)
     return m_parameters[m_uParameterIndex].Append(currToken, nextToken);
 }
 
-inline void Command::StartParamSequence(Token currToken, Token nextToken)
+bool Command::IsControlStatement(Token token)
 {
-    m_uParanthesesCounter++;
-    m_bBuildingParam = true;
-    m_bIgnoreCurrToken = true;
-    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
-    AddToCurrParam(currToken, nextToken);
+    return IsValue(token, "break") || IsValue(token, "continue");
 }
