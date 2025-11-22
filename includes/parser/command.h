@@ -88,6 +88,7 @@ private:
     bool ParseVarPointer(Token currToken, Token nextToken);
     inline bool ParsePointerDeclaration(Token currToken, Token nextToken);
     bool ParseNotFuncIdentifier(Token currToken, Token nextToken);
+    bool ParseArrayAccessStart(Token currToken, Token nextToken);
 
     inline bool IsValue(Token token, std::string sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
@@ -113,8 +114,8 @@ private:
     inline void StartParamSequence(Token currToken, Token nextToken);
 
     // true->legal,false->illegal
-    void HandleParams(Token currToken, Token nextToken);
-    bool HandleParantheses(Token currToken, Token nextToken);
+    bool HandleFuncParams(Token currToken, Token nextToken);
+    bool HandleArrayParams(Token currToken, Token nextToken);
 
     // todo: create a [] operator for a foreach loop for easier param access
 

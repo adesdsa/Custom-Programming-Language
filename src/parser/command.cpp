@@ -13,9 +13,8 @@ bool Command::Append(Token currToken, Token nextToken)
 
     switch (m_sType)
     {
-        //todo: handle funcs after acces right/scopes
         //todo: handle arrays
-        //todo: check * derefrencing again
+        //todo: rework * derefrencing again
         case CommandTypes::UNIDENTIFIED: bReturnValue = ParseUnidentified(currToken, nextToken);
         case CommandTypes::ACCESS_RIGHTS: bReturnValue = ParseAccessRights(currToken, nextToken);
         case CommandTypes::SCOPE: bReturnValue = ParseScope(currToken, nextToken);
@@ -36,9 +35,10 @@ bool Command::Append(Token currToken, Token nextToken)
         case CommandTypes::VAR_POINTER: bReturnValue = ParseVarPointer(currToken, nextToken);
         case CommandTypes::POINTER_DECLARATION: bReturnValue = ParsePointerDeclaration(currToken, nextToken);
         case CommandTypes::NOT_FUNC_IDENTIFIER: bReturnValue = ParseNotFuncIdentifier(currToken, nextToken);
+        case CommandTypes::ARRAY_ACCESS_START: bReturnValue = ParseArrayAccessStart(currToken, nextToken);
     }
 
-    if (!m_bIgnoreCurrToken) m_tokens.push_back(currToken);
+    if (m_bIgnoreCurrToken) m_tokens.push_back(currToken);
     if (IsValue(nextToken, ";")) bReturnValue = true;
 
     return bReturnValue;
@@ -86,31 +86,51 @@ bool Command::ParseIdentifier(Token currToken, Token nextToken)
 {
     if (currToken.GetValue() == "(") 
     {
+        m_bIgnoreCurrToken = true;
+        m_tokens.push_back(currToken);
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
         m_uParanthesesCounter++;
         return NoFinishAndAssignType(CommandTypes::FUNC_START);
     }
-    else if (currToken.GetValue() == ":") return NoFinishAndAssignType(CommandTypes::VAR_DECLARATION_START);
-    else if (currToken.GetValue() == "[") // todo: handle this
+    else if (currToken.GetValue() == "[") 
     {
-        m_sType = CommandTypes::ARRAY_ACCESS_START;
+        m_bIgnoreCurrToken = true;
+        m_tokens.push_back(currToken);
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        m_uParanthesesCounter++;
+        return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
     }
+    else if (currToken.GetValue() == ":") return NoFinishAndAssignType(CommandTypes::VAR_DECLARATION_START);
     else return FinishAndAssignType();
 }
 
 bool Command::ParseFuncStart(Token currToken, Token nextToken)
 {
+    m_bIgnoreCurrToken = true;
     if (currToken.GetValue() == ")")
     {
-        m_uParameterIndex--;
-        if (m_uParameterIndex == 0)
+        m_uParanthesesCounter--;
+        if (m_uParanthesesCounter == 0)
         {
+            m_bIgnoreCurrToken = false;
             //todo: add the next checks:
             //check that the parameters are legal(divided bu ,)
             //check if the func is a calling or a declaration
             //if it's a calling it should be returned as finished command
         }
     }
-    else HandleParams(currToken, nextToken);
+    else if (currToken.GetValue() == "(")
+    {
+        m_uParanthesesCounter++;
+        return false;
+    }
+    else if (HandleFuncParams(currToken, nextToken))
+    {
+        if ((IsValue(nextToken, ")") && m_uParanthesesCounter == 1) || IsValue(nextToken, ",")) return false;
+        else return FoundUnknown();
+    }
+    else return false;
+
 }
 
 bool Command::ParseFilledFuncDeclaration(Token currToken, Token nextToken)
@@ -151,6 +171,7 @@ bool Command::ParseVarDeclarationStart(Token currToken, Token nextToken)
 
 bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
 {
+    // todo: rework here
     if (IsValue(currToken, "("))
     {
         m_uParameterIndex++;
@@ -168,7 +189,7 @@ bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
 bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
 {
     if (IsValue(currToken, ")")) m_uParameterIndex--;
-    else HandleParams(currToken, nextToken); //todo: you need to check this again
+    else HandleFuncParams(currToken, nextToken); //todo: you need to check this again
 
     if (m_uParameterIndex == 0)
     {
@@ -187,7 +208,7 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
 bool Command::ParseExpressionValue(Token currToken, Token nextToken)
 {
     if (IsTokenExpressionOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
-    else if (IsValue(currToken, "*") || IsValue(currToken, "&")) return NoFinishAndAssignType(CommandTypes::VAR_POINTER);
+    else if (IsValue(currToken, "*") || IsValue(currToken, "&")) return NoFinishAndAssignType(CommandTypes::VAR_POINTER); // todo: rework here
     else return FoundUnknown();
 }
 
@@ -204,7 +225,7 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
         switch (currToken.GetType())
         {
         case TokenTypes::IDENTIFIER:
-            if (IsValue(nextToken, "("))
+            if (IsValue(nextToken, "(") || IsValue(nextToken, "["))
             {
                 m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
                 m_bIgnoreCurrToken = true;
@@ -218,7 +239,7 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
     else if (IsValue(currToken, "("))
     {
         m_uParanthesesCounter++; //todo: remember that when it's and expression you need to check that the paranthesesCounter is 0 at the end
-        return false;
+        return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
     else if (IsValue(currToken, "not")) return false;
     else return FoundUnknown();
@@ -243,6 +264,33 @@ bool Command::ParseNotFuncIdentifier(Token currToken, Token nextToken)
     else return FinishAndAssignType();
 }
 
+bool Command::ParseArrayAccessStart(Token currToken, Token nextToken)
+{
+    m_bIgnoreCurrToken = true;
+    if (currToken.GetValue() == "]")
+    {
+        m_uParanthesesCounter--;
+        if (m_uParanthesesCounter == 0)
+        {
+            m_bIgnoreCurrToken = false;
+            //todo: add the next checks:
+            //check that the parameters are legal(divided bu ,)
+            //check if the func is a calling or a declaration
+            //if it's a calling it should be returned as finished command
+        }
+    }
+    else if (currToken.GetValue() == "[")
+    {
+        m_uParanthesesCounter++;
+        return false;
+    }
+    else if (AddToCurrParam(currToken, nextToken))
+    {
+        if ((IsValue(nextToken, "]") && m_uParanthesesCounter == 1)) return false;
+        else return FoundUnknown();
+    }
+    else return false;
+}
 
 
 inline bool Command::IsValue(Token token, std::string sCompare)
@@ -295,7 +343,9 @@ inline bool Command::IsValueToken(Token token)
 
 bool Command::IsOperator(Token token)
 {
-    return IsValue(token, "and") || IsValue(token, "or") || IsValue(token, "not") || IsValue(token, "xor") || IsValue(token, "is") || (IsType(token, TokenTypes::OPERATOR) && !IsValue(token, "&"));
+    return IsValue(token, "and") || IsValue(token, "or") || IsValue(token, "not") || 
+    IsValue(token, "xor") || IsValue(token, "is") ||
+    (IsType(token, TokenTypes::OPERATOR) && !IsValue(token, "&"));
 }
 
 
@@ -317,43 +367,16 @@ inline bool Command::FoundUnknown()
     return true;
 }
 
-void Command::HandleParams(Token currToken, Token nextToken)
+bool Command::HandleFuncParams(Token currToken, Token nextToken)
 {
-    if (IsValue(currToken, ","))
+    if (IsValue(currToken, ",")) 
     {
         m_tokens.push_back(currToken);
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
         m_uParameterIndex++;
+        return false;
     }
-    else if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
-    {
-        m_bBuildingParam = false;
-        m_uParameterIndex++;
-    }
-}
-
-bool Command::HandleParantheses(Token currToken, Token nextToken)
-{
-    if (m_bBuildingParam)
-    {
-        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
-        {
-            m_bBuildingParam = false;
-            m_uParameterIndex++;
-        }
-    }
-    else if (IsExpressionStart(currToken)) // Started building the param
-    {
-        m_bBuildingParam = true;
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger)); //todo: handle so that the token wont be appended in append()
-        if(m_parameters[m_uParameterIndex].Append(currToken, nextToken))
-        {
-            m_bBuildingParam = false;
-            m_uParameterIndex++;
-        }
-    }
-    else return false;
-
-    return true;
+    else return AddToCurrParam(currToken, nextToken);
 }
 
 inline bool Command::AddToCurrParam(Token currToken, Token nextToken)
