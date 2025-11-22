@@ -13,7 +13,6 @@ bool Command::Append(Token currToken, Token nextToken)
 
     switch (m_sType)
     {
-        //todo: handle arrays
         //todo: rework * derefrencing again
         case CommandTypes::UNIDENTIFIED: bReturnValue = ParseUnidentified(currToken, nextToken);
         case CommandTypes::ACCESS_RIGHTS: bReturnValue = ParseAccessRights(currToken, nextToken);
@@ -36,6 +35,7 @@ bool Command::Append(Token currToken, Token nextToken)
         case CommandTypes::POINTER_DECLARATION: bReturnValue = ParsePointerDeclaration(currToken, nextToken);
         case CommandTypes::NOT_FUNC_IDENTIFIER: bReturnValue = ParseNotFuncIdentifier(currToken, nextToken);
         case CommandTypes::ARRAY_ACCESS_START: bReturnValue = ParseArrayAccessStart(currToken, nextToken);
+        case CommandTypes::ARRAY_DECLARATION_START: bReturnValue = ParseArrayDeclarationStart(currToken, nextToken);
     }
 
     if (m_bIgnoreCurrToken) m_tokens.push_back(currToken);
@@ -139,9 +139,13 @@ bool Command::ParseFilledFuncDeclaration(Token currToken, Token nextToken)
     else return FoundUnknown();
 }
 
-bool Command::ParseArrowFuncDeclaration(Token currToken, Tpken nextToken)
+bool Command::ParseArrowFuncDeclaration(Token currToken, Token nextToken)
 {
-    if (IsType()) return FinishAndAssignType(CommandTypes::FUNC_DECLARATION);
+    if (IsType()) 
+    {
+        if (IsValue(nextToken, "[")) return NoFinishAndAssignType(CommandTypes::ARRAY_DECLARATION_START);
+        return FinishAndAssignType(CommandTypes::FUNC_DECLARATION);
+    }
     else return FoundUnknown();
 }
 
@@ -267,6 +271,41 @@ bool Command::ParseNotFuncIdentifier(Token currToken, Token nextToken)
 bool Command::ParseArrayAccessStart(Token currToken, Token nextToken)
 {
     m_bIgnoreCurrToken = true;
+    if (currToken.GetValue() == "]")
+    {
+        m_uParanthesesCounter--;
+        if (m_uParanthesesCounter == 0)
+        {
+            m_bIgnoreCurrToken = false;
+            //todo: add the next checks:
+            //check that the parameters are legal(divided bu ,)
+            //check if the func is a calling or a declaration
+            //if it's a calling it should be returned as finished command
+        }
+    }
+    else if (currToken.GetValue() == "[")
+    {
+        m_uParanthesesCounter++;
+        return false;
+    }
+    else if (AddToCurrParam(currToken, nextToken))
+    {
+        if ((IsValue(nextToken, "]") && m_uParanthesesCounter == 1)) return false;
+        else return FoundUnknown();
+    }
+    else return false;
+}
+
+bool Command::ParseArrayDeclarationStart(Token currToken, Token nextToken)
+{
+    m_bIgnoreCurrToken = true;
+    if (m_uParanthesesCounter == 0)
+    {
+        m_tokens.push_back(currToken);
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        return false;
+    }
+
     if (currToken.GetValue() == "]")
     {
         m_uParanthesesCounter--;

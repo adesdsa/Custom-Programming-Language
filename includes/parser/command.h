@@ -79,7 +79,7 @@ private:
     bool ParseIdentifier(Token currToken, Token nextToken);
     bool ParseFuncStart(Token currToken, Token nextToken);
     bool ParseFilledFuncDeclaration(Token currToken, Token nextToken);
-    bool ParseArrowFuncDeclaration(Token currToken, Tpken nextToken);
+    bool ParseArrowFuncDeclaration(Token currToken, Token nextToken);
     bool ParseVarDeclarationStart(Token currToken, Token nextToken);
     bool ParseParameterKeywordCall(Token currToken, Token nextToken);
     bool ParseParameterKeywordStart(Token currToken, Token nextToken);
@@ -89,6 +89,7 @@ private:
     inline bool ParsePointerDeclaration(Token currToken, Token nextToken);
     bool ParseNotFuncIdentifier(Token currToken, Token nextToken);
     bool ParseArrayAccessStart(Token currToken, Token nextToken);
+    bool ParseArrayDeclarationStart(Token currToken, Token nextToken);
 
     inline bool IsValue(Token token, std::string sCompare);
     inline bool IsType(Token token, std::string_view sCompare);
