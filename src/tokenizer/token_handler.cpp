@@ -1,4 +1,4 @@
-#include "../../includes/tokenizer/token_handler.h"
+#include "tokenizer/token_handler.h"
 
 TokenHandler::TokenHandler(const EntityLogger& entityLogger) : 
     m_entityLogger(entityLogger) {}
@@ -30,6 +30,6 @@ bool TokenHandler::IsRelevantToken(const Token &token) const
         );
         throw std::runtime_error("ERROR: Not supported type");
     }
-    return sTokenType != TokenTypes::TRIVIA && sTokenType != TokenTypes::EOF_TOKEN;
+    return sTokenType != TokenTypes::TRIVIA;
 }
  
