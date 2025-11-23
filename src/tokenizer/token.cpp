@@ -1,4 +1,4 @@
-#include "../../includes/tokenizer/token.h"
+#include "tokenizer/token.h"
 
 Token::Token(size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
