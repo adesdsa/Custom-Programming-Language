@@ -1,4 +1,4 @@
-#include "../../includes/tokenizer/lexer.h"
+#include "tokenizer/lexer.h"
 
 Lexer::Lexer(const std::string& sInputFile) : 
     m_entityLogger("lexer"), 
@@ -8,14 +8,23 @@ Lexer::Lexer(const std::string& sInputFile) :
 std::optional<Token> Lexer::Tokenize()
 {
     this->m_entityLogger.Info("Start Creating new token...");
-    try
+
+    while (!this->IsFinishedReadingSRC()) 
     {
-        return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
+        auto token = this->m_tokenHandler.HandleToken(
+            this->m_tokenFactory.CreateToken()
+        );
+        
+        if (token.has_value())
+        {
+            return token;
+        }
     }
-    catch(const std::runtime_error&)
-    {
-        throw;
-    }
+
+    // Gets the EOF token
+    return std::optional<Token>{ 
+        this->m_tokenFactory.CreateToken() 
+    };
 }
 
 bool Lexer::IsFinishedReadingSRC() const noexcept
