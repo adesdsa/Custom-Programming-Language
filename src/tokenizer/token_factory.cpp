@@ -14,11 +14,12 @@ Token TokenFactory::CreateToken()
     {
         return Token(
             TokenTypes::EOF_TOKEN, 
-            this->m_ulLineCounter
+            this->m_ulLineCounter, 
+            this->m_entityLogger
         );
     }
 
-    Token token(this->m_ulLineCounter);
+    Token token(this->m_ulLineCounter, this->m_entityLogger);
 
     while (!token.Append(this->m_mappedSRC.Get()))
     {
