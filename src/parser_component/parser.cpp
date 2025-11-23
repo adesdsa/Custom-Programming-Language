@@ -13,7 +13,7 @@ Token Parser::FetchToken()
     if (!token)
     {
         this->m_entityLogger.Error("Failed to fetch new token from lexer");
-        throw std::runtime_error("Lexer returned no token"); 
+        throw std::runtime_error("Lexer returned no token");
     }
     return std::move(*token);
 }
