@@ -17,6 +17,9 @@ namespace TokenTypes
     inline constexpr std::string_view UNFINISHED_TRIVIA = "UNFINISHED_TRIVIA";
     inline constexpr std::string_view EOF_TOKEN         = "EOF";
     inline constexpr std::string_view UNKNOWN           = "UNKNOWN";
+
+    // This types are used in the parser.
+    inline constexpr std::string_view HAS_PARAM         = "HAS_PARAM";
 }
 
 // Token status holds which part of the building process the token at
