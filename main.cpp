@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "tokenizer/lexer.h"
-#include "logger/entity_logger.h"
+#include "includes/tokenizer/lexer.h"
+#include "includes/logger/entity_logger.h"
 
 namespace ReturnCode
 {
