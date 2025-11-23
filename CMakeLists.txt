@@ -15,7 +15,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(mio)
 
 # ----- GoogleTest -----
-# Fetch GoogleTest regardless of BUILD_TESTS
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
@@ -29,17 +28,16 @@ FetchContent_MakeAvailable(googletest)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/main.cpp")
 
-# Exclude test utilities from normal build
-if (NOT BUILD_TESTS)
-    list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/utils/tests_utils.cpp")
-endif()
+# Keep tests_utils.cpp always included since main.cpp uses CollectTokens
+# if you want it only for tests, move CollectTokens to a non-test file
+# list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/utils/tests_utils.cpp")  # REMOVE THIS
 
 # =============================
 # Library (CPLib)
 # =============================
 add_library(CPLib ${SRC_FILES})
 target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR}/includes)
-target_link_libraries(CPLib PUBLIC mio gtest)  # GTest added here
+target_link_libraries(CPLib PUBLIC mio gtest)
 
 # =============================
 # Settings
@@ -76,7 +74,6 @@ if(BUILD_TESTS)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
-
 # ============================= 
 # Usage 
 # ============================= 
