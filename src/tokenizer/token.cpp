@@ -195,4 +195,4 @@ bool Token::IsValueToken(const std::string& sToken) const
 bool Token::IsIdentifierToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Identifier());
-}
+} 

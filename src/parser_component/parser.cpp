@@ -23,4 +23,4 @@ void Parser::Advance()
     Token nextToken = this->FetchToken();
     this->m_currentToken = std::move(this->m_nextToken);
     this->m_nextToken = std::move(nextToken);
-}
+} 

@@ -35,4 +35,4 @@ bool Lexer::IsFinishedReadingSRC() const noexcept
 const EntityLogger& Lexer::GetEntityLogger() const noexcept
 {
     return this->m_entityLogger;
-}
+} 

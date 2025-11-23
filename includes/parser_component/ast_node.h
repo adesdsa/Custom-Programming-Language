@@ -22,4 +22,4 @@ public:
     Token m_token;
     ASTNode* m_nodeFirstChild;
     ASTNode* m_nodeNextSibling;
-};
+}; 
