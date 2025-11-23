@@ -1,26 +1,32 @@
 #include "tokenizer/token.h"
 
-Token::Token(size_t ulLine) :
+Token::Token(size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
     m_sType(TokenTypes::UNKNOWN), 
-    m_ulLine(ulLine) {}
+    m_ulLine(ulLine), 
+    m_entityLogger(entityLogger) {}
 
-Token::Token(std::string_view sTokenType, size_t ulLine) :
+Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger) :
     m_sValue(""), 
     m_sType(sTokenType),
-    m_ulLine(ulLine)  {}
+    m_ulLine(ulLine), 
+    m_entityLogger(entityLogger) {}
 
 Token::Token(
         const std::string& sTokenValue,
         std::string_view sTokenType,
-        size_t ulLine
+        size_t ulLine,
+        const EntityLogger& entityLogger
     ) :
         m_sValue(sTokenValue),
         m_sType(sTokenType),
-        m_ulLine(ulLine) {}
+        m_ulLine(ulLine),
+        m_entityLogger(entityLogger) {}
 
 bool Token::Append(char cAddedChar) noexcept
 {   
+    this->m_entityLogger.Info("Append new part to the token");
+
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
     // Check #1: Comments
