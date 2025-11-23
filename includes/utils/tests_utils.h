@@ -24,4 +24,4 @@ namespace TestsUtils
     // @param results: Vector result of tokenizing all tokens by lexer.
     // @param expected: Vector of all expcted results of tokenizer.
     void CompareTokens(const std::vector<Token>& results, const std::vector<Token>& expected);
-}
+} 

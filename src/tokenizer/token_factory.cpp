@@ -44,4 +44,4 @@ Token TokenFactory::CreateToken()
 bool TokenFactory::IsFinishedReadingSRC() const noexcept
 {
     return this->m_mappedSRC.IsEOF();
-}
+} 
