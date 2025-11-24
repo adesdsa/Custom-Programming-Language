@@ -22,20 +22,25 @@ namespace CommandTypes
     inline constexpr std::string_view BLOCK_START                   = "BLOCK_START";
     inline constexpr std::string_view BLOCK_END                     = "BLOCK_END";
     inline constexpr std::string_view ELSE                          = "ELSE";
-    inline constexpr std::string_view ELIF                          = "ELIF";
-    inline constexpr std::string_view IF                            = "IF";
-    inline constexpr std::string_view FOR                           = "FOR";
-    inline constexpr std::string_view WHILE                         = "WHILE";
     inline constexpr std::string_view RETURN                        = "RETURN";
-    inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
-    inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
     inline constexpr std::string_view ASSIGNMENT                    = "ASSIGNMENT";
     inline constexpr std::string_view VOID_COMMAND                  = "VOID_COMMAND";
     inline constexpr std::string_view POINTER_DECLARATION           = "POINTER_DECLARATION";
     inline constexpr std::string_view CONTROL_STATEMENT             = "CONTROL_STATEMENT";
-    inline constexpr std::string_view FINISHED_FUNC_DECLARATION     = "FINISHED_FUNC_DECLARATION";
     inline constexpr std::string_view VAR_DECLARATION               = "VAR_DECLARATION";
     inline constexpr std::string_view EOF_TOKEN                     = "EOF_TOKEN";
+
+
+    /// 
+    ///             The next CommandTypes are the finished CommandTypes that need to be reformed in CommandLine
+    ///
+    inline constexpr std::string_view ELIF                          = "ELIF";
+    inline constexpr std::string_view IF                            = "IF";
+    inline constexpr std::string_view FOR                           = "FOR";
+    inline constexpr std::string_view WHILE                         = "WHILE";
+    inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
+    inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
+    inline constexpr std::string_view FINISHED_FUNC_DECLARATION     = "FINISHED_FUNC_DECLARATION";
     inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
     inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
@@ -72,11 +77,22 @@ public:
     // todo: docs
     bool Append(Token& currToken, Token& nextToken);
 
-    // Getters And Setters
+    // Getters
+
     std::string_view GetType() const;
     const std::vector<Token>& GetTokens() const;
     const std::vector<Command>& GetParams() const;
     unsigned int GetParanthesesCounter() const;
+    bool IsExpression() const;
+
+    // Setters
+
+    void SetType(std::string_view type);
+    void SetExpression(bool indicator);
+
+    // Operators
+    Token& operator[](size_t index);
+    const Token& operator[](size_t index) const;
 
 private:
     std::vector<Token> m_tokens;            // Used for saving the tokens that the Command is made of.
@@ -85,7 +101,8 @@ private:
     const EntityLogger& m_entityLogger;
     bool m_bBuildingParam;                  // Used to indicate if we are building a parameter right now.
     bool m_bIgnoreCurrToken;                // Used to indicate if we don't need to add the current token to the tokens vector.
-    bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line
+    bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line.
+    bool m_bExpression;                     // Used to indicate if this Command is an expression.
     unsigned int m_uParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
 

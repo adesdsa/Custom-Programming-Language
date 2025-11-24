@@ -1,7 +1,7 @@
 #include "parser/commandLine.h"
 
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
-m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(false)
+m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true)
 {
     m_line.push_back(Command(m_entityLogger));
 }
@@ -30,15 +30,18 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
             if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND
             || m_line[m_uLineIndex].GetType() == CommandTypes::BLOCK_START
             || m_line[m_uLineIndex].GetType() == CommandTypes::BLOCK_END) 
-            m_bFinished =true;
-            else{
+                m_bFinished =true;
+            else if (m_line[m_uLineIndex].GetType() == CommandTypes::UNKNOWN)
+                m_bLegal = false;
+            else {
+                ReformCommand(m_line[m_uLineIndex]);
                 m_uLineIndex++;
                 m_line.push_back(Command(m_entityLogger));
             }
         }
     }
 
-    if (m_bFinished)
+    if (m_bFinished && m_bLegal)
     {
         CheckLine();
         return true;
@@ -61,4 +64,60 @@ void CommandLine::CheckLine()
             break;
         }
     }*/
+}
+
+void CommandLine::ReformCommand(Command& checkedCommand)
+{
+    // todo: make sure that in funcs and for you can have a few commands in the params
+    if (checkedCommand.GetType() == CommandTypes::ELIF)
+    {
+        if (checkedCommand.GetTokens().size() != 4) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            Command innerCommand = checkedCommand.GetParams()[0];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
+    }
+    else if (checkedCommand.GetType() == CommandTypes::IF)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::FOR)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::WHILE)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_VALUE)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_OPERATOR)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION)
+    {
+        
+    }
+    else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER)
+    {
+
+    }
 }

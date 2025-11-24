@@ -35,4 +35,6 @@ private:
     // It will save the result in the func's params.
     void CheckLine();
 
+    void ReformCommand();
+
 };

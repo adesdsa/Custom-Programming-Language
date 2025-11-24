@@ -24,6 +24,26 @@ unsigned int Command::GetParanthesesCounter() const {
     return m_uParanthesesCounter;
 }
 
+bool Command::IsExpression() const {
+    return m_bExpression;
+}
+
+void Command::SetType(std::string_view type) {
+    m_sType = type;
+}
+
+void Command::SetExpression(bool indicator) {
+    m_bExpression = indicator;
+}
+
+Token& Command::operator[](size_t index) {
+    return m_tokens[index];
+}
+
+const Token& Command::operator[](size_t index) const {
+    return m_tokens[index];
+}
+
 
 bool Command::Append(Token& currToken, Token& nextToken)
 {
