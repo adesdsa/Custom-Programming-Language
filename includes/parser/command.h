@@ -29,6 +29,7 @@ namespace CommandTypes
     inline constexpr std::string_view CONTROL_STATEMENT             = "CONTROL_STATEMENT";
     inline constexpr std::string_view VAR_DECLARATION               = "VAR_DECLARATION";
     inline constexpr std::string_view EOF_TOKEN                     = "EOF_TOKEN";
+    inline constexpr std::string_view EXPRESSION                    = "EXPRESSION";
 
 
     /// 
@@ -103,6 +104,7 @@ private:
     bool m_bIgnoreCurrToken;                // Used to indicate if we don't need to add the current token to the tokens vector.
     bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line.
     bool m_bExpression;                     // Used to indicate if this Command is an expression.
+    bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
     unsigned int m_uParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
 

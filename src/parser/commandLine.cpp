@@ -82,42 +82,221 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::IF)
     {
-        
+        if (checkedCommand.GetTokens().size() != 4) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            Command innerCommand = checkedCommand.GetParams()[0];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {
-        
+        if (checkedCommand.GetTokens().size() != 10) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            // todo: add a rule that a for loop must be of the next preset:
+            // for ( var_declaration/identifier assigmnet value ; expression ; expression )
+            // Checking if one of the Token's types are wrong
+            if (checkedCommand[2].GetType() != TokenTypes::HAS_PARAM ||
+            checkedCommand[3].GetType() != TokenTypes::HAS_PARAM ||
+            checkedCommand[4].GetType() != TokenTypes::HAS_PARAM ||
+            checkedCommand[5].GetValue() != ";" ||
+            checkedCommand[6].GetType() != TokenTypes::HAS_PARAM ||
+            checkedCommand[7].GetValue() != ";" ||
+            checkedCommand[8].GetType() != TokenTypes::HAS_PARAM)
+                checkedCommand.SetType(CommandTypes::UNKNOWN);
+
+            Command innerCommand = checkedCommand.GetParams()[2];
+            if (innerCommand.GetType() != CommandTypes::VAR_DECLARATION &&
+            innerCommand.GetType() != CommandTypes::IDENTIFIER) 
+                m_bLegal = false;
+
+            if (!m_bLegal) return;
+
+            Command innerCommand = checkedCommand.GetParams()[3];
+            if (innerCommand.GetType() != CommandTypes::ASSIGNMENT)
+                m_bLegal = false;
+
+            if (!m_bLegal) return;
+
+            Command innerCommand = checkedCommand.GetParams()[4];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+
+            if (!m_bLegal) return;
+
+            Command innerCommand = checkedCommand.GetParams()[6];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+
+            if (!m_bLegal) return;
+
+            Command innerCommand = checkedCommand.GetParams()[8];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
     }
     else if (checkedCommand.GetType() == CommandTypes::WHILE)
     {
-        
+        if (checkedCommand.GetTokens().size() != 4) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            Command innerCommand = checkedCommand.GetParams()[0];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
     }
     else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_VALUE)
     {
-        
+        int iParamIndex = 0;
+
+        if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        for (int i = 0; i < checkedCommand.GetTokens().size() && m_bLegal; i++)
+        {
+            if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM)
+            {
+                Command innerCommand = checkedCommand.GetParams()[iParamIndex];
+                ReformCommand(innerCommand);
+                if (!innerCommand.IsExpression() || innerCommand.GetType() == TokenTypes::UNKNOWN) 
+                {
+                    m_bLegal = false;
+                    checkedCommand.SetType(CommandTypes::UNKNOWN);
+                }
+                iParamIndex++;
+            }
+        }
+
+        if (m_bLegal) checkedCommand.SetType(CommandTypes::EXPRESSION);
     }
     else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_OPERATOR)
     {
-        
+        int iParamIndex = 0;
+
+        if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        for (int i = 0; i < checkedCommand.GetTokens().size() && m_bLegal; i++)
+        {
+            if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM)
+            {
+                Command innerCommand = checkedCommand.GetParams()[iParamIndex];
+                ReformCommand(innerCommand);
+                if (!innerCommand.IsExpression() || innerCommand.GetType() == TokenTypes::UNKNOWN) 
+                {
+                    m_bLegal = false;
+                    checkedCommand.SetType(CommandTypes::UNKNOWN);
+                }
+                iParamIndex++;
+            }
+        }
+
+        if (!m_bLegal) return;
+
+        Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 1];
+        if (lastToken.GetValue() != ")")
+        {
+            m_bLegal = false;
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+
+        if (m_bLegal) checkedCommand.SetType(CommandTypes::EXPRESSION);
     }
     else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
     {
+        int iParamIndex = 0;
+        bool bExpectingExpression = true;
+
+        for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+        {
+            if (bExpectingExpression)
+            {
+                Command innerCommand = checkedCommand.GetParams()[iParamIndex];
+                if (innerCommand.GetType() != CommandTypes::VAR_DECLARATION)
+                {
+                    m_bLegal = false;
+                    checkedCommand.SetType(CommandTypes::UNKNOWN);
+                }
+                iParamIndex++;
+            }
+            else if (checkedCommand[i].GetValue() != ",") 
+            {
+                m_bLegal = false;
+                checkedCommand.SetType(CommandTypes::UNKNOWN);
+            }
+        }
+
+        if (checkedCommand[checkedCommand.GetTokens().size() - 2].GetValue() == ",")
+        {
+            m_bLegal = false;
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
         
+        if (m_bLegal) checkedCommand.SetType(CommandTypes::EXPRESSION); 
     }
     else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
+        int iParamIndex = 0;
+        bool bExpectingExpression = true;
+
+        for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+        {
+            if (bExpectingExpression)
+            {
+                Command innerCommand = checkedCommand.GetParams()[iParamIndex];
+                ReformCommand(innerCommand);
+                if (!innerCommand.IsExpression() || innerCommand.GetType() == TokenTypes::UNKNOWN) 
+                {
+                    m_bLegal = false;
+                    checkedCommand.SetType(CommandTypes::UNKNOWN);
+                }
+                iParamIndex++;
+            }
+            else if (checkedCommand[i].GetValue() != ",") 
+            {
+                m_bLegal = false;
+                checkedCommand.SetType(CommandTypes::UNKNOWN);
+            }
+        }
+
+        if (checkedCommand[checkedCommand.GetTokens().size() - 2].GetValue() == ",")
+        {
+            m_bLegal = false;
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
         
+        if (m_bLegal) checkedCommand.SetType(CommandTypes::EXPRESSION); 
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS)
     {
-        
+        if (checkedCommand.GetTokens().size() != 4) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            Command innerCommand = checkedCommand.GetParams()[0];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION)
     {
-        
+        if (checkedCommand.GetTokens().size() != 4) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            Command innerCommand = checkedCommand.GetParams()[0];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
     }
     else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER)
     {
-
+        checkedCommand.SetExpression(true);
+    }
+    else if (/*Here should be all the non finished types*/)
+    {
+        m_bLegal = false;
+        checkedCommand.SetType(CommandTypes::UNKNOWN);
     }
 }

@@ -3,7 +3,7 @@
 
 Command::Command(const EntityLogger& entityLogger): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
  m_bBuildingParam(false), m_bIgnoreCurrToken(false), m_bIgnoreEON(false),
- m_uParanthesesCounter(0), m_entityLogger(entityLogger)
+ m_uParanthesesCounter(0), m_entityLogger(entityLogger), m_bFirstParanthesesEnter(false)
 {
 }
 
@@ -54,6 +54,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // todo: pass, sizeof
     // todo: make sure that the command vector doesnt need args for the constructor
     // todo: handle array assignment(e.g. (1,2,3))
+    // todo: make it so that if after a function call there is an expression
+    // todo: check the ending and unkown token of expressions
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -88,6 +90,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // & * (in the context of pointers) should appear before the identifier when they are called
     // When declaring a pointer the * should appear after the type 
     // no support for array pointers/2d arrays
+    // right now we have infinite func params but no default values
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
@@ -126,9 +129,7 @@ bool Command::ParseIdentifier(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, "(") || IsValue(currToken, "[")) 
     {
-        m_bIgnoreCurrToken = true;
-        m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_bFirstParanthesesEnter = true;
         m_uParanthesesCounter++;
         if (IsValue(currToken, "(")) return NoFinishAndAssignType(CommandTypes::FUNC_START);
         else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
@@ -155,7 +156,13 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
         m_uParanthesesCounter++;
         return false;
     }
-    else if (HandleFuncParams(currToken, nextToken))
+    else if (m_bFirstParanthesesEnter) 
+    {
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_bFirstParanthesesEnter = false;
+    }
+
+    if (HandleFuncParams(currToken, nextToken))
     {
         if ((IsValue(nextToken, ")") && m_uParanthesesCounter == 1) || IsValue(nextToken, ",")) return false;
         else return FoundUnknown();
@@ -196,6 +203,7 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
     {
         if (IsValue(nextToken, "[")) 
         {
+            m_bFirstParanthesesEnter = true;
             m_uParanthesesCounter++;
             return NoFinishAndAssignType(CommandTypes::ARRAY_DECLARATION_START);
         }
@@ -318,9 +326,15 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
         m_uParanthesesCounter++;
         return false;
     }
-    else if (AddToCurrParam(currToken, nextToken))
+    else if (m_bFirstParanthesesEnter) 
     {
-        if ((IsValue(nextToken, "]") && m_uParanthesesCounter == 1)) return false;
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_bFirstParanthesesEnter = false;
+    }
+
+    if (AddToCurrParam(currToken, nextToken))
+    {
+        if ((IsValue(nextToken, "]") && m_uParanthesesCounter == 1)) return true;
         else return FoundUnknown();
     }
     else return false;
@@ -343,11 +357,7 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
         if (m_uParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
-            if (m_uParanthesesCounter == 0)
-            {
-                m_bIgnoreCurrToken = false;
-                return FinishAndAssignType(CommandTypes::ARRAY_DECLARATION);
-            }
+            return FinishAndAssignType(CommandTypes::ARRAY_DECLARATION);
         }
     }
     else if (currToken.GetValue() == "[")
@@ -355,9 +365,15 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
         m_uParanthesesCounter++;
         return false;
     }
-    else if (AddToCurrParam(currToken, nextToken))
+    else if (m_bFirstParanthesesEnter) 
     {
-        if ((IsValue(nextToken, "]") && m_uParanthesesCounter == 1)) return false;
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_bFirstParanthesesEnter = false;
+    }
+
+    if (AddToCurrParam(currToken, nextToken))
+    {
+        if ((IsValue(nextToken, "]") && m_uParanthesesCounter == 1)) return true;
         else return FoundUnknown();
     }
     else return false;
