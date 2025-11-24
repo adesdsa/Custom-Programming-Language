@@ -70,7 +70,7 @@ public:
     Command(const EntityLogger& entityLogger);
 
     // todo: docs
-    bool Append(Token currToken, Token nextToken);
+    bool Append(Token& currToken, Token& nextToken);
 
     // Getters And Setters
     std::string_view GetType() const;
@@ -98,97 +98,97 @@ private:
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseUnidentified(Token currToken, Token nextToken);
+    bool ParseUnidentified(Token& currToken, Token& nextToken);
 
     // The func parses an ACCESS_RIGHTS CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseAccessRights(Token currToken, Token nextToken);
+    bool ParseAccessRights(Token& currToken, Token& nextToken);
 
     // The func parses a SCOPE CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseScope(Token currToken, Token nextToken);
+    bool ParseScope(Token& currToken, Token& nextToken);
 
     // The func parses an IDENTIFIER CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseIdentifier(Token currToken, Token nextToken);
+    bool ParseIdentifier(Token& currToken, Token& nextToken);
 
     // The func parses a FUNC_START CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseFuncStart(Token currToken, Token nextToken);
+    bool ParseFuncStart(Token& currToken, Token& nextToken);
 
     // The func parses an FILLED_FUNC_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseFilledFuncDeclaration(Token currToken, Token nextToken);
+    bool ParseFilledFuncDeclaration(Token& currToken, Token& nextToken);
 
     // The func parses an ARROW_FUNC_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseArrowFuncDeclaration(Token currToken, Token nextToken);
+    bool ParseArrowFuncDeclaration(Token& currToken, Token& nextToken);
 
     // The func parses a VAR_DECLARATION_START CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseVarDeclarationStart(Token currToken, Token nextToken);
+    bool ParseVarDeclarationStart(Token& currToken, Token& nextToken);
 
     // The func parses an ELIF_CALL, IF_CALL, WHILE_CALL or FOR_CALL CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseParameterKeywordCall(Token currToken, Token nextToken);
+    bool ParseParameterKeywordCall(Token& currToken, Token& nextToken);
 
     // The func parses an ELIF_START, IF_START, WHILE_START or FOR_START CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseParameterKeywordStart(Token currToken, Token nextToken);
+    bool ParseParameterKeywordStart(Token& currToken, Token& nextToken);
 
     // The func parses an EXPRESSION_VALUE CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseExpressionValue(Token currToken, Token nextToken);
+    bool ParseExpressionValue(Token& currToken, Token& nextToken);
 
     // The func parses an EXPRESSION_OPERATOR CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseExpressionOperator(Token currToken, Token nextToken);
+    bool ParseExpressionOperator(Token& currToken, Token& nextToken);
 
     // The func parses a POINTER_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    inline bool ParsePointerDeclaration(Token currToken, Token nextToken);
+    inline bool ParsePointerDeclaration(Token& currToken, Token& nextToken);
 
     // The func parses a NOT_FUNC_IDENTIFIER CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseNotFuncIdentifier(Token currToken, Token nextToken);
+    bool ParseNotFuncIdentifier(Token& currToken, Token& nextToken);
 
     // The func parses an ARRAY_ACCESS_START CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseArrayAccessStart(Token currToken, Token nextToken);
+    bool ParseArrayAccessStart(Token& currToken, Token& nextToken);
 
     // The func parses an ARRAY_DECLARATION_START CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseArrayDeclarationStart(Token currToken, Token nextToken);
+    bool ParseArrayDeclarationStart(Token& currToken, Token& nextToken);
 
 
     ///
@@ -200,45 +200,45 @@ private:
     // @param token: The token we are comparing.
     // @param sCompare: The string we compare.
     // @return: True-> the Token's value equals the string. False-> otherwise.
-    inline bool IsValue(Token token, std::string sCompare);
+    inline bool IsValue(Token& token, std::string sCompare);
 
     // The func compares if the Token's type equals to the string_view(The type).
     // @param token: The token we are comparing.
     // @param sCompare: The string_view which is a TokenType we compare.
     // @return: True-> the Token's type equals the given type. False-> otherwise.
-    inline bool IsType(Token token, std::string_view sCompare);
+    inline bool IsType(Token& token, std::string_view sCompare);
 
     // The func compares if the Token's value equals to the string, if it does then we change the type to the given type, else we change to unknown.
     // @param token: The token we are comparing.
     // @param sCompare: The string we compare the Token's value to.
     // @param sValidType: The string_view which is what we change the CommandType to if the compare works.
     // @return: False-> the Token's type equals the given type. True-> otherwise.
-    bool CompareExpected(Token token, std::string sCompare, std::string_view sValidType);
+    bool CompareExpected(Token& token, std::string sCompare, std::string_view sValidType);
 
     // The func checks if the given token is an Access right.
     // @param token: The token we are checking.
     // @return: True-> the Token is an Access Right. False-> otherwise.
-    bool IsAccessRights(Token token);
+    bool IsAccessRights(Token& token);
 
     // The func checks if the given token is a Scope.
     // @param token: The token we are checking.
     // @return: True-> the Token is a Scope. False-> otherwise.
-    bool IsScope(Token token);
+    bool IsScope(Token& token);
 
     // The func checks if the given token is an expression start.
     // @param token: The token we are checking.
     // @return: True-> the Token is an expression start. False-> otherwise.
-    bool IsExpressionStart(Token token);
+    bool IsExpressionStart(Token& token);
 
     // The func checks if the given token is a legal expression value.
     // @param token: The token we are checking.
     // @return: True-> the Token is a legal expression value. False-> otherwise.
-    inline bool IsValueToken(Token token);
+    inline bool IsValueToken(Token& token);
 
     // The func checks if the given token is an expression operator.
     // @param token: The token we are checking.
     // @return: True-> the Token is an expression operator. False-> otherwise.
-    bool IsOperator(Token token);
+    bool IsOperator(Token& token);
 
     // The func assigns the given CommandType and return true.
     // @param sType: The CommandType we assign.
@@ -253,7 +253,7 @@ private:
     // The func checks if the given token is a Var Type.
     // @param token: The token we are checking.
     // @return: True-> the Token is a Var Type. False-> otherwise.
-    inline bool IsType(Token token);
+    inline bool IsType(Token& token);
 
     // The func makes the CommandType UNKNOWN and returns true.
     // @return: True.
@@ -263,20 +263,20 @@ private:
     // @param currToken: The current Token.
     // @param nextToken: The next Token.
     // @return: True-> The param is complete. False-> otherwise.
-    inline bool AddToCurrParam(Token currToken, Token nextToken);
+    inline bool AddToCurrParam(Token& currToken, Token& nextToken);
 
     // The func handles function parameters by appending the tokens and checking edge cases.
     // @param currToken: The current Token.
     // @param nextToken: The next Token.
     // @return: True-> The param is complete. False-> otherwise.
-    bool HandleFuncParams(Token currToken, Token nextToken);
+    bool HandleFuncParams(Token& currToken, Token& nextToken);
 
     // The func checks if the given token is a control statement.
     // @param token: The token we are checking.
     // @return: True-> the Token is a control statement. False-> otherwise.
-    bool IsControlStatement(Token token);
+    bool IsControlStatement(Token& token);
 
-    bool HandleKeywordParams(Token currToken, Token nextToken);
+    bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
     // todo: create a [] operator for a foreach loop for easier param access
     // todo: add getters setters

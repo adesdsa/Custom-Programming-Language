@@ -12,7 +12,7 @@ public:
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token that will be added.
     // @return: True-> Finished the line. False-> Otherwise.
-    bool AddToken(Token currToken, Token nextToken);
+    bool AddToken(Token& currToken, Token& nextToken);
 
     // Getters
 

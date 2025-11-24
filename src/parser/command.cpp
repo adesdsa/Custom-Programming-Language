@@ -25,7 +25,7 @@ unsigned int Command::GetParanthesesCounter() const {
 }
 
 
-bool Command::Append(Token currToken, Token nextToken)
+bool Command::Append(Token& currToken, Token& nextToken)
 {
     m_bIgnoreCurrToken = false; // reset
     m_bIgnoreEON = false;       // reset
@@ -70,7 +70,7 @@ bool Command::Append(Token currToken, Token nextToken)
     // no support for array pointers/2d arrays
 }
 
-bool Command::ParseUnidentified(Token currToken, Token nextToken)
+bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
 {
     if (IsType(currToken, TokenTypes::IDENTIFIER) && !IsOperator(nextToken)) return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
     else if (IsType(currToken, TokenTypes::KEYWORD))
@@ -102,7 +102,7 @@ bool Command::ParseUnidentified(Token currToken, Token nextToken)
     return FoundUnknown();
 }
 
-bool Command::ParseIdentifier(Token currToken, Token nextToken)
+bool Command::ParseIdentifier(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, "(") || IsValue(currToken, "[")) 
     {
@@ -117,7 +117,7 @@ bool Command::ParseIdentifier(Token currToken, Token nextToken)
     else return FoundUnknown();
 }
 
-bool Command::ParseFuncStart(Token currToken, Token nextToken)
+bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
 {
     m_bIgnoreCurrToken = true;
     if (currToken.GetValue() == ")")
@@ -144,33 +144,33 @@ bool Command::ParseFuncStart(Token currToken, Token nextToken)
 
 }
 
-bool Command::ParseFilledFuncDeclaration(Token currToken, Token nextToken)
+bool Command::ParseFilledFuncDeclaration(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, "->")) return NoFinishAndAssignType(CommandTypes::ARROW_FUNC_DECLARATION);
     else return FoundUnknown();
 }
 
-bool Command::ParseArrowFuncDeclaration(Token currToken, Token nextToken)
+bool Command::ParseArrowFuncDeclaration(Token& currToken, Token& nextToken)
 {
     if (IsType(currToken)) return FinishAndAssignType(CommandTypes::FINISHED_FUNC_DECLARATION);
     else if (IsValue(currToken, "unsigned") && IsType(nextToken)) return false;
     else return FoundUnknown();
 }
 
-bool Command::ParseAccessRights(Token currToken, Token nextToken)
+bool Command::ParseAccessRights(Token& currToken, Token& nextToken)
 {
     if (IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
     else if (IsType(currToken, TokenTypes::IDENTIFIER)) return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown();
 }
 
-bool Command::ParseScope(Token currToken, Token nextToken)
+bool Command::ParseScope(Token& currToken, Token& nextToken)
 {
     if (IsType(currToken, TokenTypes::IDENTIFIER)) return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown();
 }
 
-bool Command::ParseVarDeclarationStart(Token currToken, Token nextToken)
+bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
 {
     if (IsType(currToken))
     {
@@ -185,7 +185,7 @@ bool Command::ParseVarDeclarationStart(Token currToken, Token nextToken)
     else return FoundUnknown();
 }
 
-bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
+bool Command::ParseParameterKeywordCall(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, "("))
     {
@@ -203,7 +203,7 @@ bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
     else return FoundUnknown();
 }
 
-bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
+bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, ")")) 
     {
@@ -226,13 +226,13 @@ bool Command::ParseParameterKeywordStart(Token currToken, Token nextToken)
     else return false;
 }
 
-bool Command::ParseExpressionValue(Token currToken, Token nextToken)
+bool Command::ParseExpressionValue(Token& currToken, Token& nextToken)
 {
     if (IsOperator(currToken)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
     else return FoundUnknown();
 }
 
-bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
+bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
 {
     if (m_bBuildingParam)
     {
@@ -270,18 +270,18 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
     else return FoundUnknown();
 }
 
-inline bool Command::ParsePointerDeclaration(Token currToken, Token nextToken)
+inline bool Command::ParsePointerDeclaration(Token& currToken, Token& nextToken)
 {
     return FinishAndAssignType(CommandTypes::POINTER_DECLARATION);
 }
 
-bool Command::ParseNotFuncIdentifier(Token currToken, Token nextToken)
+bool Command::ParseNotFuncIdentifier(Token& currToken, Token& nextToken)
 {
     if (currToken.GetValue() == ":") return NoFinishAndAssignType(CommandTypes::VAR_DECLARATION_START);
     else return FoundUnknown();
 }
 
-bool Command::ParseArrayAccessStart(Token currToken, Token nextToken)
+bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
 {
     m_bIgnoreCurrToken = true;
     if (currToken.GetValue() == "]")
@@ -306,7 +306,7 @@ bool Command::ParseArrayAccessStart(Token currToken, Token nextToken)
     else return false;
 }
 
-bool Command::ParseArrayDeclarationStart(Token currToken, Token nextToken)
+bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
 {
     m_bIgnoreCurrToken = true;
     if (m_uParanthesesCounter == 0)
@@ -344,17 +344,17 @@ bool Command::ParseArrayDeclarationStart(Token currToken, Token nextToken)
 }
 
 
-inline bool Command::IsValue(Token token, std::string sCompare)
+inline bool Command::IsValue(Token& token, std::string sCompare)
 {
     return token.GetValue() == sCompare;
 }
 
-inline bool Command::IsType(Token token, std::string_view sCompare)
+inline bool Command::IsType(Token& token, std::string_view sCompare)
 {
     return token.GetType() == sCompare;
 }
 
-bool Command::CompareExpected(Token token, std::string sCompare, std::string_view sValidType)
+bool Command::CompareExpected(Token& token, std::string sCompare, std::string_view sValidType)
 {
     if (IsValue(token, sCompare))
     {
@@ -364,30 +364,30 @@ bool Command::CompareExpected(Token token, std::string sCompare, std::string_vie
     else return FoundUnknown();
 }
 
-bool Command::IsAccessRights(Token token)
+bool Command::IsAccessRights(Token& token)
 {
     return IsValue(token, "const") || IsValue(token, "readonly");
 }
 
-bool Command::IsScope(Token token)
+bool Command::IsScope(Token& token)
 {
     return IsValue(token, "global") || IsValue(token, "var") || IsValue(token, "let");
 }
 
-bool Command::IsExpressionStart(Token token)
+bool Command::IsExpressionStart(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) || IsType(token, TokenTypes::VALUE)
         || IsValue(token, "-") || IsValue(token, "not") || IsValue(token, "*");
 }
 
-inline bool Command::IsOperator(Token token)
+inline bool Command::IsOperator(Token& token)
 {
     return (IsType(token, TokenTypes::OPERATOR) && !(IsValue(token, "=") || IsValue(token, "&")))
         || IsValue(token, "and") || IsValue(token, "or") ||
          IsValue(token, "xor") || IsValue(token, "is");
 }
 
-inline bool Command::IsValueToken(Token token)
+inline bool Command::IsValueToken(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) || IsType(token, TokenTypes::VALUE);
 }
@@ -405,7 +405,7 @@ inline bool Command::NoFinishAndAssignType(std::string_view sType)
     return false;
 }
 
-inline bool Command::IsType(Token token)
+inline bool Command::IsType(Token& token)
 {
     return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
 }
@@ -416,7 +416,7 @@ inline bool Command::FoundUnknown()
     return true;
 }
 
-bool Command::HandleFuncParams(Token currToken, Token nextToken)
+bool Command::HandleFuncParams(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, ",")) 
     {
@@ -428,17 +428,17 @@ bool Command::HandleFuncParams(Token currToken, Token nextToken)
     else return AddToCurrParam(currToken, nextToken);
 }
 
-inline bool Command::AddToCurrParam(Token currToken, Token nextToken)
+inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
 {
     return m_parameters[m_uParameterIndex].Append(currToken, nextToken);
 }
 
-bool Command::IsControlStatement(Token token)
+bool Command::IsControlStatement(Token& token)
 {
     return IsValue(token, "break") || IsValue(token, "continue");
 }
 
-bool Command::HandleKeywordParams(Token currToken, Token nextToken)
+bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, ";")) 
     {

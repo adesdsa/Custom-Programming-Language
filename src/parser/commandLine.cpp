@@ -1,6 +1,7 @@
 #include "parser/commandLine.h"
 
-CommandLine::CommandLine(const EntityLogger& entityLogger): m_entityLogger(entityLogger)
+CommandLine::CommandLine(const EntityLogger& entityLogger): 
+m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(false)
 {
     m_line.push_back(Command(m_entityLogger));
 }
@@ -20,7 +21,7 @@ const std::vector<Command>& CommandLine::GetLine() const
     return m_line;
 }
 
-bool CommandLine::AddToken(Token currToken, Token nextToken)
+bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
     if (!m_bFinished)
     {
@@ -45,7 +46,19 @@ bool CommandLine::AddToken(Token currToken, Token nextToken)
     return false;
 }
 
-void CheckLine()
+void CommandLine::CheckLine()
 {
     // todo: handle everthying here: all needed to be done is check that the first command and second command are legal and can be together and so on untill the end of the command.
+    /*for (int i = 0; i < m_line.size() && ; i++)
+    {
+        switch (i)
+        {
+        case 0:
+            
+            break;
+        
+        default:
+            break;
+        }
+    }*/
 }
