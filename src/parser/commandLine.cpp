@@ -3,7 +3,7 @@
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
 m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true)
 {
-    m_line.push_back(Command(m_entityLogger));
+    m_line.push_back(Command());
 }
 
 bool CommandLine::IsFinished() const
@@ -36,7 +36,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
             else {
                 ReformCommand(m_line[m_uLineIndex]);
                 m_uLineIndex++;
-                m_line.push_back(Command(m_entityLogger));
+                m_line.push_back(Command());
             }
         }
     }
@@ -116,25 +116,25 @@ void CommandLine::ReformCommand(Command& checkedCommand)
 
             if (!m_bLegal) return;
 
-            Command innerCommand = checkedCommand.GetParams()[3];
+            innerCommand = checkedCommand.GetParams()[3];
             if (innerCommand.GetType() != CommandTypes::ASSIGNMENT)
                 m_bLegal = false;
 
             if (!m_bLegal) return;
 
-            Command innerCommand = checkedCommand.GetParams()[4];
+            innerCommand = checkedCommand.GetParams()[4];
             ReformCommand(innerCommand);
             if (!innerCommand.IsExpression()) m_bLegal = false;
 
             if (!m_bLegal) return;
 
-            Command innerCommand = checkedCommand.GetParams()[6];
+            innerCommand = checkedCommand.GetParams()[6];
             ReformCommand(innerCommand);
             if (!innerCommand.IsExpression()) m_bLegal = false;
 
             if (!m_bLegal) return;
 
-            Command innerCommand = checkedCommand.GetParams()[8];
+            innerCommand = checkedCommand.GetParams()[8];
             ReformCommand(innerCommand);
             if (!innerCommand.IsExpression()) m_bLegal = false;
         }

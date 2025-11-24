@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parser/command.h"
+#include "logger/entity_logger.h"
 
 
 class CommandLine{
@@ -35,6 +36,6 @@ private:
     // It will save the result in the func's params.
     void CheckLine();
 
-    void ReformCommand();
+    void ReformCommand(Command& checkedCommand);
 
 };

@@ -1,9 +1,9 @@
 #include "parser/command.h"
 
 
-Command::Command(const EntityLogger& entityLogger): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
+Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
  m_bBuildingParam(false), m_bIgnoreCurrToken(false), m_bIgnoreEON(false),
- m_uParanthesesCounter(0), m_entityLogger(entityLogger), m_bFirstParanthesesEnter(false)
+ m_uParanthesesCounter(0), m_bFirstParanthesesEnter(false)
 {
 }
 
