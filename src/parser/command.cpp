@@ -61,6 +61,7 @@ bool Command::Append(Token currToken, Token nextToken)
 
     return bReturnValue;
     // todo: add logs at the end
+    // todo: check all control paths return
 
     // extra rules:
     // there is no support for int a, b, c=0;
@@ -107,7 +108,7 @@ bool Command::ParseIdentifier(Token currToken, Token nextToken)
     {
         m_bIgnoreCurrToken = true;
         m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
         m_uParanthesesCounter++;
         if (IsValue(currToken, "(")) return NoFinishAndAssignType(CommandTypes::FUNC_START);
         else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
@@ -192,7 +193,7 @@ bool Command::ParseParameterKeywordCall(Token currToken, Token nextToken)
         m_bBuildingParam = true;
         m_bIgnoreCurrToken = true;
         m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
         
         if (m_sType == CommandTypes::ELIF_CALL) return NoFinishAndAssignType(CommandTypes::ELIF_START);
         else if (m_sType == CommandTypes::IF_CALL) return NoFinishAndAssignType(CommandTypes::IF_START);
@@ -247,7 +248,7 @@ bool Command::ParseExpressionOperator(Token currToken, Token nextToken)
     {
         if (currToken.GetType() == TokenTypes::IDENTIFIER) {
             if (IsValue(nextToken, "(") || IsValue(nextToken, "[")) {
-                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
                 return AddToCurrParam(currToken, nextToken);
@@ -311,7 +312,7 @@ bool Command::ParseArrayDeclarationStart(Token currToken, Token nextToken)
     if (m_uParanthesesCounter == 0)
     {
         m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
         m_uParanthesesCounter++;
         return false;
     }
@@ -420,7 +421,7 @@ bool Command::HandleFuncParams(Token currToken, Token nextToken)
     if (IsValue(currToken, ",")) 
     {
         m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
         m_uParameterIndex++;
         return false;
     }
@@ -443,7 +444,7 @@ bool Command::HandleKeywordParams(Token currToken, Token nextToken)
     {
         m_bIgnoreEON = true;
         m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), m_entityLogger));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
         m_uParameterIndex++;
         return false;
     }
