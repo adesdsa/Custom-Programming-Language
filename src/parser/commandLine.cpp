@@ -102,10 +102,13 @@ void CommandLine::CheckLine()
     else if (m_line[0].GetType() == CommandTypes::ELIF ||
         m_line[0].GetType() == CommandTypes::IF ||
         m_line[0].GetType() == CommandTypes::FOR ||
-        m_line[0].GetType() == CommandTypes::WHILE ||
-        m_line[0].GetType() == CommandTypes::SIZEOF)
+        m_line[0].GetType() == CommandTypes::WHILE)
     {
         if (m_line[1].GetType() == CommandTypes::BLOCK_START) bLegalLine = true;
+    }
+    else if (m_line[0].GetType() == CommandTypes::SIZEOF)
+    {
+        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND) bLegalLine = true;
     }
     else if (m_line[0].GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
     {
@@ -127,6 +130,8 @@ void CommandLine::CheckLine()
         if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND) bLegalLine = true;
     }
     else if (m_line[0].GetType() == CommandTypes::BLOCK_END) bLegalLine = true;
+    else if (m_line[0].GetType() == CommandTypes::EOF_TOKEN)
+        bLegalLine = m_uBlockStartCnt == m_uBlockCloseCnt;
 
     if (bLegalLine) m_bLegal = true;
 }

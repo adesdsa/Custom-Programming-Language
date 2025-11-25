@@ -51,15 +51,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: make it so that if after a function call there is an expression
-    // todo: check the ending and unkown token of expressions
-    // todo: check that * and & are also expression start
-    // todo: check unsigned
-    // todo: check void is valid return
-    // todo: if code is outside {} it should be checked in the semantic analysis
-    // todo: check sizeof again
     // todo: where you use ParanthesesCnt it should be checked that the value is never >0
-    // todo: check eof once again
+    // todo: check each code path returns something
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -87,7 +80,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
 
     return bReturnValue;
     // todo: add logs at the end
-    // todo: check all control paths return
+    // todo: check all code paths return
     // test: test if block starting and ending works good also !!!! you have to check that at the end the block start and stop are both at 0
 
     // extra rules:
@@ -98,6 +91,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // right now we have infinite func params but no default values
     // right now single line keyword statements do not support single lines but only code blocks.
     // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
+    // Note that if code can be outside of {} is checked in the semantic analysis and not in the parser
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
@@ -117,6 +111,7 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
         else if (IsValue(currToken, "return")) return FinishAndAssignType(CommandTypes::RETURN);
         else if (IsControlStatement(currToken)) return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
         else if (IsValue(currToken, "pass")) return FinishAndAssignType(CommandTypes::PASS);
+        else return FoundUnknown();
     }
     else if (IsType(currToken, TokenTypes::PUNCTUATION))
     {
@@ -128,15 +123,18 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
             m_bFirstParanthesesEnter = true;
             return NoFinishAndAssignType(CommandTypes::ARRAY_VALUE_START);
         }
+        else return FoundUnknown();
     }
     else if (IsValue(currToken, "=")) return FinishAndAssignType(CommandTypes::ASSIGNMENT);
     else if (IsExpressionStart(currToken))
     {
-        if (IsValue(currToken, "-") || IsValue(currToken, "not")) return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
+        if (IsValue(currToken, "-") || IsValue(currToken, "not") ||
+        IsValue(currToken, "*") || IsValue(currToken, "&"))
+            return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
     else if (IsType(currToken, TokenTypes::EOF_TOKEN)) FinishAndAssignType(CommandTypes::EOF_TOKEN);
-    return FoundUnknown();
+    else return FoundUnknown();
 }
 
 bool Command::ParseIdentifier(Token& currToken, Token& nextToken)
@@ -181,11 +179,7 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
             }
         }
     }
-    else if (currToken.GetValue() == "(")
-    {
-        m_uParanthesesCounter++;
-        return false;
-    }
+    else if (currToken.GetValue() == "(") m_uParanthesesCounter++;
     else if (m_bFirstParanthesesEnter) 
     {
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
@@ -481,7 +475,8 @@ bool Command::IsScope(Token& token)
 bool Command::IsExpressionStart(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) || IsType(token, TokenTypes::VALUE)
-        || IsValue(token, "-") || IsValue(token, "not") || IsValue(token, "*");
+        || IsValue(token, "-") || IsValue(token, "not") ||
+        IsValue(token, "*") || IsValue(token, "&");
 }
 
 inline bool Command::IsOperator(Token& token)
