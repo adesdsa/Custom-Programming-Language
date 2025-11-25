@@ -56,6 +56,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // todo: handle array assignment(e.g. (1,2,3))
     // todo: make it so that if after a function call there is an expression
     // todo: check the ending and unkown token of expressions
+    // todo: check that * and & are also expression start
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -91,6 +92,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // When declaring a pointer the * should appear after the type 
     // no support for array pointers/2d arrays
     // right now we have infinite func params but no default values
+    // right now single line keyword statements do not support single lines but only code blocks.
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
