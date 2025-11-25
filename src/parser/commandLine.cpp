@@ -1,5 +1,8 @@
 #include "parser/commandLine.h"
 
+CommandLine::m_uBlockStartCnt = 0;
+CommandLine::m_uBlockCloseCnt = 0;
+
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
 m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true)
 {
@@ -11,7 +14,7 @@ bool CommandLine::IsFinished() const
     return m_bFinished;
 }
 
-bool CommandLine::IsLegal() const
+bool CommandLine::IsLegal() const // Change this to return errors
 {
     return m_bLegal;
 }
@@ -27,10 +30,27 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
     {
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
-            if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND
-            || m_line[m_uLineIndex].GetType() == CommandTypes::BLOCK_START
-            || m_line[m_uLineIndex].GetType() == CommandTypes::BLOCK_END) 
-                m_bFinished =true;
+            if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
+                m_bFinished = true;
+            else if (m_line[m_uLineIndex].GetType() == CommandTypes::BLOCK_START)
+            {
+                m_uBlockStartCnt++;
+                m_bFinished = true;
+            }
+            else if (m_line[m_uLineIndex].GetType() == CommandTypes::BLOCK_END)
+            {
+                m_uBlockCloseCnt++;
+                m_bFinished = true;
+                if (m_uBlockCloseCnt > m_uBlockStartCnt)
+                {
+                    // here you should make an error that says that you closed a block without being in one
+                }
+                else if (m_uBlockCloseCnt == m_uBlockStartCnt)
+                {
+                    m_uBlockCloseCnt = 0;
+                    m_uBlockStartCnt = 0;
+                }
+            }
             else if (m_line[m_uLineIndex].GetType() == CommandTypes::UNKNOWN)
                 m_bLegal = false;
             else {
@@ -106,7 +126,8 @@ void CommandLine::CheckLine()
     {
         if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND) bLegalLine = true;
     }
-    
+    else if (m_line[0].GetType() == CommandTypes::BLOCK_END) bLegalLine = true;
+
     if (bLegalLine) m_bLegal = true;
 }
 

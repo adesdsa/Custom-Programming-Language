@@ -56,6 +56,12 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // todo: check the ending and unkown token of expressions
     // todo: check that * and & are also expression start
     // todo: check unsigned
+    // todo: check void is valid return
+    // todo: if code is outside {} it should be checked in the semantic analysis
+    // todo: check sizeof again
+    // todo: where you use ParanthesesCnt it should be checked that the value is never >0
+    // todo: check eof once again
+    // todo: if array values should be switched from  {} to ||
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -84,6 +90,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     return bReturnValue;
     // todo: add logs at the end
     // todo: check all control paths return
+    // test: test if block starting and ending works good also !!!! you have to check that at the end the block start and stop are both at 0
 
     // extra rules:
     // there is no support for int a, b, c=0;

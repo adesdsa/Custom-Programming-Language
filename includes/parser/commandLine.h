@@ -31,6 +31,8 @@ private:
     bool m_bLegal;
     std::vector<Command> m_line;
     size_t m_uLineIndex;
+    static unsigned int m_uBlockStartCnt;
+    static unsigned int m_uBlockCloseCnt;
 
     // The func is used to check if the line is legal.
     // It will save the result in the func's params.
