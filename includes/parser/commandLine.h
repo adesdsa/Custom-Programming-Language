@@ -40,6 +40,6 @@ private:
 
     void ReformCommand(Command& checkedCommand);
 
-    bool IsType(Token& token);
+    bool IsType(const Token& token) const;
 
 };

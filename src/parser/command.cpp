@@ -442,6 +442,7 @@ bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
     else return false;
 }
 
+
 inline bool Command::IsValue(Token& token, std::string sCompare)
 {
     return token.GetValue() == sCompare;

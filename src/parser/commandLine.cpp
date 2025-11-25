@@ -1,7 +1,7 @@
 #include "parser/commandLine.h"
 
-CommandLine::m_uBlockStartCnt = 0;
-CommandLine::m_uBlockCloseCnt = 0;
+unsigned int CommandLine::m_uBlockStartCnt = 0;
+unsigned int CommandLine::m_uBlockCloseCnt = 0;
 
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
 m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true)
@@ -482,7 +482,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
 }
 
-bool CommandLine::IsType(Token& token)
+bool CommandLine::IsType(const Token& token) const
 {
-    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
+    return token.GetValue() == "int" || token.GetValue() == "bool" || token.GetValue() == "double";
 }

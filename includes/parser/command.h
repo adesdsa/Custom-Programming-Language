@@ -214,6 +214,9 @@ private:
     // @return: True-> finished the Command. False-> otherwise.
     bool ParseArrayDeclarationStart(Token& currToken, Token& nextToken);
 
+    // todo: add docs
+    bool ParseArrayValueStart(Token& currToken, Token& nextToken);
+
 
     ///
     ///         Helper Funcs
