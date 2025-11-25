@@ -3,15 +3,19 @@
 #include <vector>
 
 #include "error_models.h"
+#include "logger/entity_logger.h"
 
 // Will handle all the compile time errors. Store them and then handle
 // them one by one and at the end abort compiling process
 class ErrorManager
 {  
 public:
+    ErrorManager();
+    ~ErrorManager() = default;
+
     // Delete copy/move to prevent duplicates
-    ErrorManager(const Console&) = delete;
-    ErrorManager& operator=(const Console&) = delete;
+    ErrorManager(const ErrorManager&) = delete;
+    ErrorManager& operator=(const ErrorManager&) = delete;
 
     // Create the only instance this class will have throughout the program
     // @return: Static instance of the console class.
@@ -26,6 +30,7 @@ public:
 
 private:
     std::vector<CompileTimeError> m_errorList;
+    EntityLogger m_entityLogger;
 
     // Safely stops the compilation proccess
     void AbortCompilation();

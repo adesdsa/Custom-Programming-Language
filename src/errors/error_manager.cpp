@@ -1,4 +1,6 @@
-#include "includes/errors/error_manager.h"
+#include "errors/error_manager.h"
+
+ErrorManager::ErrorManager() : m_entityLogger("GENERAL") {}
 
 ErrorManager& ErrorManager::GetInstance() noexcept
 {
@@ -15,6 +17,6 @@ void ErrorManager::DisplayErrorsInUI()
 {
     for(const CompileTimeError& error : this->m_errorList)
     {
-
+        this->m_entityLogger.Error(error.ToString());
     }
 }
