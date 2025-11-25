@@ -22,7 +22,7 @@ std::string CompileTimeError::ToString() const noexcept
     "(" << this->m_line << "," << this->m_column << "): " <<
     this->m_type << ": " <<
     this->m_content << "\t" <<
-    this->m_hint;
+    "PROPOSED FIX: " << this->m_hint;
 
     return oss.str();
 }

@@ -11,9 +11,10 @@
 constexpr const char* k_sReset = "\033[0m";
 
 const std::unordered_map<std::string, std::string> ENTITY_COLORS = {
-    {"LEXER", "\033[32m" },   // Green
-    {"PARSER", "\033[36m" },  // Cyan
-    {"GENERAL", "\033[37m"}
+    {"LEXER", "\033[32m" },            // Green
+    {"PARSER", "\033[36m" },          // Cyan
+    {"ERROR-MANAGER", "\033[31m"},   // Red
+    {"GENERAL", "\033[37m"}         // White
 };
 
 const std::unordered_map<std::string, std::string> DEBUG_COLORS = {

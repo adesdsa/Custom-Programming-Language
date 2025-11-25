@@ -1,6 +1,6 @@
 #include "errors/error_manager.h"
 
-ErrorManager::ErrorManager() : m_entityLogger("GENERAL") {}
+ErrorManager::ErrorManager() : m_entityLogger("ERROR-MANAGER") {}
 
 ErrorManager& ErrorManager::GetInstance() noexcept
 {

@@ -7,10 +7,10 @@
 
 namespace ErrorTypes
 {
-    inline constexpr std::string_view SYNTAX_ERROR = "Syntax Error";
-    inline constexpr std::string_view TYPE_ERROR = "Type Error";
-    inline constexpr std::string_view NAME_ERROR = "Name Error";
-    inline constexpr std::string_view LINKING_EROR = "Linking Error";
+    inline constexpr std::string_view SYNTAX_ERROR = "syntax error";
+    inline constexpr std::string_view TYPE_ERROR = "type error";
+    inline constexpr std::string_view NAME_ERROR = "name error";
+    inline constexpr std::string_view LINKING_EROR = "linking error";
 }
 
 // TODO: Add field of path to file in which the error occured
