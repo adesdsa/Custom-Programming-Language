@@ -61,7 +61,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // todo: check sizeof again
     // todo: where you use ParanthesesCnt it should be checked that the value is never >0
     // todo: check eof once again
-    // todo: if array values should be switched from  {} to ||
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -125,7 +124,11 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
         if (IsValue(currToken, ";")) return FinishAndAssignType(CommandTypes::END_OF_COMMAND);
         else if (IsValue(currToken, "{")) return FinishAndAssignType(CommandTypes::BLOCK_START);
         else if (IsValue(currToken, "}")) return FinishAndAssignType(CommandTypes::BLOCK_END);
-        else if (IsValue(currToken, "[")) return NoFinishAndAssignType(CommandTypes::ARRAY_VALUE_START);
+        else if (IsValue(currToken, "[")) 
+        {
+            m_bFirstParanthesesEnter = true;
+            return NoFinishAndAssignType(CommandTypes::ARRAY_VALUE_START);
+        }
     }
     else if (IsValue(currToken, "=")) return FinishAndAssignType(CommandTypes::ASSIGNMENT);
     else if (IsExpressionStart(currToken))
@@ -181,7 +184,6 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
         else return FoundUnknown();
     }
     else return false;
-
 }
 
 bool Command::ParseFilledFuncDeclaration(Token& currToken, Token& nextToken)
@@ -399,6 +401,37 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
     else return false;
 }
 
+bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
+{
+    m_bIgnoreCurrToken = true;
+    if (currToken.GetValue() == ")")
+    {
+        m_uParanthesesCounter--;
+        if (m_uParanthesesCounter == 0)
+        {
+            m_bIgnoreCurrToken = false;
+            FinishAndAssignType(CommandTypes::ARRAY_VALUE);
+        }
+    }
+    else if (currToken.GetValue() == "(")
+    {
+        m_uParanthesesCounter++;
+        return false;
+    }
+    else if (m_bFirstParanthesesEnter) 
+    {
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
+        m_bFirstParanthesesEnter = false;
+    }
+
+    if (HandleFuncParams(currToken, nextToken))
+    {
+        if ((IsValue(nextToken, ")") && m_uParanthesesCounter == 1) || IsValue(nextToken, ",")) return false;
+        else return FoundUnknown();
+    }
+    else return false;
+}
 
 inline bool Command::IsValue(Token& token, std::string sCompare)
 {

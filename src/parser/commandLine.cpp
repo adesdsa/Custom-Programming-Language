@@ -420,6 +420,39 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     {
         checkedCommand.SetExpression(true);
     }
+    else if (checkedCommand.GetType() == CommandTypes::ARRAY_VALUE)
+    {
+        int iParamIndex = 0;
+        bool bExpectingExpression = true;
+
+        for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+        {
+            if (bExpectingExpression)
+            {
+                Command innerCommand = checkedCommand.GetParams()[iParamIndex];
+                ReformCommand(innerCommand);
+                if (!innerCommand.IsExpression() || innerCommand.GetType() == TokenTypes::UNKNOWN) 
+                {
+                    m_bLegal = false;
+                    checkedCommand.SetType(CommandTypes::UNKNOWN);
+                }
+                iParamIndex++;
+            }
+            else if (checkedCommand[i].GetValue() != ",") 
+            {
+                m_bLegal = false;
+                checkedCommand.SetType(CommandTypes::UNKNOWN);
+            }
+        }
+
+        if (checkedCommand[checkedCommand.GetTokens().size() - 2].GetValue() == ",")
+        {
+            m_bLegal = false;
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+        
+        if (m_bLegal) checkedCommand.SetExpression(true);
+    }
     else if (checkedCommand.GetType() == CommandTypes::UNIDENTIFIED ||
     checkedCommand.GetType() == CommandTypes::FUNC_START ||
     checkedCommand.GetType() == CommandTypes::FILLED_FUNC_DECLARATION ||
