@@ -9,8 +9,13 @@
 class ErrorManager
 {  
 public:
-    ErrorManager() = default;
-    ~ErrorManager() = default;
+    // Delete copy/move to prevent duplicates
+    ErrorManager(const Console&) = delete;
+    ErrorManager& operator=(const Console&) = delete;
+
+    // Create the only instance this class will have throughout the program
+    // @return: Static instance of the console class.
+    static ErrorManager& GetInstance() noexcept;
 
     // Stores the given error for later handling
     void StoreError(const CompileTimeError& error);
