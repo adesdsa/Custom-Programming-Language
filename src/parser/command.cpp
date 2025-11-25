@@ -51,7 +51,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: handle array assignment(e.g. (1,2,3))
     // todo: make it so that if after a function call there is an expression
     // todo: check the ending and unkown token of expressions
     // todo: check that * and & are also expression start
@@ -163,7 +162,23 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
         {
             m_bIgnoreCurrToken = false;
             if (IsValue(nextToken, "->")) return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
-            else return FinishAndAssignType(CommandTypes::FINISHED_FUNC_CALL);
+            else 
+            {
+                if (IsOperator(nextToken))
+                {
+                    m_parameters.push_back(*this);
+                    m_tokens.clear();
+                    m_bBuildingParam = false;
+                    m_bIgnoreEON = false;
+                    m_bExpression = false;
+                    m_uParanthesesCounter = 0;
+                    m_uParameterIndex = 1;
+                    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, m_parameters[0][0].GetLine()));
+
+                    return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+                }
+                else return FinishAndAssignType(CommandTypes::FINISHED_FUNC_CALL);
+            }
         }
     }
     else if (currToken.GetValue() == "(")

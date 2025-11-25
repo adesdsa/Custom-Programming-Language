@@ -300,6 +300,7 @@ private:
     // @return: True-> the Token is a control statement. False-> otherwise.
     bool IsControlStatement(Token& token);
 
+    // todo: docs
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
     // todo: create a [] operator for a foreach loop for easier param access
