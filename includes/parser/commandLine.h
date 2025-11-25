@@ -19,7 +19,7 @@ public:
 
     // Is The Line Finished.
     bool IsFinished() const;
-    // Is The Line LEgal.
+    // Is The Line Legal.
     bool IsLegal() const;
     // Get The Line Itself.
     const std::vector<Command>& GetLine() const;
@@ -37,5 +37,7 @@ private:
     void CheckLine();
 
     void ReformCommand(Command& checkedCommand);
+
+    bool IsType(Token& token);
 
 };

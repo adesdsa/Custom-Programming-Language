@@ -82,7 +82,8 @@ void CommandLine::CheckLine()
     else if (m_line[0].GetType() == CommandTypes::ELIF ||
         m_line[0].GetType() == CommandTypes::IF ||
         m_line[0].GetType() == CommandTypes::FOR ||
-        m_line[0].GetType() == CommandTypes::WHILE)
+        m_line[0].GetType() == CommandTypes::WHILE ||
+        m_line[0].GetType() == CommandTypes::SIZEOF)
     {
         if (m_line[1].GetType() == CommandTypes::BLOCK_START) bLegalLine = true;
     }
@@ -100,6 +101,10 @@ void CommandLine::CheckLine()
         if (m_line[1].GetType() == CommandTypes::ASSIGNMENT)
             if (m_line[2].IsExpression())
                 if (m_line[3].GetType() == CommandTypes::END_OF_COMMAND) bLegalLine = true;
+    }
+    else if (m_line[0].GetType() == CommandTypes::PASS)
+    {
+        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND) bLegalLine = true;
     }
     
     if (bLegalLine) m_bLegal = true;
@@ -213,6 +218,17 @@ void CommandLine::ReformCommand(Command& checkedCommand)
             Command innerCommand = checkedCommand.GetParams()[0];
             ReformCommand(innerCommand);
             if (!innerCommand.IsExpression()) m_bLegal = false;
+        }
+    }
+    else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
+    {
+        if (checkedCommand.GetTokens().size() != 4) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        else 
+        {
+            Command innerCommand = checkedCommand.GetParams()[0];
+            ReformCommand(innerCommand);
+            if (!innerCommand.IsExpression() && !IsType(innerCommand.GetTokens()[0])) m_bLegal = false;
         }
     }
     else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_VALUE)
@@ -405,4 +421,9 @@ void CommandLine::ReformCommand(Command& checkedCommand)
         m_bLegal = false;
         checkedCommand.SetType(CommandTypes::UNKNOWN);
     }
+}
+
+bool CommandLine::IsType(Token& token)
+{
+    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
 }

@@ -29,6 +29,7 @@ namespace CommandTypes
     inline constexpr std::string_view VAR_DECLARATION               = "VAR_DECLARATION";
     inline constexpr std::string_view EOF_TOKEN                     = "EOF_TOKEN";
     inline constexpr std::string_view EXPRESSION                    = "EXPRESSION";
+    inline constexpr std::string_view PASS                          = "PASS";
 
 
     /// 
@@ -38,12 +39,15 @@ namespace CommandTypes
     inline constexpr std::string_view IF                            = "IF";
     inline constexpr std::string_view FOR                           = "FOR";
     inline constexpr std::string_view WHILE                         = "WHILE";
-    inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
-    inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
+    inline constexpr std::string_view SIZEOF                        = "SIZEOF";
     inline constexpr std::string_view FINISHED_FUNC_DECLARATION     = "FINISHED_FUNC_DECLARATION";
     inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
     inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
+    inline constexpr std::string_view ARRAY_VALUE_START             = "ARRAY_VALUE_START";
+
+    inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
+    inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
 
 
     /// 
@@ -64,6 +68,8 @@ namespace CommandTypes
     inline constexpr std::string_view WHILE_CALL                    = "WHILE_CALL";
     inline constexpr std::string_view FOR_START                     = "FOR_START";
     inline constexpr std::string_view WHILE_START                   = "WHILE_START";
+    inline constexpr std::string_view SIZEOF_CALL                   = "SIZEOF_CALL";
+    inline constexpr std::string_view SIZEOF_START                  = "SIZEOF_START";
     inline constexpr std::string_view ARRAY_ACCESS_START            = "ARRAY_ACCESS_START";
     inline constexpr std::string_view NOT_FUNC_IDENTIFIER           = "NOT_FUNC_IDENTIFIER";
     inline constexpr std::string_view ARRAY_DECLARATION_START       = "ARRAY_DECLARATION_START";

@@ -51,12 +51,11 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: pass, sizeof
-    // todo: make sure that the command vector doesnt need args for the constructor
     // todo: handle array assignment(e.g. (1,2,3))
     // todo: make it so that if after a function call there is an expression
     // todo: check the ending and unkown token of expressions
     // todo: check that * and & are also expression start
+    // todo: check unsigned
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -78,7 +77,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     else return FoundUnknown();
 
 
-    if (m_bIgnoreCurrToken) m_tokens.push_back(currToken);
+    if (!m_bIgnoreCurrToken) m_tokens.push_back(currToken);
     if (IsValue(nextToken, ";") && !m_bIgnoreEON) bReturnValue = true;
     if (IsValue(nextToken, "{") || IsValue(nextToken, "}")) bReturnValue = true;
 
@@ -93,6 +92,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // no support for array pointers/2d arrays
     // right now we have infinite func params but no default values
     // right now single line keyword statements do not support single lines but only code blocks.
+    // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
@@ -108,14 +108,17 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
         else if (IsValue(currToken, "elif")) return CompareExpected(nextToken, "(", CommandTypes::ELIF_CALL);
         else if (IsValue(currToken, "for")) return CompareExpected(nextToken, "(", CommandTypes::FOR_CALL);
         else if (IsValue(currToken, "while")) return CompareExpected(nextToken, "(", CommandTypes::WHILE_CALL);
+        else if (IsValue(currToken, "sizeof")) return CompareExpected(nextToken, "(", CommandTypes::SIZEOF_CALL);
         else if (IsValue(currToken, "return")) return FinishAndAssignType(CommandTypes::RETURN);
         else if (IsControlStatement(currToken)) return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
+        else if (IsValue(currToken, "pass")) return FinishAndAssignType(CommandTypes::PASS);
     }
     else if (IsType(currToken, TokenTypes::PUNCTUATION))
     {
         if (IsValue(currToken, ";")) return FinishAndAssignType(CommandTypes::END_OF_COMMAND);
         else if (IsValue(currToken, "{")) return FinishAndAssignType(CommandTypes::BLOCK_START);
         else if (IsValue(currToken, "}")) return FinishAndAssignType(CommandTypes::BLOCK_END);
+        else if (IsValue(currToken, "[")) return NoFinishAndAssignType(CommandTypes::ARRAY_VALUE_START);
     }
     else if (IsValue(currToken, "=")) return FinishAndAssignType(CommandTypes::ASSIGNMENT);
     else if (IsExpressionStart(currToken))
@@ -161,6 +164,7 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
     else if (m_bFirstParanthesesEnter) 
     {
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         m_bFirstParanthesesEnter = false;
     }
 
@@ -224,11 +228,13 @@ bool Command::ParseParameterKeywordCall(Token& currToken, Token& nextToken)
         m_bIgnoreCurrToken = true;
         m_tokens.push_back(currToken);
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         
         if (m_sType == CommandTypes::ELIF_CALL) return NoFinishAndAssignType(CommandTypes::ELIF_START);
         else if (m_sType == CommandTypes::IF_CALL) return NoFinishAndAssignType(CommandTypes::IF_START);
         else if (m_sType == CommandTypes::FOR_CALL) return NoFinishAndAssignType(CommandTypes::FOR_START);
         else if (m_sType == CommandTypes::WHILE_CALL) return NoFinishAndAssignType(CommandTypes::WHILE_START);
+        else if (m_sType == CommandTypes::SIZEOF_CALL) return NoFinishAndAssignType(CommandTypes::SIZEOF_START);
     }
     else return FoundUnknown();
 }
@@ -245,6 +251,7 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
             else if (m_sType == CommandTypes::IF_START) return FinishAndAssignType(CommandTypes::IF);
             else if (m_sType == CommandTypes::FOR_START) return FinishAndAssignType(CommandTypes::FOR);
             else if (m_sType == CommandTypes::WHILE_START) return FinishAndAssignType(CommandTypes::WHILE);
+            else if (m_sType == CommandTypes::SIZEOF_CALL) return NoFinishAndAssignType(CommandTypes::SIZEOF);
         }
     }
     else if (IsValue(currToken, "(")) m_uParanthesesCounter++;
@@ -279,6 +286,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
         if (currToken.GetType() == TokenTypes::IDENTIFIER) {
             if (IsValue(nextToken, "(") || IsValue(nextToken, "[")) {
                 m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+                m_parameters.push_back(Command());
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
                 return AddToCurrParam(currToken, nextToken);
@@ -288,12 +296,12 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     }
     else if (IsValue(currToken, "("))
     {
-        m_uParanthesesCounter++; //todo: remember that when it's an expression you need to check that the paranthesesCounter is 0 at the end
+        m_uParanthesesCounter++;
         return false;
     }
     else if (IsValue(currToken, ")"))
     {
-        m_uParanthesesCounter--; //todo: remember that when it's an expression you need to check that the paranthesesCounter is 0 at the end
+        m_uParanthesesCounter--;
         return false;
     }
     else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  IsValue(currToken, "&")) return false;
@@ -331,6 +339,7 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
     else if (m_bFirstParanthesesEnter) 
     {
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         m_bFirstParanthesesEnter = false;
     }
 
@@ -349,6 +358,7 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
     {
         m_tokens.push_back(currToken);
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         m_uParanthesesCounter++;
         return false;
     }
@@ -370,6 +380,7 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
     else if (m_bFirstParanthesesEnter) 
     {
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         m_bFirstParanthesesEnter = false;
     }
 
@@ -460,6 +471,7 @@ bool Command::HandleFuncParams(Token& currToken, Token& nextToken)
     {
         m_tokens.push_back(currToken);
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         m_uParameterIndex++;
         return false;
     }
@@ -483,6 +495,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
         m_bIgnoreEON = true;
         m_tokens.push_back(currToken);
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
         m_uParameterIndex++;
         return false;
     }
