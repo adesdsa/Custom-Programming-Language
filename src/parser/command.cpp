@@ -7,6 +7,10 @@ Command::Command(const EntityLogger& entityLogger): m_sType(CommandTypes::UNIDEN
 {
 }
 
+bool Command::HasParams() const noexcept
+{
+    return this->m_parameters.size() != 0;
+}
 
 std::string_view Command::GetType() const {
     return m_sType;
