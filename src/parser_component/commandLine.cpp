@@ -4,9 +4,9 @@ unsigned int CommandLine::m_uBlockStartCnt = 0;
 unsigned int CommandLine::m_uBlockCloseCnt = 0;
 
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
-m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true)
+m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true),
+m_uLineIndex(0)
 {
-    m_line.push_back(Command());
 }
 
 bool CommandLine::IsFinished() const
@@ -28,8 +28,11 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
     if (!m_bFinished)
     {
+        //std::cout << "adding the next Token: " << currToken.GetType() << " From line: " << currToken.GetLine() << std::endl;
+        if (m_uLineIndex == m_line.size()) m_line.push_back(Command());
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
+            std::cout << m_line[m_uLineIndex].GetType() << m_line[m_uLineIndex].GetTokens()[0].GetLine() << " First Token: " << m_line[m_uLineIndex].GetTokens()[0].GetValue() << " Last Token: " << m_line[m_uLineIndex].GetTokens()[m_line[m_uLineIndex].GetTokens().size() - 1].GetValue() << std::endl;
             // Checking if the line is finished.
             if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
                 m_bFinished = true;
@@ -70,9 +73,9 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
             else {
                 // Reforming the command incase it's needed and continuing to the next Command.
                 ReformCommand(m_line[m_uLineIndex]);
-                m_uLineIndex++;
                 m_line.push_back(Command());
             }
+            m_uLineIndex++;
         }
     }
 

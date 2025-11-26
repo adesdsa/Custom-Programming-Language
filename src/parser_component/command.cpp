@@ -371,7 +371,7 @@ inline bool Command::IsOperator(Token& token)
     return (IsType(token, TokenTypes::OPERATOR) && !(IsValue(token, "=") || IsValue(token, "&")))
         || IsValue(token, "and") || IsValue(token, "or") ||
         IsValue(token, "xor") || IsValue(token, "is") ||
-        IsValue(token, "(") || IsValue(token, ")");
+        IsValue(token, ")");
 }
 
 inline bool Command::IsValueToken(Token& token)
@@ -381,7 +381,7 @@ inline bool Command::IsValueToken(Token& token)
 
 inline bool Command::IsType(Token& token)
 {
-    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
+    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double") || IsValue(token, "void");
 }
 
 bool Command::IsControlStatement(Token& token)
@@ -415,13 +415,13 @@ inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
     {
         m_parameters.push_back(Command());
         m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        return false;
     }
     if (m_parameters[m_uParameterIndex].Append(currToken, nextToken))
     {
         m_uParameterIndex++;
         return true;
     }
+    return false;
 }
 
 bool Command::LowerParanthesesCounter()
@@ -479,7 +479,6 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
 inline bool Command::HandleFoundParantheses(Token& currToken)
 {
     m_bFirstParanthesesEnter = true;
-    m_uParanthesesCounter++;
     return false;
 }
 
@@ -491,7 +490,6 @@ bool Command::HandleDefaultPossibleParamChecks(Token& currToken, std::string sPa
         m_uParanthesesCounter++;
         return true;
     }
-    if (m_bFirstParanthesesEnter) m_tokens.push_back(currToken);
     return false;
 }
 
