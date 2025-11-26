@@ -51,7 +51,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: check each code path returns something
     // todo: check that *& dont work in a for loop
     // todo: check that all the things that have a parameter inside them are turned into a has_param token including assignment and identifier
     // todo: add HasParam func
@@ -145,60 +144,31 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
 
 bool Command::ParseIdentifier(Token& currToken, Token& nextToken)
 {
-    if (IsValue(currToken, "(") || IsValue(currToken, "[")) 
-    {
-        m_bFirstParanthesesEnter = true;
-        m_uParanthesesCounter++;
-        if (IsValue(currToken, "(")) return NoFinishAndAssignType(CommandTypes::FUNC_START);
-        else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
-    }
+    if (IsValue(currToken, "(") || IsValue(currToken, "[")) return HandleFoundParantheses(currToken);
     else if (currToken.GetValue() == ":") return NoFinishAndAssignType(CommandTypes::VAR_DECLARATION_START);
     else return FoundUnknown();
 }
 
 bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
 {
-    m_bIgnoreCurrToken = true;
-    if (currToken.GetValue() == ")")
+    if (HandleDefaultFuncLikeStartingChecks(currToken, "(")) return false;
+    else if (currToken.GetValue() == ")")
     {
-        m_uParanthesesCounter--;
-        if (m_uParanthesesCounter == 0)
+        if(LowerParanthesesCounter()) return true;
+        else if (m_uParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             if (IsValue(nextToken, "->")) return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
-            else 
+            else if (IsOperator(nextToken))
             {
-                if (IsOperator(nextToken))
-                {
-                    m_parameters.push_back(*this);
-                    m_tokens.clear();
-                    m_bBuildingParam = false;
-                    m_bIgnoreEON = false;
-                    m_bExpression = false;
-                    m_uParanthesesCounter = 0;
-                    m_uParameterIndex = 1;
-                    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, m_parameters[0][0].GetLine()));
-
-                    return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
-                }
-                else return FinishAndAssignType(CommandTypes::FINISHED_FUNC_CALL);
+                MoveThisIntoParam();
+                return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
+            else return FinishAndAssignType(CommandTypes::FINISHED_FUNC_CALL);
         }
-        else if (m_uParanthesesCounter < 0)
-        {
-            // todo: recommended to add an error saver that will be dumped in the checking
-            return FoundUnknown();
-        }
-    }
-    else if (currToken.GetValue() == "(") m_uParanthesesCounter++;
-    else if (m_bFirstParanthesesEnter) 
-    {
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        m_parameters.push_back(Command());
-        m_bFirstParanthesesEnter = false;
     }
 
-    if (HandleFuncParams(currToken, nextToken))
+    if (HandleFuncLikeParams(currToken, nextToken))
     {
         if ((IsValue(nextToken, ")") && m_uParanthesesCounter == 1) || IsValue(nextToken, ",")) return false;
         else return FoundUnknown();
@@ -236,12 +206,7 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
 {
     if (IsType(currToken))
     {
-        if (IsValue(nextToken, "[")) 
-        {
-            m_bFirstParanthesesEnter = true;
-            m_uParanthesesCounter++;
-            return NoFinishAndAssignType(CommandTypes::ARRAY_DECLARATION_START);
-        }
+        if (IsValue(nextToken, "[")) return HandleFoundParantheses(currToken);
         if (IsValue(nextToken, "*")) return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
@@ -252,12 +217,7 @@ bool Command::ParseParameterKeywordCall(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, "("))
     {
-        m_uParameterIndex++;
-        m_bBuildingParam = true;
-        m_bIgnoreCurrToken = true;
-        m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        m_parameters.push_back(Command());
+        HandleFoundParantheses(currToken);
         
         if (m_sType == CommandTypes::ELIF_CALL) return NoFinishAndAssignType(CommandTypes::ELIF_START);
         else if (m_sType == CommandTypes::IF_CALL) return NoFinishAndAssignType(CommandTypes::IF_START);
@@ -271,9 +231,10 @@ bool Command::ParseParameterKeywordCall(Token& currToken, Token& nextToken)
 
 bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
 {
-    if (IsValue(currToken, ")")) 
+    if (HandleDefaultFuncLikeStartingChecks(currToken, "(")) return false;
+    else if (IsValue(currToken, ")")) 
     {
-        m_uParanthesesCounter--;
+        if(LowerParanthesesCounter()) return true;
         if (m_uParanthesesCounter == 0)
         {
             m_bBuildingParam = false;
@@ -284,15 +245,9 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
             else if (m_sType == CommandTypes::SIZEOF_CALL) return NoFinishAndAssignType(CommandTypes::SIZEOF);
             else return FoundUnknown();
         }
-        else if (m_uParanthesesCounter < 0)
-        {
-            // todo: recommended to add an error saver that will be dumped in the checking
-            return FoundUnknown();
-        }
-        else return FoundUnknown();
     }
-    else if (IsValue(currToken, "(")) m_uParanthesesCounter++;
-    else if (HandleKeywordParams(currToken, nextToken))
+
+    if (HandleKeywordParams(currToken, nextToken))
     {
         if ((IsValue(nextToken, ")") && m_uParanthesesCounter == 1) || IsValue(nextToken, ";")) return false;
         else return FoundUnknown();
@@ -320,16 +275,11 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     }
     else if (IsValueToken(currToken))
     {
-        if (currToken.GetType() == TokenTypes::IDENTIFIER) {
-            if (IsValue(nextToken, "(") || IsValue(nextToken, "[")) {
-                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-                m_parameters.push_back(Command());
-                m_bIgnoreCurrToken = true;
-                m_bBuildingParam = true;
-                return AddToCurrParam(currToken, nextToken);
-            } else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        if (IsType(currToken, TokenTypes::IDENTIFIER)) {
+            if (IsValue(nextToken, "(") || IsValue(nextToken, "[")) return HandleFoundParantheses(currToken);
+            else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE); // todo: here it should be turned to a param
         } 
-        else if (currToken.GetType() == TokenTypes::VALUE) return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        else if (IsType(currToken, TokenTypes::VALUE)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         else return FoundUnknown();
     }
     else if (IsValue(currToken, "("))
@@ -337,16 +287,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
         m_uParanthesesCounter++;
         return false;
     }
-    else if (IsValue(currToken, ")"))
-    {
-        m_uParanthesesCounter--;
-        if (m_uParanthesesCounter < 0)
-        {
-            // todo: recommended to add an error saver that will be dumped in the checking
-            return FoundUnknown();
-        }
-        return false;
-    }
+    else if (IsValue(currToken, ")")) return LowerParanthesesCounter();
     else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  IsValue(currToken, "&")) return false;
     else return FoundUnknown();
 }
@@ -364,31 +305,15 @@ bool Command::ParseNotFuncIdentifier(Token& currToken, Token& nextToken)
 
 bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
 {
-    m_bIgnoreCurrToken = true;
-    if (currToken.GetValue() == "]")
+    if (HandleDefaultFuncLikeStartingChecks(currToken, "[")) return false;
+    else if (currToken.GetValue() == "]")
     {
-        m_uParanthesesCounter--;
-        if (m_uParanthesesCounter == 0)
+        if (LowerParanthesesCounter()) return true;
+        else if (m_uParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
         }
-        else if (m_uParanthesesCounter < 0)
-        {
-            // todo: recommended to add an error saver that will be dumped in the checking
-            return FoundUnknown();
-        }
-    }
-    else if (currToken.GetValue() == "[")
-    {
-        m_uParanthesesCounter++;
-        return false;
-    }
-    else if (m_bFirstParanthesesEnter) 
-    {
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        m_parameters.push_back(Command());
-        m_bFirstParanthesesEnter = false;
     }
 
     if (AddToCurrParam(currToken, nextToken))
@@ -401,40 +326,15 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
 
 bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
 {
-    m_bIgnoreCurrToken = true;
-    if (m_uParanthesesCounter == 0)
+    if (HandleDefaultFuncLikeStartingChecks(currToken, "[")) return false;
+    else if (currToken.GetValue() == "]")
     {
-        m_tokens.push_back(currToken);
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        m_parameters.push_back(Command());
-        m_uParanthesesCounter++;
-        return false;
-    }
-
-    if (currToken.GetValue() == "]")
-    {
-        m_uParanthesesCounter--;
-        if (m_uParanthesesCounter == 0)
+        if (LowerParanthesesCounter()) return true;
+        else if (m_uParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_DECLARATION);
         }
-        else if (m_uParanthesesCounter < 0)
-        {
-            // todo: recommended to add an error saver that will be dumped in the checking
-            return FoundUnknown();
-        }
-    }
-    else if (currToken.GetValue() == "[")
-    {
-        m_uParanthesesCounter++;
-        return false;
-    }
-    else if (m_bFirstParanthesesEnter) 
-    {
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        m_parameters.push_back(Command());
-        m_bFirstParanthesesEnter = false;
     }
 
     if (AddToCurrParam(currToken, nextToken))
@@ -447,34 +347,18 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
 
 bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
 {
-    m_bIgnoreCurrToken = true;
-    if (currToken.GetValue() == ")")
+    if (HandleDefaultFuncLikeStartingChecks(currToken, "(")) return false;
+    else if (currToken.GetValue() == ")")
     {
-        m_uParanthesesCounter--;
+        if (LowerParanthesesCounter()) return true;
         if (m_uParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             FinishAndAssignType(CommandTypes::ARRAY_VALUE);
         }
-        else if (m_uParanthesesCounter < 0)
-        {
-            // todo: recommended to add an error saver that will be dumped in the checking
-            return FoundUnknown();
-        }
-    }
-    else if (currToken.GetValue() == "(")
-    {
-        m_uParanthesesCounter++;
-        return false;
-    }
-    else if (m_bFirstParanthesesEnter) 
-    {
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
-        m_parameters.push_back(Command());
-        m_bFirstParanthesesEnter = false;
     }
 
-    if (HandleFuncParams(currToken, nextToken))
+    if (HandleFuncLikeParams(currToken, nextToken))
     {
         if ((IsValue(nextToken, ")") && m_uParanthesesCounter == 1) || IsValue(nextToken, ",")) return false;
         else return FoundUnknown();
@@ -533,6 +417,16 @@ inline bool Command::IsValueToken(Token& token)
     return IsType(token, TokenTypes::IDENTIFIER) || IsType(token, TokenTypes::VALUE);
 }
 
+inline bool Command::IsType(Token& token)
+{
+    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
+}
+
+bool Command::IsControlStatement(Token& token)
+{
+    return IsValue(token, "break") || IsValue(token, "continue");
+}
+
 
 inline bool Command::FinishAndAssignType(std::string_view sType)
 {
@@ -546,18 +440,48 @@ inline bool Command::NoFinishAndAssignType(std::string_view sType)
     return false;
 }
 
-inline bool Command::IsType(Token& token)
-{
-    return IsValue(token, "int") || IsValue(token, "bool") || IsValue(token, "double");
-}
-
 inline bool Command::FoundUnknown() 
 {
     m_sType = CommandTypes::UNKNOWN;
     return true;
 }
 
-bool Command::HandleFuncParams(Token& currToken, Token& nextToken)
+
+inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
+{
+    return m_parameters[m_uParameterIndex].Append(currToken, nextToken);
+}
+
+bool Command::LowerParanthesesCounter()
+{
+    m_uParanthesesCounter--;
+    if (m_uParanthesesCounter < 0)
+    {
+        // todo: recommended to add an error saver that will be dumped in the checking
+        return FoundUnknown();
+    }
+    return false;
+}
+
+void Command::MoveThisIntoParam()
+{
+    Command tempSave;
+    tempSave.m_tokens = std::move(this->m_tokens);
+    tempSave.m_parameters = std::move(this->m_parameters);
+    tempSave.m_sType = this->m_sType;
+    tempSave.m_uParameterIndex = this->m_uParameterIndex;
+    tempSave.m_uParanthesesCounter = this->m_uParanthesesCounter;
+
+    m_bBuildingParam = false;
+    m_bIgnoreEON = false;
+    m_bExpression = false;
+    m_uParanthesesCounter = 0;
+    m_uParameterIndex = 1;
+    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, m_parameters[0][0].GetLine()));
+}
+
+
+bool Command::HandleFuncLikeParams(Token& currToken, Token& nextToken)
 {
     if (IsValue(currToken, ",")) 
     {
@@ -568,16 +492,6 @@ bool Command::HandleFuncParams(Token& currToken, Token& nextToken)
         return false;
     }
     else return AddToCurrParam(currToken, nextToken);
-}
-
-inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
-{
-    return m_parameters[m_uParameterIndex].Append(currToken, nextToken);
-}
-
-bool Command::IsControlStatement(Token& token)
-{
-    return IsValue(token, "break") || IsValue(token, "continue");
 }
 
 bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
@@ -592,4 +506,29 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
         return false;
     }
     else return AddToCurrParam(currToken, nextToken);
+}
+
+bool Command::HandleFoundParantheses(Token& currToken)
+{
+    m_bFirstParanthesesEnter = true;
+    m_uParanthesesCounter++;
+    if (IsValue(currToken, "(")) return NoFinishAndAssignType(CommandTypes::FUNC_START);
+    else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
+}
+
+bool Command::HandleDefaultFuncLikeStartingChecks(Token& currToken, std::string sParantheses)
+{
+    m_bIgnoreCurrToken = true;
+    if (IsValue(currToken, sParantheses)) 
+    {
+        m_uParanthesesCounter++;
+        return true;
+    }
+    else if (m_bFirstParanthesesEnter)
+    {
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_parameters.push_back(Command());
+        m_bFirstParanthesesEnter = false;
+    }
+    return false;
 }

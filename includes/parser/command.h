@@ -115,7 +115,7 @@ private:
 
 
     ///
-    ///         Parser Funcs
+    ///         Parser Functions
     ///
 
     // The func parses an UNIDENTIFIED CommandType.
@@ -219,7 +219,7 @@ private:
 
 
     ///
-    ///         Helper Funcs
+    ///         Classification Checker Functions
     ///
 
 
@@ -267,6 +267,22 @@ private:
     // @return: True-> the Token is an expression operator. False-> otherwise.
     bool IsOperator(Token& token);
 
+    // The func checks if the given token is a Var Type.
+    // @param token: The token we are checking.
+    // @return: True-> the Token is a Var Type. False-> otherwise.
+    inline bool IsType(Token& token);
+
+    // The func checks if the given token is a control statement.
+    // @param token: The token we are checking.
+    // @return: True-> the Token is a control statement. False-> otherwise.
+    bool IsControlStatement(Token& token);
+
+
+///
+///         Parsing finish Functions
+///
+
+
     // The func assigns the given CommandType and return true.
     // @param sType: The CommandType we assign.
     // @return: True.
@@ -277,35 +293,44 @@ private:
     // @return: False.
     inline bool NoFinishAndAssignType(std::string_view sType);
 
-    // The func checks if the given token is a Var Type.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is a Var Type. False-> otherwise.
-    inline bool IsType(Token& token);
-
     // The func makes the CommandType UNKNOWN and returns true.
     // @return: True.
     inline bool FoundUnknown();
+
+
+///
+///         Helper Functions
+///
+
 
     // The func appends to the current parameter.
     // @param currToken: The current Token.
     // @param nextToken: The next Token.
     // @return: True-> The param is complete. False-> otherwise.
     inline bool AddToCurrParam(Token& currToken, Token& nextToken);
+    
+    bool LowerParanthesesCounter();
+
+    void MoveThisIntoParam();
+
+
+///
+///         Handler Functions
+///
+
 
     // The func handles function parameters by appending the tokens and checking edge cases.
     // @param currToken: The current Token.
     // @param nextToken: The next Token.
     // @return: True-> The param is complete. False-> otherwise.
-    bool HandleFuncParams(Token& currToken, Token& nextToken);
-
-    // The func checks if the given token is a control statement.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is a control statement. False-> otherwise.
-    bool IsControlStatement(Token& token);
+    bool HandleFuncLikeParams(Token& currToken, Token& nextToken);
 
     // todo: docs
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
-    // todo: create a [] operator for a foreach loop for easier param access
+    bool HandleFoundParantheses(Token& currToken);
+
+    void HandleDefaultFuncLikeStartingChecks(Token& currToken, std::string sParantheses);
+
     // todo: add getters setters
 };
