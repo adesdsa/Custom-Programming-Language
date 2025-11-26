@@ -51,13 +51,13 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: where you use ParanthesesCnt it should be checked that the value is never >0
     // todo: check each code path returns something
     // todo: check that *& dont work in a for loop
     // todo: check that all the things that have a parameter inside them are turned into a has_param token including assignment and identifier
     // todo: add HasParam func
     // todo: check that a param is added to the vector only if needed
-    // todo: check where the syntax checking fails the checks and where they continue for the next 
+    // todo: check where the syntax checking fails the checks and where they continue for the next
+    // todo: recheck how UNKNOWN checking is handled
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -139,7 +139,7 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
-    else if (IsType(currToken, TokenTypes::EOF_TOKEN)) FinishAndAssignType(CommandTypes::EOF_TOKEN);
+    else if (IsType(currToken, TokenTypes::EOF_TOKEN)) return FinishAndAssignType(CommandTypes::EOF_TOKEN);
     else return FoundUnknown();
 }
 
@@ -183,6 +183,11 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
                 }
                 else return FinishAndAssignType(CommandTypes::FINISHED_FUNC_CALL);
             }
+        }
+        else if (m_uParanthesesCounter < 0)
+        {
+            // todo: recommended to add an error saver that will be dumped in the checking
+            return FoundUnknown();
         }
     }
     else if (currToken.GetValue() == "(") m_uParanthesesCounter++;
@@ -259,6 +264,7 @@ bool Command::ParseParameterKeywordCall(Token& currToken, Token& nextToken)
         else if (m_sType == CommandTypes::FOR_CALL) return NoFinishAndAssignType(CommandTypes::FOR_START);
         else if (m_sType == CommandTypes::WHILE_CALL) return NoFinishAndAssignType(CommandTypes::WHILE_START);
         else if (m_sType == CommandTypes::SIZEOF_CALL) return NoFinishAndAssignType(CommandTypes::SIZEOF_START);
+        else return FoundUnknown();
     }
     else return FoundUnknown();
 }
@@ -276,7 +282,14 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
             else if (m_sType == CommandTypes::FOR_START) return FinishAndAssignType(CommandTypes::FOR);
             else if (m_sType == CommandTypes::WHILE_START) return FinishAndAssignType(CommandTypes::WHILE);
             else if (m_sType == CommandTypes::SIZEOF_CALL) return NoFinishAndAssignType(CommandTypes::SIZEOF);
+            else return FoundUnknown();
         }
+        else if (m_uParanthesesCounter < 0)
+        {
+            // todo: recommended to add an error saver that will be dumped in the checking
+            return FoundUnknown();
+        }
+        else return FoundUnknown();
     }
     else if (IsValue(currToken, "(")) m_uParanthesesCounter++;
     else if (HandleKeywordParams(currToken, nextToken))
@@ -317,6 +330,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
             } else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         } 
         else if (currToken.GetType() == TokenTypes::VALUE) return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+        else return FoundUnknown();
     }
     else if (IsValue(currToken, "("))
     {
@@ -326,6 +340,11 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     else if (IsValue(currToken, ")"))
     {
         m_uParanthesesCounter--;
+        if (m_uParanthesesCounter < 0)
+        {
+            // todo: recommended to add an error saver that will be dumped in the checking
+            return FoundUnknown();
+        }
         return false;
     }
     else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  IsValue(currToken, "&")) return false;
@@ -353,6 +372,11 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
         {
             m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+        }
+        else if (m_uParanthesesCounter < 0)
+        {
+            // todo: recommended to add an error saver that will be dumped in the checking
+            return FoundUnknown();
         }
     }
     else if (currToken.GetValue() == "[")
@@ -395,6 +419,11 @@ bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
             m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_DECLARATION);
         }
+        else if (m_uParanthesesCounter < 0)
+        {
+            // todo: recommended to add an error saver that will be dumped in the checking
+            return FoundUnknown();
+        }
     }
     else if (currToken.GetValue() == "[")
     {
@@ -426,6 +455,11 @@ bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
         {
             m_bIgnoreCurrToken = false;
             FinishAndAssignType(CommandTypes::ARRAY_VALUE);
+        }
+        else if (m_uParanthesesCounter < 0)
+        {
+            // todo: recommended to add an error saver that will be dumped in the checking
+            return FoundUnknown();
         }
     }
     else if (currToken.GetValue() == "(")
