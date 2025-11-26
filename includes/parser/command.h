@@ -328,9 +328,11 @@ private:
     // todo: docs
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
-    bool HandleFoundParantheses(Token& currToken);
+    inline bool HandleFoundParantheses(Token& currToken);
 
-    void HandleDefaultFuncLikeStartingChecks(Token& currToken, std::string sParantheses);
+    void HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
+
+    bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, std::string_view sFinishedType);
 
     // todo: add getters setters
 };

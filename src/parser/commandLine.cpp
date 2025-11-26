@@ -327,7 +327,7 @@ bool CommandLine::CheckParamExpectedExpression(Command& checkedCommand, int iPar
 {
     Command innerCommand = checkedCommand.GetParams()[iParamIndex];
     ReformCommand(innerCommand);
-    if (!innerCommand.IsExpression()) 
+    if (!innerCommand.IsExpression())
     {
         // todo: handle error
         FoundIllegal(checkedCommand);
