@@ -23,5 +23,5 @@ void ErrorManager::DisplayErrorsInUI()
 
 void ErrorManager::AbortCompilation()
 {
-    throw;
+    throw CompilationAbortException();  // will be caught by main
 }

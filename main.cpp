@@ -40,7 +40,11 @@ int main(void)
         em.DisplayErrorsInUI();
 
     }
-
+    catch(const CompilationAbortException& abortError)
+    {
+        std::cerr << "ERROR: " << abortError.what() << std::endl;
+        nReturnValue = ReturnCode::k_nFailed;
+    }
     catch(const std::runtime_error& runtimeError)
     {
         std::cerr << "Run time ERROR: " << runtimeError.what() << std::endl;
