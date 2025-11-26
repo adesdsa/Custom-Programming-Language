@@ -40,6 +40,28 @@ private:
 
     void ReformCommand(Command& checkedCommand);
 
+    bool CheckConstSize(Command& checkedCommand, int iSize);
+
+    bool CheckParantheses(Command& checkedCommand);
+
+    bool CheckParamExpectedExpression(Command& checkedCommand, int iParamIndex);
+
+    bool CheckParamExpectedTypes(Command& checkedCommand, int iParamIndex, std::vector<std::string_view> types);
+    
+    bool CheckLastFuncParamComa(Command& checkedCommand);
+
+    void HandleSingleParamKeyword(Command& checkedCommand);
+
+    void HandleFuncLikeExpressions(Command& checkedCommand); // anything that is like that identifier+(any kind of paranthese)+(expression+,)+...(last expression shouldn't have ,)+(same kind of paranthese)
+
+    inline bool CheckLastExpressionOperator(Command& checkedCommand);
+
+    inline bool CheckType(const Token& token, std::string_view sCompare) const;
+
+    inline bool CheckValue(const Token& token, std::string sCompare) const;
+
     bool IsType(const Token& token) const;
+
+    void FoundIllegal(Command& command);
 
 };

@@ -53,6 +53,11 @@ bool Command::Append(Token& currToken, Token& nextToken)
 
     // todo: where you use ParanthesesCnt it should be checked that the value is never >0
     // todo: check each code path returns something
+    // todo: check that *& dont work in a for loop
+    // todo: check that all the things that have a parameter inside them are turned into a has_param token including assignment and identifier
+    // todo: add HasParam func
+    // todo: check that a param is added to the vector only if needed
+    // todo: check where the syntax checking fails the checks and where they continue for the next 
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -92,6 +97,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // right now single line keyword statements do not support single lines but only code blocks.
     // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
     // Note that if code can be outside of {} is checked in the semantic analysis and not in the parser
+    // A for loop must be of the next prset: for ( var_declaration/identifier assigmnet value ; expression ; expression )
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
@@ -484,7 +490,8 @@ inline bool Command::IsOperator(Token& token)
 {
     return (IsType(token, TokenTypes::OPERATOR) && !(IsValue(token, "=") || IsValue(token, "&")))
         || IsValue(token, "and") || IsValue(token, "or") ||
-         IsValue(token, "xor") || IsValue(token, "is");
+        IsValue(token, "xor") || IsValue(token, "is") ||
+        IsValue(token, "(") || IsValue(token, ")");
 }
 
 inline bool Command::IsValueToken(Token& token)
