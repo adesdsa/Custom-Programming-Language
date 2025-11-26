@@ -60,7 +60,7 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
     }
 }
 
-void AST::PrintASTNode(const ASTNode* node, int indent = 0)
+void AST::PrintASTNode(const ASTNode* node, int indent) const 
 {
     if (!node)
         return;
@@ -96,6 +96,6 @@ void AST::PrintAST() const
 
     for (const auto& nodePtr : m_nodes)
     {
-        PrintASTNode(nodePtr.get());
+        PrintASTNode(nodePtr.get(),0);
     }
 }

@@ -24,4 +24,6 @@ public:
     void PrintASTNode(const ASTNode* node, int indent = 0);
 private:
     std::vector<std::unique_ptr<ASTNode>> m_nodes;
+    
+    void PrintASTNode(const ASTNode* node, int indent) const;
 };
