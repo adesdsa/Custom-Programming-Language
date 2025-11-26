@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "includes/utils/tests_utils.h"
+#include "utils/tests_utils.h"
 #include "parser_component/commandLine.h"
 
 namespace ReturnCode
@@ -15,7 +15,7 @@ int main(void)
 
     try
     {
-        Lexer lexer("../../tests/inputs/test4.txt");
+        Lexer lexer("../tests/inputs/test4.txt");
         
         auto tokens = TestsUtils::CollectTokens(lexer);
         Token currToken = tokens[0];
