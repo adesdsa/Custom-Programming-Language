@@ -330,7 +330,7 @@ private:
 
     inline bool HandleFoundParantheses(Token& currToken);
 
-    void HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
+    bool HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
 
     bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, std::string_view sFinishedType);
 
