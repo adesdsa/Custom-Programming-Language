@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "includes/utils/tests_utils.h"
+#include "parser_component/commandLine.h"
 
 namespace ReturnCode
 {
@@ -17,13 +18,26 @@ int main(void)
         Lexer lexer("../../tests/inputs/test4.txt");
         
         auto tokens = TestsUtils::CollectTokens(lexer);
+        Token currToken = tokens[0];
+        Token nextToken = tokens[1];
+        CommandLine cl(lexer.GetEntityLogger());
 
-        for(const auto token : tokens)
+        for (int i = 1; i < tokens.size(); i++)
+        {
+            currToken = tokens[i-1];
+            nextToken = tokens[i];
+            if (cl.AddToken(currToken, nextToken))
+            {
+                std::cout << "Is legal: " << cl.IsLegal() << " Line: " << cl.GetLine()[0].GetTokens()[0].GetLine() << std::endl;
+            }
+        }
+
+        /*for(const auto token : tokens)
         {
             std::cout << "Line: " << token.GetLine() << 
             " - Type: " << token.GetType() <<
             " - Value: " << token.GetValue() << std::endl;
-        }
+        }*/
     }
 
     catch(const std::runtime_error& runtimeError)
