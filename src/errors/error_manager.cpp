@@ -20,3 +20,8 @@ void ErrorManager::DisplayErrorsInUI()
         this->m_entityLogger.Error(error.ToString());
     }
 }
+
+void ErrorManager::AbortCompilation()
+{
+    throw;
+}

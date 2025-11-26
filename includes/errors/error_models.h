@@ -34,3 +34,9 @@ private:
     uint16_t m_column;
     std::string m_hint;
 };
+
+class CompilationAbortException : public std::exception 
+{
+public:
+    const char* what() const noexcept override;
+};

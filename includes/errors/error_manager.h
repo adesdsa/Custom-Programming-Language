@@ -33,5 +33,5 @@ private:
     EntityLogger m_entityLogger;
 
     // Safely stops the compilation proccess
-    //void AbortCompilation();
+    void AbortCompilation();
 };
