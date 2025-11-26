@@ -51,9 +51,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: check where the syntax checking fails the checks and where they continue for the next
-    // todo: recheck how UNKNOWN checking is handled
-    // todo: change from parser dir to parser_component dir
     // todo: recheck eof handling
     // todo: recheck that identifier inside expressions is concidered a param
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
