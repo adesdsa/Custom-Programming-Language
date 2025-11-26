@@ -81,7 +81,11 @@ class Command
 public:
     Command();
 
-    // todo: docs
+    // The func adds Tokens inorder to create a full legal command.
+    // A Command is the smallest operation that can happen e.g. = is ASSIGNMENT
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we are adding used for checking.
+    // @return: True-> Finished the Command. False-> otherwise.
     bool Append(Token& currToken, Token& nextToken);
 
     // Getters
@@ -333,6 +337,4 @@ private:
     bool HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
 
     bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, std::string_view sFinishedType);
-
-    // todo: add getters setters
 };

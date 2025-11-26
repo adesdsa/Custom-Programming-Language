@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parser/command.h"
+#include "parser_component/command.h"
 #include "logger/entity_logger.h"
 
 

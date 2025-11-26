@@ -1,4 +1,4 @@
-#include "parser/commandLine.h"
+#include "parser_component/commandLine.h"
 
 unsigned int CommandLine::m_uBlockStartCnt = 0;
 unsigned int CommandLine::m_uBlockCloseCnt = 0;
@@ -14,7 +14,7 @@ bool CommandLine::IsFinished() const
     return m_bFinished;
 }
 
-bool CommandLine::IsLegal() const // Change this to return errors
+bool CommandLine::IsLegal() const // todo: Change this to return errors
 {
     return m_bLegal;
 }
@@ -50,6 +50,18 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
                 {
                     m_uBlockCloseCnt = 0;
                     m_uBlockStartCnt = 0;
+                }
+            }
+            else if (m_line[m_uLineIndex].GetType() == CommandTypes::EOF_TOKEN)
+            {
+                m_bFinished = true;
+                if (m_uBlockStartCnt != m_uBlockCloseCnt)
+                {
+                    // todo: handle error that not all code blocks were closed
+                }
+                if (m_line.size() != 0)
+                {
+                    // todo: throw error
                 }
             }
             // If we have and UNKOWN type in the Command it's definitly illegal.
@@ -153,7 +165,6 @@ void CommandLine::CheckLine()
 
 void CommandLine::ReformCommand(Command& checkedCommand)
 {
-    // todo: make sure that in funcs and for you can have a few commands in the params
     if (checkedCommand.GetType() == CommandTypes::ELIF)
     {
         HandleSingleParamKeyword(checkedCommand);

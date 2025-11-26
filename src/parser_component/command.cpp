@@ -1,4 +1,4 @@
-#include "parser/command.h"
+#include "parser_component/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
@@ -51,8 +51,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
     m_bIgnoreEON = false;       // reset
     bool bReturnValue = false;
 
-    // todo: recheck eof handling
-    // todo: recheck that identifier inside expressions is concidered a param
     if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = ParseUnidentified(currToken, nextToken);
     else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = ParseScope(currToken, nextToken);
@@ -80,8 +78,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
 
     return bReturnValue;
     // todo: add logs at the end
-    // todo: check all code paths return
-    // test: test if block starting and ending works good also !!!! you have to check that at the end the block start and stop are both at 0
 
     // extra rules:
     // there is no support for int a, b, c=0;
@@ -273,7 +269,13 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     {
         if (IsType(currToken, TokenTypes::IDENTIFIER)) {
             if (IsValue(nextToken, "(") || IsValue(nextToken, "[")) return HandleFoundParantheses(currToken);
-            else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE); // todo: here it should be turned to a param
+            else 
+            {
+                m_bIgnoreCurrToken = true;
+                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+                AddToCurrParam(currToken, nextToken);
+                return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+            }
         } 
         else if (IsType(currToken, TokenTypes::VALUE)) return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         else return FoundUnknown();
