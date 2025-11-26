@@ -1,25 +1,15 @@
 #pragma once
 
-#include "tokenizer/token.h"
-// #include <cstddef>
+#include "parser/commandLine.h"
 
-class AST;
-
-// Left-child, right-sibling AST node
-// Each node contains full command (function, variable decleraion  etc...)
 class ASTNode
 {
 public:
-    ASTNode(const Token& token);
+    ASTNode() = default;
+    explicit ASTNode(const Command& cmd) : m_command(cmd), m_nodeFirstChild(nullptr), m_nodeNextSibling(nullptr) {}
     ~ASTNode() = default;
 
-    // Adds a command subtree from given full command
-    // @param ast: The ast that holds this node.
-    // @param fullCommand: Vector of tokens that represent command in the program,
-    // the vector is sorted from first token in the command to the last one.
-    void StoreFullCommand(AST& ast, std::vector<Token>& fullCommand);
-
-    Token m_token;
-    ASTNode* m_nodeFirstChild;
-    ASTNode* m_nodeNextSibling;
-}; 
+    Command m_command;
+    ASTNode* m_nodeFirstChild = nullptr;
+    ASTNode* m_nodeNextSibling = nullptr;
+};

@@ -5,17 +5,97 @@ AST::~AST()
     this->Clear();
 }
 
-ASTNode* AST::AllocateNode(const Token& token)
-{
-    this->m_nodes.emplace_back(new ASTNode(token));
-    return this->m_nodes.back();
-}
-
 void AST::Clear()
 {
-    for (auto* node : this->m_nodes)
+    m_nodes.clear();  // deletes all nodes
+}
+
+ASTNode* AST::AllocateNode(const Command& command)
+{
+    this->m_nodes.push_back(std::make_unique<ASTNode>(command));
+    return this->m_nodes.back().get();
+}
+
+void AST::StoreFullCommand(const CommandLine& fullCommand)
+{
+    ASTNode* prevSibling = nullptr;
+    ASTNode* root = nullptr;
+
+    for (const Command& command : fullCommand.GetLine())
     {
-        delete node;
+        ASTNode* node = AllocateNode(command);
+
+        if (!root)
+        {
+            root = node;
+        }
+
+        if (prevSibling)
+        {
+            prevSibling->m_nodeNextSibling = node;
+        }
+
+        // add command parameters as children first
+        if (command.HasParams())
+        {
+            ASTNode* paramPrev = nullptr;
+            for (const Command& param : command.GetParams())
+            {
+                ASTNode* paramNode = AllocateNode(param);
+
+                if (!paramPrev)
+                {
+                    node->m_nodeFirstChild = paramNode;
+                }
+                else
+                {
+                    paramPrev->m_nodeNextSibling = paramNode;
+                }
+
+                paramPrev = paramNode;
+            }
+        }
+
+        prevSibling = node;
     }
-    this->m_nodes.clear();
+}
+
+void AST::PrintASTNode(const ASTNode* node, int indent) const 
+{
+    if (!node)
+        return;
+
+    // Print indentation
+    for (int i = 0; i < indent; ++i)
+        std::cout << "  ";
+
+    // Print node info (type + optional first token value)
+    std::cout << node->m_command.GetType();
+
+    const auto& tokens = node->m_command.GetTokens();
+    if (!tokens.empty())
+        std::cout << " (" << tokens.front().GetValue() << ")";
+
+    std::cout << std::endl;
+
+    // Recursively print children first (parameters)
+    PrintASTNode(node->m_nodeFirstChild, indent + 1);
+
+    // Then print next sibling
+    PrintASTNode(node->m_nodeNextSibling, indent);
+}
+
+// Print the entire AST starting from first stored node
+void AST::PrintAST() const
+{
+    if (m_nodes.empty())
+    {
+        std::cout << "<empty AST>" << std::endl;
+        return;
+    }
+
+    for (const auto& nodePtr : m_nodes)
+    {
+        PrintASTNode(nodePtr.get(),0);
+    }
 }

@@ -72,6 +72,10 @@ public:
     // todo: docs
     bool Append(Token currToken, Token nextToken);
 
+    // Checks whether there are paramters for this command.
+    // @return: true -> There are params, false -> Otherwise.
+    bool HasParams() const noexcept;
+
     // Getters And Setters
     std::string_view GetType() const;
     const std::vector<Token>& GetTokens() const;
