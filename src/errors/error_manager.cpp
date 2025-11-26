@@ -19,6 +19,9 @@ void ErrorManager::DisplayErrorsInUI()
     {
         this->m_entityLogger.Error(error.ToString());
     }
+
+    // after all errors handled can abort the compilation
+    this->AbortCompilation();
 }
 
 void ErrorManager::AbortCompilation()
