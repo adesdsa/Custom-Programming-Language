@@ -48,11 +48,11 @@ const std::vector<Command>& CommandLine::GetLine() const
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
-    /*temp = currToken.GetLine();
-    if (temp == 25)
+    temp = currToken.GetLine();
+    if (temp == 29)
     {
         temp = temp;
-    }*/
+    }
     if (!m_bFinished)
     {
         //std::cout << "adding the next Token: " << currToken.GetType() << " From line: " << currToken.GetLine() << std::endl;
@@ -60,7 +60,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
             temp = m_line[0][0].GetLine();
-            if (temp == 25)
+            if (temp == 29)
             {
                 temp = temp;
             }
@@ -216,7 +216,10 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
     {
-        HandleSingleParamKeyword(checkedCommand);
+        if (CheckConstSize(checkedCommand, 4)) return;
+        else if (CheckParantheses(checkedCommand)) return;
+        else if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VAR_TYPE) return;
+        else CheckParamExpectedExpression(checkedCommand, 0);
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {
@@ -302,6 +305,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
                 CheckParamExpectedTypes(checkedCommand, iParamIndex, {CommandTypes::VAR_DECLARATION});
                 iParamIndex++;
             }
+            else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue;
             else if (!CheckValue(checkedCommand[i], ",")) 
             {
                 // todo: handle error
@@ -314,7 +318,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        HandleFuncLikeExpressions(checkedCommand);
+        HandleFuncLikeExpressions(checkedCommand, 2);
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS)
     {
@@ -323,7 +327,9 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION)
     {
-        HandleSingleParamKeyword(checkedCommand);
+        if (CheckConstSize(checkedCommand, 7)) return;
+        else if (CheckParantheses(checkedCommand)) return;
+        else CheckParamExpectedExpression(checkedCommand, 0);
     }
     else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER)
     {
@@ -331,7 +337,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_VALUE)
     {
-        HandleFuncLikeExpressions(checkedCommand);
+        HandleFuncLikeExpressions(checkedCommand, 1);
     }
     else if (checkedCommand.GetType() == CommandTypes::UNIDENTIFIED ||
     checkedCommand.GetType() == CommandTypes::FUNC_START ||
@@ -427,7 +433,7 @@ void CommandLine::HandleSingleParamKeyword(Command& checkedCommand)
     else CheckParamExpectedExpression(checkedCommand, 0);
 }
 
-void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand)
+void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand, int iStartingIndex)
 {
     int iParamIndex = 0;
     bool bExpectingExpression = true;
@@ -441,13 +447,14 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand)
         }
     }
 
-    for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+    for (int i = iStartingIndex; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
     {
         if (bExpectingExpression)
         {
             CheckParamExpectedExpression(checkedCommand, iParamIndex);
             iParamIndex++;
         }
+        else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue;
         else if (!CheckValue(checkedCommand[i], ","))
         {
             // todo: handle error
@@ -478,11 +485,6 @@ inline bool CommandLine::CheckType(const Token& token, std::string_view sCompare
 
 inline bool CommandLine::CheckValue(const Token& token, std::string sCompare) const{
     return token.GetValue() == sCompare;
-}
-
-bool CommandLine::IsType(const Token& token) const
-{
-    return token.GetValue() == "int" || token.GetValue() == "bool" || token.GetValue() == "double";
 }
 
 void CommandLine::FoundIllegal(Command& command)

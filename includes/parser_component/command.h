@@ -31,6 +31,7 @@ namespace CommandTypes
     inline constexpr std::string_view EXPRESSION                    = "EXPRESSION";
     inline constexpr std::string_view PASS                          = "PASS";
     inline constexpr std::string_view ARRAY_VALUE                   = "ARRAY_VALUE";
+    inline constexpr std::string_view POINTER_USE                   = "POINTER_USE";
 
 
     /// 
@@ -48,6 +49,7 @@ namespace CommandTypes
 
     inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
     inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
+    inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";
 
 
     /// 
@@ -332,7 +334,7 @@ private:
     // todo: docs
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
-    inline bool HandleFoundParantheses(Token& currToken);
+    inline bool HandleFoundParantheses();
 
     bool HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
 

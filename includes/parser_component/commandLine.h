@@ -55,7 +55,7 @@ private:
 
     void HandleSingleParamKeyword(Command& checkedCommand);
 
-    void HandleFuncLikeExpressions(Command& checkedCommand); // anything that is like that identifier+(any kind of paranthese)+(expression+,)+...(last expression shouldn't have ,)+(same kind of paranthese)
+    void HandleFuncLikeExpressions(Command& checkedCommand, int iStartingIndex); // anything that is like that identifier+(any kind of paranthese)+(expression+,)+...(last expression shouldn't have ,)+(same kind of paranthese)
 
     inline bool CheckLastExpressionOperator(Command& checkedCommand);
 
