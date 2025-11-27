@@ -7,6 +7,9 @@
 class CommandLine{
 public:
     CommandLine(const EntityLogger& entityLogger);
+    CommandLine(const CommandLine& other);
+    
+    CommandLine& operator=(const CommandLine& other);
 
     // The func is used to add token to the line.
     // When the line is finished it will check it's legallity
@@ -48,7 +51,7 @@ private:
 
     bool CheckParamExpectedTypes(Command& checkedCommand, int iParamIndex, std::vector<std::string_view> types);
     
-    bool CheckLastFuncParamComa(Command& checkedCommand);
+    bool CheckLastFuncParamComa(Command& checkedCommand, int iBackSteps);
 
     void HandleSingleParamKeyword(Command& checkedCommand);
 

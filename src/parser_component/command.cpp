@@ -3,7 +3,7 @@
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
  m_bBuildingParam(false), m_bIgnoreCurrToken(false), m_bIgnoreEON(false),
- m_uParanthesesCounter(0), m_bFirstParanthesesEnter(false)
+ m_iParanthesesCounter(0), m_bFirstParanthesesEnter(false)
 {
 }
 
@@ -21,7 +21,7 @@ const std::vector<Command>& Command::GetParams() const {
 }
 
 unsigned int Command::GetParanthesesCounter() const {
-    return m_uParanthesesCounter;
+    return m_iParanthesesCounter;
 }
 
 bool Command::IsExpression() const {
@@ -152,7 +152,7 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
     else if (currToken.GetValue() == ")")
     {
         if(LowerParanthesesCounter()) return true;
-        else if (m_uParanthesesCounter == 0)
+        else if (m_iParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             if (IsValue(nextToken, "->")) return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
@@ -231,7 +231,7 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
     else if (IsValue(currToken, ")")) 
     {
         if(LowerParanthesesCounter()) return true;
-        if (m_uParanthesesCounter == 0)
+        if (m_iParanthesesCounter == 0)
         {
             m_bBuildingParam = false;
             if (m_sType == CommandTypes::ELIF_START) return FinishAndAssignType(CommandTypes::ELIF);
@@ -282,7 +282,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     }
     else if (IsValue(currToken, "("))
     {
-        m_uParanthesesCounter++;
+        m_iParanthesesCounter++;
         return false;
     }
     else if (IsValue(currToken, ")")) return LowerParanthesesCounter();
@@ -307,7 +307,7 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
     else if (currToken.GetValue() == "]")
     {
         if (LowerParanthesesCounter()) return true;
-        else if (m_uParanthesesCounter == 0)
+        else if (m_iParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
@@ -426,8 +426,8 @@ inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
 
 bool Command::LowerParanthesesCounter()
 {
-    m_uParanthesesCounter--;
-    if (m_uParanthesesCounter < 0)
+    m_iParanthesesCounter--;
+    if (m_iParanthesesCounter < 0)
     {
         // todo: recommended to add an error saver that will be dumped in the checking
         return FoundUnknown();
@@ -442,12 +442,12 @@ void Command::MoveThisIntoParam()
     tempSave.m_parameters = std::move(this->m_parameters);
     tempSave.m_sType = this->m_sType;
     tempSave.m_uParameterIndex = this->m_uParameterIndex;
-    tempSave.m_uParanthesesCounter = this->m_uParanthesesCounter;
+    tempSave.m_iParanthesesCounter = this->m_iParanthesesCounter;
 
     m_bBuildingParam = false;
     m_bIgnoreEON = false;
     m_bExpression = false;
-    m_uParanthesesCounter = 0;
+    m_iParanthesesCounter = 0;
     m_uParameterIndex = 1;
     m_tokens.push_back(Token(TokenTypes::HAS_PARAM, m_parameters[0][0].GetLine()));
 }
@@ -458,7 +458,8 @@ bool Command::HandleFuncLikeParams(Token& currToken, Token& nextToken)
     if (IsValue(currToken, ",")) 
     {
         m_tokens.push_back(currToken);
-        m_uParameterIndex++;
+        if (m_uParameterIndex < m_parameters.size())
+            m_uParameterIndex++;
         return false;
     }
     else return AddToCurrParam(currToken, nextToken);
@@ -470,7 +471,8 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
     {
         m_bIgnoreEON = true;
         m_tokens.push_back(currToken);
-        m_uParameterIndex++;
+        if (m_uParameterIndex < m_parameters.size())
+            m_uParameterIndex++;
         return false;
     }
     else return AddToCurrParam(currToken, nextToken);
@@ -479,6 +481,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
 inline bool Command::HandleFoundParantheses(Token& currToken)
 {
     m_bFirstParanthesesEnter = true;
+    m_iParanthesesCounter++;
     return false;
 }
 
@@ -487,7 +490,7 @@ bool Command::HandleDefaultPossibleParamChecks(Token& currToken, std::string sPa
     m_bIgnoreCurrToken = true;
     if (IsValue(currToken, sParantheses)) 
     {
-        m_uParanthesesCounter++;
+        m_iParanthesesCounter++;
         return true;
     }
     return false;
@@ -499,7 +502,7 @@ bool Command::HandleArrayParanthesesParams(Token& currToken, Token& nextToken, s
     else if (currToken.GetValue() == ")")
     {
         if (LowerParanthesesCounter()) return true;
-        if (m_uParanthesesCounter == 0)
+        if (m_iParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
             FinishAndAssignType(sFinishedType);

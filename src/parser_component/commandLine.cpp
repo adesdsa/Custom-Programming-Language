@@ -9,6 +9,26 @@ m_uLineIndex(0)
 {
 }
 
+CommandLine::CommandLine(const CommandLine& other):
+    m_entityLogger(other.m_entityLogger),
+    m_bFinished(other.m_bFinished),
+    m_bLegal(other.m_bLegal),
+    m_line(other.m_line),
+    m_uLineIndex(other.m_uLineIndex)
+{
+}
+
+CommandLine& CommandLine::operator=(const CommandLine& other)
+{
+    if (this == &other)
+        return *this;
+    m_bFinished   = other.m_bFinished;
+    m_bLegal      = other.m_bLegal;
+    m_line        = other.m_line;
+    m_uLineIndex  = other.m_uLineIndex;
+    return *this;
+}
+
 bool CommandLine::IsFinished() const
 {
     return m_bFinished;
@@ -47,7 +67,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
                 m_bFinished = true;
                 if (m_uBlockCloseCnt > m_uBlockStartCnt) // If we somehow have more closes than starts it's an error.
                 {
-                    // here you should make an error that says that you closed a block without being in one.
+                    // todo: here you should make an error that says that you closed a block without being in one.
                 }
                 else if (m_uBlockCloseCnt == m_uBlockStartCnt)
                 {
@@ -79,9 +99,10 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
         }
     }
 
-    if (m_bFinished && m_bLegal) // If it's illegal no reason to check.
+    if (m_bFinished) // If it's illegal no reason to check.
     {
-        CheckLine();
+        if (m_bLegal)
+            CheckLine();
         return true;
     }
     return false;
@@ -251,11 +272,11 @@ void CommandLine::ReformCommand(Command& checkedCommand)
         int iParamIndex = 0;
         bool bExpectingExpression = true;
 
-        if (checkedCommand.GetTokens().size() == 4)
+        if (checkedCommand.GetTokens().size() == 6)
             if (CheckType(checkedCommand.GetParams()[2][0], CommandTypes::VOID_COMMAND))
                 return;
 
-        for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+        for (int i = 2; i < checkedCommand.GetTokens().size() - 3 && m_bLegal; i++)
         {
             if (bExpectingExpression)
             {
@@ -267,9 +288,10 @@ void CommandLine::ReformCommand(Command& checkedCommand)
                 // todo: handle error
                 FoundIllegal(checkedCommand);
             }
+            bExpectingExpression = !bExpectingExpression;
         }
 
-        CheckLastFuncParamComa(checkedCommand);
+        CheckLastFuncParamComa(checkedCommand, 3);
     }
     else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
@@ -368,9 +390,9 @@ bool CommandLine::CheckParamExpectedTypes(Command& checkedCommand, int iParamInd
     return false;
 }
 
-bool CommandLine::CheckLastFuncParamComa(Command& checkedCommand)
+bool CommandLine::CheckLastFuncParamComa(Command& checkedCommand, int iBackSteps)
 {
-    if (CheckValue(checkedCommand[checkedCommand.GetTokens().size() - 2], ","))
+    if (CheckValue(checkedCommand[checkedCommand.GetTokens().size() - iBackSteps], ","))
     {
         // todo: handle error.
         FoundIllegal(checkedCommand);
@@ -414,7 +436,7 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand)
         }
     }
 
-    CheckLastFuncParamComa(checkedCommand);
+    CheckLastFuncParamComa(checkedCommand, 2);
     
     if (m_bLegal) checkedCommand.SetExpression(true);
 }
