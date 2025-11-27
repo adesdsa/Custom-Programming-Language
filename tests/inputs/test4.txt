@@ -21,8 +21,8 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
 		{
 			is_prime = false;
 		}
-
-		for(let i: int = 2; i <  low // 2; i = i + 1)
+		#for(let i: int = 2; i <  low // 2; i = i + 1)
+		for(let i: int = 2; i <  low; i = i + 1)
 		{
 			if(low % i == 0)
 			{

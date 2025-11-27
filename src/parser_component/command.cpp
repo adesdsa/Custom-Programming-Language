@@ -93,7 +93,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
 {
-    if (IsType(currToken, TokenTypes::IDENTIFIER) && !IsOperator(nextToken)) return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
+    if (IsType(currToken, TokenTypes::IDENTIFIER) && IsValue(nextToken, "=")) return FinishAndAssignType(CommandTypes::IDENTIFIER);
+    else if (IsType(currToken, TokenTypes::IDENTIFIER) && !IsOperator(nextToken)) return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
     else if (IsType(currToken, TokenTypes::KEYWORD))
     {
         if (IsValue(currToken, "void")) return FinishAndAssignType(m_sType = CommandTypes::VOID_COMMAND);
@@ -234,6 +235,7 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
         if (m_iParanthesesCounter == 0)
         {
             m_bBuildingParam = false;
+            m_bIgnoreCurrToken = false;
             if (m_sType == CommandTypes::ELIF_START) return FinishAndAssignType(CommandTypes::ELIF);
             else if (m_sType == CommandTypes::IF_START) return FinishAndAssignType(CommandTypes::IF);
             else if (m_sType == CommandTypes::FOR_START) return FinishAndAssignType(CommandTypes::FOR);
@@ -467,9 +469,9 @@ bool Command::HandleFuncLikeParams(Token& currToken, Token& nextToken)
 
 bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
 {
+    if (IsValue(nextToken, ";")) m_bIgnoreEON = true;
     if (IsValue(currToken, ";")) 
     {
-        m_bIgnoreEON = true;
         m_tokens.push_back(currToken);
         if (m_uParameterIndex < m_parameters.size())
             m_uParameterIndex++;

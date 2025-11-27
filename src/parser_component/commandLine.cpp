@@ -3,6 +3,8 @@
 unsigned int CommandLine::m_uBlockStartCnt = 0;
 unsigned int CommandLine::m_uBlockCloseCnt = 0;
 
+unsigned int temp = 1; // todo: remove after debug
+
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
 m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true),
 m_uLineIndex(0)
@@ -46,13 +48,24 @@ const std::vector<Command>& CommandLine::GetLine() const
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
+    /*temp = currToken.GetLine();
+    if (temp == 25)
+    {
+        temp = temp;
+    }*/
     if (!m_bFinished)
     {
         //std::cout << "adding the next Token: " << currToken.GetType() << " From line: " << currToken.GetLine() << std::endl;
         if (m_uLineIndex == m_line.size()) m_line.push_back(Command());
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
-            std::cout << m_line[m_uLineIndex].GetType() << m_line[m_uLineIndex].GetTokens()[0].GetLine() << " First Token: " << m_line[m_uLineIndex].GetTokens()[0].GetValue() << " Last Token: " << m_line[m_uLineIndex].GetTokens()[m_line[m_uLineIndex].GetTokens().size() - 1].GetValue() << std::endl;
+            temp = m_line[0][0].GetLine();
+            if (temp == 25)
+            {
+                temp = temp;
+            }
+            // todo: remove testing
+            //std::cout << m_line[m_uLineIndex].GetType() << std::endl;
             // Checking if the line is finished.
             if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
                 m_bFinished = true;
@@ -207,7 +220,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {
-        if (checkedCommand.GetTokens().size() != 10) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        if (checkedCommand.GetTokens().size() != 12) checkedCommand.SetType(CommandTypes::UNKNOWN);
         else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
         else 
         {
@@ -220,19 +233,25 @@ void CommandLine::ReformCommand(Command& checkedCommand)
             !CheckValue(checkedCommand[5], ";") ||
             !CheckType(checkedCommand[6], TokenTypes::HAS_PARAM) ||
             !CheckValue(checkedCommand[7], ";") ||
-            !CheckType(checkedCommand[8], TokenTypes::HAS_PARAM))
+            !CheckType(checkedCommand[8], TokenTypes::HAS_PARAM) ||
+            !CheckType(checkedCommand[9], TokenTypes::HAS_PARAM) ||
+            !CheckType(checkedCommand[10], TokenTypes::HAS_PARAM))
                 checkedCommand.SetType(CommandTypes::UNKNOWN);
 
 
-            if (CheckParamExpectedTypes(checkedCommand, 2, {CommandTypes::VAR_DECLARATION, CommandTypes::IDENTIFIER})) return;
+            if (CheckParamExpectedTypes(checkedCommand, 0, {CommandTypes::VAR_DECLARATION, CommandTypes::IDENTIFIER})) return;
 
-            if (CheckParamExpectedTypes(checkedCommand, 3, {CommandTypes::ASSIGNMENT})) return;
+            if (CheckParamExpectedTypes(checkedCommand, 1, {CommandTypes::ASSIGNMENT})) return;
 
-            if (CheckParamExpectedExpression(checkedCommand, 4)) return;
+            if (CheckParamExpectedExpression(checkedCommand, 2)) return;
+
+            if (CheckParamExpectedExpression(checkedCommand, 3)) return;
+
+            if (CheckParamExpectedTypes(checkedCommand, 4, {CommandTypes::IDENTIFIER})) return;
+
+            if (CheckParamExpectedTypes(checkedCommand, 5, {CommandTypes::ASSIGNMENT})) return;
 
             if (CheckParamExpectedExpression(checkedCommand, 6)) return;
-
-            CheckParamExpectedExpression(checkedCommand, 8);
         }
     }
     else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_VALUE)
@@ -273,7 +292,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
         bool bExpectingExpression = true;
 
         if (checkedCommand.GetTokens().size() == 6)
-            if (CheckType(checkedCommand.GetParams()[2][0], CommandTypes::VOID_COMMAND))
+            if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VOID_COMMAND)
                 return;
 
         for (int i = 2; i < checkedCommand.GetTokens().size() - 3 && m_bLegal; i++)
@@ -415,7 +434,7 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand)
 
     if (checkedCommand.GetTokens().size() == 4)
     {
-        if (CheckType(checkedCommand.GetParams()[2][0], CommandTypes::VOID_COMMAND))
+        if (CheckType(checkedCommand.GetParams()[0][0], CommandTypes::VOID_COMMAND))
         {
             checkedCommand.SetExpression(true);
             return;
@@ -434,6 +453,7 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand)
             // todo: handle error
             FoundIllegal(checkedCommand);
         }
+        bExpectingExpression = !bExpectingExpression;
     }
 
     CheckLastFuncParamComa(checkedCommand, 2);

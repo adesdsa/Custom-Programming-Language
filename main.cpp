@@ -29,7 +29,12 @@ int main(void)
             cl.AddToken(currToken, nextToken);
             if (cl.IsFinished())
             {
-                std::cout << "Is legal: " << cl.IsLegal() << " Line: " << cl.GetLine()[0].GetTokens()[0].GetLine() << std::endl;
+                std::cout << "Is legal: " << cl.IsLegal() << " Line: " << cl.GetLine()[0].GetTokens()[0].GetLine();
+                for (int i = 0; i < cl.GetLine().size(); i++)
+                {
+                    std::cout << " " << cl.GetLine()[i].GetType();
+                }
+                std::cout << std::endl;
                 cl = CommandLine(lexer.GetEntityLogger());
             }
         }
