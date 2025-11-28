@@ -1,20 +1,21 @@
-# This test was made to check every edge case for the parser
-# todo: check if no spaces make problem, check more edge cases, check wrong syntax for no accidental legal shit
+# This test was made to check every legal case for the parser
 
-displayAllPrimeNumbersInRange(low: int, high: int) -> void;
+displayAllPrimeNumbersInRange(low:int,high:int)->void;
 
-main(void) -> int
+main(void)->int
 {
 	sizeof(int);
-	sizeof(1 + get_int());
-	let low: int = 1 + get_int();
+	sizeof(1+get_int());
+	letlow:int=1+get_int();
 	let high: int  = get_int() + sizeof(int) + sizeof(low) + get_int(1);
 
-    let test: int[3] = [1, 2, 3];
+    let test: int[3 - get_int()] =[1,2+get_int(),get_int()+1+get_int()];
 
-    low = test[1];
+    low[2] = test[1];
 
     pass;
+	continue;
+	break;
 
     let temp: int* = ***a + &&low * 1;
 
