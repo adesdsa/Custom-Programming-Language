@@ -94,6 +94,7 @@ public:
 
     std::string_view GetType() const;
     const std::vector<Token>& GetTokens() const;
+    bool HasParams() const noexcept;
     const std::vector<Command>& GetParams() const;
     unsigned int GetParanthesesCounter() const;
     bool IsExpression() const;

@@ -1,4 +1,4 @@
-#include "parser_component/commandLine.h"
+#include "parser/commandLine.h"
 
 unsigned int CommandLine::m_uBlockStartCnt = 0;
 unsigned int CommandLine::m_uBlockCloseCnt = 0;
@@ -30,6 +30,12 @@ CommandLine& CommandLine::operator=(const CommandLine& other)
     m_uLineIndex  = other.m_uLineIndex;
     return *this;
 }
+
+bool CommandLine::HasCommands() const noexcept
+{
+    return this->m_line.size() > 0;
+}
+
 
 bool CommandLine::IsFinished() const
 {

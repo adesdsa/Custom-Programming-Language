@@ -1,4 +1,4 @@
-#include "parser_component/command.h"
+#include "parser/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
@@ -14,6 +14,11 @@ std::string_view Command::GetType() const {
 
 const std::vector<Token>& Command::GetTokens() const {
     return m_tokens;
+}
+
+bool Command::HasParams() const noexcept
+{
+    return this->m_parameters.size() > 0;
 }
 
 const std::vector<Command>& Command::GetParams() const {

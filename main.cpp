@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "includes/utils/tests_utils.h"
+#include "includes/parser/parser_logic.h"
 
 namespace ReturnCode
 {
@@ -14,16 +15,8 @@ int main(void)
 
     try
     {
-        Lexer lexer("../../tests/inputs/test4.txt");
-        
-        auto tokens = TestsUtils::CollectTokens(lexer);
-
-        for(const auto token : tokens)
-        {
-            std::cout << "Line: " << token.GetLine() << 
-            " - Type: " << token.GetType() <<
-            " - Value: " << token.GetValue() << std::endl;
-        }
+        Parser parser("tests/inputs/test4.txt");
+        parser.MainFlow();
     }
 
     catch(const std::runtime_error& runtimeError)

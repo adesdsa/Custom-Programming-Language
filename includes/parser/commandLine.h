@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parser_component/command.h"
+#include "command.h"
 #include "logger/entity_logger.h"
 
 
@@ -26,6 +26,8 @@ public:
     bool IsLegal() const;
     // Get The Line Itself.
     const std::vector<Command>& GetLine() const;
+    // Checks if the command line isn't empty
+    bool HasCommands() const noexcept;
 
 
 private:
