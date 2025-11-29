@@ -1,13 +1,18 @@
 #include "includes/parser/parser_logic.h"
 
 Parser::Parser(const std::string& sFilePath) :
-    m_entityLogger("PARSER"),
+    m_entityLogger("parser"),
+    m_ast(m_entityLogger),
     m_lexer(sFilePath),
     m_currentToken(this->FetchToken()),
-    m_nextToken(this->FetchToken()) {}
+    m_nextToken(this->FetchToken()) 
+{
+    this->m_entityLogger.Info("Finished initializing parser component successfully");
+}
 
 void Parser::MainFlow()
 {
+    this->m_entityLogger.Info("Start parsing file");
     while(!this->m_lexer.IsFinishedReadingSRC())
     {
         CommandLine cl(this->m_entityLogger);

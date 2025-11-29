@@ -3,7 +3,6 @@
 #include "command.h"
 #include "includes/logger/entity_logger.h"
 
-
 class CommandLine{
 public:
     CommandLine(const EntityLogger& entityLogger);
@@ -64,8 +63,6 @@ private:
     inline bool CheckType(const Token& token, std::string_view sCompare) const;
 
     inline bool CheckValue(const Token& token, std::string sCompare) const;
-
-    bool IsType(const Token& token) const;
 
     void FoundIllegal(Command& command);
 

@@ -54,8 +54,9 @@ const std::vector<Command>& CommandLine::GetLine() const
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
+    // todo: make it so that only 
     temp = currToken.GetLine();
-    if (temp == 29)
+    if (temp == 15)
     {
         temp = temp;
     }
@@ -66,7 +67,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
             temp = m_line[0][0].GetLine();
-            if (temp == 29)
+            if (temp == 15 || temp == 20 || temp == 25 || temp == 27 || temp == 34)
             {
                 temp = temp;
             }
@@ -112,7 +113,6 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
             else {
                 // Reforming the command incase it's needed and continuing to the next Command.
                 ReformCommand(m_line[m_uLineIndex]);
-                m_line.push_back(Command());
             }
             m_uLineIndex++;
         }
@@ -270,7 +270,10 @@ void CommandLine::ReformCommand(Command& checkedCommand)
         if (CheckParantheses(checkedCommand)) return;
         for (int i = 0; i < checkedCommand.GetTokens().size(); i++)
             if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM)
+            {
                 CheckParamExpectedExpression(checkedCommand, iParamIndex);
+                iParamIndex++;
+            }
 
         if (m_bLegal) 
         {
@@ -285,7 +288,10 @@ void CommandLine::ReformCommand(Command& checkedCommand)
         if (CheckParantheses(checkedCommand)) return;
         for (int i = 0; i < checkedCommand.GetTokens().size(); i++)
             if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM)
+            {
                 CheckParamExpectedExpression(checkedCommand, iParamIndex);
+                iParamIndex++;
+            }
 
         if (CheckLastExpressionOperator(checkedCommand)) return;
 
@@ -392,8 +398,8 @@ bool CommandLine::CheckParantheses(Command& checkedCommand)
 
 bool CommandLine::CheckParamExpectedExpression(Command& checkedCommand, int iParamIndex)
 {
-    Command innerCommand = checkedCommand.GetParams()[iParamIndex];
-    ReformCommand(innerCommand);
+    Command& innerCommand = checkedCommand.GetParams()[iParamIndex];
+    ReformCommand(checkedCommand.GetParams()[iParamIndex]);
     if (!innerCommand.IsExpression())
     {
         // todo: handle error
@@ -405,7 +411,7 @@ bool CommandLine::CheckParamExpectedExpression(Command& checkedCommand, int iPar
 
 bool CommandLine::CheckParamExpectedTypes(Command& checkedCommand, int iParamIndex, std::vector<std::string_view> types)
 {
-    Command innerCommand = checkedCommand.GetParams()[iParamIndex];
+    Command& innerCommand = checkedCommand.GetParams()[iParamIndex];
     bool bFoundCorrect = false;
     for (int i = 0; i < types.size(); i++)
         if (innerCommand.GetType() == types[i]) 
