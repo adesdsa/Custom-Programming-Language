@@ -15,10 +15,9 @@ int main(void)
 
     try
     {
-        /*
-        Lexer lexer("tests/inputs/test4.txt");
-        
-        auto tokens = TestsUtils::CollectTokens(lexer);
+        Parser parser("../../tests/inputs/test4.txt");
+        parser.MainFlow();
+    }
 
         for(const auto token : tokens)
         {
