@@ -32,4 +32,3 @@ bool TokenHandler::IsRelevantToken(const Token &token) const
     }
     return sTokenType != TokenTypes::TRIVIA;
 }
- 

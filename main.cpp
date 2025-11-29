@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "includes/utils/tests_utils.h"
-#include "includes/parser/parser_logic.h"
+#include "includes/errors/error_manager.h"
 
 namespace ReturnCode
 {
@@ -15,10 +15,36 @@ int main(void)
 
     try
     {
-        Parser parser("tests/inputs/test4.txt");
-        parser.MainFlow();
-    }
+        /*
+        Lexer lexer("../../tests/inputs/test4.txt");
+        
+        auto tokens = TestsUtils::CollectTokens(lexer);
 
+        for(const auto token : tokens)
+        {
+            std::cout << "Line: " << token.GetLine() << 
+            " - Type: " << token.GetType() <<
+            " - Value: " << token.GetValue() << std::endl;
+        }
+        */
+        ErrorManager em;
+
+        em.StoreError(
+            CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Missing ;", 3, 5, "Have You Forgot something?")
+        );
+
+        em.StoreError(
+            CompileTimeError(ErrorTypes::TYPE_ERROR, "Type wrong", 2, 3, "")
+        );
+
+        em.DisplayErrorsInUI();
+
+    }
+    catch(const CompilationAbortException& abortError)
+    {
+        std::cerr << "ERROR: " << abortError.what() << std::endl;
+        nReturnValue = ReturnCode::k_nFailed;
+    }
     catch(const std::runtime_error& runtimeError)
     {
         std::cerr << "Run time ERROR: " << runtimeError.what() << std::endl;
