@@ -31,6 +31,7 @@ namespace CommandTypes
     inline constexpr std::string_view EXPRESSION                    = "EXPRESSION";
     inline constexpr std::string_view PASS                          = "PASS";
     inline constexpr std::string_view ARRAY_VALUE                   = "ARRAY_VALUE";
+    inline constexpr std::string_view POINTER_USE                   = "POINTER_USE";
 
 
     /// 
@@ -48,6 +49,7 @@ namespace CommandTypes
 
     inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
     inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
+    inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";
 
 
     /// 
@@ -92,6 +94,7 @@ public:
 
     std::string_view GetType() const;
     const std::vector<Token>& GetTokens() const;
+    bool HasParams() const noexcept;
     const std::vector<Command>& GetParams() const;
     unsigned int GetParanthesesCounter() const;
     bool IsExpression() const;
@@ -114,7 +117,7 @@ private:
     bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line.
     bool m_bExpression;                     // Used to indicate if this Command is an expression.
     bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
-    unsigned int m_uParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
+    int m_iParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
 
 
@@ -332,7 +335,7 @@ private:
     // todo: docs
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
-    inline bool HandleFoundParantheses(Token& currToken);
+    inline bool HandleFoundParantheses();
 
     bool HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
 

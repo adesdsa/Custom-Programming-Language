@@ -1,12 +1,15 @@
 #pragma once
 
-#include "parser_component/command.h"
+#include "command.h"
 #include "logger/entity_logger.h"
 
 
 class CommandLine{
 public:
     CommandLine(const EntityLogger& entityLogger);
+    CommandLine(const CommandLine& other);
+    
+    CommandLine& operator=(const CommandLine& other);
 
     // The func is used to add token to the line.
     // When the line is finished it will check it's legallity
@@ -23,6 +26,8 @@ public:
     bool IsLegal() const;
     // Get The Line Itself.
     const std::vector<Command>& GetLine() const;
+    // Checks if the command line isn't empty
+    bool HasCommands() const noexcept;
 
 
 private:
@@ -48,11 +53,11 @@ private:
 
     bool CheckParamExpectedTypes(Command& checkedCommand, int iParamIndex, std::vector<std::string_view> types);
     
-    bool CheckLastFuncParamComa(Command& checkedCommand);
+    bool CheckLastFuncParamComa(Command& checkedCommand, int iBackSteps);
 
     void HandleSingleParamKeyword(Command& checkedCommand);
 
-    void HandleFuncLikeExpressions(Command& checkedCommand); // anything that is like that identifier+(any kind of paranthese)+(expression+,)+...(last expression shouldn't have ,)+(same kind of paranthese)
+    void HandleFuncLikeExpressions(Command& checkedCommand, int iStartingIndex); // anything that is like that identifier+(any kind of paranthese)+(expression+,)+...(last expression shouldn't have ,)+(same kind of paranthese)
 
     inline bool CheckLastExpressionOperator(Command& checkedCommand);
 

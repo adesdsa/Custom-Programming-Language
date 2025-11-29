@@ -1,13 +1,41 @@
-#include "parser_component/commandLine.h"
+#include "parser/commandLine.h"
 
 unsigned int CommandLine::m_uBlockStartCnt = 0;
 unsigned int CommandLine::m_uBlockCloseCnt = 0;
 
+unsigned int temp = 1; // todo: remove after debug
+
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
-m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true)
+m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true),
+m_uLineIndex(0)
 {
-    m_line.push_back(Command());
 }
+
+CommandLine::CommandLine(const CommandLine& other):
+    m_entityLogger(other.m_entityLogger),
+    m_bFinished(other.m_bFinished),
+    m_bLegal(other.m_bLegal),
+    m_line(other.m_line),
+    m_uLineIndex(other.m_uLineIndex)
+{
+}
+
+CommandLine& CommandLine::operator=(const CommandLine& other)
+{
+    if (this == &other)
+        return *this;
+    m_bFinished   = other.m_bFinished;
+    m_bLegal      = other.m_bLegal;
+    m_line        = other.m_line;
+    m_uLineIndex  = other.m_uLineIndex;
+    return *this;
+}
+
+bool CommandLine::HasCommands() const noexcept
+{
+    return this->m_line.size() > 0;
+}
+
 
 bool CommandLine::IsFinished() const
 {
@@ -26,10 +54,24 @@ const std::vector<Command>& CommandLine::GetLine() const
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
+    temp = currToken.GetLine();
+    if (temp == 29)
+    {
+        temp = temp;
+    }
     if (!m_bFinished)
     {
+        //std::cout << "adding the next Token: " << currToken.GetType() << " From line: " << currToken.GetLine() << std::endl;
+        if (m_uLineIndex == m_line.size()) m_line.push_back(Command());
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
+            temp = m_line[0][0].GetLine();
+            if (temp == 29)
+            {
+                temp = temp;
+            }
+            // todo: remove testing
+            //std::cout << m_line[m_uLineIndex].GetType() << std::endl;
             // Checking if the line is finished.
             if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
                 m_bFinished = true;
@@ -44,7 +86,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
                 m_bFinished = true;
                 if (m_uBlockCloseCnt > m_uBlockStartCnt) // If we somehow have more closes than starts it's an error.
                 {
-                    // here you should make an error that says that you closed a block without being in one.
+                    // todo: here you should make an error that says that you closed a block without being in one.
                 }
                 else if (m_uBlockCloseCnt == m_uBlockStartCnt)
                 {
@@ -70,15 +112,16 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
             else {
                 // Reforming the command incase it's needed and continuing to the next Command.
                 ReformCommand(m_line[m_uLineIndex]);
-                m_uLineIndex++;
                 m_line.push_back(Command());
             }
+            m_uLineIndex++;
         }
     }
 
-    if (m_bFinished && m_bLegal) // If it's illegal no reason to check.
+    if (m_bFinished) // If it's illegal no reason to check.
     {
-        CheckLine();
+        if (m_bLegal)
+            CheckLine();
         return true;
     }
     return false;
@@ -179,11 +222,14 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
     {
-        HandleSingleParamKeyword(checkedCommand);
+        if (CheckConstSize(checkedCommand, 4)) return;
+        else if (CheckParantheses(checkedCommand)) return;
+        else if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VAR_TYPE) return;
+        else CheckParamExpectedExpression(checkedCommand, 0);
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {
-        if (checkedCommand.GetTokens().size() != 10) checkedCommand.SetType(CommandTypes::UNKNOWN);
+        if (checkedCommand.GetTokens().size() != 12) checkedCommand.SetType(CommandTypes::UNKNOWN);
         else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
         else 
         {
@@ -196,19 +242,25 @@ void CommandLine::ReformCommand(Command& checkedCommand)
             !CheckValue(checkedCommand[5], ";") ||
             !CheckType(checkedCommand[6], TokenTypes::HAS_PARAM) ||
             !CheckValue(checkedCommand[7], ";") ||
-            !CheckType(checkedCommand[8], TokenTypes::HAS_PARAM))
+            !CheckType(checkedCommand[8], TokenTypes::HAS_PARAM) ||
+            !CheckType(checkedCommand[9], TokenTypes::HAS_PARAM) ||
+            !CheckType(checkedCommand[10], TokenTypes::HAS_PARAM))
                 checkedCommand.SetType(CommandTypes::UNKNOWN);
 
 
-            if (CheckParamExpectedTypes(checkedCommand, 2, {CommandTypes::VAR_DECLARATION, CommandTypes::IDENTIFIER})) return;
+            if (CheckParamExpectedTypes(checkedCommand, 0, {CommandTypes::VAR_DECLARATION, CommandTypes::IDENTIFIER})) return;
 
-            if (CheckParamExpectedTypes(checkedCommand, 3, {CommandTypes::ASSIGNMENT})) return;
+            if (CheckParamExpectedTypes(checkedCommand, 1, {CommandTypes::ASSIGNMENT})) return;
 
-            if (CheckParamExpectedExpression(checkedCommand, 4)) return;
+            if (CheckParamExpectedExpression(checkedCommand, 2)) return;
+
+            if (CheckParamExpectedExpression(checkedCommand, 3)) return;
+
+            if (CheckParamExpectedTypes(checkedCommand, 4, {CommandTypes::IDENTIFIER})) return;
+
+            if (CheckParamExpectedTypes(checkedCommand, 5, {CommandTypes::ASSIGNMENT})) return;
 
             if (CheckParamExpectedExpression(checkedCommand, 6)) return;
-
-            CheckParamExpectedExpression(checkedCommand, 8);
         }
     }
     else if (checkedCommand.GetType() == CommandTypes::EXPRESSION_VALUE)
@@ -248,29 +300,31 @@ void CommandLine::ReformCommand(Command& checkedCommand)
         int iParamIndex = 0;
         bool bExpectingExpression = true;
 
-        if (checkedCommand.GetTokens().size() == 4)
-            if (CheckType(checkedCommand.GetParams()[2][0], CommandTypes::VOID_COMMAND))
+        if (checkedCommand.GetTokens().size() == 6)
+            if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VOID_COMMAND)
                 return;
 
-        for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+        for (int i = 2; i < checkedCommand.GetTokens().size() - 3 && m_bLegal; i++)
         {
             if (bExpectingExpression)
             {
                 CheckParamExpectedTypes(checkedCommand, iParamIndex, {CommandTypes::VAR_DECLARATION});
                 iParamIndex++;
             }
+            else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue;
             else if (!CheckValue(checkedCommand[i], ",")) 
             {
                 // todo: handle error
                 FoundIllegal(checkedCommand);
             }
+            bExpectingExpression = !bExpectingExpression;
         }
 
-        CheckLastFuncParamComa(checkedCommand);
+        CheckLastFuncParamComa(checkedCommand, 3);
     }
     else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        HandleFuncLikeExpressions(checkedCommand);
+        HandleFuncLikeExpressions(checkedCommand, 2);
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS)
     {
@@ -279,7 +333,9 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION)
     {
-        HandleSingleParamKeyword(checkedCommand);
+        if (CheckConstSize(checkedCommand, 7)) return;
+        else if (CheckParantheses(checkedCommand)) return;
+        else CheckParamExpectedExpression(checkedCommand, 0);
     }
     else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER)
     {
@@ -287,7 +343,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_VALUE)
     {
-        HandleFuncLikeExpressions(checkedCommand);
+        HandleFuncLikeExpressions(checkedCommand, 1);
     }
     else if (checkedCommand.GetType() == CommandTypes::UNIDENTIFIED ||
     checkedCommand.GetType() == CommandTypes::FUNC_START ||
@@ -365,9 +421,9 @@ bool CommandLine::CheckParamExpectedTypes(Command& checkedCommand, int iParamInd
     return false;
 }
 
-bool CommandLine::CheckLastFuncParamComa(Command& checkedCommand)
+bool CommandLine::CheckLastFuncParamComa(Command& checkedCommand, int iBackSteps)
 {
-    if (CheckValue(checkedCommand[checkedCommand.GetTokens().size() - 2], ","))
+    if (CheckValue(checkedCommand[checkedCommand.GetTokens().size() - iBackSteps], ","))
     {
         // todo: handle error.
         FoundIllegal(checkedCommand);
@@ -383,35 +439,37 @@ void CommandLine::HandleSingleParamKeyword(Command& checkedCommand)
     else CheckParamExpectedExpression(checkedCommand, 0);
 }
 
-void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand)
+void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand, int iStartingIndex)
 {
     int iParamIndex = 0;
     bool bExpectingExpression = true;
 
     if (checkedCommand.GetTokens().size() == 4)
     {
-        if (CheckType(checkedCommand.GetParams()[2][0], CommandTypes::VOID_COMMAND))
+        if (CheckType(checkedCommand.GetParams()[0][0], CommandTypes::VOID_COMMAND))
         {
             checkedCommand.SetExpression(true);
             return;
         }
     }
 
-    for (int i = 2; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
+    for (int i = iStartingIndex; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
     {
         if (bExpectingExpression)
         {
             CheckParamExpectedExpression(checkedCommand, iParamIndex);
             iParamIndex++;
         }
+        else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue;
         else if (!CheckValue(checkedCommand[i], ","))
         {
             // todo: handle error
             FoundIllegal(checkedCommand);
         }
+        bExpectingExpression = !bExpectingExpression;
     }
 
-    CheckLastFuncParamComa(checkedCommand);
+    CheckLastFuncParamComa(checkedCommand, 2);
     
     if (m_bLegal) checkedCommand.SetExpression(true);
 }
@@ -433,11 +491,6 @@ inline bool CommandLine::CheckType(const Token& token, std::string_view sCompare
 
 inline bool CommandLine::CheckValue(const Token& token, std::string sCompare) const{
     return token.GetValue() == sCompare;
-}
-
-bool CommandLine::IsType(const Token& token) const
-{
-    return token.GetValue() == "int" || token.GetValue() == "bool" || token.GetValue() == "double";
 }
 
 void CommandLine::FoundIllegal(Command& command)
