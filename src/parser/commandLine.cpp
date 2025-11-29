@@ -3,8 +3,6 @@
 unsigned int CommandLine::m_uBlockStartCnt = 0;
 unsigned int CommandLine::m_uBlockCloseCnt = 0;
 
-unsigned int temp = 1; // todo: remove after debug
-
 CommandLine::CommandLine(const EntityLogger& entityLogger): 
 m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true),
 m_uLineIndex(0)
@@ -54,25 +52,11 @@ const std::vector<Command>& CommandLine::GetLine() const
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
-    // todo: make it so that only 
-    temp = currToken.GetLine();
-    if (temp == 15)
-    {
-        temp = temp;
-    }
     if (!m_bFinished)
     {
-        //std::cout << "adding the next Token: " << currToken.GetType() << " From line: " << currToken.GetLine() << std::endl;
         if (m_uLineIndex == m_line.size()) m_line.push_back(Command());
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
-            temp = m_line[0][0].GetLine();
-            if (temp == 15 || temp == 20 || temp == 25 || temp == 27 || temp == 34)
-            {
-                temp = temp;
-            }
-            // todo: remove testing
-            //std::cout << m_line[m_uLineIndex].GetType() << std::endl;
             // Checking if the line is finished.
             if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
                 m_bFinished = true;
@@ -87,7 +71,8 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
                 m_bFinished = true;
                 if (m_uBlockCloseCnt > m_uBlockStartCnt) // If we somehow have more closes than starts it's an error.
                 {
-                    // todo: here you should make an error that says that you closed a block without being in one.
+                    CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Tried closing a block without being in one", m_line[m_uLineIndex][0].GetLine(), m_line[m_uLineIndex][0].GetColumn(), "");
+                    // todo: handle the error
                 }
                 else if (m_uBlockCloseCnt == m_uBlockStartCnt)
                 {
@@ -100,11 +85,13 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
                 m_bFinished = true;
                 if (m_uBlockStartCnt != m_uBlockCloseCnt)
                 {
-                    // todo: handle error that not all code blocks were closed
+                    CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Not all code blocks were closed at the end of the program", m_line[m_uLineIndex][0].GetLine(), m_line[m_uLineIndex][0].GetColumn(), "");
+                    // todo: handle the error
                 }
                 if (m_line.size() != 0)
                 {
-                    // todo: throw error
+                    CompileTimeError(ErrorTypes::SYNTAX_ERROR, "EOF detected before code was finished", m_line[0][0].GetLine(), m_line[0][0].GetColumn(), "Probably forgot to end the line or the code block-try adding ; or }");
+                    // todo: handle the error
                 }
             }
             // If we have and UNKOWN type in the Command it's definitly illegal.
@@ -202,7 +189,8 @@ void CommandLine::CheckLine()
 
     if (!bLegalLine) {
         m_bLegal = false;
-        // todo: handle error
+        CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Couldn't parse the commands into a legal code line", m_line[0][0].GetLine(), m_line[0][0].GetColumn(), "");
+        // todo: handle the error
     }
 }
 
@@ -321,7 +309,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
             else if (!CheckValue(checkedCommand[i], ",")) 
             {
                 // todo: handle error
-                FoundIllegal(checkedCommand);
+                FoundIllegal(checkedCommand, "Expected to get a parameter seperator", "Check if ',' was forgotten between two parameters", i);
             }
             bExpectingExpression = !bExpectingExpression;
         }
@@ -370,7 +358,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     checkedCommand.GetType() == CommandTypes::NOT_FUNC_IDENTIFIER ||
     checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION_START)
     {
-        FoundIllegal(checkedCommand);
+        FoundIllegal(checkedCommand, "Found an unfinished command", "Try finishing the command in the line specified", 0);
     }
 }
 
@@ -379,7 +367,7 @@ bool CommandLine::CheckConstSize(Command& checkedCommand, int iSize)
     if (checkedCommand.GetTokens().size() != iSize) 
     {
         // todo: handle error
-        FoundIllegal(checkedCommand);
+        FoundIllegal(checkedCommand, "Expected the command (" + checkedCommand.GetType() + ") to have the next size " + iSize + " but the size is " + checkedCommand.GetTokens().size(), "", 0);
         return true;
     }
     return false;
@@ -390,7 +378,7 @@ bool CommandLine::CheckParantheses(Command& checkedCommand)
     if (checkedCommand.GetParanthesesCounter() != 0)
     {
         // todo: handle error
-        FoundIllegal(checkedCommand);
+        FoundIllegal(checkedCommand, "The command has too many open (and unclosed) parantheses", "There are " + checkedCommand.GetParanthesesCounter() + " open parantheses", 0);
         return true;
     }
     return false;
@@ -403,7 +391,8 @@ bool CommandLine::CheckParamExpectedExpression(Command& checkedCommand, int iPar
     if (!innerCommand.IsExpression())
     {
         // todo: handle error
-        FoundIllegal(checkedCommand);
+        FoundIllegal(checkedCommand, "Expected the command here: [" + checkedCommand.GetParams()[iParamIndex][0].GetLine() + ", " + checkedCommand.GetParams()[iParamIndex][0].GetColumn() + "] to be an expression but it's " + checkedCommand.GetType(), 
+        "", 0);
         return true;
     }
     return false;
@@ -419,8 +408,13 @@ bool CommandLine::CheckParamExpectedTypes(Command& checkedCommand, int iParamInd
 
     if (!bFoundCorrect)
     {
+        std::string sTypes = types[0];
+        for (int i = 1; i < types.size(); i++)
+        {
+            sTypes += ", " + types[i];
+        }
         // todo: handle error
-        FoundIllegal(checkedCommand);
+        FoundIllegal(checkedCommand, "The type of the command at [" + checkedCommand.GetParams()[iParamIndex][0].GetLine() + ", " + checkedCommand.GetParams()[iParamIndex][0].GetColumn() + "] should be: " + sTypes + ". But the type is: " + innerCommand.GetType(), "", 0);
         return true;
     }
 
@@ -432,7 +426,7 @@ bool CommandLine::CheckLastFuncParamComa(Command& checkedCommand, int iBackSteps
     if (CheckValue(checkedCommand[checkedCommand.GetTokens().size() - iBackSteps], ","))
     {
         // todo: handle error.
-        FoundIllegal(checkedCommand);
+        FoundIllegal(checkedCommand, "The last thing in the parameters was a seperator ',' but the parameters should end with a parameter and not a seperator", "most likely forgot to add a parameter or removal of the seperator is needed", checkedCommand.GetTokens().size() - iBackSteps);
         return true;
     }
     return false;
@@ -470,7 +464,7 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand, int iStarti
         else if (!CheckValue(checkedCommand[i], ","))
         {
             // todo: handle error
-            FoundIllegal(checkedCommand);
+            FoundIllegal(checkedCommand, "Expected to get a parameter seperator", "Check if ',' was forgotten between two parameters", i);
         }
         bExpectingExpression = !bExpectingExpression;
     }
@@ -485,7 +479,8 @@ inline bool CommandLine::CheckLastExpressionOperator(Command& checkedCommand)
     Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 1];
     if (lastToken.GetValue() != ")") 
     {
-        FoundIllegal(checkedCommand);
+        // todo: handle error
+        FoundIllegal(checkedCommand, "The expression was finished with an operator which is illegal", "most likely forgot to add a value or removal of the operator is needed", 0);
         return true;
     }
     return false;
@@ -499,8 +494,10 @@ inline bool CommandLine::CheckValue(const Token& token, std::string sCompare) co
     return token.GetValue() == sCompare;
 }
 
-void CommandLine::FoundIllegal(Command& command)
+void CommandLine::FoundIllegal(Command& command, std::string sErrorContent, std::string sHint, unsigned int uTokenIndex)
 {
+    // todo: handle error
+    CompileTimeError(ErrorTypes::SYNTAX_ERROR, sErrorContent, command[uTokenIndex].GetLine(), command[uTokenIndex].GetColumn(), sHint);
     m_bLegal = false;
     command.SetType(CommandTypes::UNKNOWN);
     command.SetExpression(false);

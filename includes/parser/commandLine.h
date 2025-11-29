@@ -2,6 +2,7 @@
 
 #include "command.h"
 #include "logger/entity_logger.h"
+#include "errors/error_models.h"
 
 
 class CommandLine{
@@ -65,6 +66,6 @@ private:
 
     inline bool CheckValue(const Token& token, std::string sCompare) const;
 
-    void FoundIllegal(Command& command);
+    void FoundIllegal(Command& command, std::string sErrorContent, std::string sHint, unsigned int uTokenIndex);
 
 };
