@@ -29,6 +29,7 @@ public:
     const std::vector<Command>& GetLine() const;
     // Checks if the command line isn't empty
     bool HasCommands() const noexcept;
+    const std::vector<CompileTimeError>& GetErrors() const;
 
 
 private:
@@ -39,6 +40,7 @@ private:
     size_t m_uLineIndex;
     static unsigned int m_uBlockStartCnt;
     static unsigned int m_uBlockCloseCnt;
+    std::vector<CompileTimeError> m_errors;
 
     // The func is used to check if the line is legal.
     // It will save the result in the func's params.

@@ -100,7 +100,7 @@ public:
     const std::vector<Command>& GetParams() const;
     unsigned int GetParanthesesCounter() const;
     bool IsExpression() const;
-    std::vector<CompileTimeError>& GetErrors() const;
+    const std::vector<CompileTimeError>& GetErrors() const;
 
     // Setters
 
@@ -306,7 +306,7 @@ private:
 
     // The func makes the CommandType UNKNOWN and returns true.
     // @return: True.
-    inline bool FoundUnknown();
+    inline bool FoundUnknown(Token& currToken);
 
 
 ///

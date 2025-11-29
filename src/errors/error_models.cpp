@@ -27,7 +27,7 @@ std::string CompileTimeError::ToString() const noexcept
     return oss.str();
 }
 
-const char* CompilationAbortException::what() const noexcept override
+const char* CompilationAbortException::what() const noexcept
 {
     return "Compilation Aborted";
 }
