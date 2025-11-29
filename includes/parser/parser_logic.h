@@ -1,8 +1,9 @@
 #pragma once
 
-#include "tokenizer/lexer.h"
 #include "ast.h"
 #include "commandLine.h"
+
+#include "includes/tokenizer/lexer.h"
 
 class Parser
 {

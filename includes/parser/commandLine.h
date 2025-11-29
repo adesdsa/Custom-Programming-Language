@@ -1,7 +1,7 @@
 #pragma once
 
 #include "command.h"
-#include "logger/entity_logger.h"
+#include "includes/logger/entity_logger.h"
 
 
 class CommandLine{

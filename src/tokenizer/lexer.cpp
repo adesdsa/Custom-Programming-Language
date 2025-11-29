@@ -1,4 +1,4 @@
-#include "tokenizer/lexer.h"
+#include "includes/tokenizer/lexer.h"
 
 Lexer::Lexer(const std::string& sInputFile) : 
     m_entityLogger("LEXER"), 

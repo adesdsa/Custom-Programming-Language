@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <string>
 #include <string_view>
 #include <cstdint>
@@ -14,7 +15,7 @@ namespace ErrorTypes
 }
 
 // TODO: Add field of path to file in which the error occured
-class CompileTimeError
+class CompileTimeError : public std::exception
 {
 public:
     CompileTimeError(

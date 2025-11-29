@@ -6,7 +6,7 @@
 #include <fstream>
 #include <vector>
 
-#include "tokenizer/lexer.h"
+#include "includes/tokenizer/lexer.h"
 
 namespace TestsUtils
 {

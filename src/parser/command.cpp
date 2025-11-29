@@ -1,4 +1,4 @@
-#include "parser/command.h"
+#include "includes/parser/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
@@ -293,7 +293,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
             else 
             {
                 m_bIgnoreCurrToken = true;
-                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
                 AddToCurrParam(currToken, nextToken);
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
@@ -440,7 +440,7 @@ inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
     if (m_uParameterIndex == m_parameters.size()) 
     {
         m_parameters.push_back(Command());
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
     }
     if (m_parameters[m_uParameterIndex].Append(currToken, nextToken))
     {
@@ -475,7 +475,7 @@ void Command::MoveThisIntoParam()
     m_bExpression = false;
     m_iParanthesesCounter = 0;
     m_uParameterIndex = 1;
-    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, tempSave.m_tokens[0].GetLine()));
+    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, tempSave.m_tokens[0].GetLine(),  tempSave.m_tokens[0].GetColumn()));
     m_parameters.push_back(tempSave);
 }
 
@@ -504,7 +504,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
     }
     else if (IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
     {
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
         m_parameters.push_back(Command());
         m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
         m_parameters[m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;

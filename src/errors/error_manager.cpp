@@ -1,4 +1,4 @@
-#include "errors/error_manager.h"
+#include "includes/errors/error_manager.h"
 
 ErrorManager::ErrorManager() : m_entityLogger("ERROR-MANAGER") {}
 

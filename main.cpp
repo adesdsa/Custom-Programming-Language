@@ -16,7 +16,7 @@ int main(void)
     try
     {
         /*
-        Lexer lexer("../../tests/inputs/test4.txt");
+        Lexer lexer("tests/inputs/test4.txt");
         
         auto tokens = TestsUtils::CollectTokens(lexer);
 

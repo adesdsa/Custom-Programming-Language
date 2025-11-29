@@ -1,4 +1,4 @@
-#include "errors/error_models.h"
+#include "includes/errors/error_models.h"
 
 CompileTimeError::CompileTimeError(
         std::string_view type, 
@@ -27,7 +27,7 @@ std::string CompileTimeError::ToString() const noexcept
     return oss.str();
 }
 
-const char* CompilationAbortException::what() const noexcept override
+const char* CompilationAbortException::what() const noexcept
 {
     return "Compilation Aborted";
 }
