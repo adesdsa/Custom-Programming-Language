@@ -1,4 +1,12 @@
-#include "parser/ast.h"
+#include "includes/parser/ast.h"
+
+AST::AST(const EntityLogger& entityLogger) : 
+    m_nodes(),
+    m_root(nullptr),
+    m_entityLogger(entityLogger) 
+{
+    this->m_entityLogger.Info("Finished initializing parser's AST successfully");
+}
 
 AST::AST(const EntityLogger& entityLogger) : 
     m_nodes(),

@@ -1,4 +1,4 @@
-#include "parser/command.h"
+#include "includes/parser/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),

@@ -1,4 +1,4 @@
-#include "tokenizer/token_handler.h"
+#include "includes/tokenizer/token_handler.h"
 
 TokenHandler::TokenHandler(const EntityLogger& entityLogger) : 
     m_entityLogger(entityLogger) {}
@@ -32,4 +32,3 @@ bool TokenHandler::IsRelevantToken(const Token &token) const
     }
     return sTokenType != TokenTypes::TRIVIA;
 }
- 

@@ -1,4 +1,4 @@
-#include "tokenizer/token_factory.h"
+#include "includes/tokenizer/token_factory.h"
 
 TokenFactory::TokenFactory(
     const std::string& sFilePath,
@@ -6,6 +6,7 @@ TokenFactory::TokenFactory(
 ) :
     m_mappedSRC(sFilePath),
     m_ulLineCounter(1), 
+    m_ulColumnCounter(1),
     m_entityLogger(entityLogger) {}
 
 Token TokenFactory::CreateToken()
@@ -14,27 +15,26 @@ Token TokenFactory::CreateToken()
     {
         return Token(
             TokenTypes::EOF_TOKEN, 
-            this->m_ulLineCounter
+            this->m_ulLineCounter,
+            this->m_ulColumnCounter
         );
     }
 
-    Token token(this->m_ulLineCounter);
+    Token token(this->m_ulLineCounter, this->m_ulColumnCounter);
 
     while (!token.Append(this->m_mappedSRC.Get()))
     {
-        if(this->m_mappedSRC.Get() == '\n')
+        if (this->m_mappedSRC.Get() == '\n')
         {
             this->m_ulLineCounter++;
+            this->m_ulColumnCounter = 1;  // reset column at new line
+        }
+        else
+        {
+            this->m_ulColumnCounter++;
         }
 
-        try
-        {
-            (void)this->m_mappedSRC.Seek();
-        }
-        catch(const std::runtime_error&)
-        {
-            throw;
-        }
+        (void)this->m_mappedSRC.Seek();
     }
 
     return token;

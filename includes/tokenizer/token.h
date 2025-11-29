@@ -3,7 +3,8 @@
 #include <vector>
 
 #include "patterns.h"
-#include "logger/entity_logger.h"
+
+#include "includes/logger/entity_logger.h"
 
 // All supported token types
 namespace TokenTypes
@@ -33,9 +34,9 @@ namespace TokenStatus
 class Token
 {
 public:
-    Token(size_t ulLine);
-    Token(std::string_view sTokenType, size_t ulLine);
-    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine);
+    Token(size_t ulLine, size_t ulColumn);
+    Token(std::string_view sTokenType, size_t ulLine, size_t ulColumn);
+    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, size_t ulColumn);
 
     ~Token() = default;
 
@@ -49,6 +50,7 @@ public:
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
     size_t GetLine() const noexcept;
+    size_t GetColumn() const noexcept;
 
     // Operators
     bool operator==(const Token& other) const;
@@ -57,6 +59,7 @@ private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
+    size_t m_ulColumn;
 
     // Set a single character token.
     // @param sTokenValue: New value of the token.
