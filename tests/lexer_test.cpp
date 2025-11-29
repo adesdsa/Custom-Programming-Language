@@ -2,13 +2,14 @@
 
 #include "includes/tokenizer/lexer.h"
 #include "includes/utils/tests_utils.h"
+#include "includes/utils/system_utils.h"
 
 // TEST: Empty source file
 TEST(LexerTest, EmptyInput) 
 {
     std::vector<Token> expected;
 
-    Lexer lexer("tests/inputs/test1.txt");
+    Lexer lexer(SystemUtils::BuildRelativePath("tests/inputs/test1.txt"));
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
 
     TestsUtils::CompareTokens(results, expected);
@@ -19,7 +20,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 {
     std::vector<Token> expected;
 
-    Lexer lexer("tests/inputs/test2.txt");
+    Lexer lexer(SystemUtils::BuildRelativePath("tests/inputs/test2.txt"));
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
     
     TestsUtils::CompareTokens(results, expected);
@@ -28,7 +29,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 // TEST: A small code example
 TEST(LexerTest, SmallCodeExample) 
 {
-    Lexer lexer("tests/inputs/test3.txt");
+    Lexer lexer(SystemUtils::BuildRelativePath("tests/inputs/test3.txt"));
 
     std::vector<Token> expected = {
         // Line 5
@@ -73,7 +74,7 @@ TEST(LexerTest, SmallCodeExample)
 // TEST: Full program example
 TEST(LexerTest, FullProgram) 
 {
-    Lexer lexer("tests/inputs/test4.txt");
+    Lexer lexer(SystemUtils::BuildRelativePath("tests/inputs/test4.txt"));
 
     std::vector<Token> expected = {
         // Line 1
