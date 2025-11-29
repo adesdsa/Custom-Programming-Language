@@ -15,7 +15,7 @@ namespace ErrorTypes
 }
 
 // TODO: Add field of path to file in which the error occured
-class CompileTimeError : public std::exception
+class CompileTimeError
 {
 public:
     CompileTimeError(

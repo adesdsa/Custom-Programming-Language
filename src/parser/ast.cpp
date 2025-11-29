@@ -8,14 +8,6 @@ AST::AST(const EntityLogger& entityLogger) :
     this->m_entityLogger.Info("Finished initializing parser's AST successfully");
 }
 
-AST::AST(const EntityLogger& entityLogger) : 
-    m_nodes(),
-    m_root(nullptr),
-    m_entityLogger(entityLogger) 
-{
-    this->m_entityLogger.Info("Finished initializing parser's AST successfully");
-}
-
 AST::~AST() 
 {
     this->Clear();

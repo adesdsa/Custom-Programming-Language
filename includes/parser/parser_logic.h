@@ -4,6 +4,7 @@
 #include "commandLine.h"
 
 #include "includes/tokenizer/lexer.h"
+#include "includes/errors/error_manager.h"
 
 class Parser
 {

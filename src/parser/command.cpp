@@ -110,7 +110,7 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     {
         if (IsOperator(nextToken))
         {
-            m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+            m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
             m_parameters.push_back(Command());
             m_parameters[0].m_tokens.push_back(currToken);
             m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
@@ -322,7 +322,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
             {
                 m_bIgnoreCurrToken = true;
                 //todo: turn this into func called add identifier
-                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
                 m_parameters.push_back(Command());
                 m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
                 m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
@@ -473,7 +473,7 @@ inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
     if (m_uParameterIndex == m_parameters.size()) 
     {
         m_parameters.push_back(Command());
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
     }
     if (m_parameters[m_uParameterIndex].Append(currToken, nextToken))
     {
@@ -508,7 +508,13 @@ void Command::MoveThisIntoParam()
     m_bExpression = false;
     m_iParanthesesCounter = 0;
     m_uParameterIndex = 1;
-    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, tempSave.m_tokens[0].GetLine()));
+    m_tokens.push_back(
+        Token(
+            TokenTypes::HAS_PARAM, 
+            tempSave.m_tokens[0].GetLine(), 
+            tempSave.m_tokens[0].GetColumn()
+        )
+    );
     m_parameters.push_back(tempSave);
 }
 
@@ -537,7 +543,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
     }
     else if (IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
     {
-        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine()));
+        m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
         m_parameters.push_back(Command());
         m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
         m_parameters[m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;

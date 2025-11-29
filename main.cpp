@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "includes/utils/tests_utils.h"
-#include "includes/errors/error_manager.h"
+#include "includes/parser/parser_logic.h"
 
 namespace ReturnCode
 {
