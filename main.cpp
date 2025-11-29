@@ -15,7 +15,7 @@ int main(void)
 
     try
     {
-        Parser parser("tests/inputs/test4.txt");
+        Parser parser("../../tests/inputs/test4.txt");
         parser.MainFlow();
     }
 

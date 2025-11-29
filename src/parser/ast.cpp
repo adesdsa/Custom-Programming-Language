@@ -1,5 +1,13 @@
 #include "parser/ast.h"
 
+AST::AST(const EntityLogger& entityLogger) : 
+    m_nodes(),
+    m_root(nullptr),
+    m_entityLogger(entityLogger) 
+{
+    this->m_entityLogger.Info("Finished initializing parser's AST successfully");
+}
+
 AST::~AST() 
 {
     this->Clear();
@@ -8,6 +16,7 @@ AST::~AST()
 void AST::Clear()
 {
     m_nodes.clear();  // deletes all nodes
+    m_root = nullptr;
 }
 
 ASTNode* AST::AllocateNode(const Command& command)
@@ -19,17 +28,19 @@ ASTNode* AST::AllocateNode(const Command& command)
 void AST::StoreFullCommand(const CommandLine& fullCommand)
 {
     if (!fullCommand.HasCommands()) return;
+
+    this->m_entityLogger.Info("Building new full-command onto AST");
     
     ASTNode* prevSibling = nullptr;
-    ASTNode* root = nullptr;
+    ASTNode* localRoot = nullptr;
 
     for (const Command& command : fullCommand.GetLine())
     {
         ASTNode* node = AllocateNode(command);
 
-        if (!root)
+        if (!localRoot)
         {
-            root = node;
+            localRoot = node;
         }
 
         if (prevSibling)
@@ -60,44 +71,50 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
 
         prevSibling = node;
     }
+
+    if (!this->m_root)
+    {
+        this->m_root = localRoot;
+    }
+    else
+    {
+        ASTNode* last = this->m_root;
+
+        while(last->nodeNextSibling)
+        {
+            last = last->nodeNextSibling;
+        }
+
+        last->nodeNextSibling = localRoot;
+    }
 }
 
 void AST::PrintASTNode(const ASTNode* node, int indent) const 
 {
-    if (!node)
-        return;
+    if (!node) return;
 
-    // Print indentation
     for (int i = 0; i < indent; ++i)
         std::cout << "  ";
 
-    // Print node info (type + optional first token value)
     std::cout << node->command.GetType();
 
     const auto& tokens = node->command.GetTokens();
     if (!tokens.empty())
         std::cout << " (" << tokens.front().GetValue() << ")";
 
-    std::cout << std::endl;
+    std::cout << "\n";
 
-    // Recursively print children first (parameters)
     PrintASTNode(node->nodeFirstChild, indent + 1);
-
-    // Then print next sibling
     PrintASTNode(node->nodeNextSibling, indent);
 }
 
 // Print the entire AST starting from first stored node
 void AST::PrintAST() const
 {
-    if (m_nodes.empty())
+    if (!this->m_root)
     {
-        std::cout << "<empty AST>" << std::endl;
+        std::cout << "<empty AST>\n";
         return;
     }
-
-    for (const auto& nodePtr : m_nodes)
-    {
-        PrintASTNode(nodePtr.get(),0);
-    }
+    this->PrintASTNode(this->m_root, 0);
 }

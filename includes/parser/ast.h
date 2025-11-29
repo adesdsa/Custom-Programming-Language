@@ -22,7 +22,7 @@ struct ASTNode
 class AST
 {
 public:
-    AST() = default;
+    AST(const EntityLogger& entityLogger);
     ~AST();
 
     void Clear();
@@ -34,10 +34,13 @@ public:
     // @param fullCommand: CommandLine object that represents vector of commands
     // the vector is sorted from first token in the command to the last one.
     void StoreFullCommand(const CommandLine& fullCommand);
+    
     void PrintAST() const;
 
 private:
     std::vector<std::unique_ptr<ASTNode>> m_nodes;
+    ASTNode* m_root = nullptr;  // AST entry point
+    const EntityLogger& m_entityLogger;
 
     void PrintASTNode(const ASTNode* node, int indent) const;
 };
