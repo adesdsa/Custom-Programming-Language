@@ -320,9 +320,18 @@ private:
     // @return: True-> The param is complete. False-> otherwise.
     inline bool AddToCurrParam(Token& currToken, Token& nextToken);
     
+    // The func lowers the paranthesesCount, 
+    // and handles if there are too many parantheses close and too little opens.
+    // @param currToken: The current Token we are added.
+    // @return: True-> Too many parantheses closers. False-> Otherwise.
     bool LowerParanthesesCounter(Token& currToken);
 
+    // The func moves The Command we just worked on (this) into the parameters so it will be a parameter.
     void MoveThisIntoParam();
+
+    // The func adds an IDENTIFIER to the parameters.
+    // @param currToken: The Token that is the IDENTIFIER.
+    void AddIdentifier(Token& currToken);
 
 
 ///
@@ -336,12 +345,27 @@ private:
     // @return: True-> The param is complete. False-> otherwise.
     bool HandleFuncLikeParams(Token& currToken, Token& nextToken);
 
-    // todo: docs
+    // The func handles the parameters of keywords, e.g.: if(params...), for(params...)
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> Finished building the parameter. False-> Otherwise.
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
+    // The func handles the first time we found paranthes;
+    // It handles the first time we enter a func for example.
+    // @return: False.
     inline bool HandleFoundParantheses();
 
+    // The func handles the default checks for Commands with parameters.
+    // @param currToken: The current Token added right now.
+    // @param sParantheses: The parantheses we are looking for.
+    // @return: True-> First time we entered the parantheses. False-> Otherwise.
     bool HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
 
+    // The func handles the checks regarding the parantheses in arrays.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @param sFinishedType: The type that will be changed to if succeeded.
+    // @return: True-> Finished the checks. False-> Otherwise.
     bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, std::string_view sFinishedType);
 };

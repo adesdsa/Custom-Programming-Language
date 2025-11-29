@@ -53,7 +53,8 @@ const std::vector<CompileTimeError>& CommandLine::GetErrors() const {
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
-    // todo: check build errors
+    // todo: check if the Errors work correctly with the parameters.
+    // todo: add logs and docs
     if (!m_bFinished)
     {
         if (m_uLineIndex == m_line.size()) m_line.push_back(Command());

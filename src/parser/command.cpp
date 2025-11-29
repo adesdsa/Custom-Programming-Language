@@ -324,14 +324,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
             }
             else 
             {
-                m_bIgnoreCurrToken = true;
-                //todo: turn this into func called add identifier
-                m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
-                m_parameters.push_back(Command());
-                m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-                m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
-                m_bIgnoreCurrToken = true;
-                m_uParameterIndex++;
+                AddIdentifier(currToken);
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
         } 
@@ -493,7 +486,6 @@ bool Command::LowerParanthesesCounter(Token& currToken)
     m_iParanthesesCounter--;
     if (m_iParanthesesCounter < 0)
     {
-        // todo: recommended to add an error saver that will be dumped in the checking
         m_errors.push_back(CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Closed too many parantheses", currToken.GetLine(), currToken.GetColumn(), ""));
         return FoundUnknown(currToken);
     }
@@ -516,6 +508,17 @@ void Command::MoveThisIntoParam()
     m_uParameterIndex = 1;
     m_tokens.push_back(Token(TokenTypes::HAS_PARAM, tempSave.m_tokens[0].GetLine(), tempSave.m_tokens[0].GetColumn()));
     m_parameters.push_back(tempSave);
+}
+
+void Command::AddIdentifier(Token& currToken)
+{
+    m_bIgnoreCurrToken = true;
+    m_tokens.push_back(Token(TokenTypes::HAS_PARAM, currToken.GetLine(), currToken.GetColumn()));
+    m_parameters.push_back(Command());
+    m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
+    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
+    m_bIgnoreCurrToken = true;
+    m_uParameterIndex++;
 }
 
 
