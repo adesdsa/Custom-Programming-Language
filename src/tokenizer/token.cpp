@@ -61,7 +61,8 @@ bool Token::Append(char cAddedChar) noexcept
 
     // check #5 Operator
     if (this->IsOperatorToken(k_sTempToken, cAddedChar))
-        return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
+        //return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::OPERATOR);
 
     else if (this->m_sType == TokenTypes::OPERATOR) 
         return TokenStatus::k_bFinished;
