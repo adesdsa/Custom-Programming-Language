@@ -1,7 +1,7 @@
 #include "includes/parser/parser_logic.h"
 
 Parser::Parser(const std::string& sFilePath) :
-    m_entityLogger("parser"),
+    m_entityLogger("PARSER"),
     m_ast(m_entityLogger),
     m_lexer(sFilePath),
     m_currentToken(this->FetchToken()),

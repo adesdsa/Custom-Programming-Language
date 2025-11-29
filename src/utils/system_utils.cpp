@@ -1,6 +1,6 @@
-#include "includes/utils/time_utils.h"
+#include "includes/utils/system_utils.h"
 
-namespace TimeUtils
+namespace SystemUtils
 {
     std::string GetFullCurrentTime()
     {
@@ -22,5 +22,10 @@ namespace TimeUtils
         std::ostringstream oss;
         oss << std::put_time(&localTime, "%d/%m/%Y %H:%M:%S");
         return oss.str();
+    }
+
+    std::string BuildRelativePath(const std::string& relativePath)
+    {
+        return (std::filesystem::path(PROJECT_ROOT) / relativePath).string();
     }
 }

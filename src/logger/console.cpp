@@ -19,7 +19,7 @@ void Console::BuildAndSendLogMessage(
 ) const noexcept
 {
     this->Log(
-        LogMessage(entity, debugLevel, TimeUtils::GetFullCurrentTime(), msg)
+        LogMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg)
     );
 }
 

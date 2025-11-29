@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "includes/utils/tests_utils.h"
+#include "includes/utils/system_utils.h"
 #include "includes/parser/parser_logic.h"
 
 namespace ReturnCode
@@ -15,7 +16,7 @@ int main(void)
 
     try
     {
-        Parser parser("tests/inputs/test4.txt");
+        Parser parser(SystemUtils::BuildRelativePath("tests/inputs/test4.txt"));
         parser.MainFlow();
     }
     catch(const CompilationAbortException& abortError)
