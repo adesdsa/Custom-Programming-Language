@@ -79,6 +79,7 @@ namespace CommandTypes
     inline constexpr std::string_view ARRAY_VALUE_START             = "ARRAY_VALUE_START";
 }
 
+//todo: add class preview
 class Command 
 {
 public:
