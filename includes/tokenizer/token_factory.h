@@ -22,5 +22,6 @@ public:
 private:
     MappedSRC m_mappedSRC;
     size_t m_ulLineCounter;
+    size_t m_ulColumnCounter;
     const EntityLogger& m_entityLogger;
 };

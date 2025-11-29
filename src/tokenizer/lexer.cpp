@@ -1,7 +1,7 @@
 #include "tokenizer/lexer.h"
 
 Lexer::Lexer(const std::string& sInputFile) : 
-    m_entityLogger("lexer"), 
+    m_entityLogger("LEXER"), 
     m_tokenFactory(sInputFile, m_entityLogger),
     m_tokenHandler(m_entityLogger) {}
 
