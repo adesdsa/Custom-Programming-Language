@@ -37,6 +37,10 @@ bool Command::IsExpression() const {
     return m_bExpression;
 }
 
+std::vector<CompileTimeError>& Command::GetErrors() const {
+    return m_errors;
+}
+
 void Command::SetType(std::string_view type) {
     m_sType = type;
 }
@@ -461,8 +465,9 @@ inline bool Command::NoFinishAndAssignType(std::string_view sType)
     return false;
 }
 
-inline bool Command::FoundUnknown() 
+inline bool Command::FoundUnknown(Token& currToken)
 {
+    if (m_errors.size() == 0) m_errors.push_back(CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Illegal command found", currToken.GetLine(), currToken.GetColumn(), ""));
     m_sType = CommandTypes::UNKNOWN;
     return true;
 }
@@ -483,12 +488,13 @@ inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
     return false;
 }
 
-bool Command::LowerParanthesesCounter()
+bool Command::LowerParanthesesCounter(Token& currToken)
 {
     m_iParanthesesCounter--;
     if (m_iParanthesesCounter < 0)
     {
         // todo: recommended to add an error saver that will be dumped in the checking
+        m_errors.push_back(CompileTimeError(ErrorTypes::SYNTAX_ERROR, "Closed too many parantheses", currToken.GetLine(), currToken.GetColumn(), ""));
         return FoundUnknown();
     }
     return false;

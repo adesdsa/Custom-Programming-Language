@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "tokenizer/token.h"
+#include "errors/error_models.h"
 
 ///todo
 ///             This Class Will Be Changed To Decorated Tokens And Then Will Make Command Class
@@ -99,6 +100,7 @@ public:
     const std::vector<Command>& GetParams() const;
     unsigned int GetParanthesesCounter() const;
     bool IsExpression() const;
+    std::vector<CompileTimeError>& GetErrors() const;
 
     // Setters
 
@@ -118,8 +120,9 @@ private:
     bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line.
     bool m_bExpression;                     // Used to indicate if this Command is an expression.
     bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
-    int m_iParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
+    int m_iParanthesesCounter;              // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
+    std::vector<CompileTimeError> m_errors;
 
 
     ///
@@ -317,7 +320,7 @@ private:
     // @return: True-> The param is complete. False-> otherwise.
     inline bool AddToCurrParam(Token& currToken, Token& nextToken);
     
-    bool LowerParanthesesCounter();
+    bool LowerParanthesesCounter(Token& currToken);
 
     void MoveThisIntoParam();
 
