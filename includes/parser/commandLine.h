@@ -65,8 +65,6 @@ private:
 
     inline bool CheckValue(const Token& token, std::string sCompare) const;
 
-    bool IsType(const Token& token) const;
-
     void FoundIllegal(Command& command);
 
 };
