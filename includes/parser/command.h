@@ -94,18 +94,29 @@ public:
 
     // Getters
 
+    // The func returns the Command's type.
     std::string_view GetType() const;
+    // The func returns the Token's of the Command.
     const std::vector<Token>& GetTokens() const;
+    // Does the Command have parameters.
     bool HasParams() const noexcept;
+    // Get the Command's parameters.
     std::vector<Command>& GetParams();
+    // Get the Command's parameters as a const.
     const std::vector<Command>& GetParams() const;
+    // Get the paranthesesCounter of the Command.
+    // Used to check if not all parantheses are closed
     unsigned int GetParanthesesCounter() const;
+    // True-> The Command is a legal expression e.g.: legal FUNC_CALL, legal EXPRESSION. False-> otherwise.
     bool IsExpression() const;
+    // Get the vector of all the encountered errors.
     const std::vector<CompileTimeError>& GetErrors() const;
 
     // Setters
 
+    // Set the Command's types.
     void SetType(std::string_view type);
+    // Set if the Command is an expression e.g.: legal EXPRESSION, legal FUNC_CALL...
     void SetExpression(bool indicator);
 
     // Operators

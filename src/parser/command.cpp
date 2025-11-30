@@ -105,6 +105,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
     // Note that if code can be outside of {} is checked in the semantic analysis and not in the parser
     // A for loop must be of the next prset: for ( var_declaration/identifier assigmnet value ; expression ; expression )
+    // scope and access_rights arent a must have.
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)

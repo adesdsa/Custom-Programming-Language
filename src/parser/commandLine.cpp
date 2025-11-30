@@ -53,13 +53,13 @@ const std::vector<CompileTimeError>& CommandLine::GetErrors() const {
 
 bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 {
-    // todo: check if the Errors work correctly with the parameters.
-    // todo: add logs and docs
     if (!m_bFinished)
     {
-        if (m_uLineIndex == m_line.size()) m_line.push_back(Command());
+        if (m_uLineIndex == m_line.size()) m_line.push_back(Command()); // Checking if new Command is needed in the Line.
         if (m_line[m_uLineIndex].Append(currToken, nextToken))
         {
+            m_entityLogger.Info("Finished creating a new Command");
+
             // Checking if the line is finished.
             if (m_line[m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
                 m_bFinished = true;
@@ -77,7 +77,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR, "Tried closing a block without being in one", m_line[m_uLineIndex][0].GetLine(), m_line[m_uLineIndex][0].GetColumn(), "");
                     m_errors.push_back(error);
                 }
-                else if (m_uBlockCloseCnt == m_uBlockStartCnt)
+                else if (m_uBlockCloseCnt == m_uBlockStartCnt) // Resetting.
                 {
                     m_uBlockCloseCnt = 0;
                     m_uBlockStartCnt = 0;
@@ -86,26 +86,27 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
             else if (m_line[m_uLineIndex].GetType() == CommandTypes::EOF_TOKEN)
             {
                 m_bFinished = true;
-                if (m_uBlockStartCnt != m_uBlockCloseCnt)
+                if (m_uBlockStartCnt != m_uBlockCloseCnt) // Incase not all code blocks were closed.
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR, "Not all code blocks were closed at the end of the program", m_line[m_uLineIndex][0].GetLine(), m_line[m_uLineIndex][0].GetColumn(), "");
                     m_errors.push_back(error);
                 }
-                if (m_line.size() != 0)
+                if (m_line.size() != 0) // Incase EOF reached before the last line was finished.
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR, "EOF detected before code was finished", m_line[0][0].GetLine(), m_line[0][0].GetColumn(), "Probably forgot to end the line or the code block-try adding ; or }");
                     m_errors.push_back(error);
                 }
             }
-            // If we have and UNKOWN type in the Command it's definitly illegal.
-            else if (m_line[m_uLineIndex].GetType() == CommandTypes::UNKNOWN)
+            else if (m_line[m_uLineIndex].GetType() == CommandTypes::UNKNOWN) // If we have and UNKOWN type in the Command it's definitly illegal.
             {
-                m_errors.push_back(m_line[m_uLineIndex].GetErrors()[0]);
+                m_errors.push_back(m_line[m_uLineIndex].GetErrors()[0]); // Getting the error from the Command.
                 m_bLegal = false;
             }
-            else {
-                // Reforming the command incase it's needed and continuing to the next Command.
-                ReformCommand(m_line[m_uLineIndex]);
+            else 
+            {
+                m_entityLogger.Info("Started reforming the new Command");
+                ReformCommand(m_line[m_uLineIndex]); // Reforming the command incase it's needed and continuing to the next Command.
+                m_entityLogger.Info("Finished reforming the new Command");
             }
             m_uLineIndex++;
         }
@@ -113,7 +114,7 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 
     if (m_bFinished) // If it's illegal no reason to check.
     {
-        if (m_bLegal)
+        if (m_bLegal) // If the line was found to be illegal untill now no need to check if the line sequence is legal.
             CheckLine();
         return true;
     }
@@ -122,14 +123,13 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
 
 void CommandLine::CheckLine()
 {
-    // In this function unline the other functions we check if something is 
-    // legal, not if something breaks the legality so we use this flag.
+    m_entityLogger.Info("Checking the legality of the CommandLine");
     bool bLegalLine = false;
 
     //
     // The next code segment will work this way =>
-    // It will check if Command1 Command2 and so on make a legal syntax command.
-    // e.g. VAR_DECLARATION + ASSIGNMENT + EXPRESSION.
+    // It will check if Command1 Command2 and so on make a legal syntax CommandLine.
+    // e.g. VAR_DECLARATION + ASSIGNMENT + EXPRESSION => are legal.
     // It does this by checking: is Command1 VAR_DECLARATION then is Command2 ASSIGNMENT and so on.
     //
 
@@ -194,14 +194,19 @@ void CommandLine::CheckLine()
         bLegalLine = m_uBlockStartCnt == m_uBlockCloseCnt;
 
     if (!bLegalLine) {
+        m_entityLogger.Info("Found and illegal CommandLine");
         m_bLegal = false;
         CompileTimeError error(ErrorTypes::SYNTAX_ERROR, "Couldn't parse the commands into a legal code line", m_line[0][0].GetLine(), m_line[0][0].GetColumn(), "");
         m_errors.push_back(error);
-    }
+    } else m_entityLogger.Info("Found a legal CommandLine");
 }
 
 void CommandLine::ReformCommand(Command& checkedCommand)
 {
+    //
+    //  This func reforms the CommandTypes that have specific blueprints that need to be met inorder for it to be legal.
+    //
+
     if (checkedCommand.GetType() == CommandTypes::ELIF)
     {
         HandleSingleParamKeyword(checkedCommand);
@@ -216,6 +221,8 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
     {
+        // SIZEOF blueprint:
+        // Size must be 4: #SIZEOF+(+EXPRESSION/VAR_TYPE+)#
         if (CheckConstSize(checkedCommand, 4)) return;
         else if (CheckParantheses(checkedCommand)) return;
         else if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VAR_TYPE) return;
@@ -223,13 +230,13 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {
+        // FOR blueprint:
+        // Size must be 12: #FOR+(+VAR_DECLARATION/IDENTIFIER+ASSIGNMENT+expression+;+expression+;+IDENTIFIER+ASSIGNMENT+expression)
         if (checkedCommand.GetTokens().size() != 12) checkedCommand.SetType(CommandTypes::UNKNOWN);
         else if (checkedCommand.GetParanthesesCounter() != 0) checkedCommand.SetType(CommandTypes::UNKNOWN);
         else 
         {
-            // A for statement is made of the next Token's
-            // for+(+VAR_DECLRATION/IDENTIFIER+ASSIGNMENT+EXPRESSION+;+EXPRESSION+;+EXPRESSION+)
-            // Checking if one of the Token's types/values are wrong
+            // Checking if one of the Token's types is wrong
             if (!CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
             !CheckType(checkedCommand[3], TokenTypes::HAS_PARAM) ||
             !CheckType(checkedCommand[4], TokenTypes::HAS_PARAM) ||
@@ -242,6 +249,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
                 checkedCommand.SetType(CommandTypes::UNKNOWN);
 
 
+            // Checking if one of the Token's values is wrong
             if (CheckParamExpectedTypes(checkedCommand, 0, {CommandTypes::VAR_DECLARATION, CommandTypes::IDENTIFIER})) return;
 
             if (CheckParamExpectedTypes(checkedCommand, 1, {CommandTypes::ASSIGNMENT})) return;
@@ -263,7 +271,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
 
         if (CheckParantheses(checkedCommand)) return;
         for (int i = 0; i < checkedCommand.GetTokens().size(); i++)
-            if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM)
+            if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM) // Checking that all the parameters are legal.
             {
                 CheckParamExpectedExpression(checkedCommand, iParamIndex);
                 iParamIndex++;
@@ -281,7 +289,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
 
         if (CheckParantheses(checkedCommand)) return;
         for (int i = 0; i < checkedCommand.GetTokens().size(); i++)
-            if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM)
+            if (checkedCommand[i].GetType() == TokenTypes::HAS_PARAM) // Checking that all the parameters are legal.
             {
                 CheckParamExpectedExpression(checkedCommand, iParamIndex);
                 iParamIndex++;
@@ -297,22 +305,26 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
     {
+        // FINISHED_FUNC_DECLARATION blueprint:
+        // IDENTIFIER+(+.[expression+sperator(,)+].+)+->+.[UNSIGNED].+VAR_TYPE
+
         int iParamIndex = 0;
         bool bExpectingExpression = true;
 
+        // Incase we only have a void in the params.
         if (checkedCommand.GetTokens().size() == 6)
             if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VOID_COMMAND)
                 return;
 
         for (int i = 2; i < checkedCommand.GetTokens().size() - 3 && m_bLegal; i++)
         {
-            if (bExpectingExpression)
+            if (bExpectingExpression) // Expecting an expression
             {
                 CheckParamExpectedTypes(checkedCommand, iParamIndex, {CommandTypes::VAR_DECLARATION});
                 iParamIndex++;
             }
-            else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue;
-            else if (!CheckValue(checkedCommand[i], ",")) FoundIllegal(checkedCommand, "Expected to get a parameter seperator", "Check if ',' was forgotten between two parameters", i);
+            else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue; // If t's not/*/& we skip.
+            else if (!CheckValue(checkedCommand[i], ",")) FoundIllegal(checkedCommand, "Expected to get a parameter seperator", "Check if ',' was forgotten between two parameters", i); // Right here we should have a seperator, if not it's an error
             bExpectingExpression = !bExpectingExpression;
         }
 
@@ -329,8 +341,10 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION)
     {
-        if (CheckConstSize(checkedCommand, 7)) return;
-        else if (CheckParantheses(checkedCommand)) return;
+        // ARRAY_DECLARATION blueprint:
+        // ACCESS_RIGHT+SCOPE+IDENTIFIER+:+UNSIGNED+VAR_TYPE+[+expression+] 
+        if (CheckParantheses(checkedCommand)) return;
+        else if (checkedCommand.GetParams().size() > 1) return FoundIllegal(checkedCommand, "Too many args for an array", "Try removing the extra args", 0);
         else CheckParamExpectedExpression(checkedCommand, 0);
     }
     else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER)
@@ -401,7 +415,7 @@ bool CommandLine::CheckParamExpectedTypes(Command& checkedCommand, int iParamInd
     Command& innerCommand = checkedCommand.GetParams()[iParamIndex];
     bool bFoundCorrect = false;
     for (int i = 0; i < types.size(); i++)
-        if (innerCommand.GetType() == types[i]) 
+        if (innerCommand.GetType() == types[i]) // Checking that at least one of the types is correct.
             bFoundCorrect = true;
 
     if (!bFoundCorrect)
@@ -430,6 +444,8 @@ bool CommandLine::CheckLastFuncParamComa(Command& checkedCommand, int iBackSteps
 
 void CommandLine::HandleSingleParamKeyword(Command& checkedCommand)
 {
+    // Any keyword with a single param e.g.: if, elif have the next blueprint:
+    // KEYWORD+(+expresion+)
     if (CheckConstSize(checkedCommand, 4)) return;
     else if (CheckParantheses(checkedCommand)) return;
     else CheckParamExpectedExpression(checkedCommand, 0);
@@ -442,7 +458,7 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand, int iStarti
 
     if (checkedCommand.GetTokens().size() == 4)
     {
-        if (CheckType(checkedCommand.GetParams()[0][0], CommandTypes::VOID_COMMAND))
+        if (checkedCommand.GetParams()[0].GetType() == CommandTypes::VOID_COMMAND)
         {
             checkedCommand.SetExpression(true);
             return;
@@ -451,13 +467,13 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand, int iStarti
 
     for (int i = iStartingIndex; i < checkedCommand.GetTokens().size() - 1 && m_bLegal; i++)
     {
-        if (bExpectingExpression)
+        if (bExpectingExpression) // Expecting an expression.
         {
             CheckParamExpectedExpression(checkedCommand, iParamIndex);
             iParamIndex++;
         }
-        else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue;
-        else if (!CheckValue(checkedCommand[i], ",")) FoundIllegal(checkedCommand, "Expected to get a parameter seperator", "Check if ',' was forgotten between two parameters", i);
+        else if (!bExpectingExpression && (CheckValue(checkedCommand[i], "not") || CheckValue(checkedCommand[i], "*") || CheckValue(checkedCommand[i], "&"))) continue; // If t's not/*/& we skip.
+        else if (!CheckValue(checkedCommand[i], ",")) FoundIllegal(checkedCommand, "Expected to get a parameter seperator", "Check if ',' was forgotten between two parameters", i); // Right here we should have a seperator, if not it's an error
         bExpectingExpression = !bExpectingExpression;
     }
 
@@ -468,8 +484,8 @@ void CommandLine::HandleFuncLikeExpressions(Command& checkedCommand, int iStarti
 
 inline bool CommandLine::CheckLastExpressionOperator(Command& checkedCommand)
 {
-    Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 1];
-    if (lastToken.GetValue() != ")") 
+    Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 2];
+    if ((lastToken.GetType() == TokenTypes::OPERATOR || lastToken.GetType() == TokenTypes::KEYWORD) && lastToken.GetValue() != ")")
     {
         FoundIllegal(checkedCommand, "The expression was finished with an operator which is illegal", "most likely forgot to add a value or removal of the operator is needed", 0);
         return true;
@@ -487,6 +503,7 @@ inline bool CommandLine::CheckValue(const Token& token, std::string sCompare) co
 
 void CommandLine::FoundIllegal(Command& command, std::string sErrorContent, std::string sHint, unsigned int uTokenIndex)
 {
+    if (command.GetErrors().size() > 0) m_errors.push_back(command.GetErrors()[0]); // Incase there are errors in the params.
     CompileTimeError error(ErrorTypes::SYNTAX_ERROR, sErrorContent, command[uTokenIndex].GetLine(), command[uTokenIndex].GetColumn(), sHint);
     m_errors.push_back(error);
     m_bLegal = false;
