@@ -93,9 +93,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
     if (IsValue(nextToken, "{") || IsValue(nextToken, "}")) bReturnValue = true;
 
     return bReturnValue;
-    // todo: add logs at the end
 
-    // extra rules:
+    // extra rules: todo
     // there is no support for int a, b, c=0;
     // & * (in the context of pointers) should appear before the identifier when they are called
     // When declaring a pointer the * should appear after the type 
