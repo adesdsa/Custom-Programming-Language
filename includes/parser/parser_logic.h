@@ -12,10 +12,33 @@ public:
     ParserLogic(const std::string& sFilePath);
     ~ParserLogic() = default;
 
+    /*****************************************************************************
+     * @brief Runs Parser Pipeline:                                              |
+     *                                                                           |
+     * This method performs the complete parsing process:                        |
+     * 1. Building CommandLine objects by fetching tokens on demand.             |
+     *  @note: A full command may represent a function declaration,              |
+     *          variable declaration, condition statement, etc....               |
+     *                                                                           |
+     * 2. Each full command goes through SyntaxChecker.                          |
+     *                                                                           |
+     * 3. If the command passes syntax validation, insert into the AST           |
+     *      as a new subtree.                                                    |
+     *                                                                           |
+     * 4. If command is invalid, syntax errors are recorded via error manager    |                                   |
+     *                                                                           |
+     * 5. Repeats proccess from step 1 until the source input is fully consumed  |
+     *                                                                           |
+     * 6. If any errors occured, handle them and abort compilation               |
+     *                                                                           |
+     * @see Command                                                              |
+     * @see CommandLine                                                          |
+     * @see AST                                                                  |
+     ****************************************************************************/
     void MainFlow();
 
-    // Sets m_currentToken to be the m_nextToken
-    // and fetch new m_nextToken from lexer
+    // Sets m_currentToken to be the m_nextToken,
+    // and fetch new m_nextToken from lexer.
     void Advance();
 
     // A command line is considered valid if it passed the SyntaxChecker layer.

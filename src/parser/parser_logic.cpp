@@ -34,6 +34,10 @@ void ParserLogic::MainFlow()
     lastCommandLine.AddToken(this->m_currentToken, this->m_nextToken);
     this->HandleFullCommand(lastCommandLine);
 
+    if (this->m_errorManager.HasErrorsOccured())
+    {
+        this->m_errorManager.HandleErrors();
+    }
     this->m_entityLogger.Info("Finished parsing file");
 }
 
