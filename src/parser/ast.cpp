@@ -124,5 +124,4 @@ void AST::PrintAST() const
     }
     this->PrintASTNode(this->m_root, 0);
 }
-
 */

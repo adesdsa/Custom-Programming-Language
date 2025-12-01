@@ -15,23 +15,28 @@ void Parser::MainFlow()
     this->m_entityLogger.Info("Start parsing file");
     while(!this->m_lexer.IsFinishedReadingSRC())
     {
-        CommandLine cl(this->m_entityLogger);
-        while(!cl.IsFinished())
+        CommandLine fullCommand(this->m_entityLogger);
+
+        // building full-command
+        while(!fullCommand.IsFinished())
         {
-            cl.AddToken(this->m_currentToken, this->m_nextToken);
+            fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
         }   
     /*
-    auto error = cl.IsLegal();
-    if(error.has_value())
-    {
-        m_errormanger.StoreeRROR(error.value();
-    }
-    else
-    {
+        for(const CompileTimeError& error : this.m_getErrors())
+        {
+            this.m_errorManager.StoreError(error);
+        }
     */
-        this->m_ast.StoreFullCommand(cl);
+        this->m_ast.StoreFullCommand(fullCommand);
     }
+
+    // cover last CommandLine
+    CommandLine lastCommandLine(this->m_entityLogger);
+    lastCommandLine.AddToken(this->m_currentToken, this->m_nextToken);
+    this->m_ast.StoreFullCommand(lastCommandLine);
+
     this->m_entityLogger.Info("Finished building AST");
 }
 
