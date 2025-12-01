@@ -1,4 +1,4 @@
-#include "parser_component/ast.h"
+#include "parser/ast.h"
 
 AST::~AST() 
 {
@@ -18,6 +18,8 @@ ASTNode* AST::AllocateNode(const Command& command)
 
 void AST::StoreFullCommand(const CommandLine& fullCommand)
 {
+    if (!fullCommand.HasCommands()) return;
+    
     ASTNode* prevSibling = nullptr;
     ASTNode* root = nullptr;
 
@@ -32,7 +34,7 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
 
         if (prevSibling)
         {
-            prevSibling->m_nodeNextSibling = node;
+            prevSibling->nodeNextSibling = node;
         }
 
         // add command parameters as children first
@@ -45,11 +47,11 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
 
                 if (!paramPrev)
                 {
-                    node->m_nodeFirstChild = paramNode;
+                    node->nodeFirstChild = paramNode;
                 }
                 else
                 {
-                    paramPrev->m_nodeNextSibling = paramNode;
+                    paramPrev->nodeNextSibling = paramNode;
                 }
 
                 paramPrev = paramNode;
@@ -70,19 +72,19 @@ void AST::PrintASTNode(const ASTNode* node, int indent) const
         std::cout << "  ";
 
     // Print node info (type + optional first token value)
-    std::cout << node->m_command.GetType();
+    std::cout << node->command.GetType();
 
-    const auto& tokens = node->m_command.GetTokens();
+    const auto& tokens = node->command.GetTokens();
     if (!tokens.empty())
         std::cout << " (" << tokens.front().GetValue() << ")";
 
     std::cout << std::endl;
 
     // Recursively print children first (parameters)
-    PrintASTNode(node->m_nodeFirstChild, indent + 1);
+    PrintASTNode(node->nodeFirstChild, indent + 1);
 
     // Then print next sibling
-    PrintASTNode(node->m_nodeNextSibling, indent);
+    PrintASTNode(node->nodeNextSibling, indent);
 }
 
 // Print the entire AST starting from first stored node

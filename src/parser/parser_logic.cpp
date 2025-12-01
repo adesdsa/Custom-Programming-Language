@@ -1,10 +1,34 @@
-#include "parser_component/parser.h"
+#include "parser/parser_logic.h"
 
 Parser::Parser(const std::string& sFilePath) :
-    m_entityLogger("parser"),
+    m_entityLogger("PARSER"),
     m_lexer(sFilePath),
     m_currentToken(this->FetchToken()),
     m_nextToken(this->FetchToken()) {}
+
+void Parser::MainFlow()
+{
+    while(!this->m_lexer.IsFinishedReadingSRC())
+    {
+        CommandLine cl(this->m_entityLogger);
+        while(!cl.IsFinished())
+        {
+            cl.AddToken(this->m_currentToken, this->m_nextToken);
+            this->Advance();
+        }   
+    /*
+    auto error = cl.IsLegal();
+    if(error.has_value())
+    {
+        m_errormanger.StoreeRROR(error.value();
+    }
+    else
+    {
+    */
+        this->m_ast.StoreFullCommand(cl);
+    }
+    this->m_ast.PrintAST();
+}
 
 Token Parser::FetchToken()
 {

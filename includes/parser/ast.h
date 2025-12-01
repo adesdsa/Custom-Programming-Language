@@ -2,7 +2,21 @@
 
 #include <memory>
 
-#include "ast_node.h"
+#include "commandLine.h"
+
+// Left-child, right-sibling AST node
+// Each node contains full command (function, variable decleraion  etc...)
+struct ASTNode
+{
+    Command command;
+    ASTNode* nodeFirstChild;
+    ASTNode* nodeNextSibling;
+
+    ASTNode(const Command& command) : 
+        command(command), 
+        nodeFirstChild(nullptr), 
+        nodeNextSibling(nullptr) {}
+};
 
 // The AST itself. Holds all Nodes of the source file.
 class AST
@@ -21,9 +35,9 @@ public:
     // the vector is sorted from first token in the command to the last one.
     void StoreFullCommand(const CommandLine& fullCommand);
     void PrintAST() const;
-    void PrintASTNode(const ASTNode* node, int indent = 0);
+
 private:
     std::vector<std::unique_ptr<ASTNode>> m_nodes;
-    
+
     void PrintASTNode(const ASTNode* node, int indent) const;
 };
