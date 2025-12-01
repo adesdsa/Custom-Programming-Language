@@ -95,6 +95,7 @@ void AST::StoreParams(ASTNode* parent, const Command& command)
     }
 }
 
+/*
 void AST::PrintASTNode(const ASTNode* node, int indent) const 
 {
     if (!node) return;
@@ -114,7 +115,6 @@ void AST::PrintASTNode(const ASTNode* node, int indent) const
     PrintASTNode(node->nodeNextSibling, indent);
 }
 
-// Print the entire AST starting from first stored node
 void AST::PrintAST() const
 {
     if (!this->m_root)
@@ -124,3 +124,5 @@ void AST::PrintAST() const
     }
     this->PrintASTNode(this->m_root, 0);
 }
+
+*/

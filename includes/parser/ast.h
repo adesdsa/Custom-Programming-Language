@@ -35,7 +35,7 @@ public:
     void StoreFullCommand(const CommandLine& fullCommand);
 
     // debug purpose only - remove comment when needed
-    void PrintAST() const;
+    // void PrintAST() const;
 
 private:
     std::vector<std::unique_ptr<ASTNode>> m_nodes;  // memory ownership
@@ -50,5 +50,5 @@ private:
     void StoreParams(ASTNode* parent, const Command& command);
 
     // debug purpose only - remove comment when needed
-    void PrintASTNode(const ASTNode* node, int indent) const;
+    // void PrintASTNode(const ASTNode* node, int indent) const;
 };

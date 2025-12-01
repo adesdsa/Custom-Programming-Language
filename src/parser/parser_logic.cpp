@@ -33,7 +33,6 @@ void Parser::MainFlow()
         this->m_ast.StoreFullCommand(cl);
     }
     this->m_entityLogger.Info("Finished building AST");
-    this->m_ast.PrintAST();
 }
 
 Token Parser::FetchToken()
