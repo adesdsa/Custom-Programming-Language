@@ -1,8 +1,10 @@
 #pragma once
 
-#include "tokenizer/lexer.h"
 #include "ast.h"
 #include "commandLine.h"
+
+#include "includes/tokenizer/lexer.h"
+#include "includes/errors/error_manager.h"
 
 class Parser
 {

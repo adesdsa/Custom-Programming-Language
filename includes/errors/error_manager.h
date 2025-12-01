@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "error_models.h"
-#include "logger/entity_logger.h"
+#include "includes/logger/entity_logger.h"
 
 // Will handle all the compile time errors. Store them and then handle
 // them one by one and at the end abort compiling process
