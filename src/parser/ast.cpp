@@ -3,6 +3,7 @@
 AST::AST(const EntityLogger& entityLogger) : 
     m_nodes(),
     m_root(nullptr),
+    m_leaf(nullptr),
     m_entityLogger(entityLogger) 
 {
     this->m_entityLogger.Info("Finished initializing parser's AST successfully");
@@ -15,8 +16,9 @@ AST::~AST()
 
 void AST::Clear()
 {
-    m_nodes.clear();  // deletes all nodes
-    m_root = nullptr;
+    this->m_nodes.clear();  // deletes all nodes
+    this->m_root = nullptr;
+    this->m_leaf = nullptr;
 }
 
 ASTNode* AST::AllocateNode(const Command& command)
@@ -31,16 +33,16 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
 
     this->m_entityLogger.Info("Building new full-command onto AST");
     
+    ASTNode* subtreeRoot = nullptr;
     ASTNode* prevSibling = nullptr;
-    ASTNode* localRoot = nullptr;
 
     for (const Command& command : fullCommand.GetLine())
     {
         ASTNode* node = AllocateNode(command);
 
-        if (!localRoot)
+        if (!subtreeRoot)
         {
-            localRoot = node;
+            subtreeRoot = node;
         }
 
         if (prevSibling)
@@ -48,25 +50,9 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
             prevSibling->nodeNextSibling = node;
         }
 
-        // add command parameters as children first
-        if (command.HasParams())
+        if(command.HasParams())
         {
-            ASTNode* paramPrev = nullptr;
-            for (const Command& param : command.GetParams())
-            {
-                ASTNode* paramNode = AllocateNode(param);
-
-                if (!paramPrev)
-                {
-                    node->nodeFirstChild = paramNode;
-                }
-                else
-                {
-                    paramPrev->nodeNextSibling = paramNode;
-                }
-
-                paramPrev = paramNode;
-            }
+            this->StoreParams(node, command);
         }
 
         prevSibling = node;
@@ -74,18 +60,38 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
 
     if (!this->m_root)
     {
-        this->m_root = localRoot;
+        this->m_root = subtreeRoot;
+        this->m_leaf = prevSibling;
     }
     else
     {
-        ASTNode* last = this->m_root;
+        this->m_leaf->nodeNextSibling = subtreeRoot;
+        this->m_leaf = prevSibling;
+    }
+}
 
-        while(last->nodeNextSibling)
+void AST::StoreParams(ASTNode* parent, const Command& command)
+{
+    if (!parent || !command.HasParams()) return;
+
+    ASTNode* prevSibling = nullptr;
+
+    for (const Command& param : command.GetParams())
+    {
+        ASTNode* paramNode = AllocateNode(param);
+
+        if (!prevSibling)
         {
-            last = last->nodeNextSibling;
+            parent->nodeFirstChild = paramNode;
+        }
+        else
+        {
+            prevSibling->nodeNextSibling = paramNode;
         }
 
-        last->nodeNextSibling = localRoot;
+        prevSibling = paramNode;
+
+        this->StoreParams(paramNode, param);
     }
 }
 

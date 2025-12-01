@@ -29,18 +29,19 @@ public:
 
     ASTNode* AllocateNode(const Command& command);
 
-    // Adds a command subtree from given full command
-    // @param ast: The ast that holds this node.
+    // Build a command subtree from given full command onto AST
     // @param fullCommand: CommandLine object that represents vector of commands
     // the vector is sorted from first token in the command to the last one.
     void StoreFullCommand(const CommandLine& fullCommand);
-    
+
     void PrintAST() const;
 
 private:
-    std::vector<std::unique_ptr<ASTNode>> m_nodes;
+    std::vector<std::unique_ptr<ASTNode>> m_nodes;  // memory ownership
     ASTNode* m_root = nullptr;  // AST entry point
+    ASTNode* m_leaf = nullptr;  // AST end point
     const EntityLogger& m_entityLogger;
 
+    void StoreParams(ASTNode* parent, const Command& command);
     void PrintASTNode(const ASTNode* node, int indent) const;
 };
