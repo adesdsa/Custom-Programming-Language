@@ -1,7 +1,8 @@
 #include "includes/parser/parser_logic.h"
 
-Parser::Parser(const std::string& sFilePath) :
+ParserLogic::ParserLogic(const std::string& sFilePath) :
     m_entityLogger("PARSER"),
+    m_errorManager(ErrorManager::GetInstance()),
     m_ast(m_entityLogger),
     m_lexer(sFilePath),
     m_currentToken(this->FetchToken()),
@@ -10,37 +11,33 @@ Parser::Parser(const std::string& sFilePath) :
     this->m_entityLogger.Info("Finished initializing parser component successfully");
 }
 
-void Parser::MainFlow()
+void ParserLogic::MainFlow()
 {
     this->m_entityLogger.Info("Start parsing file");
-    while(!this->m_lexer.IsFinishedReadingSRC())
+
+    while (!this->m_lexer.IsFinishedReadingSRC())
     {
         CommandLine fullCommand(this->m_entityLogger);
 
         // building full-command
-        while(!fullCommand.IsFinished())
+        while (!fullCommand.IsFinished())
         {
             fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
         }   
-    /*
-        for(const CompileTimeError& error : this.m_getErrors())
-        {
-            this.m_errorManager.StoreError(error);
-        }
-    */
-        this->m_ast.StoreFullCommand(fullCommand);
+
+        this->HandleFullCommand(fullCommand);
     }
 
     // cover last CommandLine
     CommandLine lastCommandLine(this->m_entityLogger);
     lastCommandLine.AddToken(this->m_currentToken, this->m_nextToken);
-    this->m_ast.StoreFullCommand(lastCommandLine);
+    this->HandleFullCommand(lastCommandLine);
 
-    this->m_entityLogger.Info("Finished building AST");
+    this->m_entityLogger.Info("Finished parsing file");
 }
 
-Token Parser::FetchToken()
+Token ParserLogic::FetchToken()
 {
     auto token = this->m_lexer.Tokenize();
 
@@ -52,9 +49,24 @@ Token Parser::FetchToken()
     return std::move(*token);
 }
 
-void Parser::Advance()
+void ParserLogic::Advance()
 {
     Token nextToken = this->FetchToken();
     this->m_currentToken = std::move(this->m_nextToken);
     this->m_nextToken = std::move(nextToken);
 } 
+
+void ParserLogic::HandleFullCommand(const CommandLine& fullCommand)
+{
+    if (fullCommand.IsLegal())
+    {
+        this->m_ast.StoreFullCommand(fullCommand);
+    }
+    else
+    {
+        for(const CompileTimeError& compileTimeError : fullCommand.GetErrors())
+        {
+            this->m_errorManager.StoreError(compileTimeError);
+        }
+    }
+}

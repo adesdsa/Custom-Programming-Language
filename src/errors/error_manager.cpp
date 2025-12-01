@@ -15,6 +15,8 @@ void ErrorManager::StoreError(const CompileTimeError &error)
 
 void ErrorManager::DisplayErrorsInUI()
 {
+    if(this->m_errorList.empty()) return;
+
     for(const CompileTimeError& error : this->m_errorList)
     {
         this->m_entityLogger.Error(error.ToString());

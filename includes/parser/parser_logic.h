@@ -6,11 +6,11 @@
 #include "includes/tokenizer/lexer.h"
 #include "includes/errors/error_manager.h"
 
-class Parser
+class ParserLogic
 {
 public:
-    Parser(const std::string& sFilePath);
-    ~Parser() = default;
+    ParserLogic(const std::string& sFilePath);
+    ~ParserLogic() = default;
 
     void MainFlow();
 
@@ -18,13 +18,26 @@ public:
     // and fetch new m_nextToken from lexer
     void Advance();
 
+    // A command line is considered valid if it passed the SyntaxChecker layer.
+    // If `fullCommand` is valid -> construct its subtree in the AST.
+    // Otherwise -> record the syntax errors in `m_errorManager`.
+    // @param fullCommand: The fully command line to analyze and process.
+    void HandleFullCommand(const CommandLine& fullCommand);
+
 private:
+    // infrastructures
     EntityLogger m_entityLogger;
+    ErrorManager& m_errorManager;
+
+    // inner components
     AST m_ast;
     Lexer m_lexer;
+
+    // data
     Token m_currentToken;
     Token m_nextToken;
 
-    // Gets new token from lexer
+
+    // Gets new relevant token from lexer
     Token FetchToken();
 };
