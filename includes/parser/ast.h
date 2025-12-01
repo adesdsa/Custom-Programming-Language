@@ -34,6 +34,7 @@ public:
     // the vector is sorted from first token in the command to the last one.
     void StoreFullCommand(const CommandLine& fullCommand);
 
+    // debug purpose only - remove comment when needed
     void PrintAST() const;
 
 private:
@@ -42,9 +43,12 @@ private:
     ASTNode* m_leaf = nullptr;  // AST end point
     const EntityLogger& m_entityLogger;
 
-    // Recursively add layer of paramters of command to the given subtree, parent.
-    // @param parent: Subtree of AST to build the params on top of.
-    // @param command: The command of which the params belongs to.
+    // Recursively stores all parameter layers of `command` as 
+    // children in the AST subtree rooted at `parent`.
+    // @param parent: The AST subtree node to attach the parameters to.
+    // @param command: The command whose parameters should be stored.
     void StoreParams(ASTNode* parent, const Command& command);
+
+    // debug purpose only - remove comment when needed
     void PrintASTNode(const ASTNode* node, int indent) const;
 };
