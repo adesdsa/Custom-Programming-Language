@@ -42,6 +42,9 @@ private:
     ASTNode* m_leaf = nullptr;  // AST end point
     const EntityLogger& m_entityLogger;
 
+    // Recursively add layer of paramters of command to the given subtree, parent.
+    // @param parent: Subtree of AST to build the params on top of.
+    // @param command: The command of which the params belongs to.
     void StoreParams(ASTNode* parent, const Command& command);
     void PrintASTNode(const ASTNode* node, int indent) const;
 };
