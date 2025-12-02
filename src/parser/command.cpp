@@ -114,10 +114,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
         bReturnValue = true;
 
     return bReturnValue;
-
-    // extra rules:
-    // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
-    // scope and access_rights arent a must have.
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
