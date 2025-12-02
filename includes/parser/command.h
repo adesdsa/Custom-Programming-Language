@@ -30,6 +30,7 @@ namespace CommandTypes
     inline constexpr std::string_view PASS                          = "PASS";
     inline constexpr std::string_view ARRAY_VALUE                   = "ARRAY_VALUE";
     inline constexpr std::string_view POINTER_USE                   = "POINTER_USE";
+    inline constexpr std::string_view IDENTIFIER_VALUE              = "IDENTIFIER_VALUE";
 
 
     /// 

@@ -70,7 +70,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
         ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = 
         ParseScope(currToken, nextToken);
-    else if (m_sType == CommandTypes::IDENTIFIER) bReturnValue = 
+    else if (m_sType == CommandTypes::IDENTIFIER_VALUE) bReturnValue = 
         ParseIdentifier(currToken, nextToken);
     else if (m_sType == CommandTypes::FUNC_START) bReturnValue = 
         ParseFuncStart(currToken, nextToken);
@@ -138,16 +138,10 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     {
         if (IsOperator(nextToken))
         {
-            m_tokens.push_back(Token(TokenTypes::HAS_PARAM, 
-                currToken.GetLine(), currToken.GetColumn()));
-            m_parameters.push_back(Command());
-            m_parameters[0].m_tokens.push_back(currToken);
-            m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
-            m_bIgnoreCurrToken = true;
-            m_uParameterIndex++;
+            AddIdentifier(currToken);
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
-        else return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
+        else return NoFinishAndAssignType(CommandTypes::IDENTIFIER_VALUE);
     }
     else if (IsType(currToken, TokenTypes::KEYWORD))
     {
@@ -613,7 +607,7 @@ void Command::AddIdentifier(Token& currToken)
         currToken.GetLine(), currToken.GetColumn()));
     m_parameters.push_back(Command());
     m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
+    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER_VALUE;
     m_bIgnoreCurrToken = true;
     m_uParameterIndex++;
 }
