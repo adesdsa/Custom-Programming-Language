@@ -16,7 +16,8 @@ int main(void)
 
     try
     {
-        Parser parser(SystemUtils::BuildRelativePath("tests/inputs/test4.txt"));
+        //Parser parser(SystemUtils::BuildRelativePath("tests/inputs/test4.txt"));
+        Parser parser("C:\\Users\\אלברט\\Documents\\GitHub\\PicoP\\Custom-Programming-Language\\tests\\inputs\\test4.txt");
         parser.MainFlow();
     }
     catch(const CompilationAbortException& abortError)
