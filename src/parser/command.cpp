@@ -115,16 +115,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
 
     return bReturnValue;
 
-    // extra rules: todo
-    // there is no support for int a, b, c=0;
-    // & * (in the context of pointers) should appear before the identifier when they are called
-    // When declaring a pointer the * should appear after the type 
-    // no support for array pointers/2d arrays
-    // right now we have infinite func params but no default values
-    // right now single line keyword statements do not support single lines but only code blocks.
+    // extra rules:
     // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
-    // Note that if code can be outside of {} is checked in the semantic analysis and not in the parser
-    // A for loop must be of the next prset: for ( var_declaration/identifier assigmnet value ; expression ; expression )
     // scope and access_rights arent a must have.
 }
 
