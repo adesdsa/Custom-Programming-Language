@@ -468,12 +468,12 @@ bool Command::IsExpressionStart(Token& token)
 
 inline bool Command::IsOperator(Token& token)
 {
-    return (IsType(token, TokenTypes::OPERATOR) && !(
-        IsValue(token, "=") ||
+    return (IsType(token, TokenTypes::OPERATOR) && !
+        IsValue(token, "=")) ||
         IsValue(token, "and") ||
         IsValue(token, "or") ||
         IsValue(token, "xor") ||
-        IsValue(token, "is")));
+        IsValue(token, "is");
 }
 
 inline bool Command::IsValueToken(Token& token)
