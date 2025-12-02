@@ -652,7 +652,10 @@ void CommandLine::FoundIllegal(
 {
     // Incase there are errors in the params.
     if (command.GetErrors().size() > 0)
-        m_errors.push_back(command.GetErrors()[0]);
+    {
+        for (int i = 0; i < command.GetErrors().size(); i++)
+            m_errors.push_back(command.GetErrors()[i]);
+    }
     CompileTimeError error(
         ErrorTypes::SYNTAX_ERROR,
         sErrorContent,
