@@ -95,8 +95,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
         ParseExpressionValue(currToken, nextToken);
     else if (m_sType == CommandTypes::EXPRESSION_OPERATOR) bReturnValue = 
         ParseExpressionOperator(currToken, nextToken);
-    else if (m_sType == CommandTypes::POINTER_DECLARATION) bReturnValue = 
-        ParsePointerDeclaration(currToken, nextToken);
     else if (m_sType == CommandTypes::NOT_FUNC_IDENTIFIER) bReturnValue = 
         ParseNotFuncIdentifier(currToken, nextToken);
     else if (m_sType == CommandTypes::ARRAY_ACCESS_START) bReturnValue = 
@@ -174,7 +172,6 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     else if (IsExpressionStart(currToken))
     {
         if (IsValue(currToken, "-") || IsValue(currToken, "not") ||
-            IsValue(currToken, "*") || IsValue(currToken, "&") || 
             IsValue(currToken, "("))
         {
             if (IsValue(currToken, "("))
@@ -289,8 +286,6 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
             return NoFinishAndAssignType(
                 CommandTypes::ARRAY_DECLARATION_START);
         }
-        if (IsValue(nextToken, "*"))
-            return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
     else return FoundUnknown(currToken);
@@ -395,8 +390,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
         return false;
     }
     else if (IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
-    else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  
-        IsValue(currToken, "&")) return false;
+    else if (IsValue(currToken, "not")) return false;
     else if (IsValue(currToken, "sizeof"))
     {
         m_bBuildingParam = true;
@@ -404,12 +398,6 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
         return false;
     }
     else return FoundUnknown(currToken);
-}
-
-inline bool Command::ParsePointerDeclaration(
-    Token& currToken, Token& nextToken)
-{
-    return FinishAndAssignType(CommandTypes::POINTER_DECLARATION);
 }
 
 bool Command::ParseNotFuncIdentifier(Token& currToken, Token& nextToken)
@@ -487,8 +475,6 @@ bool Command::IsExpressionStart(Token& token)
         IsType(token, TokenTypes::VALUE) ||
         IsValue(token, "-") ||
         IsValue(token, "not") ||
-        IsValue(token, "*") ||
-        IsValue(token, "&") ||
         IsValue(token, "(");
 }
 
@@ -496,11 +482,10 @@ inline bool Command::IsOperator(Token& token)
 {
     return (IsType(token, TokenTypes::OPERATOR) && !(
         IsValue(token, "=") ||
-        IsValue(token, "&"))) ||
         IsValue(token, "and") ||
         IsValue(token, "or") ||
         IsValue(token, "xor") ||
-        IsValue(token, "is");
+        IsValue(token, "is")));
 }
 
 inline bool Command::IsValueToken(Token& token)

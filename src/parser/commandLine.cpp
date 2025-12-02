@@ -180,8 +180,7 @@ void CommandLine::CheckLine()
             if (m_line[2].GetType() == CommandTypes::END_OF_COMMAND)
                 bLegalLine = true;
     }
-    else if (m_line[0].GetType() == CommandTypes::POINTER_DECLARATION ||
-        m_line[0].GetType() == CommandTypes::VAR_DECLARATION)
+    else if (m_line[0].GetType() == CommandTypes::VAR_DECLARATION)
     {
         if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
             bLegalLine = true;
