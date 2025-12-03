@@ -1,4 +1,13 @@
-#include "parser/ast.h"
+#include "includes/parser/ast.h"
+
+AST::AST(const EntityLogger& entityLogger) : 
+    m_nodes(),
+    m_root(nullptr),
+    m_leaf(nullptr),
+    m_entityLogger(entityLogger) 
+{
+    this->m_entityLogger.Info("Finished initializing parser's AST successfully");
+}
 
 AST::~AST() 
 {
@@ -7,7 +16,9 @@ AST::~AST()
 
 void AST::Clear()
 {
-    m_nodes.clear();  // deletes all nodes
+    this->m_nodes.clear();  // deletes all nodes
+    this->m_root = nullptr;
+    this->m_leaf = nullptr;
 }
 
 ASTNode* AST::AllocateNode(const Command& command)
@@ -19,17 +30,19 @@ ASTNode* AST::AllocateNode(const Command& command)
 void AST::StoreFullCommand(const CommandLine& fullCommand)
 {
     if (!fullCommand.HasCommands()) return;
+
+    this->m_entityLogger.Info("Building new full-command onto AST");
     
+    ASTNode* subtreeRoot = nullptr;
     ASTNode* prevSibling = nullptr;
-    ASTNode* root = nullptr;
 
     for (const Command& command : fullCommand.GetLine())
     {
         ASTNode* node = AllocateNode(command);
 
-        if (!root)
+        if (!subtreeRoot)
         {
-            root = node;
+            subtreeRoot = node;
         }
 
         if (prevSibling)
@@ -37,67 +50,78 @@ void AST::StoreFullCommand(const CommandLine& fullCommand)
             prevSibling->nodeNextSibling = node;
         }
 
-        // add command parameters as children first
-        if (command.HasParams())
+        if(command.HasParams())
         {
-            ASTNode* paramPrev = nullptr;
-            for (const Command& param : command.GetParams())
-            {
-                ASTNode* paramNode = AllocateNode(param);
-
-                if (!paramPrev)
-                {
-                    node->nodeFirstChild = paramNode;
-                }
-                else
-                {
-                    paramPrev->nodeNextSibling = paramNode;
-                }
-
-                paramPrev = paramNode;
-            }
+            this->StoreParams(node, command);
         }
 
         prevSibling = node;
     }
+
+    if (!this->m_root)
+    {
+        this->m_root = subtreeRoot;
+        this->m_leaf = prevSibling;
+    }
+    else
+    {
+        this->m_leaf->nodeNextSibling = subtreeRoot;
+        this->m_leaf = prevSibling;
+    }
 }
 
+void AST::StoreParams(ASTNode* parent, const Command& command)
+{
+    if (!parent || !command.HasParams()) return;
+
+    ASTNode* prevSibling = nullptr;
+
+    for (const Command& param : command.GetParams())
+    {
+        ASTNode* paramNode = AllocateNode(param);
+
+        if (!prevSibling)
+        {
+            parent->nodeFirstChild = paramNode;
+        }
+        else
+        {
+            prevSibling->nodeNextSibling = paramNode;
+        }
+
+        prevSibling = paramNode;
+
+        this->StoreParams(paramNode, param);
+    }
+}
+
+/*
 void AST::PrintASTNode(const ASTNode* node, int indent) const 
 {
-    if (!node)
-        return;
+    if (!node) return;
 
-    // Print indentation
     for (int i = 0; i < indent; ++i)
         std::cout << "  ";
 
-    // Print node info (type + optional first token value)
     std::cout << node->command.GetType();
 
     const auto& tokens = node->command.GetTokens();
     if (!tokens.empty())
         std::cout << " (" << tokens.front().GetValue() << ")";
 
-    std::cout << std::endl;
+    std::cout << "\n";
 
-    // Recursively print children first (parameters)
     PrintASTNode(node->nodeFirstChild, indent + 1);
-
-    // Then print next sibling
     PrintASTNode(node->nodeNextSibling, indent);
 }
 
-// Print the entire AST starting from first stored node
 void AST::PrintAST() const
 {
-    if (m_nodes.empty())
+    if (!this->m_root)
     {
-        std::cout << "<empty AST>" << std::endl;
+        std::cout << "<empty AST>\n";
         return;
     }
-
-    for (const auto& nodePtr : m_nodes)
-    {
-        PrintASTNode(nodePtr.get(),0);
-    }
+    this->PrintASTNode(this->m_root, 0);
 }
+*/

@@ -22,22 +22,33 @@ struct ASTNode
 class AST
 {
 public:
-    AST() = default;
+    AST(const EntityLogger& entityLogger);
     ~AST();
 
     void Clear();
 
     ASTNode* AllocateNode(const Command& command);
 
-    // Adds a command subtree from given full command
-    // @param ast: The ast that holds this node.
+    // Build a command subtree from given full command onto AST
     // @param fullCommand: CommandLine object that represents vector of commands
     // the vector is sorted from first token in the command to the last one.
     void StoreFullCommand(const CommandLine& fullCommand);
-    void PrintAST() const;
+
+    // debug purpose only - remove comment when needed
+    // void PrintAST() const;
 
 private:
-    std::vector<std::unique_ptr<ASTNode>> m_nodes;
+    std::vector<std::unique_ptr<ASTNode>> m_nodes;  // memory ownership
+    ASTNode* m_root = nullptr;  // AST entry point
+    ASTNode* m_leaf = nullptr;  // AST end point
+    const EntityLogger& m_entityLogger;
 
-    void PrintASTNode(const ASTNode* node, int indent) const;
+    // Recursively stores all parameter layers of `command` as 
+    // children in the AST subtree rooted at `parent`.
+    // @param parent: The AST subtree node to attach the parameters to.
+    // @param command: The command whose parameters should be stored.
+    void StoreParams(ASTNode* parent, const Command& command);
+
+    // debug purpose only - remove comment when needed
+    // void PrintASTNode(const ASTNode* node, int indent) const;
 };

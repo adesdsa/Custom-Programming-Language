@@ -1,4 +1,4 @@
-#include "errors/error_manager.h"
+#include "includes/errors/error_manager.h"
 
 ErrorManager::ErrorManager() : m_entityLogger("ERROR-MANAGER") {}
 
@@ -8,23 +8,33 @@ ErrorManager& ErrorManager::GetInstance() noexcept
     return instance;
 }
 
-void ErrorManager::StoreError(const CompileTimeError &error)
+void ErrorManager::StoreError(const CompileTimeError& error)
 {
     this->m_errorList.push_back(error);
 }
 
-void ErrorManager::DisplayErrorsInUI()
+bool ErrorManager::HasErrorsOccured() const noexcept
 {
-    for(const CompileTimeError& error : this->m_errorList)
-    {
-        this->m_entityLogger.Error(error.ToString());
-    }
+    return this->m_errorList.size() > 0;
+}
 
-    // after all errors handled can abort the compilation
+void ErrorManager::HandleErrors() const
+{
+    this->DisplayErrorsInUI();
     this->AbortCompilation();
 }
 
-void ErrorManager::AbortCompilation()
+void ErrorManager::DisplayErrorsInUI() const noexcept
+{
+    if (this->m_errorList.empty()) return;
+
+    for (const CompileTimeError& error : this->m_errorList)
+    {
+        this->m_entityLogger.Error(error.ToString());
+    }
+}
+
+void ErrorManager::AbortCompilation() const
 {
     throw CompilationAbortException();  // will be caught by main
 }

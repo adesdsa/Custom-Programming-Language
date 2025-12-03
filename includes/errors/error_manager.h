@@ -3,7 +3,8 @@
 #include <vector>
 
 #include "error_models.h"
-#include "logger/entity_logger.h"
+
+#include "includes/logger/entity_logger.h"
 
 // Will handle all the compile time errors. Store them and then handle
 // them one by one and at the end abort compiling process
@@ -24,14 +25,20 @@ public:
     // Stores the given error for later handling
     void StoreError(const CompileTimeError& error);
 
-    // TODO: For later versions - Make this method support both GUI & CLI
-    // Display all the errors that occur through out the compilation in the UI
-    void DisplayErrorsInUI();
+    // Display all errors that occured and abort program
+    void HandleErrors() const;
+
+    // @return: true -> Errors stored in the `m_errorList`, false -> Otherwise.
+    bool HasErrorsOccured() const noexcept;
 
 private:
     std::vector<CompileTimeError> m_errorList;
     EntityLogger m_entityLogger;
 
+    // TODO: For later versions - Make this method support both GUI & CLI
+    // Display all the errors that occur through out the compilation in the UI
+    void DisplayErrorsInUI() const noexcept;
+
     // Safely stops the compilation proccess
-    void AbortCompilation();
+    void AbortCompilation() const;
 };

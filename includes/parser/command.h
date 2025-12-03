@@ -4,16 +4,14 @@
 #include <string>
 #include <string_view>
 
-#include "tokenizer/token.h"
+#include "includes/tokenizer/token.h"
+#include "includes/errors/error_models.h"
 
-///todo
-///             This Class Will Be Changed To Decorated Tokens And Then Will Make Command Class
-/// if it's the eof we give the curr and next Token as the same eof token
 
 namespace CommandTypes
 {
     /// 
-    ///             The next CommandTypes are the finished CommandTypes
+    ///             The next CommandTypes are the finished CommandTypes.
     ///
     inline constexpr std::string_view IDENTIFIER                    = "IDENTIFIER";
     inline constexpr std::string_view UNKNOWN                       = "UNKNOWN";
@@ -35,7 +33,7 @@ namespace CommandTypes
 
 
     /// 
-    ///             The next CommandTypes are the finished CommandTypes that need to be reformed in CommandLine
+    ///             The next CommandTypes are the finished CommandTypes that need to be reformed in CommandLine.
     ///
     inline constexpr std::string_view ELIF                          = "ELIF";
     inline constexpr std::string_view IF                            = "IF";
@@ -46,10 +44,14 @@ namespace CommandTypes
     inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
     inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
+    inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";
 
+
+    ///
+    ///             The next CommandTypes must be reformed and aren't finished yet.
+    ///
     inline constexpr std::string_view EXPRESSION_VALUE              = "EXPRESSION_VALUE";
     inline constexpr std::string_view EXPRESSION_OPERATOR           = "EXPRESSION_OPERATOR";
-    inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";
 
 
     /// 
@@ -78,6 +80,9 @@ namespace CommandTypes
     inline constexpr std::string_view ARRAY_VALUE_START             = "ARRAY_VALUE_START";
 }
 
+// The class represents a set of Tokens that create the most basic Command.
+// E.G. VAR_DECLARATION, ASSIGNMENT, EXPRESSION, WHILE
+// To see all of the types please check out CommandTypes namespace above.
 class Command 
 {
 public:
@@ -92,16 +97,31 @@ public:
 
     // Getters
 
+    // The func returns the Command's type.
     std::string_view GetType() const;
+    // The func returns the Token's of the Command.
     const std::vector<Token>& GetTokens() const;
+    // Does the Command have parameters.
     bool HasParams() const noexcept;
+    // Get the Command's parameters.
+    std::vector<Command>& GetParams();
+    // Get the Command's parameters as a const.
     const std::vector<Command>& GetParams() const;
+    // Get the paranthesesCounter of the Command.
+    // Used to check if not all parantheses are closed
     unsigned int GetParanthesesCounter() const;
+    // True-> The Command is a legal expression e.g.: legal FUNC_CALL, legal EXPRESSION.
+    // False-> otherwise.
     bool IsExpression() const;
+    // Get the vector of all the encountered errors.
+    const std::vector<CompileTimeError>& GetErrors() const;
 
     // Setters
 
+    // Set the Command's types.
     void SetType(std::string_view type);
+    // Set if the Command is an expression e.g.:
+    // legal EXPRESSION, legal FUNC_CALL...
     void SetExpression(bool indicator);
 
     // Operators
@@ -117,8 +137,9 @@ private:
     bool m_bIgnoreEON;                      // Used to indicate that we need to ignore end of line.
     bool m_bExpression;                     // Used to indicate if this Command is an expression.
     bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
-    int m_iParanthesesCounter;     // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
+    int m_iParanthesesCounter;              // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
+    std::vector<CompileTimeError> m_errors;
 
 
     ///
@@ -179,7 +200,7 @@ private:
     // @return: True-> finished the Command. False-> otherwise.
     bool ParseParameterKeywordCall(Token& currToken, Token& nextToken);
 
-    // The func parses an ELIF_START, IF_START, WHILE_START or FOR_START CommandType.
+    // The func parses an ELIF_START, IF_START etc CommandType.
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
@@ -221,7 +242,10 @@ private:
     // @return: True-> finished the Command. False-> otherwise.
     bool ParseArrayDeclarationStart(Token& currToken, Token& nextToken);
 
-    // todo: add docs
+    // The func parses an ARRAY_VALUE_START CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
     bool ParseArrayValueStart(Token& currToken, Token& nextToken);
 
 
@@ -236,18 +260,23 @@ private:
     // @return: True-> the Token's value equals the string. False-> otherwise.
     inline bool IsValue(Token& token, std::string sCompare);
 
-    // The func compares if the Token's type equals to the string_view(The type).
+    // The func compares if the Token's type equals to a TokenType.
     // @param token: The token we are comparing.
     // @param sCompare: The string_view which is a TokenType we compare.
-    // @return: True-> the Token's type equals the given type. False-> otherwise.
+    // @return: True-> the Token's type equals the given type.
+    // False-> otherwise.
     inline bool IsType(Token& token, std::string_view sCompare);
 
-    // The func compares if the Token's value equals to the string, if it does then we change the type to the given type, else we change to unknown.
+    // The func compares if the Token's value equals to the string, 
+    // if it does then we change the type to the given type, 
+    // else we change to unknown.
     // @param token: The token we are comparing.
     // @param sCompare: The string we compare the Token's value to.
-    // @param sValidType: The string_view which is what we change the CommandType to if the compare works.
+    // @param sValidType: The string_view which is what we change the 
+    // CommandType to if the compare works.
     // @return: False-> the Token's type equals the given type. True-> otherwise.
-    bool CompareExpected(Token& token, std::string sCompare, std::string_view sValidType);
+    bool CompareExpected(Token& token, std::string sCompare, 
+        std::string_view sValidType);
 
     // The func checks if the given token is an Access right.
     // @param token: The token we are checking.
@@ -266,7 +295,8 @@ private:
 
     // The func checks if the given token is a legal expression value.
     // @param token: The token we are checking.
-    // @return: True-> the Token is a legal expression value. False-> otherwise.
+    // @return: True-> the Token is a legal expression value. 
+    // False-> otherwise.
     inline bool IsValueToken(Token& token);
 
     // The func checks if the given token is an expression operator.
@@ -302,7 +332,7 @@ private:
 
     // The func makes the CommandType UNKNOWN and returns true.
     // @return: True.
-    inline bool FoundUnknown();
+    inline bool FoundUnknown(Token& currToken);
 
 
 ///
@@ -316,9 +346,20 @@ private:
     // @return: True-> The param is complete. False-> otherwise.
     inline bool AddToCurrParam(Token& currToken, Token& nextToken);
     
-    bool LowerParanthesesCounter();
+    // The func lowers the paranthesesCount, 
+    // and handles if there are too many parantheses close and too
+    // little opens.
+    // @param currToken: The current Token we are added.
+    // @return: True-> Too many parantheses closers. False-> Otherwise.
+    bool LowerParanthesesCounter(Token& currToken);
 
+    // The func moves The Command we just worked on (this) 
+    // into the parameters so it will be a parameter.
     void MoveThisIntoParam();
+
+    // The func adds an IDENTIFIER to the parameters.
+    // @param currToken: The Token that is the IDENTIFIER.
+    void AddIdentifier(Token& currToken);
 
 
 ///
@@ -326,18 +367,37 @@ private:
 ///
 
 
-    // The func handles function parameters by appending the tokens and checking edge cases.
+    // The func handles function parameters by appending the tokens
+    // and checking edge cases.
     // @param currToken: The current Token.
     // @param nextToken: The next Token.
     // @return: True-> The param is complete. False-> otherwise.
     bool HandleFuncLikeParams(Token& currToken, Token& nextToken);
 
-    // todo: docs
+    // The func handles the parameters of keywords, e.g.:
+    // if(params...), for(params...)
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> Finished building the parameter. False-> Otherwise.
     bool HandleKeywordParams(Token& currToken, Token& nextToken);
 
+    // The func handles the first time we found paranthes;
+    // It handles the first time we enter a func for example.
+    // @return: False.
     inline bool HandleFoundParantheses();
 
-    bool HandleDefaultPossibleParamChecks(Token& currToken, std::string sParantheses);
+    // The func handles the default checks for Commands with parameters.
+    // @param currToken: The current Token added right now.
+    // @param sParantheses: The parantheses we are looking for.
+    // @return: True-> First time we entered the parantheses. False-> Otherwise.
+    bool HandleDefaultPossibleParamChecks(Token& currToken, 
+        std::string sParantheses);
 
-    bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, std::string_view sFinishedType);
+    // The func handles the checks regarding the parantheses in arrays.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @param sFinishedType: The type that will be changed to if succeeded.
+    // @return: True-> Finished the checks. False-> Otherwise.
+    bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, 
+        std::string_view sFinishedType);
 };
