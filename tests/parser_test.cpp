@@ -18,7 +18,7 @@ TEST(ParserTest, HappyFlowFullProgram)
 }
 
 // TEST: Negative Flow - Code with syntax errors
-TEST(LexerTest, NegativeFlowSyntaxErrors) 
+TEST(ParserTest, NegativeFlowSyntaxErrors) 
 {
     ParserLogic parser(SystemUtils::BuildRelativePath("tests/inputs/test6.txt"));
     EXPECT_THROW(parser.MainFlow(), CompilationAbortException);
