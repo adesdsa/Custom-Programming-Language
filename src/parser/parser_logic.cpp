@@ -40,7 +40,7 @@ ASTNode* ParserLogic::MainFlow()
     }
 
     // debug purpose only - remove comment when needed
-    this->m_ast.PrintAST();
+    // this->m_ast.PrintAST();
 
     this->m_entityLogger.Info("Finished parsing file");
     return this->m_ast.GetRoot();
