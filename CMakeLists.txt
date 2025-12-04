@@ -80,7 +80,7 @@ set_target_properties(Custom-Programming-Language PROPERTIES
 )
 
 # =============================
-# Tests (optional)
+# Tests
 # =============================
 option(BUILD_TESTS "Build unit tests" OFF)
 

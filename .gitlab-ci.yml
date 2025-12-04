@@ -65,6 +65,32 @@ test-lexer:
       - build/test_results/
     expire_in: 1h
 
+# =====================
+# Parser Tests
+# =====================
+test-parser:
+  stage: test
+  image: ubuntu:22.04
+  needs:
+    - job: build
+      artifacts: true 
+  script:
+    - apt-get update && apt-get install -y valgrind
+    - ln -s $CI_PROJECT_DIR/tests /tests
+    - chmod +x build/unit_tests
+    # Run tests
+    - mkdir -p build/test_results
+    - ./build/unit_tests --gtest_filter=ParserTest.* --gtest_output=xml:build/test_results/parser.xml
+    # Memory check
+    - valgrind --leak-check=full ./build/unit_tests --gtest_filter=ParserTest.*
+  artifacts:
+    reports:
+      junit: build/test_results/lexer.xml
+    paths:
+      - build/test_results/
+    expire_in: 1h
+
+
 # =============================
 # Coding Conventions Checker
 # =============================

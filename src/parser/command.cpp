@@ -7,11 +7,6 @@ Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
 {
 }
 
-bool Command::HasParams() const noexcept
-{
-    return this->m_parameters.size() != 0;
-}
-
 std::string_view Command::GetType() const {
     return m_sType;
 }
