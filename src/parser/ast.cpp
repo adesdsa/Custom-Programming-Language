@@ -21,6 +21,11 @@ void AST::Clear()
     this->m_leaf = nullptr;
 }
 
+ASTNode* AST::GetRoot() const noexcept
+{
+    return this->m_root;
+}
+
 ASTNode* AST::AllocateNode(const Command& command)
 {
     this->m_nodes.push_back(std::make_unique<ASTNode>(command));
@@ -95,7 +100,7 @@ void AST::StoreParams(ASTNode* parent, const Command& command)
     }
 }
 
-/*
+
 void AST::PrintASTNode(const ASTNode* node, int indent) const 
 {
     if (!node) return;
@@ -124,4 +129,3 @@ void AST::PrintAST() const
     }
     this->PrintASTNode(this->m_root, 0);
 }
-*/

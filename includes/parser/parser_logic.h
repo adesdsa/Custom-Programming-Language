@@ -31,11 +31,13 @@ public:
      *                                                                           |
      * 6. If any errors occured, handle them and abort compilation               |
      *                                                                           |
+     * 7. Otherwise, outputs the built AST                                       |
+     *                                                                           |
      * @see Command                                                              |
      * @see CommandLine                                                          |
      * @see AST                                                                  |
      ****************************************************************************/
-    void MainFlow();
+    ASTNode* MainFlow();
 
     // Sets m_currentToken to be the m_nextToken,
     // and fetch new m_nextToken from lexer.
