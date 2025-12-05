@@ -72,7 +72,9 @@ const Token& Command::operator[](size_t index) const
 inline const std::unordered_map<std::string_view, bool((Command::*)(const Token&, const Token&))>& 
 getDictHandleTokenPair()
 {
-    //
+    // @brief map that takes `CommandTypes` and call the right parse method.
+    // Key: Type of the command represented as `CommandTypes`.
+    // Value: The command method the parses given CommandType.
     static const std::unordered_map<std::string_view, bool((Command::*))(const Token&, const Token&)> 
     dictHandleTokenPair = {
         {CommandTypes::UNIDENTIFIED, &Command::ParseUnidentified},
