@@ -1,8 +1,8 @@
 #include "includes/tokenizer/lexer.h"
 
-Lexer::Lexer(const std::string& sInputFile) : 
+Lexer::Lexer(const std::filesystem::path& inputFile) :
     m_entityLogger("LEXER"), 
-    m_tokenFactory(sInputFile, m_entityLogger),
+    m_tokenFactory(inputFile, m_entityLogger),
     m_tokenHandler(m_entityLogger) 
 {
     this->m_entityLogger.Info("Finished initializing lexer component successfully");

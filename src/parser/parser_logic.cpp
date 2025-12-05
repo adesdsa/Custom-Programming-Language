@@ -1,10 +1,10 @@
 #include "includes/parser/parser_logic.h"
 
-ParserLogic::ParserLogic(const std::string& sFilePath) :
+ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
     m_entityLogger("PARSER"),
     m_errorManager(ErrorManager::GetInstance()),
     m_ast(m_entityLogger),
-    m_lexer(sFilePath),
+    m_lexer(filePath),
     m_currentToken(this->FetchToken()),
     m_nextToken(this->FetchToken()) 
 {

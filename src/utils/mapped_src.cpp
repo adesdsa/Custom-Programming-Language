@@ -1,11 +1,11 @@
-#include "includes/utils/mapped_src.h"
+﻿#include "includes/utils/mapped_src.h"
 
-MappedSRC::MappedSRC(const std::string& sFilePath) :
+MappedSRC::MappedSRC(const std::filesystem::path& filePath) :
     m_sChunkContent(nullptr),
     m_ulIndex(0),
     m_uChunkOffset(0),
-    m_sFilePath(sFilePath),
-    m_uFileSize(std::filesystem::file_size(m_sFilePath))
+    m_filePath(filePath),
+    m_uFileSize(std::filesystem::file_size(m_filePath))
 {
     GetChunk(k_bNextChunk);
 }
@@ -99,12 +99,21 @@ bool MappedSRC::GetChunk(bool bLoadOption)
 
     // map new chunk
     mio::mmap_source temp;
-    temp.map(
-        this->m_sFilePath, 
-        this->m_uChunkOffset, 
-        chunkLength, 
-        mappingErrorCode
-    );
+    #ifdef _WIN32
+        temp.map(
+            this->m_filePath.wstring(),  // Windows → UTF-16
+            this->m_uChunkOffset,
+            chunkLength,
+            mappingErrorCode
+        );
+    #else
+        temp.map(
+            this->m_filePath.string(),   // Linux → UTF-8
+            this->m_uChunkOffset,
+            chunkLength,
+            mappingErrorCode
+        );
+    #endif
 
     if (mappingErrorCode)  // if error has occur
     {

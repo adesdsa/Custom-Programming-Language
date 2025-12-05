@@ -9,7 +9,7 @@
 class ParserLogic
 {
 public:
-    ParserLogic(const std::string& sFilePath);
+    ParserLogic(const std::filesystem::path& filePath);
     ~ParserLogic() = default;
 
     /*****************************************************************************

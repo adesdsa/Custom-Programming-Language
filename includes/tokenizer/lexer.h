@@ -9,7 +9,7 @@
 class Lexer
 {
 public:
-    Lexer(const std::string& sFilePath);
+    Lexer(const std::filesystem::path& inputFile);
     
     ~Lexer() = default;
 

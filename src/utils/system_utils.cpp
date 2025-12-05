@@ -24,8 +24,8 @@ namespace SystemUtils
         return oss.str();
     }
 
-    std::string BuildRelativePath(const std::string& relativePath)
+    const std::filesystem::path BuildRelativePath(const std::string& relativePath)
     {
-        return (std::filesystem::path(PROJECT_ROOT) / relativePath).string();
+        return std::filesystem::path(PROJECT_ROOT) / relativePath;
     }
 }

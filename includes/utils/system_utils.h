@@ -13,5 +13,5 @@ namespace SystemUtils
     // @return: string that hold current time in format: dd/mm/yyyy hh/mm/ss.
     std::string GetFullCurrentTime();
 
-    std::string BuildRelativePath(const std::string& relativePath);
+    const std::filesystem::path BuildRelativePath(const std::string& relativePath);
 }

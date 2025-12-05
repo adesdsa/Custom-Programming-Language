@@ -8,7 +8,7 @@
 class TokenFactory
 {
 public:
-    TokenFactory(const std::string& sFilePath, const EntityLogger& entityLogger);
+    TokenFactory(const std::filesystem::path& filePath, const EntityLogger& entityLogger);
 
     ~TokenFactory() = default;
 
