@@ -170,13 +170,18 @@ bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
     {
         if (TokenClassifier::IsOperator(nextToken))
         {
-            m_tokens.push_back(Token(TokenTypes::HAS_PARAM, 
-                currToken.GetLine(), currToken.GetColumn()));
-            m_parameters.push_back(Command());
-            m_parameters[0].m_tokens.push_back(currToken);
-            m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
-            m_bIgnoreCurrToken = true;
-            m_uParameterIndex++;
+            this->m_tokens.push_back(
+                Token(
+                    TokenTypes::HAS_PARAM, 
+                    currToken.GetLine(), 
+                    currToken.GetColumn()
+                )
+            );
+            this->m_parameters.push_back(Command());
+            this->m_parameters[0].m_tokens.push_back(currToken);
+            this->m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
+            this->m_bIgnoreCurrToken = true;
+            this->m_uParameterIndex++;
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
         else return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
@@ -184,13 +189,13 @@ bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
     else if (TokenClassifier::IsType(currToken, TokenTypes::KEYWORD))
     {
         if (TokenClassifier::IsValue(currToken, "void"))
-            return FinishAndAssignType(m_sType = CommandTypes::VOID_COMMAND);
+            return FinishAndAssignType(this->m_sType = CommandTypes::VOID_COMMAND);
         else if (TokenClassifier::IsAccessRights(currToken))
             return NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
         else if (TokenClassifier::IsScope(currToken))
-            return NoFinishAndAssignType(m_sType = CommandTypes::SCOPE);
+            return NoFinishAndAssignType(this->m_sType = CommandTypes::SCOPE);
         else if (TokenClassifier::IsValue(currToken, "else"))
-            return FinishAndAssignType(m_sType = CommandTypes::ELSE);
+            return FinishAndAssignType(this->m_sType = CommandTypes::ELSE);
         else if (TokenClassifier::IsValue(currToken, "if"))
             return CompareExpected(nextToken, "(", CommandTypes::IF_CALL);
         else if (TokenClassifier::IsValue(currToken, "elif"))
@@ -221,7 +226,7 @@ bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
         {
             if (TokenClassifier::IsValue(currToken, "("))
             {
-                m_iParanthesesCounter++;
+                this->m_iParanthesesCounter++;
             }
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         }
@@ -254,7 +259,7 @@ bool Command::ParseIdentifier(const Token& currToken, const Token& nextToken)
     if (TokenClassifier::IsValue(currToken, "(") || TokenClassifier::IsValue(currToken, "[")) 
     {
         HandleFoundParantheses();
-        m_bFirstParanthesesEnter = false;
+        this->m_bFirstParanthesesEnter = false;
         if (TokenClassifier::IsValue(currToken, "("))
             return NoFinishAndAssignType(CommandTypes::FUNC_START);
         else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
@@ -270,16 +275,16 @@ bool Command::ParseFuncStart(const Token& currToken, const Token& nextToken)
     else if (currToken.GetValue() == ")")
     {
         if(LowerParanthesesCounter(currToken)) return true;
-        else if (m_iParanthesesCounter == 0)
+        else if (this->m_iParanthesesCounter == 0)
         {
-            m_bIgnoreCurrToken = false;
+            this->m_bIgnoreCurrToken = false;
             if (TokenClassifier::IsValue(nextToken, "->"))
                 return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
             else if (TokenClassifier::IsOperator(nextToken))
             {
-                m_bIgnoreCurrToken = true;
-                m_tokens.push_back(currToken);
-                m_sType = CommandTypes::FINISHED_FUNC_CALL;
+                this->m_bIgnoreCurrToken = true;
+                this->m_tokens.push_back(currToken);
+                this->m_sType = CommandTypes::FINISHED_FUNC_CALL;
                 MoveThisIntoParam();
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
@@ -349,16 +354,16 @@ bool Command::ParseParameterKeywordCall(const Token& currToken, const Token& nex
     if (TokenClassifier::IsValue(currToken, "("))
     {
         HandleFoundParantheses();
-        m_bFirstParanthesesEnter = false;
-        if (m_sType == CommandTypes::ELIF_CALL)
+        this->m_bFirstParanthesesEnter = false;
+        if (this->m_sType == CommandTypes::ELIF_CALL)
             return NoFinishAndAssignType(CommandTypes::ELIF_START);
-        else if (m_sType == CommandTypes::IF_CALL)
+        else if (this->m_sType == CommandTypes::IF_CALL)
             return NoFinishAndAssignType(CommandTypes::IF_START);
-        else if (m_sType == CommandTypes::FOR_CALL)
+        else if (this->m_sType == CommandTypes::FOR_CALL)
             return NoFinishAndAssignType(CommandTypes::FOR_START);
-        else if (m_sType == CommandTypes::WHILE_CALL)
+        else if (this->m_sType == CommandTypes::WHILE_CALL)
             return NoFinishAndAssignType(CommandTypes::WHILE_START);
-        else if (m_sType == CommandTypes::SIZEOF_CALL)
+        else if (this->m_sType == CommandTypes::SIZEOF_CALL)
             return NoFinishAndAssignType(CommandTypes::SIZEOF_START);
         else return FoundUnknown(currToken);
     }
@@ -371,19 +376,19 @@ bool Command::ParseParameterKeywordStart(const Token& currToken, const Token& ne
     else if (TokenClassifier::IsValue(currToken, ")")) 
     {
         if(LowerParanthesesCounter(currToken)) return true;
-        if (m_iParanthesesCounter == 0)
+        if (this->m_iParanthesesCounter == 0)
         {
-            m_bBuildingParam = false;
-            m_bIgnoreCurrToken = false;
-            if (m_sType == CommandTypes::ELIF_START)
+            this->m_bBuildingParam = false;
+            this->m_bIgnoreCurrToken = false;
+            if (this->m_sType == CommandTypes::ELIF_START)
                 return FinishAndAssignType(CommandTypes::ELIF);
-            else if (m_sType == CommandTypes::IF_START)
+            else if (this->m_sType == CommandTypes::IF_START)
                 return FinishAndAssignType(CommandTypes::IF);
-            else if (m_sType == CommandTypes::FOR_START)
+            else if (this->m_sType == CommandTypes::FOR_START)
                 return FinishAndAssignType(CommandTypes::FOR);
-            else if (m_sType == CommandTypes::WHILE_START)
+            else if (this->m_sType == CommandTypes::WHILE_START)
                 return FinishAndAssignType(CommandTypes::WHILE);
-            else if (m_sType == CommandTypes::SIZEOF_START)
+            else if (this->m_sType == CommandTypes::SIZEOF_START)
                 return FinishAndAssignType(CommandTypes::SIZEOF);
             else return FoundUnknown(currToken);
         }
@@ -407,12 +412,12 @@ bool Command::ParseExpressionValue(const Token& currToken, const Token& nextToke
 
 bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextToken)
 {
-    if (m_bBuildingParam)
+    if (this->m_bBuildingParam)
     {
-        m_bIgnoreCurrToken = true;
+        this->m_bIgnoreCurrToken = true;
         if (AddToCurrParam(currToken, nextToken)) 
         {
-            m_bBuildingParam = false;
+            this->m_bBuildingParam = false;
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
         else return false;
@@ -422,8 +427,8 @@ bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextT
         if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER)) {
             if (TokenClassifier::IsValue(nextToken, "(") || TokenClassifier::IsValue(nextToken, "["))
             {
-                m_bIgnoreCurrToken = true;
-                m_bBuildingParam = true;
+                this->m_bIgnoreCurrToken = true;
+                this->m_bBuildingParam = true;
                 AddToCurrParam(currToken, nextToken);
                 return false;
             }
@@ -439,7 +444,7 @@ bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextT
     }
     else if (TokenClassifier::IsValue(currToken, "("))
     {
-        m_iParanthesesCounter++;
+        this->m_iParanthesesCounter++;
         return false;
     }
     else if (TokenClassifier::IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
@@ -447,7 +452,7 @@ bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextT
         TokenClassifier::IsValue(currToken, "&")) return false;
     else if (TokenClassifier::IsValue(currToken, "sizeof"))
     {
-        m_bBuildingParam = true;
+        this->m_bBuildingParam = true;
         AddToCurrParam(currToken, nextToken);
         return false;
     }
@@ -473,9 +478,9 @@ bool Command::ParseArrayAccessStart(const Token& currToken, const Token& nextTok
     else if (currToken.GetValue() == "]")
     {
         if (LowerParanthesesCounter(currToken)) return true;
-        else if (m_iParanthesesCounter == 0)
+        else if (this->m_iParanthesesCounter == 0)
         {
-            m_bIgnoreCurrToken = false;
+            this->m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
         }
     }
@@ -501,7 +506,7 @@ bool Command::CompareExpected(
 {
     if (TokenClassifier::IsValue(token, sCompare))
     {
-        m_sType = sValidType;
+        this->m_sType = sValidType;
         return false;
     }
     else return FoundUnknown(token);
@@ -509,40 +514,40 @@ bool Command::CompareExpected(
 
 inline bool Command::FinishAndAssignType(std::string_view sType)
 {
-    m_sType = sType;
+    this->m_sType = sType;
     return true;
 }
 
 inline bool Command::NoFinishAndAssignType(std::string_view sType)
 {
-    m_sType = sType;
+    this->m_sType = sType;
     return false;
 }
 
 inline bool Command::FoundUnknown(const Token& currToken)
 {
-    if (m_errors.size() == 0) m_errors.push_back(
+    if (this->m_errors.size() == 0) this->m_errors.push_back(
         CompileTimeError(ErrorTypes::SYNTAX_ERROR, 
         "Illegal command found",
         currToken.GetLine(), currToken.GetColumn(),
         ""));
-    m_sType = CommandTypes::UNKNOWN;
+    this->m_sType = CommandTypes::UNKNOWN;
     return true;
 }
 
 
 inline bool Command::AddToCurrParam(const Token& currToken, const Token& nextToken)
 {
-    if (m_uParameterIndex == m_parameters.size()) 
+    if (this->m_uParameterIndex == this->m_parameters.size()) 
     {
-        m_parameters.push_back(Command());
-        m_tokens.push_back(Token(
+        this->m_parameters.push_back(Command());
+        this->m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
             currToken.GetLine(), currToken.GetColumn()));
     }
-    if (m_parameters[m_uParameterIndex].Append(currToken, nextToken))
+    if (this->m_parameters[m_uParameterIndex].Append(currToken, nextToken))
     {
-        m_uParameterIndex++;
+        this->m_uParameterIndex++;
         return true;
     }
     return false;
@@ -550,10 +555,10 @@ inline bool Command::AddToCurrParam(const Token& currToken, const Token& nextTok
 
 bool Command::LowerParanthesesCounter(const Token& currToken)
 {
-    m_iParanthesesCounter--;
-    if (m_iParanthesesCounter < 0)
+    this->m_iParanthesesCounter--;
+    if (this->m_iParanthesesCounter < 0)
     {
-        m_errors.push_back(CompileTimeError(
+        this->m_errors.push_back(CompileTimeError(
             ErrorTypes::SYNTAX_ERROR,
             "Closed too many parantheses",
             currToken.GetLine(), currToken.GetColumn(),
@@ -572,28 +577,28 @@ void Command::MoveThisIntoParam()
     tempSave.m_uParameterIndex = this->m_uParameterIndex;
     tempSave.m_iParanthesesCounter = this->m_iParanthesesCounter;
 
-    m_bBuildingParam = false;
-    m_bIgnoreEON = false;
-    m_bExpression = false;
-    m_iParanthesesCounter = 0;
-    m_uParameterIndex = 1;
-    m_tokens.push_back(Token(
+    this->m_bBuildingParam = false;
+    this->m_bIgnoreEON = false;
+    this->m_bExpression = false;
+    this->m_iParanthesesCounter = 0;
+    this->m_uParameterIndex = 1;
+    this->m_tokens.push_back(Token(
         TokenTypes::HAS_PARAM,
         tempSave.m_tokens[0].GetLine(), tempSave.m_tokens[0].GetColumn()));
-    m_parameters.push_back(tempSave);
+    this->m_parameters.push_back(tempSave);
 }
 
 void Command::AddIdentifier(const Token& currToken)
 {
-    m_bIgnoreCurrToken = true;
-    m_tokens.push_back(Token(
+    this->m_bIgnoreCurrToken = true;
+    this->m_tokens.push_back(Token(
         TokenTypes::HAS_PARAM,
         currToken.GetLine(), currToken.GetColumn()));
-    m_parameters.push_back(Command());
-    m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
-    m_bIgnoreCurrToken = true;
-    m_uParameterIndex++;
+    this->m_parameters.push_back(Command());
+    this->m_parameters[this->m_uParameterIndex].m_tokens.push_back(currToken);
+    this->m_parameters[this->m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
+    this->m_bIgnoreCurrToken = true;
+    this->m_uParameterIndex++;
 }
 
 
@@ -601,9 +606,9 @@ bool Command::HandleFuncLikeParams(const Token& currToken, const Token& nextToke
 {
     if (TokenClassifier::IsValue(currToken, ",")) 
     {
-        m_tokens.push_back(currToken);
-        if (m_uParameterIndex < m_parameters.size())
-            m_uParameterIndex++;
+        this->m_tokens.push_back(currToken);
+        if (this->m_uParameterIndex < this->m_parameters.size())
+            this->m_uParameterIndex++;
         return false;
     }
     else return AddToCurrParam(currToken, nextToken);
@@ -611,32 +616,32 @@ bool Command::HandleFuncLikeParams(const Token& currToken, const Token& nextToke
 
 bool Command::HandleKeywordParams(const Token& currToken, const Token& nextToken)
 {
-    if (TokenClassifier::IsValue(nextToken, ";")) m_bIgnoreEON = true;
+    if (TokenClassifier::IsValue(nextToken, ";")) this->m_bIgnoreEON = true;
     if (TokenClassifier::IsValue(currToken, ";")) 
     {
-        m_tokens.push_back(currToken);
-        if (m_uParameterIndex < m_parameters.size())
-            m_uParameterIndex++;
+        this->m_tokens.push_back(currToken);
+        if (this->m_uParameterIndex < this->m_parameters.size())
+            this->m_uParameterIndex++;
         return false;
     }
-    else if (TokenClassifier::IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
+    else if (TokenClassifier::IsType(currToken) && this->m_sType == CommandTypes::SIZEOF_START)
     {
-        m_tokens.push_back(Token(
+        this->m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
             currToken.GetLine(), currToken.GetColumn()));
-        m_parameters.push_back(Command());
-        m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-        m_parameters[m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;
-        m_uParameterIndex++;
+        this->m_parameters.push_back(Command());
+        this->m_parameters[this->m_uParameterIndex].m_tokens.push_back(currToken);
+        this->m_parameters[this->m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;
+        this->m_uParameterIndex++;
     }
     else return AddToCurrParam(currToken, nextToken);
 }
 
 inline bool Command::HandleFoundParantheses()
 {
-    m_bBuildingParam = true;
-    m_bFirstParanthesesEnter = true;
-    m_iParanthesesCounter++;
+    this->m_bBuildingParam = true;
+    this->m_bFirstParanthesesEnter = true;
+    this->m_iParanthesesCounter++;
     return false;
 }
 
@@ -645,14 +650,14 @@ bool Command::HandleDefaultPossibleParamChecks(
 {
     if (TokenClassifier::IsValue(currToken, sParantheses)) 
     {
-        if (m_bFirstParanthesesEnter)
+        if (this->m_bFirstParanthesesEnter)
         {
-            m_bFirstParanthesesEnter = !m_bFirstParanthesesEnter;
+            this->m_bFirstParanthesesEnter = !this->m_bFirstParanthesesEnter;
             return true;
         }
-        else m_iParanthesesCounter++;
+        else this->m_iParanthesesCounter++;
     }
-    m_bIgnoreCurrToken = true;
+    this->m_bIgnoreCurrToken = true;
     return false;
 }
 
@@ -663,9 +668,9 @@ bool Command::HandleArrayParanthesesParams(
     else if (currToken.GetValue() == "]")
     {
         if (LowerParanthesesCounter(currToken)) return true;
-        if (m_iParanthesesCounter == 0)
+        if (this->m_iParanthesesCounter == 0)
         {
-            m_bIgnoreCurrToken = false;
+            this->m_bIgnoreCurrToken = false;
             return FinishAndAssignType(sFinishedType);
         }
     }
