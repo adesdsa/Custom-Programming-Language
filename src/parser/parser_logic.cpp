@@ -17,7 +17,7 @@ ASTNode* ParserLogic::MainFlow()
 
     while (!this->m_lexer.IsFinishedReadingSRC())
     {
-        FullCommand fullCommand(this->m_entityLogger);
+        CommandLine fullCommand(this->m_entityLogger);
 
         // building full-command
         while (!fullCommand.IsFinished())
@@ -29,10 +29,10 @@ ASTNode* ParserLogic::MainFlow()
         this->HandleFullCommand(fullCommand);
     }
 
-    // cover last FullCommand
-    FullCommand lastFullCommand(this->m_entityLogger);
-    lastFullCommand.AddToken(this->m_currentToken, this->m_nextToken);
-    this->HandleFullCommand(lastFullCommand);
+    // cover last CommandLine
+    CommandLine lastCommandLine(this->m_entityLogger);
+    lastCommandLine.AddToken(this->m_currentToken, this->m_nextToken);
+    this->HandleFullCommand(lastCommandLine);
 
     if (this->m_errorManager.HasErrorsOccured())
     {
@@ -65,7 +65,7 @@ void ParserLogic::Advance()
     this->m_nextToken = std::move(nextToken);
 } 
 
-void ParserLogic::HandleFullCommand(const FullCommand& fullCommand)
+void ParserLogic::HandleFullCommand(const CommandLine& fullCommand)
 {
     if (fullCommand.IsLegal())
     {

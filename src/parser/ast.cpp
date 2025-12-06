@@ -32,7 +32,7 @@ ASTNode* AST::AllocateNode(const Command& command)
     return this->m_nodes.back().get();
 }
 
-void AST::StoreFullCommand(const FullCommand& fullCommand)
+void AST::StoreFullCommand(const CommandLine& fullCommand)
 {
     if (!fullCommand.HasCommands()) return;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast.h"
-#include "full_command.h"
+#include "commandLine.h"
 
 #include "includes/tokenizer/lexer.h"
 #include "includes/errors/error_manager.h"
@@ -47,7 +47,7 @@ public:
     // If `fullCommand` is valid -> construct its subtree in the AST.
     // Otherwise -> record the syntax errors in `m_errorManager`.
     // @param fullCommand: The fully command line to analyze and process.
-    void HandleFullCommand(const FullCommand& fullCommand);
+    void HandleFullCommand(const CommandLine& fullCommand);
 
 private:
     // infrastructures

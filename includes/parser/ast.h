@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "full_command.h"
+#include "commandLine.h"
 
 // Left-child, right-sibling AST node
 // Each node contains full command (function, variable decleraion  etc...)
@@ -34,7 +34,7 @@ public:
     // Build a command subtree from given full command onto AST
     // @param fullCommand: CommandLine object that represents vector of commands
     // the vector is sorted from first token in the command to the last one.
-    void StoreFullCommand(const FullCommand& fullCommand);
+    void StoreFullCommand(const CommandLine& fullCommand);
 
     // debug purpose only - remove comment when needed
     void PrintAST() const;
