@@ -11,12 +11,13 @@
 //  Command is the smallest unit of code syntax speaking;
 // For more info please check Command.h
 //  Line = the sequence of the Commands.
-class CommandLine{
+class FullCommand
+{
 public:
-    CommandLine(const EntityLogger& entityLogger);
-    CommandLine(const CommandLine& other);
+    FullCommand(const EntityLogger& entityLogger);
+    FullCommand(const FullCommand& other);
     
-    CommandLine& operator=(const CommandLine& other);
+    FullCommand& operator=(const FullCommand& other);
 
     // The func is used to add token to the line.
     // When the line is finished it will check it's legallity.
@@ -94,7 +95,7 @@ private:
     
     // The func checks if the last parameter is a comma (a seperator),
     // if it is that's illegal and it handles it.
-    // It is supposed to be used in func like CommandLines.
+    // It is supposed to be used in func like FullCommands.
     // @param checkedCommand: The Command that has the parameter we check. 
     // @param iBackSteps: The index we remove from the end.
     // @return: True-> The last parameter is a coma. False-> Otherwise.

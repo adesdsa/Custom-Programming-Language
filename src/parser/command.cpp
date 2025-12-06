@@ -1,18 +1,22 @@
 #include "includes/parser/command.h"
 
+Command::Command() : 
+    m_sType(CommandTypes::UNIDENTIFIED), 
+    m_uParameterIndex(0),
+    m_bBuildingParam(false), 
+    m_bIgnoreCurrToken(false),
+    m_bIgnoreEON(false),
+    m_iParanthesesCounter(0), 
+    m_bFirstParanthesesEnter(false) {}
 
-Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
- m_bBuildingParam(false), m_bIgnoreCurrToken(false), m_bIgnoreEON(false),
- m_iParanthesesCounter(0), m_bFirstParanthesesEnter(false)
+std::string_view Command::GetType() const 
 {
+    return this->m_sType;
 }
 
-std::string_view Command::GetType() const {
-    return m_sType;
-}
-
-const std::vector<Token>& Command::GetTokens() const {
-    return m_tokens;
+const std::vector<Token>& Command::GetTokens() const 
+{
+    return this->m_tokens;
 }
 
 bool Command::HasParams() const noexcept
@@ -20,205 +24,243 @@ bool Command::HasParams() const noexcept
     return this->m_parameters.size() > 0;
 }
 
-std::vector<Command>& Command::GetParams() {
-    return m_parameters;
-}
-
-const std::vector<Command>& Command::GetParams() const {
-    return m_parameters;
-}
-
-unsigned int Command::GetParanthesesCounter() const {
-    return m_iParanthesesCounter;
-}
-
-bool Command::IsExpression() const {
-    return m_bExpression;
-}
-
-const std::vector<CompileTimeError>& Command::GetErrors() const {
-    return m_errors;
-}
-
-void Command::SetType(std::string_view type) {
-    m_sType = type;
-}
-
-void Command::SetExpression(bool indicator) {
-    m_bExpression = indicator;
-}
-
-Token& Command::operator[](size_t index) {
-    return m_tokens[index];
-}
-
-const Token& Command::operator[](size_t index) const {
-    return m_tokens[index];
-}
-
-
-bool Command::Append(Token& currToken, Token& nextToken)
+std::vector<Command>& Command::GetParams() 
 {
-    m_bIgnoreCurrToken = false; // reset
-    m_bIgnoreEON = false;       // reset
+    return this->m_parameters;
+}
+
+const std::vector<Command>& Command::GetParams() const 
+{
+    return this->m_parameters;
+}
+
+unsigned int Command::GetParanthesesCounter() const 
+{
+    return this->m_iParanthesesCounter;
+}
+
+bool Command::IsExpression() const 
+{
+    return this->m_bExpression;
+}
+
+const std::vector<CompileTimeError>& Command::GetErrors() const 
+{
+    return this->m_errors;
+}
+
+void Command::SetType(std::string_view type) 
+{
+    this->m_sType = type;
+}
+
+void Command::SetExpression(bool indicator) 
+{
+    this->m_bExpression = indicator;
+}
+
+Token& Command::operator[](size_t index) 
+{
+    return this->m_tokens[index];
+}
+
+const Token& Command::operator[](size_t index) const 
+{
+    return this->m_tokens[index];
+}
+
+inline const std::unordered_map<std::string_view, bool((Command::*)(const Token&, const Token&))>& 
+getDictHandleTokenPair()
+{
+    // @brief map that takes `CommandTypes` and call the right parse method.
+    // Key: Type of the command represented as `CommandTypes`.
+    // Value: The command method the parses given CommandType.
+    static const std::unordered_map<std::string_view, bool((Command::*))(const Token&, const Token&)> 
+    dictHandleTokenPair = {
+        {CommandTypes::UNIDENTIFIED, &Command::ParseUnidentified},
+        {CommandTypes::ACCESS_RIGHTS, &Command::ParseAccessRights},
+        {CommandTypes::SCOPE, &Command::ParseScope},
+        {CommandTypes::IDENTIFIER, &Command::ParseIdentifier},
+        {CommandTypes::FUNC_START, &Command::ParseFuncStart},
+        {CommandTypes::FILLED_FUNC_DECLARATION, &Command::ParseFilledFuncDeclaration},
+        {CommandTypes::ARROW_FUNC_DECLARATION, &Command::ParseArrowFuncDeclaration},
+        {CommandTypes::VAR_DECLARATION_START, &Command::ParseVarDeclarationStart},
+        {CommandTypes::EXPRESSION_VALUE, &Command::ParseExpressionValue},
+        {CommandTypes::EXPRESSION_OPERATOR, &Command::ParseExpressionOperator},
+        {CommandTypes::POINTER_DECLARATION, &Command::ParsePointerDeclaration},
+        {CommandTypes::NOT_FUNC_IDENTIFIER, &Command::ParseNotFuncIdentifier},
+        {CommandTypes::ARRAY_ACCESS_START, &Command::ParseArrayAccessStart},
+        {CommandTypes::ARRAY_DECLARATION_START, &Command::ParseArrayDeclarationStart},
+        {CommandTypes::ARRAY_VALUE_START, &Command::ParseArrayValueStart}
+    };
+
+    return dictHandleTokenPair;
+}
+
+bool Command::Append(const Token& currToken, const Token& nextToken)
+{
+    // reset flags, changes later on following functions calls
+    this->m_bIgnoreCurrToken = false; 
+    this->m_bIgnoreEON = false;     
     bool bReturnValue = false;
+    
+    auto& dictHandleTokenPair = getDictHandleTokenPair();
+    auto tokenTypeHandler = dictHandleTokenPair.find(this->m_sType);
 
-    if (m_sType == CommandTypes::UNIDENTIFIED) bReturnValue = 
-        ParseUnidentified(currToken, nextToken);
-    else if (m_sType == CommandTypes::ACCESS_RIGHTS) bReturnValue = 
-        ParseAccessRights(currToken, nextToken);
-    else if (m_sType == CommandTypes::SCOPE) bReturnValue = 
-        ParseScope(currToken, nextToken);
-    else if (m_sType == CommandTypes::IDENTIFIER) bReturnValue = 
-        ParseIdentifier(currToken, nextToken);
-    else if (m_sType == CommandTypes::FUNC_START) bReturnValue = 
-        ParseFuncStart(currToken, nextToken);
-    else if (m_sType == CommandTypes::FILLED_FUNC_DECLARATION) bReturnValue = 
-        ParseFilledFuncDeclaration(currToken, nextToken);
-    else if (m_sType == CommandTypes::ARROW_FUNC_DECLARATION) bReturnValue = 
-        ParseArrowFuncDeclaration(currToken, nextToken);
-    else if (m_sType == CommandTypes::VAR_DECLARATION_START) bReturnValue = 
-        ParseVarDeclarationStart(currToken, nextToken);
-    else if (m_sType == CommandTypes::ELIF_CALL || 
-        m_sType == CommandTypes::IF_CALL || m_sType == CommandTypes::FOR_CALL
-        || m_sType == CommandTypes::WHILE_CALL ||
-        m_sType == CommandTypes::SIZEOF_CALL) 
-        bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
-    else if (m_sType == CommandTypes::ELIF_START ||
-        m_sType == CommandTypes::IF_START
-        || m_sType == CommandTypes::FOR_START
-        || m_sType == CommandTypes::WHILE_START
-        || m_sType == CommandTypes::SIZEOF_START) 
-        bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
-    else if (m_sType == CommandTypes::EXPRESSION_VALUE) bReturnValue = 
-        ParseExpressionValue(currToken, nextToken);
-    else if (m_sType == CommandTypes::EXPRESSION_OPERATOR) bReturnValue = 
-        ParseExpressionOperator(currToken, nextToken);
-    else if (m_sType == CommandTypes::POINTER_DECLARATION) bReturnValue = 
-        ParsePointerDeclaration(currToken, nextToken);
-    else if (m_sType == CommandTypes::NOT_FUNC_IDENTIFIER) bReturnValue = 
-        ParseNotFuncIdentifier(currToken, nextToken);
-    else if (m_sType == CommandTypes::ARRAY_ACCESS_START) bReturnValue = 
-        ParseArrayAccessStart(currToken, nextToken);
-    else if (m_sType == CommandTypes::ARRAY_DECLARATION_START) bReturnValue = 
-        ParseArrayDeclarationStart(currToken, nextToken);
-    else if (m_sType == CommandTypes::ARRAY_VALUE_START) bReturnValue = 
-        ParseArrayValueStart(currToken, nextToken);
-    else return FoundUnknown(currToken);
+    if (tokenTypeHandler != dictHandleTokenPair.end())
+    {
+        bReturnValue = (this->*tokenTypeHandler->second)(currToken, nextToken);
+    }
 
+    else if (
+                this->m_sType == CommandTypes::ELIF_CALL   || 
+                this->m_sType == CommandTypes::IF_CALL     || 
+                this->m_sType == CommandTypes::FOR_CALL    ||
+                this->m_sType == CommandTypes::WHILE_CALL  ||
+                this->m_sType == CommandTypes::SIZEOF_CALL
+            ) 
+        {
+            bReturnValue = ParseParameterKeywordCall(currToken, nextToken);
+        }
 
-    if (!m_bIgnoreCurrToken) 
-        m_tokens.push_back(currToken);
-    if (IsValue(nextToken, ";") && !m_bIgnoreEON) 
+    else if (
+                this->m_sType == CommandTypes::ELIF_START   || 
+                this->m_sType == CommandTypes::IF_START     || 
+                this->m_sType == CommandTypes::FOR_START    ||
+                this->m_sType == CommandTypes::WHILE_START  ||
+                this->m_sType == CommandTypes::SIZEOF_START
+            ) 
+        {
+            bReturnValue = ParseParameterKeywordStart(currToken, nextToken);
+        }
+
+    else
+    {
+        return FoundUnknown(currToken);
+    }
+
+    if (!this->m_bIgnoreCurrToken) 
+    {
+        this->m_tokens.push_back(currToken);
+    }
+
+    if (TokenClassifier::IsValue(nextToken, ";") && !this->m_bIgnoreEON) 
+    {
         bReturnValue = true;
-    if (IsValue(nextToken, "{") || IsValue(nextToken, "}")) 
+    }
+
+    else if (TokenClassifier::IsValue(nextToken, "{") || TokenClassifier::IsValue(nextToken, "}")) 
+    {
         bReturnValue = true;
+    }
 
     return bReturnValue;
-
-    // extra rules: todo
-    // there is no support for int a, b, c=0;
-    // & * (in the context of pointers) should appear before the identifier when they are called
-    // When declaring a pointer the * should appear after the type 
-    // no support for array pointers/2d arrays
-    // right now we have infinite func params but no default values
-    // right now single line keyword statements do not support single lines but only code blocks.
-    // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
-    // Note that if code can be outside of {} is checked in the semantic analysis and not in the parser
-    // A for loop must be of the next prset: for ( var_declaration/identifier assigmnet value ; expression ; expression )
-    // scope and access_rights arent a must have.
 }
 
-bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
+bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
 {
-    if (IsType(currToken, TokenTypes::IDENTIFIER) && IsValue(nextToken, "="))
-        return FinishAndAssignType(CommandTypes::IDENTIFIER);
-    else if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (
+        TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER) && 
+        TokenClassifier::IsValue(nextToken, "=")
+    )
     {
-        if (IsOperator(nextToken))
+        return FinishAndAssignType(CommandTypes::IDENTIFIER);
+    }
+    else if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER))
+    {
+        if (TokenClassifier::IsOperator(nextToken))
         {
-            m_tokens.push_back(Token(TokenTypes::HAS_PARAM, 
-                currToken.GetLine(), currToken.GetColumn()));
-            m_parameters.push_back(Command());
-            m_parameters[0].m_tokens.push_back(currToken);
-            m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
-            m_bIgnoreCurrToken = true;
-            m_uParameterIndex++;
+            this->m_tokens.push_back(
+                Token(
+                    TokenTypes::HAS_PARAM, 
+                    currToken.GetLine(), 
+                    currToken.GetColumn()
+                )
+            );
+            this->m_parameters.push_back(Command());
+            this->m_parameters[0].m_tokens.push_back(currToken);
+            this->m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
+            this->m_bIgnoreCurrToken = true;
+            this->m_uParameterIndex++;
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
         else return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
     }
-    else if (IsType(currToken, TokenTypes::KEYWORD))
+    else if (TokenClassifier::IsType(currToken, TokenTypes::KEYWORD))
     {
-        if (IsValue(currToken, "void"))
-            return FinishAndAssignType(m_sType = CommandTypes::VOID_COMMAND);
-        else if (IsAccessRights(currToken))
+        if (TokenClassifier::IsValue(currToken, "void"))
+            return FinishAndAssignType(this->m_sType = CommandTypes::VOID_COMMAND);
+        else if (TokenClassifier::IsAccessRights(currToken))
             return NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
-        else if (IsScope(currToken))
-            return NoFinishAndAssignType(m_sType = CommandTypes::SCOPE);
-        else if (IsValue(currToken, "else"))
-            return FinishAndAssignType(m_sType = CommandTypes::ELSE);
-        else if (IsValue(currToken, "if"))
+        else if (TokenClassifier::IsScope(currToken))
+            return NoFinishAndAssignType(this->m_sType = CommandTypes::SCOPE);
+        else if (TokenClassifier::IsValue(currToken, "else"))
+            return FinishAndAssignType(this->m_sType = CommandTypes::ELSE);
+        else if (TokenClassifier::IsValue(currToken, "if"))
             return CompareExpected(nextToken, "(", CommandTypes::IF_CALL);
-        else if (IsValue(currToken, "elif"))
+        else if (TokenClassifier::IsValue(currToken, "elif"))
             return CompareExpected(nextToken, "(", CommandTypes::ELIF_CALL);
-        else if (IsValue(currToken, "for"))
+        else if (TokenClassifier::IsValue(currToken, "for"))
             return CompareExpected(nextToken, "(", CommandTypes::FOR_CALL);
-        else if (IsValue(currToken, "while"))
+        else if (TokenClassifier::IsValue(currToken, "while"))
             return CompareExpected(nextToken, "(", CommandTypes::WHILE_CALL);
-        else if (IsValue(currToken, "sizeof"))
+        else if (TokenClassifier::IsValue(currToken, "sizeof"))
             return CompareExpected(nextToken, "(", CommandTypes::SIZEOF_CALL);
-        else if (IsValue(currToken, "return"))
+        else if (TokenClassifier::IsValue(currToken, "return"))
             return FinishAndAssignType(CommandTypes::RETURN);
-        else if (IsControlStatement(currToken))
+        else if (TokenClassifier::IsControlStatement(currToken))
             return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
-        else if (IsValue(currToken, "pass"))
+        else if (TokenClassifier::IsValue(currToken, "pass"))
             return FinishAndAssignType(CommandTypes::PASS);
         else return FoundUnknown(currToken);
     }
-    else if (IsExpressionStart(currToken))
+    else if (TokenClassifier::IsExpressionStart(currToken))
     {
-        if (IsValue(currToken, "-") || IsValue(currToken, "not") ||
-            IsValue(currToken, "*") || IsValue(currToken, "&") || 
-            IsValue(currToken, "("))
+        if (
+            TokenClassifier::IsValue(currToken, "-")   || 
+            TokenClassifier::IsValue(currToken, "not") ||
+            TokenClassifier::IsValue(currToken, "*")   || 
+            TokenClassifier::IsValue(currToken, "&")   || 
+            TokenClassifier::IsValue(currToken, "(")
+        )
         {
-            if (IsValue(currToken, "("))
+            if (TokenClassifier::IsValue(currToken, "("))
             {
-                m_iParanthesesCounter++;
+                this->m_iParanthesesCounter++;
             }
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         }
         else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
-    else if (IsType(currToken, TokenTypes::PUNCTUATION))
+    else if (TokenClassifier::IsType(currToken, TokenTypes::PUNCTUATION))
     {
-        if (IsValue(currToken, ";"))
+        if (TokenClassifier::IsValue(currToken, ";"))
             return FinishAndAssignType(CommandTypes::END_OF_COMMAND);
-        else if (IsValue(currToken, "{"))
+        else if (TokenClassifier::IsValue(currToken, "{"))
             return FinishAndAssignType(CommandTypes::BLOCK_START);
-        else if (IsValue(currToken, "}"))
+        else if (TokenClassifier::IsValue(currToken, "}"))
             return FinishAndAssignType(CommandTypes::BLOCK_END);
-        else if (IsValue(currToken, "["))
+        else if (TokenClassifier::IsValue(currToken, "["))
         {
             HandleFoundParantheses();
             return NoFinishAndAssignType(CommandTypes::ARRAY_VALUE_START);
         }
         else return FoundUnknown(currToken);
     }
-    else if (IsValue(currToken, "="))
+    else if (TokenClassifier::IsValue(currToken, "="))
         return FinishAndAssignType(CommandTypes::ASSIGNMENT);
-    else if (IsType(currToken, TokenTypes::EOF_TOKEN))
+    else if (TokenClassifier::IsType(currToken, TokenTypes::EOF_TOKEN))
         return FinishAndAssignType(CommandTypes::EOF_TOKEN);
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseIdentifier(Token& currToken, Token& nextToken)
+bool Command::ParseIdentifier(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, "(") || IsValue(currToken, "[")) 
+    if (TokenClassifier::IsValue(currToken, "(") || TokenClassifier::IsValue(currToken, "[")) 
     {
         HandleFoundParantheses();
-        m_bFirstParanthesesEnter = false;
-        if (IsValue(currToken, "("))
+        this->m_bFirstParanthesesEnter = false;
+        if (TokenClassifier::IsValue(currToken, "("))
             return NoFinishAndAssignType(CommandTypes::FUNC_START);
         else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
     }
@@ -227,22 +269,22 @@ bool Command::ParseIdentifier(Token& currToken, Token& nextToken)
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
+bool Command::ParseFuncStart(const Token& currToken, const Token& nextToken)
 {
     if (HandleDefaultPossibleParamChecks(currToken, "(")) return false;
     else if (currToken.GetValue() == ")")
     {
         if(LowerParanthesesCounter(currToken)) return true;
-        else if (m_iParanthesesCounter == 0)
+        else if (this->m_iParanthesesCounter == 0)
         {
-            m_bIgnoreCurrToken = false;
-            if (IsValue(nextToken, "->"))
+            this->m_bIgnoreCurrToken = false;
+            if (TokenClassifier::IsValue(nextToken, "->"))
                 return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
-            else if (IsOperator(nextToken))
+            else if (TokenClassifier::IsOperator(nextToken))
             {
-                m_bIgnoreCurrToken = true;
-                m_tokens.push_back(currToken);
-                m_sType = CommandTypes::FINISHED_FUNC_CALL;
+                this->m_bIgnoreCurrToken = true;
+                this->m_tokens.push_back(currToken);
+                this->m_sType = CommandTypes::FINISHED_FUNC_CALL;
                 MoveThisIntoParam();
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
@@ -254,93 +296,99 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
     return false;
 }
 
-bool Command::ParseFilledFuncDeclaration(Token& currToken, Token& nextToken)
+bool Command::ParseFilledFuncDeclaration(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, "->"))
+    if (TokenClassifier::IsValue(currToken, "->"))
         return NoFinishAndAssignType(CommandTypes::ARROW_FUNC_DECLARATION);
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseArrowFuncDeclaration(Token& currToken, Token& nextToken)
+bool Command::ParseArrowFuncDeclaration(const Token& currToken, const Token& nextToken)
 {
-    if (IsType(currToken))
+    if (TokenClassifier::IsType(currToken))
         return FinishAndAssignType(CommandTypes::FINISHED_FUNC_DECLARATION);
-    else if (IsValue(currToken, "unsigned") && IsType(nextToken)) return false;
-    else return FoundUnknown(currToken);
-}
-
-bool Command::ParseAccessRights(Token& currToken, Token& nextToken)
-{
-    if (IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
-    else if (IsType(currToken, TokenTypes::IDENTIFIER))
-        return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
-    else return FoundUnknown(currToken);
-}
-
-bool Command::ParseScope(Token& currToken, Token& nextToken)
-{
-    if (IsType(currToken, TokenTypes::IDENTIFIER))
-        return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
-    else return FoundUnknown(currToken);
-}
-
-bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
-{
-    if (IsType(currToken))
+    else if (
+        TokenClassifier::IsValue(currToken, "unsigned") && 
+        TokenClassifier::IsType(nextToken)
+    ) 
     {
-        if (IsValue(nextToken, "[")) 
+        return false;
+    }
+    else return FoundUnknown(currToken);
+}
+
+bool Command::ParseAccessRights(const Token& currToken, const Token& nextToken)
+{
+    if (TokenClassifier::IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
+    else if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER))
+        return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
+    else return FoundUnknown(currToken);
+}
+
+bool Command::ParseScope(const Token& currToken, const Token& nextToken)
+{
+    if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER))
+        return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
+    else return FoundUnknown(currToken);
+}
+
+bool Command::ParseVarDeclarationStart(const Token& currToken, const Token& nextToken)
+{
+    if (TokenClassifier::IsType(currToken))
+    {
+        if (TokenClassifier::IsValue(nextToken, "[")) 
         {
             HandleFoundParantheses();
             return NoFinishAndAssignType(
                 CommandTypes::ARRAY_DECLARATION_START);
         }
-        if (IsValue(nextToken, "*"))
+        if (TokenClassifier::IsValue(nextToken, "*"))
             return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseParameterKeywordCall(Token& currToken, Token& nextToken)
+bool Command::ParseParameterKeywordCall(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, "("))
+    if (TokenClassifier::IsValue(currToken, "("))
     {
         HandleFoundParantheses();
-        m_bFirstParanthesesEnter = false;
-        if (m_sType == CommandTypes::ELIF_CALL)
+        this->m_bFirstParanthesesEnter = false;
+        if (this->m_sType == CommandTypes::ELIF_CALL)
             return NoFinishAndAssignType(CommandTypes::ELIF_START);
-        else if (m_sType == CommandTypes::IF_CALL)
+        else if (this->m_sType == CommandTypes::IF_CALL)
             return NoFinishAndAssignType(CommandTypes::IF_START);
-        else if (m_sType == CommandTypes::FOR_CALL)
+        else if (this->m_sType == CommandTypes::FOR_CALL)
             return NoFinishAndAssignType(CommandTypes::FOR_START);
-        else if (m_sType == CommandTypes::WHILE_CALL)
+        else if (this->m_sType == CommandTypes::WHILE_CALL)
             return NoFinishAndAssignType(CommandTypes::WHILE_START);
-        else if (m_sType == CommandTypes::SIZEOF_CALL)
+        else if (this->m_sType == CommandTypes::SIZEOF_CALL)
             return NoFinishAndAssignType(CommandTypes::SIZEOF_START);
         else return FoundUnknown(currToken);
     }
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
+bool Command::ParseParameterKeywordStart(const Token& currToken, const Token& nextToken)
 {
     if (HandleDefaultPossibleParamChecks(currToken, "(")) return false;
-    else if (IsValue(currToken, ")")) 
+    else if (TokenClassifier::IsValue(currToken, ")")) 
     {
         if(LowerParanthesesCounter(currToken)) return true;
-        if (m_iParanthesesCounter == 0)
+        if (this->m_iParanthesesCounter == 0)
         {
-            m_bBuildingParam = false;
-            m_bIgnoreCurrToken = false;
-            if (m_sType == CommandTypes::ELIF_START)
+            this->m_bBuildingParam = false;
+            this->m_bIgnoreCurrToken = false;
+            if (this->m_sType == CommandTypes::ELIF_START)
                 return FinishAndAssignType(CommandTypes::ELIF);
-            else if (m_sType == CommandTypes::IF_START)
+            else if (this->m_sType == CommandTypes::IF_START)
                 return FinishAndAssignType(CommandTypes::IF);
-            else if (m_sType == CommandTypes::FOR_START)
+            else if (this->m_sType == CommandTypes::FOR_START)
                 return FinishAndAssignType(CommandTypes::FOR);
-            else if (m_sType == CommandTypes::WHILE_START)
+            else if (this->m_sType == CommandTypes::WHILE_START)
                 return FinishAndAssignType(CommandTypes::WHILE);
-            else if (m_sType == CommandTypes::SIZEOF_START)
+            else if (this->m_sType == CommandTypes::SIZEOF_START)
                 return FinishAndAssignType(CommandTypes::SIZEOF);
             else return FoundUnknown(currToken);
         }
@@ -350,11 +398,11 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
     return false;
 }
 
-bool Command::ParseExpressionValue(Token& currToken, Token& nextToken)
+bool Command::ParseExpressionValue(const Token& currToken, const Token& nextToken)
 {
-    if (IsOperator(currToken)) return NoFinishAndAssignType(
+    if (TokenClassifier::IsOperator(currToken)) return NoFinishAndAssignType(
         CommandTypes::EXPRESSION_OPERATOR);
-    else if (IsValue(currToken, ")"))
+    else if (TokenClassifier::IsValue(currToken, ")"))
     {
         LowerParanthesesCounter(currToken);
         return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
@@ -362,25 +410,25 @@ bool Command::ParseExpressionValue(Token& currToken, Token& nextToken)
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
+bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextToken)
 {
-    if (m_bBuildingParam)
+    if (this->m_bBuildingParam)
     {
-        m_bIgnoreCurrToken = true;
+        this->m_bIgnoreCurrToken = true;
         if (AddToCurrParam(currToken, nextToken)) 
         {
-            m_bBuildingParam = false;
+            this->m_bBuildingParam = false;
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
         else return false;
     }
-    else if (IsValueToken(currToken))
+    else if (TokenClassifier::IsValueToken(currToken))
     {
-        if (IsType(currToken, TokenTypes::IDENTIFIER)) {
-            if (IsValue(nextToken, "(") || IsValue(nextToken, "["))
+        if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER)) {
+            if (TokenClassifier::IsValue(nextToken, "(") || TokenClassifier::IsValue(nextToken, "["))
             {
-                m_bIgnoreCurrToken = true;
-                m_bBuildingParam = true;
+                this->m_bIgnoreCurrToken = true;
+                this->m_bBuildingParam = true;
                 AddToCurrParam(currToken, nextToken);
                 return false;
             }
@@ -390,21 +438,21 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
         } 
-        else if (IsType(currToken, TokenTypes::VALUE)) 
+        else if (TokenClassifier::IsType(currToken, TokenTypes::VALUE)) 
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         else return FoundUnknown(currToken);
     }
-    else if (IsValue(currToken, "("))
+    else if (TokenClassifier::IsValue(currToken, "("))
     {
-        m_iParanthesesCounter++;
+        this->m_iParanthesesCounter++;
         return false;
     }
-    else if (IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
-    else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  
-        IsValue(currToken, "&")) return false;
-    else if (IsValue(currToken, "sizeof"))
+    else if (TokenClassifier::IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
+    else if (TokenClassifier::IsValue(currToken, "not") || TokenClassifier::IsValue(currToken, "*") ||  
+        TokenClassifier::IsValue(currToken, "&")) return false;
+    else if (TokenClassifier::IsValue(currToken, "sizeof"))
     {
-        m_bBuildingParam = true;
+        this->m_bBuildingParam = true;
         AddToCurrParam(currToken, nextToken);
         return false;
     }
@@ -412,27 +460,27 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
 }
 
 inline bool Command::ParsePointerDeclaration(
-    Token& currToken, Token& nextToken)
+    const Token& currToken, const Token& nextToken)
 {
     return FinishAndAssignType(CommandTypes::POINTER_DECLARATION);
 }
 
-bool Command::ParseNotFuncIdentifier(Token& currToken, Token& nextToken)
+bool Command::ParseNotFuncIdentifier(const Token& currToken, const Token& nextToken)
 {
     if (currToken.GetValue() == ":")
         return NoFinishAndAssignType(CommandTypes::VAR_DECLARATION_START);
     else return FoundUnknown(currToken);
 }
 
-bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
+bool Command::ParseArrayAccessStart(const Token& currToken, const Token& nextToken)
 {
     if (HandleDefaultPossibleParamChecks(currToken, "[")) return false;
     else if (currToken.GetValue() == "]")
     {
         if (LowerParanthesesCounter(currToken)) return true;
-        else if (m_iParanthesesCounter == 0)
+        else if (this->m_iParanthesesCounter == 0)
         {
-            m_bIgnoreCurrToken = false;
+            this->m_bIgnoreCurrToken = false;
             return FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
         }
     }
@@ -441,140 +489,76 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
     return false;
 }
 
-bool Command::ParseArrayDeclarationStart(Token& currToken, Token& nextToken)
+bool Command::ParseArrayDeclarationStart(const Token& currToken, const Token& nextToken)
 {
     return HandleArrayParanthesesParams(
         currToken, nextToken, CommandTypes::ARRAY_DECLARATION);
 }
 
-bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
+bool Command::ParseArrayValueStart(const Token& currToken, const Token& nextToken)
 {
     return HandleArrayParanthesesParams(
         currToken, nextToken, CommandTypes::ARRAY_VALUE);
 }
 
-
-inline bool Command::IsValue(Token& token, std::string sCompare)
-{
-    return token.GetValue() == sCompare;
-}
-
-inline bool Command::IsType(Token& token, std::string_view sCompare)
-{
-    return token.GetType() == sCompare;
-}
-
 bool Command::CompareExpected(
-    Token& token, std::string sCompare, std::string_view sValidType)
+    const Token& token, std::string sCompare, std::string_view sValidType)
 {
-    if (IsValue(token, sCompare))
+    if (TokenClassifier::IsValue(token, sCompare))
     {
-        m_sType = sValidType;
+        this->m_sType = sValidType;
         return false;
     }
     else return FoundUnknown(token);
 }
 
-bool Command::IsAccessRights(Token& token)
-{
-    return IsValue(token, "const") || IsValue(token, "readonly");
-}
-
-bool Command::IsScope(Token& token)
-{
-    return IsValue(token, "global") ||
-        IsValue(token, "var") || IsValue(token, "let");
-}
-
-bool Command::IsExpressionStart(Token& token)
-{
-    return IsType(token, TokenTypes::IDENTIFIER) ||
-        IsType(token, TokenTypes::VALUE) ||
-        IsValue(token, "-") ||
-        IsValue(token, "not") ||
-        IsValue(token, "*") ||
-        IsValue(token, "&") ||
-        IsValue(token, "(");
-}
-
-inline bool Command::IsOperator(Token& token)
-{
-    return (IsType(token, TokenTypes::OPERATOR) && !(
-        IsValue(token, "=") ||
-        IsValue(token, "&"))) ||
-        IsValue(token, "and") ||
-        IsValue(token, "or") ||
-        IsValue(token, "xor") ||
-        IsValue(token, "is");
-}
-
-inline bool Command::IsValueToken(Token& token)
-{
-    return IsType(token, TokenTypes::IDENTIFIER) ||
-        IsType(token, TokenTypes::VALUE);
-}
-
-inline bool Command::IsType(Token& token)
-{
-    return IsValue(token, "int") ||
-    IsValue(token, "bool") ||
-    IsValue(token, "double") ||
-    IsValue(token, "void");
-}
-
-bool Command::IsControlStatement(Token& token)
-{
-    return IsValue(token, "break") || IsValue(token, "continue");
-}
-
-
 inline bool Command::FinishAndAssignType(std::string_view sType)
 {
-    m_sType = sType;
+    this->m_sType = sType;
     return true;
 }
 
 inline bool Command::NoFinishAndAssignType(std::string_view sType)
 {
-    m_sType = sType;
+    this->m_sType = sType;
     return false;
 }
 
-inline bool Command::FoundUnknown(Token& currToken)
+inline bool Command::FoundUnknown(const Token& currToken)
 {
-    if (m_errors.size() == 0) m_errors.push_back(
+    if (this->m_errors.size() == 0) this->m_errors.push_back(
         CompileTimeError(ErrorTypes::SYNTAX_ERROR, 
         "Illegal command found",
         currToken.GetLine(), currToken.GetColumn(),
         ""));
-    m_sType = CommandTypes::UNKNOWN;
+    this->m_sType = CommandTypes::UNKNOWN;
     return true;
 }
 
 
-inline bool Command::AddToCurrParam(Token& currToken, Token& nextToken)
+inline bool Command::AddToCurrParam(const Token& currToken, const Token& nextToken)
 {
-    if (m_uParameterIndex == m_parameters.size()) 
+    if (this->m_uParameterIndex == this->m_parameters.size()) 
     {
-        m_parameters.push_back(Command());
-        m_tokens.push_back(Token(
+        this->m_parameters.push_back(Command());
+        this->m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
             currToken.GetLine(), currToken.GetColumn()));
     }
-    if (m_parameters[m_uParameterIndex].Append(currToken, nextToken))
+    if (this->m_parameters[m_uParameterIndex].Append(currToken, nextToken))
     {
-        m_uParameterIndex++;
+        this->m_uParameterIndex++;
         return true;
     }
     return false;
 }
 
-bool Command::LowerParanthesesCounter(Token& currToken)
+bool Command::LowerParanthesesCounter(const Token& currToken)
 {
-    m_iParanthesesCounter--;
-    if (m_iParanthesesCounter < 0)
+    this->m_iParanthesesCounter--;
+    if (this->m_iParanthesesCounter < 0)
     {
-        m_errors.push_back(CompileTimeError(
+        this->m_errors.push_back(CompileTimeError(
             ErrorTypes::SYNTAX_ERROR,
             "Closed too many parantheses",
             currToken.GetLine(), currToken.GetColumn(),
@@ -593,100 +577,100 @@ void Command::MoveThisIntoParam()
     tempSave.m_uParameterIndex = this->m_uParameterIndex;
     tempSave.m_iParanthesesCounter = this->m_iParanthesesCounter;
 
-    m_bBuildingParam = false;
-    m_bIgnoreEON = false;
-    m_bExpression = false;
-    m_iParanthesesCounter = 0;
-    m_uParameterIndex = 1;
-    m_tokens.push_back(Token(
+    this->m_bBuildingParam = false;
+    this->m_bIgnoreEON = false;
+    this->m_bExpression = false;
+    this->m_iParanthesesCounter = 0;
+    this->m_uParameterIndex = 1;
+    this->m_tokens.push_back(Token(
         TokenTypes::HAS_PARAM,
         tempSave.m_tokens[0].GetLine(), tempSave.m_tokens[0].GetColumn()));
-    m_parameters.push_back(tempSave);
+    this->m_parameters.push_back(tempSave);
 }
 
-void Command::AddIdentifier(Token& currToken)
+void Command::AddIdentifier(const Token& currToken)
 {
-    m_bIgnoreCurrToken = true;
-    m_tokens.push_back(Token(
+    this->m_bIgnoreCurrToken = true;
+    this->m_tokens.push_back(Token(
         TokenTypes::HAS_PARAM,
         currToken.GetLine(), currToken.GetColumn()));
-    m_parameters.push_back(Command());
-    m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
-    m_bIgnoreCurrToken = true;
-    m_uParameterIndex++;
+    this->m_parameters.push_back(Command());
+    this->m_parameters[this->m_uParameterIndex].m_tokens.push_back(currToken);
+    this->m_parameters[this->m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
+    this->m_bIgnoreCurrToken = true;
+    this->m_uParameterIndex++;
 }
 
 
-bool Command::HandleFuncLikeParams(Token& currToken, Token& nextToken)
+bool Command::HandleFuncLikeParams(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, ",")) 
+    if (TokenClassifier::IsValue(currToken, ",")) 
     {
-        m_tokens.push_back(currToken);
-        if (m_uParameterIndex < m_parameters.size())
-            m_uParameterIndex++;
+        this->m_tokens.push_back(currToken);
+        if (this->m_uParameterIndex < this->m_parameters.size())
+            this->m_uParameterIndex++;
         return false;
     }
     else return AddToCurrParam(currToken, nextToken);
 }
 
-bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
+bool Command::HandleKeywordParams(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(nextToken, ";")) m_bIgnoreEON = true;
-    if (IsValue(currToken, ";")) 
+    if (TokenClassifier::IsValue(nextToken, ";")) this->m_bIgnoreEON = true;
+    if (TokenClassifier::IsValue(currToken, ";")) 
     {
-        m_tokens.push_back(currToken);
-        if (m_uParameterIndex < m_parameters.size())
-            m_uParameterIndex++;
+        this->m_tokens.push_back(currToken);
+        if (this->m_uParameterIndex < this->m_parameters.size())
+            this->m_uParameterIndex++;
         return false;
     }
-    else if (IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
+    else if (TokenClassifier::IsType(currToken) && this->m_sType == CommandTypes::SIZEOF_START)
     {
-        m_tokens.push_back(Token(
+        this->m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
             currToken.GetLine(), currToken.GetColumn()));
-        m_parameters.push_back(Command());
-        m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-        m_parameters[m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;
-        m_uParameterIndex++;
+        this->m_parameters.push_back(Command());
+        this->m_parameters[this->m_uParameterIndex].m_tokens.push_back(currToken);
+        this->m_parameters[this->m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;
+        this->m_uParameterIndex++;
     }
     else return AddToCurrParam(currToken, nextToken);
 }
 
 inline bool Command::HandleFoundParantheses()
 {
-    m_bBuildingParam = true;
-    m_bFirstParanthesesEnter = true;
-    m_iParanthesesCounter++;
+    this->m_bBuildingParam = true;
+    this->m_bFirstParanthesesEnter = true;
+    this->m_iParanthesesCounter++;
     return false;
 }
 
 bool Command::HandleDefaultPossibleParamChecks(
-    Token& currToken, std::string sParantheses)
+    const Token& currToken, std::string sParantheses)
 {
-    if (IsValue(currToken, sParantheses)) 
+    if (TokenClassifier::IsValue(currToken, sParantheses)) 
     {
-        if (m_bFirstParanthesesEnter)
+        if (this->m_bFirstParanthesesEnter)
         {
-            m_bFirstParanthesesEnter = !m_bFirstParanthesesEnter;
+            this->m_bFirstParanthesesEnter = !this->m_bFirstParanthesesEnter;
             return true;
         }
-        else m_iParanthesesCounter++;
+        else this->m_iParanthesesCounter++;
     }
-    m_bIgnoreCurrToken = true;
+    this->m_bIgnoreCurrToken = true;
     return false;
 }
 
 bool Command::HandleArrayParanthesesParams(
-    Token& currToken, Token& nextToken, std::string_view sFinishedType)
+    const Token& currToken, const Token& nextToken, std::string_view sFinishedType)
 {
     if (HandleDefaultPossibleParamChecks(currToken, "[")) return false;
     else if (currToken.GetValue() == "]")
     {
         if (LowerParanthesesCounter(currToken)) return true;
-        if (m_iParanthesesCounter == 0)
+        if (this->m_iParanthesesCounter == 0)
         {
-            m_bIgnoreCurrToken = false;
+            this->m_bIgnoreCurrToken = false;
             return FinishAndAssignType(sFinishedType);
         }
     }
