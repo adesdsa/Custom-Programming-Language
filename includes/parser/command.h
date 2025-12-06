@@ -4,6 +4,7 @@
 #include <string>
 
 #include "parser_consts.h"
+#include "token_classifier.h"
 
 #include "includes/tokenizer/token.h"
 #include "includes/errors/error_models.h"
@@ -177,70 +178,8 @@ private:
     bool ParseArrayValueStart(const Token& currToken, const Token& nextToken);
 
 
-    ///
-    ///         Classification Checker Functions
-    ///
-
-
-    // The func compares if the Token's value equals to the string.
-    // @param token: The token we are comparing.
-    // @param sCompare: The string we compare.
-    // @return: True-> the Token's value equals the string. False-> otherwise.
-    inline bool IsValue(const Token& token, std::string sCompare);
-
-    // The func compares if the Token's type equals to a TokenType.
-    // @param token: The token we are comparing.
-    // @param sCompare: The string_view which is a TokenType we compare.
-    // @return: True-> the Token's type equals the given type.
-    // False-> otherwise.
-    inline bool IsType(const Token& token, std::string_view sCompare);
-
-    // The func compares if the Token's value equals to the string, 
-    // if it does then we change the type to the given type, 
-    // else we change to unknown.
-    // @param token: The token we are comparing.
-    // @param sCompare: The string we compare the Token's value to.
-    // @param sValidType: The string_view which is what we change the 
-    // CommandType to if the compare works.
-    // @return: False-> the Token's type equals the given type. True-> otherwise.
     bool CompareExpected(const Token& token, std::string sCompare, 
         std::string_view sValidType);
-
-    // The func checks if the given token is an Access right.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is an Access Right. False-> otherwise.
-    bool IsAccessRights(const Token& token);
-
-    // The func checks if the given token is a Scope.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is a Scope. False-> otherwise.
-    bool IsScope(const Token& token);
-
-    // The func checks if the given token is an expression start.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is an expression start. False-> otherwise.
-    bool IsExpressionStart(const Token& token);
-
-    // The func checks if the given token is a legal expression value.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is a legal expression value. 
-    // False-> otherwise.
-    inline bool IsValueToken(const Token& token);
-
-    // The func checks if the given token is an expression operator.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is an expression operator. False-> otherwise.
-    bool IsOperator(const Token& token);
-
-    // The func checks if the given token is a Var Type.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is a Var Type. False-> otherwise.
-    inline bool IsType(const Token& token);
-
-    // The func checks if the given token is a control statement.
-    // @param token: The token we are checking.
-    // @return: True-> the Token is a control statement. False-> otherwise.
-    bool IsControlStatement(const Token& token);
 
 
 ///
@@ -263,9 +202,9 @@ private:
     inline bool FoundUnknown(const Token& currToken);
 
 
-///
-///         Helper Functions
-///
+    ///
+    ///         Helper Functions
+    ///
 
 
     // The func appends to the current parameter.

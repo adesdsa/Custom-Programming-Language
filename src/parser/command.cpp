@@ -144,12 +144,12 @@ bool Command::Append(const Token& currToken, const Token& nextToken)
         this->m_tokens.push_back(currToken);
     }
 
-    if (IsValue(nextToken, ";") && !this->m_bIgnoreEON) 
+    if (TokenClassifier::IsValue(nextToken, ";") && !this->m_bIgnoreEON) 
     {
         bReturnValue = true;
     }
 
-    else if (IsValue(nextToken, "{") || IsValue(nextToken, "}")) 
+    else if (TokenClassifier::IsValue(nextToken, "{") || TokenClassifier::IsValue(nextToken, "}")) 
     {
         bReturnValue = true;
     }
@@ -159,11 +159,16 @@ bool Command::Append(const Token& currToken, const Token& nextToken)
 
 bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
 {
-    if (IsType(currToken, TokenTypes::IDENTIFIER) && IsValue(nextToken, "="))
-        return FinishAndAssignType(CommandTypes::IDENTIFIER);
-    else if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (
+        TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER) && 
+        TokenClassifier::IsValue(nextToken, "=")
+    )
     {
-        if (IsOperator(nextToken))
+        return FinishAndAssignType(CommandTypes::IDENTIFIER);
+    }
+    else if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER))
+    {
+        if (TokenClassifier::IsOperator(nextToken))
         {
             m_tokens.push_back(Token(TokenTypes::HAS_PARAM, 
                 currToken.GetLine(), currToken.GetColumn()));
@@ -176,41 +181,45 @@ bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
         }
         else return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
     }
-    else if (IsType(currToken, TokenTypes::KEYWORD))
+    else if (TokenClassifier::IsType(currToken, TokenTypes::KEYWORD))
     {
-        if (IsValue(currToken, "void"))
+        if (TokenClassifier::IsValue(currToken, "void"))
             return FinishAndAssignType(m_sType = CommandTypes::VOID_COMMAND);
-        else if (IsAccessRights(currToken))
+        else if (TokenClassifier::IsAccessRights(currToken))
             return NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
-        else if (IsScope(currToken))
+        else if (TokenClassifier::IsScope(currToken))
             return NoFinishAndAssignType(m_sType = CommandTypes::SCOPE);
-        else if (IsValue(currToken, "else"))
+        else if (TokenClassifier::IsValue(currToken, "else"))
             return FinishAndAssignType(m_sType = CommandTypes::ELSE);
-        else if (IsValue(currToken, "if"))
+        else if (TokenClassifier::IsValue(currToken, "if"))
             return CompareExpected(nextToken, "(", CommandTypes::IF_CALL);
-        else if (IsValue(currToken, "elif"))
+        else if (TokenClassifier::IsValue(currToken, "elif"))
             return CompareExpected(nextToken, "(", CommandTypes::ELIF_CALL);
-        else if (IsValue(currToken, "for"))
+        else if (TokenClassifier::IsValue(currToken, "for"))
             return CompareExpected(nextToken, "(", CommandTypes::FOR_CALL);
-        else if (IsValue(currToken, "while"))
+        else if (TokenClassifier::IsValue(currToken, "while"))
             return CompareExpected(nextToken, "(", CommandTypes::WHILE_CALL);
-        else if (IsValue(currToken, "sizeof"))
+        else if (TokenClassifier::IsValue(currToken, "sizeof"))
             return CompareExpected(nextToken, "(", CommandTypes::SIZEOF_CALL);
-        else if (IsValue(currToken, "return"))
+        else if (TokenClassifier::IsValue(currToken, "return"))
             return FinishAndAssignType(CommandTypes::RETURN);
-        else if (IsControlStatement(currToken))
+        else if (TokenClassifier::IsControlStatement(currToken))
             return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
-        else if (IsValue(currToken, "pass"))
+        else if (TokenClassifier::IsValue(currToken, "pass"))
             return FinishAndAssignType(CommandTypes::PASS);
         else return FoundUnknown(currToken);
     }
-    else if (IsExpressionStart(currToken))
+    else if (TokenClassifier::IsExpressionStart(currToken))
     {
-        if (IsValue(currToken, "-") || IsValue(currToken, "not") ||
-            IsValue(currToken, "*") || IsValue(currToken, "&") || 
-            IsValue(currToken, "("))
+        if (
+            TokenClassifier::IsValue(currToken, "-")   || 
+            TokenClassifier::IsValue(currToken, "not") ||
+            TokenClassifier::IsValue(currToken, "*")   || 
+            TokenClassifier::IsValue(currToken, "&")   || 
+            TokenClassifier::IsValue(currToken, "(")
+        )
         {
-            if (IsValue(currToken, "("))
+            if (TokenClassifier::IsValue(currToken, "("))
             {
                 m_iParanthesesCounter++;
             }
@@ -218,35 +227,35 @@ bool Command::ParseUnidentified(const Token& currToken, const Token& nextToken)
         }
         else return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
-    else if (IsType(currToken, TokenTypes::PUNCTUATION))
+    else if (TokenClassifier::IsType(currToken, TokenTypes::PUNCTUATION))
     {
-        if (IsValue(currToken, ";"))
+        if (TokenClassifier::IsValue(currToken, ";"))
             return FinishAndAssignType(CommandTypes::END_OF_COMMAND);
-        else if (IsValue(currToken, "{"))
+        else if (TokenClassifier::IsValue(currToken, "{"))
             return FinishAndAssignType(CommandTypes::BLOCK_START);
-        else if (IsValue(currToken, "}"))
+        else if (TokenClassifier::IsValue(currToken, "}"))
             return FinishAndAssignType(CommandTypes::BLOCK_END);
-        else if (IsValue(currToken, "["))
+        else if (TokenClassifier::IsValue(currToken, "["))
         {
             HandleFoundParantheses();
             return NoFinishAndAssignType(CommandTypes::ARRAY_VALUE_START);
         }
         else return FoundUnknown(currToken);
     }
-    else if (IsValue(currToken, "="))
+    else if (TokenClassifier::IsValue(currToken, "="))
         return FinishAndAssignType(CommandTypes::ASSIGNMENT);
-    else if (IsType(currToken, TokenTypes::EOF_TOKEN))
+    else if (TokenClassifier::IsType(currToken, TokenTypes::EOF_TOKEN))
         return FinishAndAssignType(CommandTypes::EOF_TOKEN);
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseIdentifier(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, "(") || IsValue(currToken, "[")) 
+    if (TokenClassifier::IsValue(currToken, "(") || TokenClassifier::IsValue(currToken, "[")) 
     {
         HandleFoundParantheses();
         m_bFirstParanthesesEnter = false;
-        if (IsValue(currToken, "("))
+        if (TokenClassifier::IsValue(currToken, "("))
             return NoFinishAndAssignType(CommandTypes::FUNC_START);
         else return NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS_START);
     }
@@ -264,9 +273,9 @@ bool Command::ParseFuncStart(const Token& currToken, const Token& nextToken)
         else if (m_iParanthesesCounter == 0)
         {
             m_bIgnoreCurrToken = false;
-            if (IsValue(nextToken, "->"))
+            if (TokenClassifier::IsValue(nextToken, "->"))
                 return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
-            else if (IsOperator(nextToken))
+            else if (TokenClassifier::IsOperator(nextToken))
             {
                 m_bIgnoreCurrToken = true;
                 m_tokens.push_back(currToken);
@@ -284,45 +293,51 @@ bool Command::ParseFuncStart(const Token& currToken, const Token& nextToken)
 
 bool Command::ParseFilledFuncDeclaration(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, "->"))
+    if (TokenClassifier::IsValue(currToken, "->"))
         return NoFinishAndAssignType(CommandTypes::ARROW_FUNC_DECLARATION);
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseArrowFuncDeclaration(const Token& currToken, const Token& nextToken)
 {
-    if (IsType(currToken))
+    if (TokenClassifier::IsType(currToken))
         return FinishAndAssignType(CommandTypes::FINISHED_FUNC_DECLARATION);
-    else if (IsValue(currToken, "unsigned") && IsType(nextToken)) return false;
+    else if (
+        TokenClassifier::IsValue(currToken, "unsigned") && 
+        TokenClassifier::IsType(nextToken)
+    ) 
+    {
+        return false;
+    }
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseAccessRights(const Token& currToken, const Token& nextToken)
 {
-    if (IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
-    else if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (TokenClassifier::IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
+    else if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER))
         return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseScope(const Token& currToken, const Token& nextToken)
 {
-    if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER))
         return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseVarDeclarationStart(const Token& currToken, const Token& nextToken)
 {
-    if (IsType(currToken))
+    if (TokenClassifier::IsType(currToken))
     {
-        if (IsValue(nextToken, "[")) 
+        if (TokenClassifier::IsValue(nextToken, "[")) 
         {
             HandleFoundParantheses();
             return NoFinishAndAssignType(
                 CommandTypes::ARRAY_DECLARATION_START);
         }
-        if (IsValue(nextToken, "*"))
+        if (TokenClassifier::IsValue(nextToken, "*"))
             return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
@@ -331,7 +346,7 @@ bool Command::ParseVarDeclarationStart(const Token& currToken, const Token& next
 
 bool Command::ParseParameterKeywordCall(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, "("))
+    if (TokenClassifier::IsValue(currToken, "("))
     {
         HandleFoundParantheses();
         m_bFirstParanthesesEnter = false;
@@ -353,7 +368,7 @@ bool Command::ParseParameterKeywordCall(const Token& currToken, const Token& nex
 bool Command::ParseParameterKeywordStart(const Token& currToken, const Token& nextToken)
 {
     if (HandleDefaultPossibleParamChecks(currToken, "(")) return false;
-    else if (IsValue(currToken, ")")) 
+    else if (TokenClassifier::IsValue(currToken, ")")) 
     {
         if(LowerParanthesesCounter(currToken)) return true;
         if (m_iParanthesesCounter == 0)
@@ -380,9 +395,9 @@ bool Command::ParseParameterKeywordStart(const Token& currToken, const Token& ne
 
 bool Command::ParseExpressionValue(const Token& currToken, const Token& nextToken)
 {
-    if (IsOperator(currToken)) return NoFinishAndAssignType(
+    if (TokenClassifier::IsOperator(currToken)) return NoFinishAndAssignType(
         CommandTypes::EXPRESSION_OPERATOR);
-    else if (IsValue(currToken, ")"))
+    else if (TokenClassifier::IsValue(currToken, ")"))
     {
         LowerParanthesesCounter(currToken);
         return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
@@ -402,10 +417,10 @@ bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextT
         }
         else return false;
     }
-    else if (IsValueToken(currToken))
+    else if (TokenClassifier::IsValueToken(currToken))
     {
-        if (IsType(currToken, TokenTypes::IDENTIFIER)) {
-            if (IsValue(nextToken, "(") || IsValue(nextToken, "["))
+        if (TokenClassifier::IsType(currToken, TokenTypes::IDENTIFIER)) {
+            if (TokenClassifier::IsValue(nextToken, "(") || TokenClassifier::IsValue(nextToken, "["))
             {
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
@@ -418,19 +433,19 @@ bool Command::ParseExpressionOperator(const Token& currToken, const Token& nextT
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
         } 
-        else if (IsType(currToken, TokenTypes::VALUE)) 
+        else if (TokenClassifier::IsType(currToken, TokenTypes::VALUE)) 
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         else return FoundUnknown(currToken);
     }
-    else if (IsValue(currToken, "("))
+    else if (TokenClassifier::IsValue(currToken, "("))
     {
         m_iParanthesesCounter++;
         return false;
     }
-    else if (IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
-    else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  
-        IsValue(currToken, "&")) return false;
-    else if (IsValue(currToken, "sizeof"))
+    else if (TokenClassifier::IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
+    else if (TokenClassifier::IsValue(currToken, "not") || TokenClassifier::IsValue(currToken, "*") ||  
+        TokenClassifier::IsValue(currToken, "&")) return false;
+    else if (TokenClassifier::IsValue(currToken, "sizeof"))
     {
         m_bBuildingParam = true;
         AddToCurrParam(currToken, nextToken);
@@ -481,80 +496,16 @@ bool Command::ParseArrayValueStart(const Token& currToken, const Token& nextToke
         currToken, nextToken, CommandTypes::ARRAY_VALUE);
 }
 
-
-inline bool Command::IsValue(const Token& token, std::string sCompare)
-{
-    return token.GetValue() == sCompare;
-}
-
-inline bool Command::IsType(const Token& token, std::string_view sCompare)
-{
-    return token.GetType() == sCompare;
-}
-
 bool Command::CompareExpected(
     const Token& token, std::string sCompare, std::string_view sValidType)
 {
-    if (IsValue(token, sCompare))
+    if (TokenClassifier::IsValue(token, sCompare))
     {
         m_sType = sValidType;
         return false;
     }
     else return FoundUnknown(token);
 }
-
-bool Command::IsAccessRights(const Token& token)
-{
-    return IsValue(token, "const") || IsValue(token, "readonly");
-}
-
-bool Command::IsScope(const Token& token)
-{
-    return IsValue(token, "global") ||
-        IsValue(token, "var") || IsValue(token, "let");
-}
-
-bool Command::IsExpressionStart(const Token& token)
-{
-    return IsType(token, TokenTypes::IDENTIFIER) ||
-        IsType(token, TokenTypes::VALUE) ||
-        IsValue(token, "-") ||
-        IsValue(token, "not") ||
-        IsValue(token, "*") ||
-        IsValue(token, "&") ||
-        IsValue(token, "(");
-}
-
-inline bool Command::IsOperator(const Token& token)
-{
-    return (IsType(token, TokenTypes::OPERATOR) && !(
-        IsValue(token, "=") ||
-        IsValue(token, "&"))) ||
-        IsValue(token, "and") ||
-        IsValue(token, "or") ||
-        IsValue(token, "xor") ||
-        IsValue(token, "is");
-}
-
-inline bool Command::IsValueToken(const Token& token)
-{
-    return IsType(token, TokenTypes::IDENTIFIER) ||
-        IsType(token, TokenTypes::VALUE);
-}
-
-inline bool Command::IsType(const Token& token)
-{
-    return IsValue(token, "int") ||
-    IsValue(token, "bool") ||
-    IsValue(token, "double") ||
-    IsValue(token, "void");
-}
-
-bool Command::IsControlStatement(const Token& token)
-{
-    return IsValue(token, "break") || IsValue(token, "continue");
-}
-
 
 inline bool Command::FinishAndAssignType(std::string_view sType)
 {
@@ -648,7 +599,7 @@ void Command::AddIdentifier(const Token& currToken)
 
 bool Command::HandleFuncLikeParams(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(currToken, ",")) 
+    if (TokenClassifier::IsValue(currToken, ",")) 
     {
         m_tokens.push_back(currToken);
         if (m_uParameterIndex < m_parameters.size())
@@ -660,15 +611,15 @@ bool Command::HandleFuncLikeParams(const Token& currToken, const Token& nextToke
 
 bool Command::HandleKeywordParams(const Token& currToken, const Token& nextToken)
 {
-    if (IsValue(nextToken, ";")) m_bIgnoreEON = true;
-    if (IsValue(currToken, ";")) 
+    if (TokenClassifier::IsValue(nextToken, ";")) m_bIgnoreEON = true;
+    if (TokenClassifier::IsValue(currToken, ";")) 
     {
         m_tokens.push_back(currToken);
         if (m_uParameterIndex < m_parameters.size())
             m_uParameterIndex++;
         return false;
     }
-    else if (IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
+    else if (TokenClassifier::IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
     {
         m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
@@ -692,7 +643,7 @@ inline bool Command::HandleFoundParantheses()
 bool Command::HandleDefaultPossibleParamChecks(
     const Token& currToken, std::string sParantheses)
 {
-    if (IsValue(currToken, sParantheses)) 
+    if (TokenClassifier::IsValue(currToken, sParantheses)) 
     {
         if (m_bFirstParanthesesEnter)
         {
