@@ -7,7 +7,6 @@ Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
 {
 }
 
-
 std::string_view Command::GetType() const {
     return m_sType;
 }
