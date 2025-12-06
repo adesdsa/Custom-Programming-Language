@@ -82,7 +82,7 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(\b(true|false|null)\b|-?\d+\.\d+|-?\d+)",
+                    R"(\b(true|false)\b|-?\d+\.\d+|-?\d+)",
                     std::regex::optimize
                 );
             } 
@@ -102,7 +102,7 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(//|==|[+\-*/%=<>&])",
+                    R"(//|==|[+\-*/%=<>])",
                     std::regex::optimize
                 );
             } 

@@ -69,7 +69,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
         ParseAccessRights(currToken, nextToken);
     else if (m_sType == CommandTypes::SCOPE) bReturnValue = 
         ParseScope(currToken, nextToken);
-    else if (m_sType == CommandTypes::IDENTIFIER) bReturnValue = 
+    else if (m_sType == CommandTypes::IDENTIFIER_VALUE) bReturnValue = 
         ParseIdentifier(currToken, nextToken);
     else if (m_sType == CommandTypes::FUNC_START) bReturnValue = 
         ParseFuncStart(currToken, nextToken);
@@ -94,8 +94,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
         ParseExpressionValue(currToken, nextToken);
     else if (m_sType == CommandTypes::EXPRESSION_OPERATOR) bReturnValue = 
         ParseExpressionOperator(currToken, nextToken);
-    else if (m_sType == CommandTypes::POINTER_DECLARATION) bReturnValue = 
-        ParsePointerDeclaration(currToken, nextToken);
     else if (m_sType == CommandTypes::NOT_FUNC_IDENTIFIER) bReturnValue = 
         ParseNotFuncIdentifier(currToken, nextToken);
     else if (m_sType == CommandTypes::ARRAY_ACCESS_START) bReturnValue = 
@@ -115,18 +113,6 @@ bool Command::Append(Token& currToken, Token& nextToken)
         bReturnValue = true;
 
     return bReturnValue;
-
-    // extra rules: todo
-    // there is no support for int a, b, c=0;
-    // & * (in the context of pointers) should appear before the identifier when they are called
-    // When declaring a pointer the * should appear after the type 
-    // no support for array pointers/2d arrays
-    // right now we have infinite func params but no default values
-    // right now single line keyword statements do not support single lines but only code blocks.
-    // In PicoC giving a value to an array will be [1 ,2 ,3] and not {1, 2, 3}
-    // Note that if code can be outside of {} is checked in the semantic analysis and not in the parser
-    // A for loop must be of the next prset: for ( var_declaration/identifier assigmnet value ; expression ; expression )
-    // scope and access_rights arent a must have.
 }
 
 bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
@@ -137,16 +123,10 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     {
         if (IsOperator(nextToken))
         {
-            m_tokens.push_back(Token(TokenTypes::HAS_PARAM, 
-                currToken.GetLine(), currToken.GetColumn()));
-            m_parameters.push_back(Command());
-            m_parameters[0].m_tokens.push_back(currToken);
-            m_parameters[0].m_sType = CommandTypes::IDENTIFIER;
-            m_bIgnoreCurrToken = true;
-            m_uParameterIndex++;
+            AddIdentifier(currToken);
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
-        else return NoFinishAndAssignType(CommandTypes::IDENTIFIER);
+        else return NoFinishAndAssignType(CommandTypes::IDENTIFIER_VALUE);
     }
     else if (IsType(currToken, TokenTypes::KEYWORD))
     {
@@ -179,7 +159,6 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     else if (IsExpressionStart(currToken))
     {
         if (IsValue(currToken, "-") || IsValue(currToken, "not") ||
-            IsValue(currToken, "*") || IsValue(currToken, "&") || 
             IsValue(currToken, "("))
         {
             if (IsValue(currToken, "("))
@@ -294,8 +273,6 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
             return NoFinishAndAssignType(
                 CommandTypes::ARRAY_DECLARATION_START);
         }
-        if (IsValue(nextToken, "*"))
-            return NoFinishAndAssignType(CommandTypes::POINTER_DECLARATION);
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
     else return FoundUnknown(currToken);
@@ -400,8 +377,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
         return false;
     }
     else if (IsValue(currToken, ")")) return LowerParanthesesCounter(currToken);
-    else if (IsValue(currToken, "not") || IsValue(currToken, "*") ||  
-        IsValue(currToken, "&")) return false;
+    else if (IsValue(currToken, "not")) return false;
     else if (IsValue(currToken, "sizeof"))
     {
         m_bBuildingParam = true;
@@ -409,12 +385,6 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
         return false;
     }
     else return FoundUnknown(currToken);
-}
-
-inline bool Command::ParsePointerDeclaration(
-    Token& currToken, Token& nextToken)
-{
-    return FinishAndAssignType(CommandTypes::POINTER_DECLARATION);
 }
 
 bool Command::ParseNotFuncIdentifier(Token& currToken, Token& nextToken)
@@ -492,16 +462,13 @@ bool Command::IsExpressionStart(Token& token)
         IsType(token, TokenTypes::VALUE) ||
         IsValue(token, "-") ||
         IsValue(token, "not") ||
-        IsValue(token, "*") ||
-        IsValue(token, "&") ||
         IsValue(token, "(");
 }
 
 inline bool Command::IsOperator(Token& token)
 {
-    return (IsType(token, TokenTypes::OPERATOR) && !(
-        IsValue(token, "=") ||
-        IsValue(token, "&"))) ||
+    return (IsType(token, TokenTypes::OPERATOR) && !
+        IsValue(token, "=")) ||
         IsValue(token, "and") ||
         IsValue(token, "or") ||
         IsValue(token, "xor") ||
@@ -612,7 +579,7 @@ void Command::AddIdentifier(Token& currToken)
         currToken.GetLine(), currToken.GetColumn()));
     m_parameters.push_back(Command());
     m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
-    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
+    m_parameters[m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER_VALUE;
     m_bIgnoreCurrToken = true;
     m_uParameterIndex++;
 }

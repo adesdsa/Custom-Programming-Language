@@ -180,8 +180,7 @@ void CommandLine::CheckLine()
             if (m_line[2].GetType() == CommandTypes::END_OF_COMMAND)
                 bLegalLine = true;
     }
-    else if (m_line[0].GetType() == CommandTypes::POINTER_DECLARATION ||
-        m_line[0].GetType() == CommandTypes::VAR_DECLARATION)
+    else if (m_line[0].GetType() == CommandTypes::VAR_DECLARATION)
     {
         if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
             bLegalLine = true;
@@ -653,7 +652,10 @@ void CommandLine::FoundIllegal(
 {
     // Incase there are errors in the params.
     if (command.GetErrors().size() > 0)
-        m_errors.push_back(command.GetErrors()[0]);
+    {
+        for (int i = 0; i < command.GetErrors().size(); i++)
+            m_errors.push_back(command.GetErrors()[i]);
+    }
     CompileTimeError error(
         ErrorTypes::SYNTAX_ERROR,
         sErrorContent,

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "command.h"
-
 #include "includes/logger/entity_logger.h"
 #include "includes/errors/error_models.h"
 
