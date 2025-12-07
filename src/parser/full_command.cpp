@@ -423,7 +423,7 @@ void FullCommand::ReformCommand(Command& checkedCommand)
             0);
         else CheckParamExpectedExpression(checkedCommand, 0);
     }
-    else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER)
+    else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
     {
         checkedCommand.SetExpression(true);
     }
