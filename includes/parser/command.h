@@ -32,7 +32,7 @@ namespace CommandTypes
 
 
     /// 
-    ///             The next CommandTypes are the finished CommandTypes that need to be reformed in CommandLine.
+    ///             The next CommandTypes are the finished CommandTypes that need to be reformed in FullCommand.
     ///
     inline constexpr std::string_view ELIF                          = "ELIF";
     inline constexpr std::string_view IF                            = "IF";

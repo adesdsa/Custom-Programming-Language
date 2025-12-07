@@ -1,10 +1,10 @@
 #include "includes/parser/parser_logic.h"
 
-ParserLogic::ParserLogic(const std::string& sFilePath) :
+ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
     m_entityLogger("PARSER"),
     m_errorManager(ErrorManager::GetInstance()),
     m_ast(m_entityLogger),
-    m_lexer(sFilePath),
+    m_lexer(filePath),
     m_currentToken(this->FetchToken()),
     m_nextToken(this->FetchToken()) 
 {
@@ -17,7 +17,7 @@ ASTNode* ParserLogic::MainFlow()
 
     while (!this->m_lexer.IsFinishedReadingSRC())
     {
-        CommandLine fullCommand(this->m_entityLogger);
+        FullCommand fullCommand(this->m_entityLogger);
 
         // building full-command
         while (!fullCommand.IsFinished())
@@ -29,10 +29,10 @@ ASTNode* ParserLogic::MainFlow()
         this->HandleFullCommand(fullCommand);
     }
 
-    // cover last CommandLine
-    CommandLine lastCommandLine(this->m_entityLogger);
-    lastCommandLine.AddToken(this->m_currentToken, this->m_nextToken);
-    this->HandleFullCommand(lastCommandLine);
+    // cover last FullCommand
+    FullCommand lastFullCommand(this->m_entityLogger);
+    lastFullCommand.AddToken(this->m_currentToken, this->m_nextToken);
+    this->HandleFullCommand(lastFullCommand);
 
     if (this->m_errorManager.HasErrorsOccured())
     {
@@ -65,7 +65,7 @@ void ParserLogic::Advance()
     this->m_nextToken = std::move(nextToken);
 } 
 
-void ParserLogic::HandleFullCommand(const CommandLine& fullCommand)
+void ParserLogic::HandleFullCommand(const FullCommand& fullCommand)
 {
     if (fullCommand.IsLegal())
     {
