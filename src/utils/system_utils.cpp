@@ -24,8 +24,15 @@ namespace SystemUtils
         return oss.str();
     }
 
-    const std::filesystem::path BuildRelativePath(const std::string& relativePath)
+    const std::filesystem::path BuildRelativePath(const std::wstring& relativePath)
     {
+#ifdef _WIN32
         return std::filesystem::path(PROJECT_ROOT) / relativePath;
+#else
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+        std::string utf8Root = conv.to_bytes(PROJECT_ROOT);
+        std::string utf8Rel = conv.to_bytes(relativePath);
+        return std::filesystem::path(utf8Root) / std::filesystem::path(utf8Rel);
+#endif
     }
 }

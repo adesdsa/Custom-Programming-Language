@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include "includes/utils/tests_utils.h"
 #include "includes/utils/system_utils.h"
@@ -16,7 +16,7 @@ int main(void)
 
     try
     {
-        ParserLogic parser(SystemUtils::BuildRelativePath("tests/inputs/test4.txt"));
+        ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
         parser.MainFlow();
     }
     catch(const CompilationAbortException& abortError)
