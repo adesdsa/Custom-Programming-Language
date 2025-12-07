@@ -7,7 +7,7 @@
 // TEST: Happy Flow - Single function
 TEST(ParserTest, HappyFlowSmallCodeExample) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath("tests/inputs/test3.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
     ASTNode* result_ast = parser.MainFlow();
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
@@ -63,7 +63,7 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
 // TEST: Happy Flow - main function + other function and logic
 TEST(ParserTest, HappyFlowFullProgram) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath("tests/inputs/test4.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
     ASTNode* result_ast = parser.MainFlow();
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
@@ -177,8 +177,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
 
     astPtr = currentNextSibling->nodeFirstChild;
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
-    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
+    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -253,8 +253,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
     astPtr = astPtr->nodeFirstChild;
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
-    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
+    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -307,8 +307,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
     astPtr = astPtr->nodeFirstChild;
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
-    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
+    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -384,8 +384,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     astPtr = astPtr->nodeNextSibling;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
-    EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::IDENTIFIER);
-    EXPECT_EQ(astPtr->nodeFirstChild->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
+    EXPECT_EQ(astPtr->nodeFirstChild->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = astPtr->nodeNextSibling;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
@@ -397,7 +397,7 @@ TEST(ParserTest, HappyFlowFullProgram)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
     astPtr = astPtr->nodeFirstChild;
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -422,8 +422,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
     astPtr = astPtr->nodeFirstChild;
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
-    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
+    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -499,7 +499,7 @@ TEST(ParserTest, HappyFlowFullProgram)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IF);
 
     astPtr = currentNextSibling->nodeFirstChild;
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -517,7 +517,7 @@ TEST(ParserTest, HappyFlowFullProgram)
         IDENTIFIER (low)
     */
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
-    EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::IDENTIFIER);
+    EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -535,6 +535,6 @@ TEST(ParserTest, HappyFlowFullProgram)
 // TEST: Negative Flow - Code with syntax errors
 TEST(ParserTest, NegativeFlowSyntaxErrors) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath("tests/inputs/test6.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test6.txt"));
     EXPECT_THROW(parser.MainFlow(), CompilationAbortException);
 }
