@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast.h"
-#include "commandLine.h"
+#include "full_command.h"
 
 #include "includes/tokenizer/lexer.h"
 #include "includes/errors/error_manager.h"
@@ -16,7 +16,7 @@ public:
      * @brief Runs Parser Pipeline:                                              |
      *                                                                           |
      * This method performs the complete parsing process:                        |
-     * 1. Building CommandLine objects by fetching tokens on demand.             |
+     * 1. Building FullCommand objects by fetching tokens on demand.             |
      *  @note: A full command may represent a function declaration,              |
      *          variable declaration, condition statement, etc....               |
      *                                                                           |
@@ -34,7 +34,7 @@ public:
      * 7. Otherwise, outputs the built AST                                       |
      *                                                                           |
      * @see Command                                                              |
-     * @see CommandLine                                                          |
+     * @see FullCommand                                                          |
      * @see AST                                                                  |
      ****************************************************************************/
     ASTNode* MainFlow();
@@ -47,7 +47,7 @@ public:
     // If `fullCommand` is valid -> construct its subtree in the AST.
     // Otherwise -> record the syntax errors in `m_errorManager`.
     // @param fullCommand: The fully command line to analyze and process.
-    void HandleFullCommand(const CommandLine& fullCommand);
+    void HandleFullCommand(const FullCommand& fullCommand);
 
 private:
     // infrastructures

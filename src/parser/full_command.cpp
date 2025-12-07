@@ -1,15 +1,15 @@
-#include "includes/parser/commandLine.h"
+#include "includes/parser/full_command.h"
 
-unsigned int CommandLine::m_uBlockStartCnt = 0;
-unsigned int CommandLine::m_uBlockCloseCnt = 0;
+unsigned int FullCommand::m_uBlockStartCnt = 0;
+unsigned int FullCommand::m_uBlockCloseCnt = 0;
 
-CommandLine::CommandLine(const EntityLogger& entityLogger): 
+FullCommand::FullCommand(const EntityLogger& entityLogger): 
 m_entityLogger(entityLogger), m_bFinished(false), m_bLegal(true),
 m_uLineIndex(0)
 {
 }
 
-CommandLine::CommandLine(const CommandLine& other):
+FullCommand::FullCommand(const FullCommand& other):
     m_entityLogger(other.m_entityLogger),
     m_bFinished(other.m_bFinished),
     m_bLegal(other.m_bLegal),
@@ -19,7 +19,7 @@ CommandLine::CommandLine(const CommandLine& other):
 {
 }
 
-CommandLine& CommandLine::operator=(const CommandLine& other) {
+FullCommand& FullCommand::operator=(const FullCommand& other) {
     if (this == &other)
         return *this;
     m_bFinished   = other.m_bFinished;
@@ -30,28 +30,28 @@ CommandLine& CommandLine::operator=(const CommandLine& other) {
     return *this;
 }
 
-bool CommandLine::HasCommands() const noexcept {
+bool FullCommand::HasCommands() const noexcept {
     return this->m_line.size() > 0;
 }
 
 
-bool CommandLine::IsFinished() const {
+bool FullCommand::IsFinished() const {
     return m_bFinished;
 }
 
-bool CommandLine::IsLegal() const {
+bool FullCommand::IsLegal() const {
     return m_bLegal;
 }
 
-const std::vector<Command>& CommandLine::GetLine() const {
+const std::vector<Command>& FullCommand::GetLine() const {
     return m_line;
 }
 
-const std::vector<CompileTimeError>& CommandLine::GetErrors() const {
+const std::vector<CompileTimeError>& FullCommand::GetErrors() const {
     return m_errors;
 }
 
-bool CommandLine::AddToken(Token& currToken, Token& nextToken)
+bool FullCommand::AddToken(Token& currToken, Token& nextToken)
 {
     if (!m_bFinished)
     {
@@ -146,15 +146,15 @@ bool CommandLine::AddToken(Token& currToken, Token& nextToken)
     return false;
 }
 
-void CommandLine::CheckLine()
+void FullCommand::CheckLine()
 {
-    m_entityLogger.Info("Checking the legality of the CommandLine");
+    m_entityLogger.Info("Checking the legality of the FullCommand");
     bool bLegalLine = false;
 
     //
     // The next code segment will work this way =>
     // It will check if Command1 Command2 and so on make a legal 
-    // syntax CommandLine.
+    // syntax FullCommand.
     // e.g. VAR_DECLARATION + ASSIGNMENT + EXPRESSION => are legal.
     // It does this by checking: is Command1 VAR_DECLARATION then is 
     // Command2 ASSIGNMENT and so on.
@@ -239,17 +239,17 @@ void CommandLine::CheckLine()
         bLegalLine = m_uBlockStartCnt == m_uBlockCloseCnt;
 
     if (!bLegalLine) {
-        m_entityLogger.Info("Found and illegal CommandLine");
+        m_entityLogger.Info("Found and illegal FullCommand");
         m_bLegal = false;
         CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
             "Couldn't parse the commands into a legal code line",
             m_line[0][0].GetLine(), m_line[0][0].GetColumn(),
             "");
         m_errors.push_back(error);
-    } else m_entityLogger.Info("Found a legal CommandLine");
+    } else m_entityLogger.Info("Found a legal FullCommand");
 }
 
-void CommandLine::ReformCommand(Command& checkedCommand)
+void FullCommand::ReformCommand(Command& checkedCommand)
 {
     //
     //  This func reforms the CommandTypes that have specific 
@@ -459,7 +459,7 @@ void CommandLine::ReformCommand(Command& checkedCommand)
     }
 }
 
-bool CommandLine::CheckConstSize(Command& checkedCommand, int iSize)
+bool FullCommand::CheckConstSize(Command& checkedCommand, int iSize)
 {
     if (checkedCommand.GetTokens().size() != iSize) 
     {
@@ -478,7 +478,7 @@ bool CommandLine::CheckConstSize(Command& checkedCommand, int iSize)
     return false;
 }
 
-bool CommandLine::CheckParantheses(Command& checkedCommand)
+bool FullCommand::CheckParantheses(Command& checkedCommand)
 {
     if (checkedCommand.GetParanthesesCounter() != 0)
     {
@@ -494,7 +494,7 @@ bool CommandLine::CheckParantheses(Command& checkedCommand)
     return false;
 }
 
-bool CommandLine::CheckParamExpectedExpression(
+bool FullCommand::CheckParamExpectedExpression(
     Command& checkedCommand, int iParamIndex)
 {
     Command& innerCommand = checkedCommand.GetParams()[iParamIndex];
@@ -515,7 +515,7 @@ bool CommandLine::CheckParamExpectedExpression(
     return false;
 }
 
-bool CommandLine::CheckParamExpectedTypes(
+bool FullCommand::CheckParamExpectedTypes(
     Command& checkedCommand, int iParamIndex, 
     std::vector<std::string_view> types)
 {
@@ -551,7 +551,7 @@ bool CommandLine::CheckParamExpectedTypes(
     return false;
 }
 
-bool CommandLine::CheckLastFuncParamComa(
+bool FullCommand::CheckLastFuncParamComa(
     Command& checkedCommand, int iBackSteps)
 {
     if (CheckValue(checkedCommand[checkedCommand.GetTokens().size()
@@ -567,7 +567,7 @@ bool CommandLine::CheckLastFuncParamComa(
     return false;
 }
 
-void CommandLine::HandleSingleParamKeyword(Command& checkedCommand)
+void FullCommand::HandleSingleParamKeyword(Command& checkedCommand)
 {
     // Any keyword with a single param e.g.: if, elif have the next blueprint:
     // KEYWORD+(+expresion+)
@@ -576,7 +576,7 @@ void CommandLine::HandleSingleParamKeyword(Command& checkedCommand)
     else CheckParamExpectedExpression(checkedCommand, 0);
 }
 
-void CommandLine::HandleFuncLikeExpressions(
+void FullCommand::HandleFuncLikeExpressions(
     Command& checkedCommand, int iStartingIndex)
 {
     int iParamIndex = 0;
@@ -618,7 +618,7 @@ void CommandLine::HandleFuncLikeExpressions(
     if (m_bLegal) checkedCommand.SetExpression(true);
 }
 
-inline bool CommandLine::CheckLastExpressionOperator(Command& checkedCommand)
+inline bool FullCommand::CheckLastExpressionOperator(Command& checkedCommand)
 {
     Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 2];
     if ((lastToken.GetType() == TokenTypes::OPERATOR ||
@@ -635,17 +635,17 @@ inline bool CommandLine::CheckLastExpressionOperator(Command& checkedCommand)
     return false;
 }
 
-inline bool CommandLine::CheckType(
+inline bool FullCommand::CheckType(
     const Token& token, std::string_view sCompare) const{
     return token.GetType() == sCompare;
 }
 
-inline bool CommandLine::CheckValue(
+inline bool FullCommand::CheckValue(
     const Token& token, std::string sCompare) const{
     return token.GetValue() == sCompare;
 }
 
-void CommandLine::FoundIllegal(
+void FullCommand::FoundIllegal(
     Command& command,
     std::string sErrorContent,
     std::string sHint,
