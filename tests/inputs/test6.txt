@@ -1,0 +1,41 @@
+# this test was made to test illegal cases in the parser
+displayAllPrimeNumbersInRange(low: int, high:) -> void;
+displayAllPrimeNumbersInRange(low: int, high: int) ->;
+displayAllPrimeNumbersInRange(low: int, high: int) void;
+
+main(void + 1) -> int
+{
+    low = 1 +;
+    low = get_int(1, );
+    if ( 1 + 1; 3 + 5)
+    {
+    }
+    sizeof(not true);
+
+	sizeof(int);
+	sizeof(1 + get_int());
+	let low: int = 1 + get_int();
+	let high: int  = get_int() + sizeof(int) + sizeof(low) + get_int(1);
+
+    let test: int[3 - get_int()] = [1, 2 + get_int(), get_int() + 1 + get_int()];
+
+    low[2] = test[1];
+
+    pass;
+	continue;
+	break;
+
+    let temp: int* = ***a + &&low * 1;
+
+    elif(1 == 3)
+    {
+        else
+        {
+            low = low + 1;
+        }
+    }
+	
+	displayAllPrimeNumbersInRange(displayAllPrimeNumbersInRange(), displayAllPrimeNumbersInRange() + 1, 1 + displayAllPrimeNumbersInRange(), 3);
+	low = (1 + 3);
+	return 0;
+}

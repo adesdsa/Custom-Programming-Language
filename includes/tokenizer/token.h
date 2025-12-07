@@ -3,7 +3,8 @@
 #include <vector>
 
 #include "patterns.h"
-#include "logger/entity_logger.h"
+
+#include "includes/logger/entity_logger.h"
 
 // All supported token types
 namespace TokenTypes
@@ -17,6 +18,9 @@ namespace TokenTypes
     inline constexpr std::string_view UNFINISHED_TRIVIA = "UNFINISHED_TRIVIA";
     inline constexpr std::string_view EOF_TOKEN         = "EOF";
     inline constexpr std::string_view UNKNOWN           = "UNKNOWN";
+
+    // This types are used in the parser.
+    inline constexpr std::string_view HAS_PARAM         = "HAS_PARAM";
 }
 
 // Token status holds which part of the building process the token at
@@ -30,9 +34,9 @@ namespace TokenStatus
 class Token
 {
 public:
-    Token(size_t ulLine, const EntityLogger& entityLogger);
-    Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
-    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger);
+    Token(size_t ulLine, size_t ulColumn);
+    Token(std::string_view sTokenType, size_t ulLine, size_t ulColumn);
+    Token(const std::string& sTokenValue, std::string_view sTokenType, size_t ulLine, size_t ulColumn);
 
     ~Token() = default;
 
@@ -42,17 +46,20 @@ public:
     // @return: true -> The token is finished, false -> Otherwise.
     bool Append(char cAddedChar) noexcept;
 
+    // Getters
     const std::string& GetValue() const noexcept; 
     const std::string& GetType() const noexcept;
     size_t GetLine() const noexcept;
+    size_t GetColumn() const noexcept;
 
+    // Operators
     bool operator==(const Token& other) const;
 
 private:
     std::string m_sValue;
     std::string m_sType;
     size_t m_ulLine;
-    const EntityLogger& m_entityLogger;
+    size_t m_ulColumn;
 
     // Set a single character token.
     // @param sTokenValue: New value of the token.

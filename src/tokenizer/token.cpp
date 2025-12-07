@@ -1,32 +1,30 @@
-#include "tokenizer/token.h"
+#include "includes/tokenizer/token.h"
 
-Token::Token(size_t ulLine, const EntityLogger& entityLogger) :
+Token::Token(size_t ulLine, size_t ulColumn) :
     m_sValue(""), 
     m_sType(TokenTypes::UNKNOWN), 
-    m_ulLine(ulLine), 
-    m_entityLogger(entityLogger) {}
+    m_ulLine(ulLine),
+    m_ulColumn(ulColumn) {}
 
-Token::Token(std::string_view sTokenType, size_t ulLine, const EntityLogger& entityLogger) :
+Token::Token(std::string_view sTokenType, size_t ulLine, size_t ulColumn) :
     m_sValue(""), 
     m_sType(sTokenType),
-    m_ulLine(ulLine), 
-    m_entityLogger(entityLogger) {}
+    m_ulLine(ulLine),
+    m_ulColumn(ulColumn) {}
 
 Token::Token(
         const std::string& sTokenValue,
         std::string_view sTokenType,
         size_t ulLine,
-        const EntityLogger& entityLogger
+        size_t ulColumn
     ) :
         m_sValue(sTokenValue),
         m_sType(sTokenType),
         m_ulLine(ulLine),
-        m_entityLogger(entityLogger) {}
+        m_ulColumn(ulColumn) {}
 
 bool Token::Append(char cAddedChar) noexcept
 {   
-    this->m_entityLogger.Info("Append new part to the token");
-
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
     // Check #1: Comments
@@ -63,7 +61,8 @@ bool Token::Append(char cAddedChar) noexcept
 
     // check #5 Operator
     if (this->IsOperatorToken(k_sTempToken, cAddedChar))
-        return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
+        //return this->AssignToken(k_sTempToken, TokenTypes::OPERATOR);
+        return this->AssignIfEmptyOrFinish(k_sTempToken, TokenTypes::OPERATOR);
 
     else if (this->m_sType == TokenTypes::OPERATOR) 
         return TokenStatus::k_bFinished;
@@ -99,11 +98,17 @@ size_t Token::GetLine() const noexcept
     return this->m_ulLine;
 }
 
+size_t Token::GetColumn() const noexcept
+{
+    return this->m_ulColumn;
+}
+
 bool Token::operator==(const Token& other) const
 {
     return this->m_sType == other.m_sType && 
         this->m_sValue == other.m_sValue &&
-        this->m_ulLine == other.m_ulLine;
+        this->m_ulLine == other.m_ulLine &&
+        this->m_ulColumn == other.m_ulColumn;
 }
 
 bool Token::AssignToken(
@@ -201,4 +206,4 @@ bool Token::IsValueToken(const std::string& sToken) const
 bool Token::IsIdentifierToken(const std::string& sToken) const
 {
     return std::regex_match(sToken, RegexPatterns::k_Identifier());
-}
+} 

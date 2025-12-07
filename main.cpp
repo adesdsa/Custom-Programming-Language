@@ -1,7 +1,8 @@
-#include <iostream>
+﻿#include <iostream>
 
-#include "tokenizer/lexer.h"
-#include "logger/entity_logger.h"
+#include "includes/utils/tests_utils.h"
+#include "includes/utils/system_utils.h"
+#include "includes/parser/parser_logic.h"
 
 namespace ReturnCode
 {
@@ -15,19 +16,14 @@ int main(void)
 
     try
     {
-        Lexer lexer("../../tests/inputs/test4.txt");
-        
-        while(!lexer.IsFinishedReadingSRC()) 
-        {
-            auto token = lexer.Tokenize();
-
-            if(token.has_value())
-            {
-                std::cout << token.value().GetType() << " - " << token.value().GetValue() << " - " << token.value().GetLine() << std::endl;
-            }
-        }
+        ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
+        parser.MainFlow();
     }
-
+    catch(const CompilationAbortException& abortError)
+    {
+        std::cerr << "ERROR: " << abortError.what() << std::endl;
+        nReturnValue = ReturnCode::k_nFailed;
+    }
     catch(const std::runtime_error& runtimeError)
     {
         std::cerr << "Run time ERROR: " << runtimeError.what() << std::endl;

@@ -2,22 +2,22 @@
 
 #include "token_factory.h"
 #include "token_handler.h"
-#include "logger/entity_logger.h"
+
+#include "includes/logger/entity_logger.h"
 
 // Responsible for managing all Token entityies to convert src to stream of tokens
 class Lexer
 {
 public:
-    Lexer(const std::string& sFilePath);
+    Lexer(const std::filesystem::path& inputFile);
     
     ~Lexer() = default;
 
-    // Get every token from the source file and push it to the stream.
-    // @return: Relevant token => Reference to the token. Otherwise => nullopt. 
+    // @return: single relevant token (none trivia) from source file
     std::optional<Token> Tokenize();
 
     // Checks If file has ended by reaching EOF.
-    // @return: True => File has ended (EOF), False => Otherwise.
+    // @return: True -> File has ended (EOF), False -> Otherwise.
     bool IsFinishedReadingSRC() const noexcept;
 
     const EntityLogger& GetEntityLogger() const noexcept;

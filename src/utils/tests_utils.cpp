@@ -1,6 +1,6 @@
-#include "utils/tests_utils.h"
+#include "includes/utils/tests_utils.h"
 
-#include <gtest/gtest.h>
+#include <gtest/gtest.h>  // gest FrameWork
 
 namespace TestsUtils
 {
@@ -25,11 +25,15 @@ namespace TestsUtils
 
         while (!lexer.IsFinishedReadingSRC())
         {
-            auto token = lexer.Tokenize();
+            auto optToken = lexer.Tokenize();
 
-            if (token.has_value())
-            { 
-                tokens.push_back(token.value());
+            if(!optToken) continue;
+
+            Token token = std::move(*optToken);
+
+            if (token.GetType() != TokenTypes::EOF_TOKEN)
+            {
+                tokens.push_back(token);
             }
         }
         return tokens;
@@ -44,4 +48,4 @@ namespace TestsUtils
             EXPECT_EQ(results[i], expected[i]) << "Mismatch at token index " << i;
         }
     }
-}
+} 

@@ -1,21 +1,33 @@
-#include "tokenizer/lexer.h"
+#include "includes/tokenizer/lexer.h"
 
-Lexer::Lexer(const std::string& sInputFile) : 
-    m_entityLogger("lexer"), 
-    m_tokenFactory(sInputFile, m_entityLogger),
-    m_tokenHandler(m_entityLogger) {}
+Lexer::Lexer(const std::filesystem::path& inputFile) :
+    m_entityLogger("LEXER"), 
+    m_tokenFactory(inputFile, m_entityLogger),
+    m_tokenHandler(m_entityLogger) 
+{
+    this->m_entityLogger.Info("Finished initializing lexer component successfully");
+}
 
 std::optional<Token> Lexer::Tokenize()
 {
     this->m_entityLogger.Info("Start Creating new token...");
-    try
+
+    while (!this->IsFinishedReadingSRC()) 
     {
-        return this->m_tokenHandler.HandleToken(this->m_tokenFactory.CreateToken());
+        auto token = this->m_tokenHandler.HandleToken(
+            this->m_tokenFactory.CreateToken()
+        );
+        
+        if (token.has_value())
+        {
+            return token;
+        }
     }
-    catch(const std::runtime_error&)
-    {
-        throw;
-    }
+
+    // Gets the EOF token
+    return std::optional<Token>{ 
+        this->m_tokenFactory.CreateToken() 
+    };
 }
 
 bool Lexer::IsFinishedReadingSRC() const noexcept
@@ -26,4 +38,4 @@ bool Lexer::IsFinishedReadingSRC() const noexcept
 const EntityLogger& Lexer::GetEntityLogger() const noexcept
 {
     return this->m_entityLogger;
-}
+} 

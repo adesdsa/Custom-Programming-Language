@@ -1,13 +1,14 @@
 #pragma once
 
-#include "mapped_src.h"
 #include "token.h"
+
+#include "includes/utils/mapped_src.h"
 
 // Will create and build tokens from the stream
 class TokenFactory
 {
 public:
-    TokenFactory(const std::string& sFilePath, const EntityLogger& entityLogger);
+    TokenFactory(const std::filesystem::path& filePath, const EntityLogger& entityLogger);
 
     ~TokenFactory() = default;
 
@@ -22,5 +23,6 @@ public:
 private:
     MappedSRC m_mappedSRC;
     size_t m_ulLineCounter;
+    size_t m_ulColumnCounter;
     const EntityLogger& m_entityLogger;
 };

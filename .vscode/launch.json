@@ -5,7 +5,7 @@
             "name": "Debug Custom-Programming-Language",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Custom-Programming-Language.exe",
+            "program": "${workspaceFolder}/build/Debug/Custom-Programming-Language.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -14,3 +14,4 @@
         }
     ]
 }
+ 
