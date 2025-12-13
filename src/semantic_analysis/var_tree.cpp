@@ -11,11 +11,10 @@ bool VarTableNode::InsertVar(const VarMetaData& varMetaData)
     auto foundVar = FindVar(varMetaData.sName);
     if (foundVar)
     {
-        // todo: add error that var exists
         return true;
     }
 
-    // todo: handle the currentStackOffset
+    this->m_nCurrentStackOffset -= varMetaData.offsetInsideFrame;
     this->m_vars.insert({varMetaData.sName, varMetaData});
     return false;
 }
@@ -33,11 +32,11 @@ std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName)
     {
         return findValue->second;
     }
-    else if (this->m_parent == nullptr)
+    else if (this->m_parent == nullptr) // Incase we are in the root.
     {
         return std::nullopt;
     }
-    else
+    else // Checking if the var was created at the larger scope.
     {
         return this->m_parent->FindVar(sVarName);
     }
