@@ -13,7 +13,7 @@ public:
 
     // The func inserts the variable into the block if it doesnt exist.
     // @param varMetaData: The meta data of the added var.
-    // @return: True -> The var exists. False -> Otherwise.
+    // @return: True -> The insertion worked. False -> The insertion failed.
     bool InsertVar(const VarMetaData& varMetaData);
 
     // The func creates a new block for more vars.

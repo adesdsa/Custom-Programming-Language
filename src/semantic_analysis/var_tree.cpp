@@ -11,12 +11,12 @@ bool VarTableNode::InsertVar(const VarMetaData& varMetaData)
     auto foundVar = FindVar(varMetaData.sName);
     if (foundVar)
     {
-        return true;
+        return false;
     }
 
     this->m_nCurrentStackOffset -= varMetaData.offsetInsideFrame;
     this->m_vars.insert({varMetaData.sName, varMetaData});
-    return false;
+    return true;
 }
 
 VarTableNode* VarTableNode::CreateBlock()
