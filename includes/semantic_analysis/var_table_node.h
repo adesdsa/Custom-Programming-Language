@@ -1,8 +1,10 @@
 #pragma once
+
 #include <optional>
 #include <vector>
 #include <unordered_map>
 #include <memory>
+
 #include "var_table.h"
 
 class VarTableNode

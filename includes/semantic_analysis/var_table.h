@@ -9,7 +9,8 @@
 //  VarMetaData x;  // x is int variable
 //  scope->currentStackOffset -= sizeof(int);  // -4
 //  x.offsetInsideFrame= scope->currentStackOffset;
-struct VarMetaData {
+struct VarMetaData 
+{
     std::string sName;
     Type type;
     AccessRights accessRights;
