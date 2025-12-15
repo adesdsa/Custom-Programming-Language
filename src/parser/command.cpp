@@ -275,6 +275,7 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
         }
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
+    else if (IsType(nextToken) && IsValue(currToken, "unsigned")) return false;
     else return FoundUnknown(currToken);
 }
 
