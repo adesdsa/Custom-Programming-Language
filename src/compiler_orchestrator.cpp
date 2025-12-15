@@ -7,7 +7,8 @@ CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
 void CompilerOrchestrator::MainFlow()
 {
     // TODO: Add semantic analysis logic call here
-    const AST& ast = this->m_parserLogic.MainFlow(); 
+    const AST& ast = this->m_parserLogic.MainFlow();
+    ast.PrintAST();
 }
 
 std::wstring CompilerOrchestrator::DesriralizeCLI(int argc, const char *argv[])
