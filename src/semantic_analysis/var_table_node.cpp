@@ -55,3 +55,13 @@ VarTableNode* VarTableNode::GetBlock(int nBlockIndex)
     }
     return this->m_children[nBlockIndex].get();
 }
+
+VarTableNode& VarTableNode::operator[](size_t index)
+{
+    return *m_children.at(index);
+}
+
+const VarTableNode& VarTableNode::operator[](size_t index) const
+{
+    return *m_children.at(index);
+}

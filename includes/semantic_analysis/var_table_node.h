@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include "var_table.h"
+#include "var_metadata.h"
 
 class VarTableNode
 {
@@ -33,6 +33,12 @@ public:
     // The func returns the block at the given index.
     // @return: nullpt -> The block doesnt exist. Otherwise -> The block at the given index.
     VarTableNode* GetBlock(int nBlockIndex);
+
+
+    // Operators
+    VarTableNode& operator[](size_t index);
+
+    const VarTableNode& operator[](size_t index) const;
 
 private:
     std::unordered_map<std::string, VarMetaData> m_vars;

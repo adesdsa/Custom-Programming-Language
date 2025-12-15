@@ -15,6 +15,7 @@ enum class Type
 
 enum class AccessRights
 {
+    Default,
     Const,  // Please notic because this is cpp keyword first letter is capital
     readonly
 };

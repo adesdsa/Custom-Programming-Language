@@ -3,6 +3,7 @@
 #include "includes/utils/tests_utils.h"
 #include "includes/utils/system_utils.h"
 #include "includes/parser/parser_logic.h"
+#include "includes/semantic_analysis/var_table_node.h"
 
 namespace ReturnCode
 {
@@ -16,8 +17,40 @@ int main(void)
 
     try
     {
-        ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
-        parser.MainFlow();
+        VarTableNode* n1 = new VarTableNode(nullptr);
+        VarMetaData data1;
+        data1.accessRights = AccessRights::Default;
+        data1.offsetInsideFrame = 4;
+        data1.scope = Scope::global;
+        data1.sName = "x";
+        data1.type = Type::Int;
+        n1->InsertVar(data1);
+        auto temp = n1->FindVar("x");
+        if (temp)
+        {
+            std::cout << temp->sName << std::endl;
+        }
+        data1.sName = "y";
+        n1->InsertVar(data1);
+        std::cout << n1->GetStackOffset() << std::endl;
+        VarTableNode* n2 = n1->CreateBlock();
+        n1->CreateBlock();
+        n2->CreateBlock();
+        temp = n2->FindVar("x");
+        if (temp)
+        {
+            std::cout << temp->sName << std::endl;
+        }
+        temp = n2->FindVar("y");
+        if (temp)
+        {
+            std::cout << temp->sName << std::endl;
+        }
+        data1.sName = "z";
+        n2->InsertVar(data1);
+        std::cout << n2->GetStackOffset() << std::endl;
+        //ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
+        //parser.MainFlow();
     }
     catch(const CompilationAbortException& abortError)
     {
