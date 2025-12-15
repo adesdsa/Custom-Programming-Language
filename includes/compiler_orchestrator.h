@@ -8,6 +8,13 @@
 #include "includes/utils/system_utils.h"
 #include "includes/parser/parser_logic.h"
 
+// Manager of all compilers components.
+// performs the complete compiling process.             
+// from request from UI for compilation to final form:
+//
+// native executable:
+//  - PE (.exe) on Windows
+//  - ELF on Linux
 class CompilerOrchestrator
 {
 public:
@@ -54,6 +61,7 @@ public:
      ****************************************************************************/
     void MainFlow();
 
+    // TODO: Replace this method logic with Desrializer class call
     // @brief Desrialize input file path into wstring file path.
     // @param argc & argv: Command Line Arguments.
     // @return Encoded file path as wstring.
