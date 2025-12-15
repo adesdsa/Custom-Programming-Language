@@ -3,7 +3,6 @@
 #include "includes/utils/tests_utils.h"
 #include "includes/utils/system_utils.h"
 #include "includes/parser/parser_logic.h"
-#include "includes/semantic_analysis/var_table_node.h"
 
 namespace ReturnCode
 {
