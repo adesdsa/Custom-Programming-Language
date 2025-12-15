@@ -8,7 +8,8 @@
 TEST(ParserTest, HappyFlowSmallCodeExample) 
 {
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
-    ASTNode* result_ast = parser.MainFlow();
+    const AST& ast = parser.MainFlow();
+    ASTNode* result_ast = ast.GetRoot();
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 
@@ -64,7 +65,9 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
 TEST(ParserTest, HappyFlowFullProgram) 
 {
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
-    ASTNode* result_ast = parser.MainFlow();
+    const AST& ast = parser.MainFlow();
+    ASTNode* result_ast = ast.GetRoot();
+
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 

@@ -100,7 +100,6 @@ void AST::StoreParams(ASTNode* parent, const Command& command)
     }
 }
 
-
 void AST::PrintASTNode(const ASTNode* node, int indent) const 
 {
     if (!node) return;

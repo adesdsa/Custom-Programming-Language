@@ -11,7 +11,7 @@ ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
     this->m_entityLogger.Info("Finished initializing parser component successfully");
 }
 
-ASTNode* ParserLogic::MainFlow()
+const AST& ParserLogic::MainFlow()
 {
     this->m_entityLogger.Info("Start parsing file");
 
@@ -43,7 +43,7 @@ ASTNode* ParserLogic::MainFlow()
     // this->m_ast.PrintAST();
 
     this->m_entityLogger.Info("Finished parsing file");
-    return this->m_ast.GetRoot();
+    return this->m_ast;
 }
 
 Token ParserLogic::FetchToken()
