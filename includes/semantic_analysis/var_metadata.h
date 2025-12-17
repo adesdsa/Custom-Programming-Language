@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+
 #include "semantic_consts.h"
 
 // Usage example:
