@@ -8,13 +8,10 @@
 
 namespace ErrorTypes
 {
-    // Syntax Errors
     inline constexpr std::string_view SYNTAX_ERROR = "syntax error";
     inline constexpr std::string_view TYPE_ERROR = "type error";
     inline constexpr std::string_view NAME_ERROR = "name error";
     inline constexpr std::string_view LINKING_EROR = "linking error";
-
-    // Logic Errors
     inline constexpr std::string_view ARGUMENT_ERROR = "argument error";
     inline constexpr std::string_view VALUE_ERROR = "value error";
     inline constexpr std::string_view ACCESS_RIGHT_ERROR = "access rights error";
