@@ -1,6 +1,6 @@
 #include "includes/semantic_analysis/func_table.h"
 
-FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName)
+FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName) const
 {
     auto function = this->m_functions.find(funcName);
     return function != this->m_functions.end() ? function->second.get() : nullptr;

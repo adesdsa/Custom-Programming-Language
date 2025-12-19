@@ -6,7 +6,7 @@
 
 #include "func_metadata.h"
 
-// Holds all functions (signature + body) of certain file
+/// @brief Holds all functions (signature + body) of certain file
 class FuncTable
 {
 public:
@@ -16,7 +16,7 @@ public:
     /// @brief: Search through the table for given function and return pointer to it.
     /// @param funcName: Function's name to search for.
     /// @return: Pointer to the function's metadata -> if found, nullptr -> Otherwise.
-    FuncMetaData* FindFunctionByName(const std::string& funcName);
+    FuncMetaData* FindFunctionByName(const std::string& funcName) const;
 
     /// @brief Inserts a function if it doesn't exist yet.
     /// @param funcMetadata metadata of the function we want to insert.

@@ -9,6 +9,9 @@
 
 constexpr const int ALIGNMENT = 8;
 
+/// @brief Holds metadata of a function.
+/// @struct of a function:
+///      signature + body + flags + frame size
 class FuncMetaData
 {
 public:

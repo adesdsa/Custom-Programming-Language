@@ -10,7 +10,9 @@ enum class Type
     VOID,
     BOOL,
     INT,
-    DOUBLE
+    DOUBLE, 
+    UNSIGNED_INT,
+    UNSIGNED_DOUBLE
 };
 
 enum class AccessRights
