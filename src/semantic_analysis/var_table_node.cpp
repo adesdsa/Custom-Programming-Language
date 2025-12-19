@@ -1,5 +1,4 @@
 #include "includes/semantic_analysis/var_table_node.h"
-#include "var_table_node.h"
 
 VarTableNode::VarTableNode(VarTableNode* parent):
     m_parent(parent),

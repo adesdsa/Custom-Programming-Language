@@ -8,15 +8,15 @@ FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName)
 
 bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
 {
-    auto existingFunction = this->FindFunctionByName(funcMetadata.name);
+    auto existingFunction = this->FindFunctionByName(funcMetadata.GetName());
     
     if (existingFunction)
     {
         // prototype exists but definition is not exists yet
         if (
-            existingFunction->isDeclared && 
-            !existingFunction->isDefined && 
-            funcMetadata.isDefined
+            existingFunction->IsFuncDeclared() && 
+            !existingFunction->IsFuncDefined() && 
+            funcMetadata.IsFuncDefined()
         )
         {
             *existingFunction = std::move(funcMetadata);
@@ -26,7 +26,7 @@ bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
         return false;
     }
 
-    this->m_functions[funcMetadata.name] = std::make_unique<FuncMetaData>(
+    this->m_functions[funcMetadata.GetName()] = std::make_unique<FuncMetaData>(
         std::move(funcMetadata)
     );
     return true;

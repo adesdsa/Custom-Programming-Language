@@ -1,5 +1,20 @@
 #include "includes/semantic_analysis/func_metadata.h"
 
+const std::string &FuncMetaData::GetName() const noexcept
+{
+    return this->m_name;
+}
+
+bool FuncMetaData::IsFuncDefined() const noexcept
+{
+    return this->m_isDefined;
+}
+
+bool FuncMetaData::IsFuncDeclared() const noexcept
+{
+    return this->m_isDeclared;
+}
+
 bool FuncMetaData::HasSameSignature(const FuncMetaData& other) const
 {
     if (this->m_name != other.m_name) return false;
@@ -14,6 +29,8 @@ bool FuncMetaData::HasSameSignature(const FuncMetaData& other) const
             return false;
         }
     }
+
+    return true;
 }
 
 int FuncMetaData::ComputeFrameSize()
@@ -54,7 +71,7 @@ int FuncMetaData::FindFurthestOffset(const VarTableNode* node)
 
     for (const auto& child : node->GetChildren())
     {
-        minOffset = std::min(minOffset, FindDeepestOffset(child.get()));
+        minOffset = std::min(minOffset, FindFurthestOffset(child.get()));
     }
 
     return minOffset;

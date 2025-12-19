@@ -15,6 +15,19 @@ public:
     FuncMetaData() = default;
     ~FuncMetaData() = default;
 
+    // remove copying
+    FuncMetaData(const FuncMetaData&) = delete;
+    FuncMetaData& operator=(const FuncMetaData&) = delete;
+
+    // enable moving instead of copying
+    FuncMetaData(FuncMetaData&&) noexcept = default;
+    FuncMetaData& operator=(FuncMetaData&&) noexcept = default;
+
+    // Getters
+    const std::string& GetName() const noexcept;
+    bool IsFuncDefined() const noexcept;
+    bool IsFuncDeclared() const noexcept;
+
     /// @brief Check for given function's signature equality.
     /// @param other: Function to compare to the original.
     /// @return bool: true -> Both signatures are same, fasle -> Otherwise.
@@ -41,8 +54,8 @@ private:
     /******************\
     |  FUNCTION FLAGS  |
     \******************/
-    bool m_isDeclared = false;
     bool m_isDefined = false;
+    bool m_isDeclared = false;
 
     /*****************\
     |  FUNCTION SIZE  |
