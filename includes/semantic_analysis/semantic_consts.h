@@ -19,5 +19,5 @@ enum class AccessRights
 {
     DEFAULT,
     CONST,
-    READ_ONLY
+    READONLY
 };
