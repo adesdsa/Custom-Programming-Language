@@ -34,6 +34,9 @@ public:
     // @return: nullpt -> The block doesnt exist. Otherwise -> The block at the given index.
     VarTableNode* GetBlock(int nBlockIndex);
 
+    // Getters
+    const std::unordered_map<std::string, VarMetaData>& GetVars() const noexcept;
+    const std::vector<std::unique_ptr<VarTableNode>>& GetChildren() const noexcept;
 
     // Operators
     VarTableNode& operator[](size_t index);
