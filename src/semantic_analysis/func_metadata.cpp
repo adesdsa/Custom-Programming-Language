@@ -1,5 +1,27 @@
 #include "includes/semantic_analysis/func_metadata.h"
 
+FuncMetaData::FuncMetaData(
+    const EntityLogger& entityLogger,
+    const std::string& funcName,
+    Type funcRtype,
+    const std::vector<VarMetaData>& funcParams,
+    std::unique_ptr<VarTableNode> functionScopeRoot
+) :
+    m_entityLogger(entityLogger),
+    m_name(funcName),
+    m_rtype(funcRtype),
+    m_params(funcParams),  // case of no params funcParams will be {}
+    m_functionScopeRoot(std::move(functionScopeRoot)) 
+{
+    // if there is body to the function, it definition
+    if (this->m_functionScopeRoot)
+    {
+        this->m_isDefined = true;
+    }
+
+    this->m_isDeclared = true;
+}
+
 const std::string &FuncMetaData::GetName() const noexcept
 {
     return this->m_name;
@@ -35,6 +57,8 @@ bool FuncMetaData::HasSameSignature(const FuncMetaData& other) const
 
 int FuncMetaData::ComputeFrameSize()
 {
+    this->m_entityLogger.Info("Computing function " + this->m_name + "'s frame size");
+
     // no function body, no need for allocating space
     if (!this->m_functionScopeRoot)
     {

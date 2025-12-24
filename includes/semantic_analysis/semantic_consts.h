@@ -7,17 +7,17 @@ enum class Scope
 
 enum class Type
 {
-    VOID,
-    BOOL,
-    INT,
-    DOUBLE, 
-    UNSIGNED_INT,
-    UNSIGNED_DOUBLE
+    VOID_TYPE,
+    BOOL_TYPE,
+    INT_TYPE,
+    DOUBLE_TYPE, 
+    UNSIGNED_INT_TYPE,
+    UNSIGNED_DOUBLE_TYPE
 };
 
 enum class AccessRights
 {
-    DEFAULT,
-    CONST,
-    READONLY
+    DEFAULT_ACCESS,
+    CONST_ACCESS,
+    READ_ONLY_ACCESS
 };

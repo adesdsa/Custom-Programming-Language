@@ -5,6 +5,8 @@
 #include <memory>
 #include <algorithm>
 
+#include "includes/logger/entity_logger.h"
+
 #include "var_table_node.h"
 
 constexpr const int ALIGNMENT = 8;
@@ -15,7 +17,13 @@ constexpr const int ALIGNMENT = 8;
 class FuncMetaData
 {
 public:
-    FuncMetaData() = default;
+    FuncMetaData(
+        const EntityLogger& entityLogger,
+        const std::string& funcName,
+        Type funcRtype,
+        const std::vector<VarMetaData>& funcParams,
+        std::unique_ptr<VarTableNode> functionScopeRoot = nullptr
+    );
     ~FuncMetaData() = default;
 
     // remove copying
@@ -42,6 +50,8 @@ public:
     int ComputeFrameSize();
 
 private:
+    const EntityLogger& m_entityLogger;
+
     /**********************\
     |  FUNCTION SIGNATURE  |
     \**********************/

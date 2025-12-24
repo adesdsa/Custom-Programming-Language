@@ -19,13 +19,18 @@ bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
             funcMetadata.IsFuncDefined()
         )
         {
-            *existingFunction = std::move(funcMetadata);
+            this->m_entityLogger.Info("Insert function declaration to an existing function definition");
+            this->m_functions[funcMetadata.GetName()] =
+                std::make_unique<FuncMetaData>(std::move(funcMetadata));
             return true;
         }
-
+        this->m_entityLogger.Warnning(
+            "Function " + funcMetadata.GetName() + " already exists. Inseration failed"
+        );
         return false;
     }
 
+    this->m_entityLogger.Info("Inserting a new function into function table");
     this->m_functions[funcMetadata.GetName()] = std::make_unique<FuncMetaData>(
         std::move(funcMetadata)
     );

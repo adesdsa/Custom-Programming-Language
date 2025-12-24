@@ -4,13 +4,15 @@
 #include <memory>
 #include <unordered_map>
 
+#include "includes/logger/entity_logger.h"
+
 #include "func_metadata.h"
 
 /// @brief Holds all functions (signature + body) of certain file
 class FuncTable
 {
 public:
-    FuncTable() = default;
+    FuncTable(const EntityLogger entityLogger) : m_entityLogger(entityLogger) {};
     ~FuncTable() = default;
     
     /// @brief: Search through the table for given function and return pointer to it.
@@ -25,6 +27,8 @@ public:
     bool InsertFunction(FuncMetaData&& funcMetadata);
 
 private:
+    const EntityLogger& m_entityLogger;
+
     // Key: function name, Value: FuncMetaData struct
     std::unordered_map<std::string, std::unique_ptr<FuncMetaData>> m_functions;
 };
