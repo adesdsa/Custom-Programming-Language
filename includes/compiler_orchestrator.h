@@ -7,6 +7,7 @@
 
 #include "includes/utils/system_utils.h"
 #include "includes/parser/parser_logic.h"
+#include "includes/semantic_analysis/semantic_analysis_logic.h"
 
 // Manager of all compilers components.
 // performs the complete compiling process.             
@@ -69,5 +70,4 @@ public:
 
 private:
     std::wstring m_filePath;
-    ParserLogic m_parserLogic;
 };

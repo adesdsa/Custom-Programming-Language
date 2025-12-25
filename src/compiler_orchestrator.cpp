@@ -1,14 +1,19 @@
 #include "includes/compiler_orchestrator.h"
 
 CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
-    m_filePath(DesriralizeCLI(argc, argv)),
-    m_parserLogic(SystemUtils::BuildRelativePath(this->m_filePath)) {}
+    m_filePath(DesriralizeCLI(argc, argv))
+{}
 
 void CompilerOrchestrator::MainFlow()
 {
-    // TODO: Add semantic analysis logic call here
-    const AST& ast = this->m_parserLogic.MainFlow();
+    ParserLogic parserComponent(
+        SystemUtils::BuildRelativePath(this->m_filePath)
+    );
+
+    const AST& ast = parserComponent.MainFlow();
     ast.PrintAST();
+
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
 }
 
 std::wstring CompilerOrchestrator::DesriralizeCLI(int argc, const char *argv[])

@@ -9,6 +9,12 @@ struct DecoratedAST
     const AST& ast;
     FuncTable funcTable;
     VarTableNode varTable;
+
+    DecoratedAST(const AST& ast, const EntityLogger& semanticAnalysisLogger) :
+        ast(ast),
+        funcTable(semanticAnalysisLogger),
+        varTable(nullptr)
+    {}
 };
 
 class SemanticAnalysisLogicComponent
@@ -47,7 +53,6 @@ public:
     const DecoratedAST& MainFlow();
 
 private:
-    DecoratedAST m_decoratedAST;
-
     const EntityLogger& m_semanticAnalysisLogger;
+    DecoratedAST m_decoratedAST;
 };
