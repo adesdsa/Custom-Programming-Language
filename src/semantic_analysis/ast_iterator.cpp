@@ -10,6 +10,11 @@ const ASTNode* ASTIterator::GetCurrent() const noexcept
     return this->m_cursor;
 }
 
+bool ASTIterator::HasNext() const noexcept
+{
+    return this->m_cursor != nullptr;
+}
+
 bool ASTIterator::Next()
 {
     if (!this->m_cursor) return false;

@@ -1,10 +1,12 @@
 #pragma once
 
-#include "ast.h"
+#include "includes/parser/ast.h"
 
-/// @brief On-demand + depth-first iterator for given ast.
+/// @brief On-demand + DFS iterator for given ast.
+/// @see DFS - @link https://en.wikipedia.org/wiki/Depth-first_search
 class ASTIterator
 {
+public:
     ASTIterator(const AST& ast);
     ~ASTIterator() = default;
 
@@ -12,12 +14,16 @@ class ASTIterator
     /// @return const ASTNode* : current AST node from cursor
     const ASTNode* GetCurrent() const noexcept;
 
+    /// @brief Check whether already finished iterate over the AST
+    /// @return bool : true -> Finished iterating the AST, false -> Otherwise
+    bool HasNext() const noexcept;
+
     /// @brief Advance to next node in following order:
         /// IF: There is a first child → Go to first child
         /// ELSE IF: There is a next sibling child → Go to next sibling
         /// ELSE IF: There is a parent node: → Climb up until a parent has a next sibling
         /// ELSE: → Finished iterating over the AST
-    /// @return bool : true -> Sucessfully advanced to next node. false -> Otherwise.
+    /// @return bool : true -> Sucessfully advanced to next node. false -> Otherwise
     bool Next();
 
 private:
