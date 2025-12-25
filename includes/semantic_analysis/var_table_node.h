@@ -48,5 +48,4 @@ private:
     VarTableNode* m_parent;
     std::vector<std::unique_ptr<VarTableNode>> m_children;
     int m_nCurrentStackOffset;
-
 };
