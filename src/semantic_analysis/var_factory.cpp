@@ -1,5 +1,10 @@
 #include "includes/semantic_analysis/var_factory.h"
 
+VarTableNode VarFactory::CreateNewVarTable() const
+{
+    return VarTableNode(nullptr);
+}
+
 VarMetaData VarFactory::CreateVarMetadata(
     std::string sVarName,
     Type varType,
