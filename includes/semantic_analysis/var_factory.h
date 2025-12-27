@@ -5,7 +5,7 @@
 class VarFactory
 {
 public:
-    VarFactory(const EntityLogger& entityLogger);
+    VarFactory() = default;
 
     VarMetaData CreateVarMetadata(
         std::string sVarName,
@@ -14,7 +14,4 @@ public:
         Scope varScope,
         int varOffsetInsideFrame
     ) const;
-
-private:
-    const EntityLogger& m_entityLogger;
 };

@@ -1,9 +1,4 @@
-#include "var_factory.h"
-
-VarFactory::VarFactory(const EntityLogger& entityLogger):
-    m_entityLogger(entityLogger)
-{
-}
+#include "includes/semantic_analysis/var_factory.h"
 
 VarMetaData VarFactory::CreateVarMetadata(
     std::string sVarName,
