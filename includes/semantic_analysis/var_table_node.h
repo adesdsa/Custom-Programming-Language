@@ -25,14 +25,14 @@ public:
     // The func searches for a variable in the current scope.
     // @param sVarName: The var we are looking for.
     // @return: The meta data of the var if it exists.
-    std::optional<VarMetaData> FindVar(const std::string& sVarName);
+    std::optional<VarMetaData> FindVar(const std::string& sVarName) const;
 
     // The func return the stackOffset.
-    int GetStackOffset();
+    int GetStackOffset() const;
 
     // The func returns the block at the given index.
     // @return: nullpt -> The block doesnt exist. Otherwise -> The block at the given index.
-    VarTableNode* GetBlock(int nBlockIndex);
+    VarTableNode* GetBlock(int nBlockIndex) const;
 
     // Getters
     const std::unordered_map<std::string, VarMetaData>& GetVars() const noexcept;

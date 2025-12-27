@@ -7,7 +7,9 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-// @note arrays will not be supported at this point in time
+// @note arrays are not supported at this point in time
+// @check if EntityLogger should be included
+// @check what to do with errors
 
 // @note No one of the func's checks that a var or func exists it's the user's responsebility (e.g. checkExpression doesnt check)
 class SemanticCheckerFacade
@@ -44,9 +46,14 @@ public:
         const VarTableNode& currVarTableNode,
         ExpressionType lastType = ExpressionType::UNKNOWN);
     
-    static bool CheckFuncArguements(std::vector<ExpressionType> paramTypes, const std::string& sFuncName, const FuncTable& funcTable);
+    static bool CheckFuncArguements(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable);
+
+    static bool CheckFunctionReturnType(ExpressionType returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable);
+
+    static bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode);
 
 private:
     static ExpressionType CheckExpressionKnownType(ExpressionType lastType, Type objectType);
     static ExpressionType TokenToExpressionType(const Token& curr);
+    static bool CompareTypes(Type expectedType, ExpressionType gottenType);
 };

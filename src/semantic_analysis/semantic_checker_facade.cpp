@@ -59,22 +59,26 @@ static ExpressionType SemanticCheckerFacade::CheckExpression(
     }
 }
 
-static bool CheckFuncArguements(std::vector<ExpressionType> paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
+static bool CheckFuncArguements(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
 {
     const std::vector<VarMetaData>& funcParams = funcTable.FindFunctionByName(sFuncName)->GetFuncParams();
     if (funcParams.size() != paramTypes.size()) return false;
     if (funcParams[0].type == Type::VOID_TYPE) return true; // Void as a param is a hardcoded check inside the parser.
     for (int i = 0; i < paramTypes.size(); i++)
     {
-        if (paramTypes[i] == ExpressionType::UNKNOWN) return false;
-        else if (paramTypes[i] == ExpressionType::BOOLEAN && funcParams[i].type != Type::BOOL_TYPE) return false;
-        else if (paramTypes[i] == ExpressionType::MATHEMATICAL &&
-            funcParams[i].type != Type::DOUBLE_TYPE &&
-            funcParams[i].type != Type::INT_TYPE &&
-            funcParams[i].type != Type::UNSIGNED_DOUBLE_TYPE &&
-            funcParams[i].type != Type::UNSIGNED_INT_TYPE) return false;
+        if (!CompareTypes(funcParams[i].type, paramTypes[i])) return false;
     }
     return true;
+}
+
+static bool CheckFunctionReturnType(ExpressionType returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable)
+{
+    return CompareTypes(funcTable.FindFunctionByName(sFuncName)->GetRType(), returnExpressionType);
+}
+
+static bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
+{
+    return CompareTypes(currVarTableNode.FindVar(sAssignedVarName)->type, assigmentExpressionType);
 }
 
 static ExpressionType SemanticCheckerFacade::CheckExpressionKnownType(ExpressionType lastType, Type objectType)
@@ -121,4 +125,17 @@ static ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& 
         return ExpressionType::BOOLEAN;
     }
     else return ExpressionType::MATHEMATICAL;
+}
+
+static bool CompareTypes(Type expectedType, ExpressionType gottenType)
+{
+    if (gottenType == ExpressionType::UNKNOWN) return false;
+    if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
+    if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
+    if (gottenType == ExpressionType::MATHEMATICAL && (
+        expectedType == Type::DOUBLE_TYPE ||
+        expectedType == Type::INT_TYPE ||
+        expectedType == Type::UNSIGNED_DOUBLE_TYPE ||
+        expectedType == Type::UNSIGNED_INT_TYPE)) return true;
+    return false;
 }
