@@ -388,10 +388,8 @@ void FullCommand::ReformCommand(Command& checkedCommand)
                 iParamIndex++;
             }
             else if (!bExpectingExpression && (CheckValue(
-                checkedCommand[i], "not") ||
-                CheckValue(checkedCommand[i], "*") ||
-                CheckValue(checkedCommand[i], "&"))) 
-                continue; // If t's not/*/& we skip.
+                checkedCommand[i], "not"))) 
+                continue; // If t's not we skip.
             else if (!CheckValue(checkedCommand[i], ","))
                 FoundIllegal(checkedCommand,
                     "Expected to get a parameter seperator",
