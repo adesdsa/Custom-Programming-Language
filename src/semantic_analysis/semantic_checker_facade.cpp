@@ -1,46 +1,46 @@
 #include "includes/semantic_analysis/semantic_checker_facade.h"
 
-static bool SemanticCheckerFacade::CheckVarDeclaration(VarTableNode currVarTableNode, VarMetaData declaredVar)
+bool SemanticCheckerFacade::CheckVarDeclaration(const VarTableNode& currVarTableNode, const VarMetaData& declaredVar)
 {
     if (currVarTableNode.FindVar(declaredVar.sName)) return false;
     return true;
 }
 
-static bool SemanticCheckerFacade::CheckFuncDeclaration(FuncTable funcTable, FuncMetaData declaredFunc)
+bool SemanticCheckerFacade::CheckFuncDeclaration(const FuncTable& funcTable, const FuncMetaData& declaredFunc)
 {
     if (funcTable.FindFunctionByName(declaredFunc.GetName())) return false;
     return true;
 }
 
-static bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& usedVar)
+bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& usedVar)
 {
     if (currVarTableNode.FindVar(usedVar)) return true;
     return false;
 }
 
-static bool SemanticCheckerFacade::CheckFuncExistence(const FuncTable& funcTable, const std::string& usedFunc)
+bool SemanticCheckerFacade::CheckFuncExistence(const FuncTable& funcTable, const std::string& usedFunc)
 {
     if (funcTable.FindFunctionByName(usedFunc)) return true;
     return false;
 }
 
-static ExpressionType SemanticCheckerFacade::CheckExpression(
+ExpressionType SemanticCheckerFacade::CheckExpression(
     const Command& currExpressionPart,
     const FuncTable& funcTable,
     const VarTableNode& currVarTableNode,
-    ExpressionType lastType = ExpressionType::UNKNOWN)
+    ExpressionType lastType)
 {
     // @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
     ExpressionType currType;
 
     if (currExpressionPart.GetType() == CommandTypes::EXPRESSION)
     {
-        for (int i = 0; i < currExpressionPart; i++)
+        for (int i = 0; i < currExpressionPart.GetTokens().size(); i++)
         {
             // No need to check parantheses.
             if (currExpressionPart[i].GetValue() != "(" && currExpressionPart[i].GetValue() != ")")
             {
-                currType = this->TokenToExpressionType(currExpressionPart[i]);
+                currType = TokenToExpressionType(currExpressionPart[i]);
                 if (lastType == ExpressionType::UNKNOWN) lastType = currType;
                 else if (lastType != currType) return ExpressionType::UNKNOWN;
             }
@@ -49,17 +49,17 @@ static ExpressionType SemanticCheckerFacade::CheckExpression(
     }
     else if (currExpressionPart.GetType() == CommandTypes::IDENTIFIER_VALUE)
     {
-        auto varData = currVarTableNode.FindVar(currExpressionPart[0]);
+        auto varData = currVarTableNode.FindVar(currExpressionPart[0].GetValue());
         return CheckExpressionKnownType(lastType, varData->type);
     }
     else if (currExpressionPart.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        auto funcData = funcTable.FindFunctionByName(currExpressionPart[0]);
+        auto funcData = funcTable.FindFunctionByName(currExpressionPart[0].GetValue());
         return CheckExpressionKnownType(lastType, funcData->GetRType());
     }
 }
 
-static bool CheckFuncArguements(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
+bool SemanticCheckerFacade::CheckFuncArguements(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
 {
     const std::vector<VarMetaData>& funcParams = funcTable.FindFunctionByName(sFuncName)->GetFuncParams();
     if (funcParams.size() != paramTypes.size()) return false;
@@ -71,17 +71,17 @@ static bool CheckFuncArguements(const std::vector<ExpressionType>& paramTypes, c
     return true;
 }
 
-static bool CheckFunctionReturnType(ExpressionType returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable)
+bool SemanticCheckerFacade::CheckFunctionReturnType(ExpressionType returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable)
 {
     return CompareTypes(funcTable.FindFunctionByName(sFuncName)->GetRType(), returnExpressionType);
 }
 
-static bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
+bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
 {
     return CompareTypes(currVarTableNode.FindVar(sAssignedVarName)->type, assigmentExpressionType);
 }
 
-static ExpressionType SemanticCheckerFacade::CheckExpressionKnownType(ExpressionType lastType, Type objectType)
+ExpressionType SemanticCheckerFacade::CheckExpressionKnownType(ExpressionType lastType, Type objectType)
 {
     if (objectType == Type::VOID_TYPE) return ExpressionType::VOID_TYPE;
         else if (objectType == Type::BOOL_TYPE)
@@ -104,7 +104,7 @@ static ExpressionType SemanticCheckerFacade::CheckExpressionKnownType(Expression
         }
 }
 
-static ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
+ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
 {
     // First we check if the token is an operator
     if (token.GetValue() != "=" && token.GetType() == TokenTypes::OPERATOR || token.GetType() == TokenTypes::KEYWORD)
@@ -120,14 +120,14 @@ static ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& 
         else return ExpressionType::MATHEMATICAL;
     }
     // If it's a value
-    else if (token.GetValue() == "true" || curr.GetValue() == "false")
+    else if (token.GetValue() == "true" || token.GetValue() == "false")
     {
         return ExpressionType::BOOLEAN;
     }
     else return ExpressionType::MATHEMATICAL;
 }
 
-static bool CompareTypes(Type expectedType, ExpressionType gottenType)
+bool SemanticCheckerFacade::CompareTypes(Type expectedType, ExpressionType gottenType)
 {
     if (gottenType == ExpressionType::UNKNOWN) return false;
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;

@@ -25,7 +25,7 @@ VarTableNode* VarTableNode::CreateBlock()
     return this->m_children.back().get();
 }
 
-std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName)
+std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName) const
 {
     auto findValue = this->m_vars.find(sVarName);
     if (findValue != this->m_vars.end())
@@ -42,12 +42,12 @@ std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName)
     }
 }
 
-int VarTableNode::GetStackOffset()
+int VarTableNode::GetStackOffset() const
 {
     return this->m_nCurrentStackOffset;
 }
 
-VarTableNode* VarTableNode::GetBlock(int nBlockIndex)
+VarTableNode* VarTableNode::GetBlock(int nBlockIndex) const
 {
     if (nBlockIndex >= this->m_children.size())
     {

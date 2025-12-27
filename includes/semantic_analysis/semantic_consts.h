@@ -1,3 +1,5 @@
+#pragma once
+
 enum class Scope
 {
     GLOBAL,
@@ -28,4 +30,4 @@ enum class ExpressionType
     MATHEMATICAL,
     UNKNOWN,
     VOID_TYPE
-}
+};
