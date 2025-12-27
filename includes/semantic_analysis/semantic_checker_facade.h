@@ -7,10 +7,7 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-// @todo check how to know if funcs exist if they are used before their declaration.
-// @note splitting the parser to make it so that any value is has_param and operators are between them might be good.
-// @todo check if arrays are supported
-// @todo recheck () in an expression
+// @note arrays will not be supported at this point in time
 
 // @note No one of the func's checks that a var or func exists it's the user's responsebility (e.g. checkExpression doesnt check)
 class SemanticCheckerFacade

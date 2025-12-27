@@ -37,9 +37,13 @@ static ExpressionType SemanticCheckerFacade::CheckExpression(
     {
         for (int i = 0; i < currExpressionPart; i++)
         {
-            currType = this->TokenToExpressionType(currExpressionPart[i]);
-            if (lastType == ExpressionType::UNKNOWN) lastType = currType;
-            else if (lastType != currType) return ExpressionType::UNKNOWN;
+            // No need to check parantheses.
+            if (currExpressionPart[i].GetValue() != "(" && currExpressionPart[i].GetValue() != ")")
+            {
+                currType = this->TokenToExpressionType(currExpressionPart[i]);
+                if (lastType == ExpressionType::UNKNOWN) lastType = currType;
+                else if (lastType != currType) return ExpressionType::UNKNOWN;
+            }
         }
         return currType;
     }
