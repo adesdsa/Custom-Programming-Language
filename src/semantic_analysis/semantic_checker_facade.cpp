@@ -74,7 +74,9 @@ bool SemanticCheckerFacade::CheckFunctionReturnType(ExpressionType returnExpress
 
 bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
 {
-    return CompareTypes(currVarTableNode.FindVar(sAssignedVarName)->type, assigmentExpressionType);
+    VarMetaData varData = *currVarTableNode.FindVar(sAssignedVarName);
+    if (varData.accessRights == AccessRights::CONST_ACCESS || varData.accessRights == AccessRights::READ_ONLY_ACCESS) return false;
+    return CompareTypes(varData.type, assigmentExpressionType);
 }
 
 ExpressionType SemanticCheckerFacade::CheckExpressionKnownType(ExpressionType lastType, Type objectType)
