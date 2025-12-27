@@ -12,6 +12,21 @@
 //  x.offsetInsideFrame= scope->currentStackOffset;
 struct VarMetaData 
 {
+    VarMetaData
+    (
+        const std::string& name,
+        Type type,
+        AccessRights access,
+        Scope scope,
+        int offset
+    ): 
+        sName(name),
+        type(type),
+        accessRights(access),
+        scope(scope),
+        offsetInsideFrame(offset)
+    {}
+
     std::string sName;
     Type type;
     AccessRights accessRights;
