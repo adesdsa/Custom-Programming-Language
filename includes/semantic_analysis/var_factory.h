@@ -8,8 +8,13 @@ class VarFactory
 public:
     VarFactory() = default;
 
+    // @brief: Func create a new brand new var table (a new root).
+    // @return VarTableNode: The new var table node.
     VarTableNode CreateNewVarTable() const;
 
+    // @brief: The func create a new var metadata.
+    // @return VarMetaData: A new VarMetadata object.
+    // @note: please add to the varOffsetInsideFrame the type_size+buffer.
     VarMetaData CreateVarMetadata(
         std::string sVarName,
         Type varType,
