@@ -1,8 +1,13 @@
 #include "includes/semantic_analysis/var_factory.h"
 
+VarFactory::VarFactory(const EntityLogger& entityLogger):
+    m_entityLogger(entityLogger)
+{
+}
+
 VarTableNode VarFactory::CreateNewVarTable() const
 {
-    return VarTableNode(nullptr);
+    return VarTableNode(nullptr, m_entityLogger);
 }
 
 VarMetaData VarFactory::CreateVarMetadata(

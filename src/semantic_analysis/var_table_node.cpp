@@ -1,8 +1,9 @@
 #include "includes/semantic_analysis/var_table_node.h"
 
-VarTableNode::VarTableNode(VarTableNode* parent):
+VarTableNode::VarTableNode(VarTableNode* parent, const EntityLogger& entityLogger):
     m_parent(parent),
-    m_nCurrentStackOffset(0)
+    m_nCurrentStackOffset(0),
+    m_entityLogger(entityLogger)
 {
 }
 
@@ -16,16 +17,18 @@ bool VarTableNode::InsertVar(const VarMetaData& varMetaData)
 
     this->m_nCurrentStackOffset -= varMetaData.offsetInsideFrame;
     this->m_vars.insert({varMetaData.sName, varMetaData});
+    m_entityLogger.Info("Added a new var to the varTable");
     return true;
 }
 
 VarTableNode* VarTableNode::CreateBlock()
 {
-    this->m_children.push_back(std::make_unique<VarTableNode>(this));
+    m_entityLogger.Info("Created a new block inside the varTable");
+    this->m_children.push_back(std::make_unique<VarTableNode>(this, m_entityLogger));
     return this->m_children.back().get();
 }
 
-std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName)
+std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName) const
 {
     auto findValue = this->m_vars.find(sVarName);
     if (findValue != this->m_vars.end())
@@ -42,12 +45,12 @@ std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName)
     }
 }
 
-int VarTableNode::GetStackOffset()
+int VarTableNode::GetStackOffset() const
 {
     return this->m_nCurrentStackOffset;
 }
 
-VarTableNode* VarTableNode::GetBlock(int nBlockIndex)
+VarTableNode* VarTableNode::GetBlock(int nBlockIndex) const
 {
     if (nBlockIndex >= this->m_children.size())
     {

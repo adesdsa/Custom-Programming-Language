@@ -6,7 +6,7 @@
 class VarFactory
 {
 public:
-    VarFactory() = default;
+    VarFactory(const EntityLogger& entityLogger);
 
     // @brief: Func create a new brand new var table (a new root).
     // @return VarTableNode: The new var table node.
@@ -22,4 +22,7 @@ public:
         Scope varScope,
         int varOffsetInsideFrame
     ) const;
+
+private:
+    const EntityLogger& m_entityLogger;
 };
