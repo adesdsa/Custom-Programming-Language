@@ -12,7 +12,7 @@ enum class Type
     INT_TYPE,
     DOUBLE_TYPE, 
     UNSIGNED_INT_TYPE,
-    UNSIGNED_DOUBLE_TYPE
+    UNSIGNED_DOUBLE_TYPE,
 };
 
 enum class AccessRights
@@ -21,3 +21,11 @@ enum class AccessRights
     CONST_ACCESS,
     READ_ONLY_ACCESS
 };
+
+enum class ExpressionType
+{
+    BOOLEAN,
+    MATHEMATICAL,
+    UNKNOWN,
+    VOID_TYPE
+}
