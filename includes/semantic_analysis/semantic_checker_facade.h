@@ -7,9 +7,6 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-// @note arrays are not supported at this point in time
-// @check if EntityLogger should be included
-// @check what to do with errors
 // @check what about control flows
 
 // @note No one of the funcs checks that a var or func exist it's the user's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
