@@ -15,9 +15,10 @@ void IASTVisitor::Visit(ASTNode* node)
 void IASTVisitor::InitializeHandlers()
 {
     this->m_handlers = {
+        {CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); }},
+        /*
         {CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); }},
         {CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); }},
-        {CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); }},
         {CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); }},
         {CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); }},
         {CommandTypes::FINISHED_FUNC_DECLARATION,[this](ASTNode* n) { VisitFuncDeclaration(n); }},
@@ -39,5 +40,6 @@ void IASTVisitor::InitializeHandlers()
         {CommandTypes::VOID_COMMAND,             [this](ASTNode* n) { VisitVoidCommand(n); }},
         {CommandTypes::PASS,                     [this](ASTNode* n) { VisitPass(n); }},
         {CommandTypes::EOF_TOKEN,                [this](ASTNode* n) { VisitEof(n); }},
+        */
     };
 }

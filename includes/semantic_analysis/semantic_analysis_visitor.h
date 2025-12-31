@@ -2,6 +2,7 @@
 
 #include "includes/common/abstract_ast_visitor.h"
 #include "includes/errors/error_manager.h"
+#include "includes/parser/ast_extractor.h"
 
 #include "includes/semantic_analysis/var_metadata.h"
 
