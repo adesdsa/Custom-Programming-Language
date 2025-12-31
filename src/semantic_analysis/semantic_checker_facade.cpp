@@ -100,7 +100,8 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
             token.GetValue() == "and" ||
             token.GetValue() == "or" ||
             token.GetValue() == "not" ||
-            token.GetValue() == "xor")
+            token.GetValue() == "xor" ||
+            token.GetValue() == "is")
         {
             return ExpressionType::BOOLEAN;
         }
