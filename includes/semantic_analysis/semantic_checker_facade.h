@@ -8,7 +8,7 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-/// @note No one of the funcs checks that a var or func exist it's the user's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
+/// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
 /// @note before using please read function 'IsBlockFinished' docs
 class SemanticCheckerFacade
 {
