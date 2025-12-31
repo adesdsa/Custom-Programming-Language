@@ -5,6 +5,7 @@
 
 #include "includes/parser/ast.h"
 #include "includes/parser/command.h"
+
 /// @brief Imploment abstract visitor design pattern for AST object.
 /// @see Visitor deisgn pattern  ||
 ///                              \/ 
@@ -32,7 +33,7 @@ protected:
     virtual void VisitIdentifier(ASTNode* node) = 0;
     // ... etc
 
-    /// @brief Initialize dispatch map
+    /// @brief Initialize dispatch map, each child should call it in constructor
     void InitializeHandlers();
 
 private:
