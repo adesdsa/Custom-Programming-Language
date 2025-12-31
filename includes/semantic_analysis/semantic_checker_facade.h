@@ -8,8 +8,6 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-/// @todo right now returning inside a loop is illegal
-
 /// @note No one of the funcs checks that a var or func exist it's the user's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
 /// @note before using please read function 'IsBlockFinished' docs
 class SemanticCheckerFacade
