@@ -1,18 +1,29 @@
 #pragma once
 
 #include <vector>
+#include <stack>
 
 #include "var_table_node.h"
 #include "func_table.h"
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-//// @check what about control flows
+/// @todo right now returning inside a loop is illegal
 
-//// @note No one of the funcs checks that a var or func exist it's the user's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
+/// @note No one of the funcs checks that a var or func exist it's the user's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
+/// @note before using please read function 'IsBlockFinished' docs
 class SemanticCheckerFacade
 {
 public:
+    enum class BlockKind
+    {
+        Function,
+        Loop,
+        If,
+        Elif,
+        Else
+    };
+
     SemanticCheckerFacade() = delete;
 
     /// @brief The func checks if the varName exists.
@@ -21,17 +32,17 @@ public:
     /// @return bool: True-> Var exists. False-> Otherwise.
     static bool CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& varName);
 
-    /// @brief The func checks if the funcNmae declared.
+    /// @brief The func checks if the funcName declared.
     /// @param funcTable The FuncTable.
-    /// @param funcNmae The name of the func called.
+    /// @param funcName The name of the func called.
     /// @return bool: True-> Func declared. False-> Otherwise.
-    static bool CheckFuncExistence(const FuncTable& funcTable, const std::string& funcNmae);
+    static bool CheckFuncDeclaration(const FuncTable& funcTable, const std::string& funcName);
 
-    /// @brief The func checks if the funcNmae defined.
+    /// @brief The func checks if the funcName defined.
     /// @param funcTable The FuncTable.
-    /// @param funcNmae The name of the func called.
+    /// @param funcName The name of the func called.
     /// @return bool: True-> Func defined. False-> Otherwise.
-    static bool CheckFuncDeclaration(const FuncTable& funcTable, const std::string& funcNmae);
+    static bool CheckFuncDefinition(const FuncTable& funcTable, const std::string& funcName);
 
     /// @brief The func is used to check that the expression is legal.
     /// @param currExpressionPart The current checked Command in the expression.
@@ -57,7 +68,7 @@ public:
     /// @param sFuncName The func name.
     /// @param funcTable The func table.
     /// @return bool: True-> The rtype is correct, False-> Otherwise. 
-    static bool CheckFunctionReturnType(ExpressionType returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable);
+    static bool CheckFunctionReturnType(const ExpressionType& returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable);
 
     /// @brief The func is used to check if the assignment is legal.
     /// @param sAssignedVarName The var that is being assigned a new value.
@@ -66,10 +77,54 @@ public:
     /// @return bool: True-> The assignment is legal, False-> Otherwise.
     static bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode);
 
+    /// @brief The func checks if a control statement is legal right now.
+    /// @return bool: True-> Control statement is legal, False-> Otherwise.
+    static bool CheckControlStatement();
+
+    /// @brief The func is used when you enter a block to check that all control paths return a value.
+    /// @param entryKind What block did we enter.
+    /// @param bIsReturnVoid Incase it's a func that returns void do true.
+    /// @return bool: False-> Started an else or elif block not after if or elif, True-> Otherwise.
+    /// @note If this isnt the start of elif or else the return value doesnt matter.
+    static bool EnteredBlock(const BlockKind& entryKind, bool bIsReturnVoid);
+
+    /// @brief The func is used to handle closing a block and do the according checks.
+    /// @return bool: False-> Not all code paths return a value, True-> Otherwise.
+    /// @note If this isnt the end of the func the return value doesnt matter.
+    static bool ExitedBlock();
+
+    /// @brief The func checks if the block is finished.
+    /// Please notice that you have to use this func before you try adding more operations to the current block.
+    /// This is incase there is dead code after finish.
+    /// Incase it returns true and there is more code and not a block finish go to the end of the block and continue checking from there.
+    /// You may call it an error or not just jump to the end of the block either way.
+    /// @return bool: True-> Block returned therefore it is finished, False-> Otherwise.
+    static bool IsBlockFinished();
+
 private:
+enum class OperationKind
+    {
+        None,
+        Return,
+        If,
+        Elif,
+        Else,
+        IfReturn,
+        ElifReturn,
+        ElseReturn,
+        Expression
+    };
+
+    static bool m_bLoopFlag;
+    static size_t m_uLoopBlockCnt;
+    static std::vector<OperationKind> m_lastOperations;
+    static size_t m_uCurrentLevel;
+    static std::stack<BlockKind> m_entryHistory;
+    static bool m_bIsReturnVoid;
+
     /// @brief The func checks the current type and the lastType.
     /// @return ExpressionType: UNKNOWN-> There was a problem, Otherwise-> Legal.
-    static ExpressionType CheckExpressionKnownType(ExpressionType lastType, Type objectType);
+    static ExpressionType CheckExpressionKnownType(ExpressionType lastType, const Type& objectType);
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.
@@ -77,5 +132,8 @@ private:
 
     /// @brief The func Compares the expected and gotten type.
     /// @return bool: True-> The types match, False-> Otherwise.
-    static bool CompareTypes(Type expectedType, ExpressionType gottenType);
+    static bool CompareTypes(const Type& expectedType, const ExpressionType& gottenType);
+
+    /// @brief The func does the default checks before an expression.
+    static void DefaultChecks();
 };
