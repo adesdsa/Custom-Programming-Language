@@ -1,23 +1,18 @@
 #include "includes/semantic_analysis/semantic_checker_facade.h"
 
-bool SemanticCheckerFacade::CheckVarDeclaration(const VarTableNode& currVarTableNode, const VarMetaData& declaredVar)
+bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& varName)
 {
-    return currVarTableNode.FindVar(declaredVar.sName) == std::nullopt;
+    return currVarTableNode.FindVar(varName) != std::nullopt;
 }
 
-bool SemanticCheckerFacade::CheckFuncDeclaration(const FuncTable& funcTable, const FuncMetaData& declaredFunc)
+bool SemanticCheckerFacade::CheckFuncExistence(const FuncTable& funcTable, const std::string& funcNmae)
 {
-    return funcTable.FindFunctionByName(declaredFunc.GetName()) == nullptr;
+    return funcTable.FindFunctionByName(funcNmae)->IsFuncDeclared();
 }
 
-bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& usedVar)
+static bool CheckFuncDeclaration(const FuncTable& funcTable, const std::string& funcNmae)
 {
-    return currVarTableNode.FindVar(usedVar) != std::nullopt;
-}
-
-bool SemanticCheckerFacade::CheckFuncExistence(const FuncTable& funcTable, const std::string& usedFunc)
-{
-    return funcTable.FindFunctionByName(usedFunc) != nullptr;
+    return funcTable.FindFunctionByName(funcNmae)->IsFuncDefined();
 }
 
 ExpressionType SemanticCheckerFacade::CheckExpression(
@@ -26,14 +21,14 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     const VarTableNode& currVarTableNode,
     ExpressionType lastType)
 {
-    // @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
+    /// @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
     ExpressionType currType;
 
     if (currExpressionPart.GetType() == CommandTypes::EXPRESSION)
     {
         for (size_t i = 0; i < currExpressionPart.GetTokens().size(); i++)
         {
-            // No need to check parantheses.
+            /// No need to check parantheses.
             if (currExpressionPart[i].GetValue() != "(" && currExpressionPart[i].GetValue() != ")")
             {
                 currType = TokenToExpressionType(currExpressionPart[i]);
@@ -59,7 +54,7 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
 {
     const std::vector<VarMetaData>& funcParams = funcTable.FindFunctionByName(sFuncName)->GetFuncParams();
     if (funcParams.size() != paramTypes.size()) return false;
-    if (funcParams[0].type == Type::VOID_TYPE) return true; // Void as a param is a hardcoded check inside the parser.
+    if (funcParams[0].type == Type::VOID_TYPE) return true; /// Void as a param is a hardcoded check inside the parser.
     for (size_t i = 0; i < paramTypes.size(); i++)
     {
         if (!CompareTypes(funcParams[i].type, paramTypes[i])) return false;
@@ -98,7 +93,7 @@ ExpressionType SemanticCheckerFacade::CheckExpressionKnownType(ExpressionType la
 
 ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
 {
-    // First we check if the token is an operator
+    /// First we check if the token is an operator
     if (token.GetValue() != "=" && token.GetType() == TokenTypes::OPERATOR || token.GetType() == TokenTypes::KEYWORD)
     {
         if (token.GetValue() == "==" ||
@@ -111,7 +106,7 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
         }
         else return ExpressionType::MATHEMATICAL;
     }
-    // If it's a value
+    /// If it's a value
     else if (token.GetValue() == "true" || token.GetValue() == "false")
     {
         return ExpressionType::BOOLEAN;
