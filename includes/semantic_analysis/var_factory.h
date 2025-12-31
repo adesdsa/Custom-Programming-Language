@@ -19,8 +19,7 @@ public:
         std::string sVarName,
         Type varType,
         AccessRights varAccessRights,
-        Scope varScope,
-        int varOffsetInsideFrame
+        Scope varScope
     ) const;
 
 private:
