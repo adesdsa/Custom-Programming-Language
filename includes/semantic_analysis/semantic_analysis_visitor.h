@@ -26,6 +26,7 @@ public:
     ~SemanticAnalysisVisitor() = default;
 
     virtual void VisitVarDeclaration(ASTNode* node) override;
+    virtual void VisitExpression(ASTNode* node) override;
 
 private:
     ErrorManager& m_errorManager;

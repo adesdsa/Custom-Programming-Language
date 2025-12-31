@@ -1,6 +1,6 @@
 #include "includes/parser/ast_extractor.h"
 
-std::optional<std::string> ASTExtractor::ExtractVarName(ASTNode* varDecNode)
+const std::string& ASTExtractor::ExtractVarName(ASTNode* varDecNode)
 {    
     for (const Token& token : varDecNode->command.GetTokens())
     {
@@ -10,10 +10,10 @@ std::optional<std::string> ASTExtractor::ExtractVarName(ASTNode* varDecNode)
         }
     }
 
-    return std::nullopt;
+    throw std::exception();  // shouldn't get here after syntax checking
 }
 
-std::optional<Type> ASTExtractor::ExtractVarType(ASTNode* varDecNode)
+Type ASTExtractor::ExtractVarType(ASTNode* varDecNode)
 {
     for (const Token& token : varDecNode->command.GetTokens())
     {
@@ -24,7 +24,7 @@ std::optional<Type> ASTExtractor::ExtractVarType(ASTNode* varDecNode)
         }
     }
 
-    return std::nullopt;
+    std::exception();  // shouldn't get here after syntax checking
 }
 
 Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)

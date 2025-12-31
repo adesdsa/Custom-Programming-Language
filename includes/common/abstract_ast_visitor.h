@@ -30,6 +30,7 @@ protected:
     */
 
     virtual void VisitVarDeclaration(ASTNode* node) = 0;
+    virtual void VisitExpression(ASTNode* node) = 0;
     // virtual void VisitIdentifier(ASTNode* node) = 0;
     // ... etc
 
