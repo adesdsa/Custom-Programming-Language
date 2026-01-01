@@ -8,7 +8,7 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-/// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckExpression, CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
+/// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
 /// @note before using please read function 'IsBlockFinished' docs
 class SemanticCheckerFacade
 {
@@ -43,17 +43,15 @@ public:
     static bool CheckFuncDefinition(const FuncTable& funcTable, const std::string& funcName);
 
     /// @brief The func is used to check that the expression is legal.
-    /// It is used by giving it the current part of the expression and the last return of the func if it has.
     /// @param currExpressionPart The current checked Command in the expression.
     /// @param funcTable The funcTable incase the Command is a func call.
     /// @param currVarTableNode The varTable incase the Command is a var use.
-    /// @param lastType The last returned type of the expression.
     /// @return ExpressionType: Illegal-> UNKNOWN, Legal-> Otherwise.
-    /// @note if returned UNKNOWN dont continue checking this.
-    static ExpressionType CheckExpression(const Command& currExpressionPart,
+    /// @note The func does check that vars and funcs exist and have correct type but it doesnt check that 
+    /// the functions gets the right parameters it is your responsebility.
+    static ExpressionType CheckExpression(const Command& expression,
         const FuncTable& funcTable,
-        const VarTableNode& currVarTableNode,
-        ExpressionType lastType = ExpressionType::UNKNOWN);
+        const VarTableNode& currVarTableNode);
     
     /// @brief The func checks that the functions arguments are correct.
     /// It is used by getting the ExpressionTypes of all the arguements and then returning them in a vector.
@@ -122,9 +120,8 @@ enum class OperationKind
     static std::stack<BlockKind> m_entryHistory;
     static bool m_bIsReturnVoid;
 
-    /// @brief The func checks the current type and the lastType.
-    /// @return ExpressionType: UNKNOWN-> There was a problem, Otherwise-> Legal.
-    static ExpressionType CheckExpressionKnownType(ExpressionType lastType, const Type& objectType);
+    /// @brief The func turns a Type into ExpressionType
+    static ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type);
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.
