@@ -43,10 +43,11 @@ public:
     static bool CheckFuncDefinition(const FuncTable& funcTable, const std::string& funcName);
 
     /// @brief The func is used to check that the expression is legal.
+    /// It is used by giving it the current part of the expression and the last return of the func if it has.
     /// @param currExpressionPart The current checked Command in the expression.
     /// @param funcTable The funcTable incase the Command is a func call.
     /// @param currVarTableNode The varTable incase the Command is a var use.
-    /// @param lastType The last known type of the expression.
+    /// @param lastType The last returned type of the expression.
     /// @return ExpressionType: Illegal-> UNKNOWN, Legal-> Otherwise.
     /// @note if returned UNKNOWN dont continue checking this.
     static ExpressionType CheckExpression(const Command& currExpressionPart,
@@ -55,17 +56,18 @@ public:
         ExpressionType lastType = ExpressionType::UNKNOWN);
     
     /// @brief The func checks that the functions arguments are correct.
-    /// @param paramTypes The types that were given to the func.
+    /// It is used by getting the ExpressionTypes of all the arguements and then returning them in a vector.
+    /// @param paramTypes The types of the func args.
     /// @param sFuncName The func name.
     /// @param funcTable The func table.
     /// @return bool: True-> The given arguments are legal, False-> Otherwise.
     static bool CheckFuncArguments(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable);
 
     /// @brief The func checks that the return is the correct type.
-    /// @param returnExpressionType The returnType we got.
+    /// @param returnExpressionType The returnType we got from the returned expression.
     /// @param sFuncName The func name.
     /// @param funcTable The func table.
-    /// @return bool: True-> The rtype is correct, False-> Otherwise. 
+    /// @return bool: True-> The rtype is correct, False-> Otherwise.
     static bool CheckFunctionReturnType(const ExpressionType& returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable);
 
     /// @brief The func is used to check if the assignment is legal.
