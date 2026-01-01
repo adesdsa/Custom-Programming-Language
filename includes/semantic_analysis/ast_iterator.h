@@ -11,8 +11,8 @@ public:
     ~ASTIterator() = default;
 
     /// @brief Look at the current node (holded by iterator cursor)
-    /// @return const ASTNode* : current AST node from cursor
-    const ASTNode* GetCurrent() const noexcept;
+    /// @return ASTNode* : current AST node from cursor
+    ASTNode* GetCurrent() const noexcept;
 
     /// @brief Check whether already finished iterate over the AST
     /// @return bool : true -> Finished iterating the AST, false -> Otherwise

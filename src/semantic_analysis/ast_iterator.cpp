@@ -5,7 +5,7 @@ ASTIterator::ASTIterator(const AST& ast) :
     m_parentStack()  // At the start no parents
 {}
 
-const ASTNode* ASTIterator::GetCurrent() const noexcept
+ASTNode* ASTIterator::GetCurrent() const noexcept
 {
     return this->m_cursor;
 }
