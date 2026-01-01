@@ -8,8 +8,8 @@
 #include "semantic_consts.h"
 #include "includes/parser/command.h"
 
-/// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment)
-/// @note before using please read function 'IsBlockFinished' docs
+/// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment).
+/// @note Before using please read all checks and learn where they need to be used.
 class SemanticCheckerFacade
 {
 public:
@@ -68,6 +68,11 @@ public:
     /// @return bool: True-> The rtype is correct, False-> Otherwise.
     static bool CheckFunctionReturnType(const ExpressionType& returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable);
 
+    /// @brief The func is used to check that the return is inside a func.
+    /// @note The func must be checked before calling CheckFunctionReturnType.
+    /// @return bool: True-> The return is inside a func, False-> Otherwise.
+    static inline bool CheckReturnInsideFunc();
+
     /// @brief The func is used to check if the assignment is legal.
     /// @param sAssignedVarName The var that is being assigned a new value.
     /// @param assigmentExpressionType The Type that is being assigned
@@ -92,7 +97,7 @@ public:
     static bool ExitedBlock();
 
     /// @brief The func checks if the block is finished.
-    /// Please notice that you have to use this func before you try adding more operations to the current block.
+    /// @note Please notice that you have to use this func before you try adding more operations to the current block.
     /// This is incase there is dead code after finish.
     /// Incase it returns true and there is more code and not a block finish go to the end of the block and continue checking from there.
     /// You may call it an error or not just jump to the end of the block either way.
@@ -113,15 +118,16 @@ enum class OperationKind
         Expression
     };
 
+    /// @todo add docs for all params
     static bool m_bLoopFlag;
+    static bool m_bFinishedBlock;
     static size_t m_uLoopBlockCnt;
-    static std::vector<OperationKind> m_lastOperations;
-    static size_t m_uCurrentLevel;
+    static std::stack<OperationKind> m_operationHistory;
     static std::stack<BlockKind> m_entryHistory;
     static bool m_bIsReturnVoid;
 
     /// @brief The func turns a Type into ExpressionType
-    static ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type);
+    static ExpressionType TypeToExpressionType(const Type& type);
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.
@@ -131,6 +137,20 @@ enum class OperationKind
     /// @return bool: True-> The types match, False-> Otherwise.
     static bool CompareTypes(const Type& expectedType, const ExpressionType& gottenType);
 
-    /// @brief The func does the default checks before an expression.
-    static void DefaultChecks();
+    /// @brief The func does the default checks before an expression assignment as a current operation.
+    /// There are three possible reasons why won't need to store the operations:
+    /// 1. We are inside a loop. 2. We arent inside a func. 3. The func is already finished (after return).
+    static inline void DefaultExpressionChecks();
+
+    /// @brief The func is used to handle a block enter in either else or elif.
+    /// @return bool: False-> elif or else not after a condition block(if or elif). True-> Otherwise.
+    static bool ElseElifBlockEnter();
+
+    /// @brief The func is used to handle a block exit in either else or elif.
+    /// @param kind Either else or elif.
+    static void ElseElifBlockExit(OperationKind kind);
+
+    /// @brief The func is used to switch the top of the m_operationHistory stack.
+    /// @param operationKind The operation we add.
+    static void SwitchTop(OperationKind operationKind);
 };
