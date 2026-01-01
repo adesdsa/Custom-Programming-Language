@@ -6,11 +6,13 @@
 #include <memory>
 
 #include "var_metadata.h"
+#include "includes/logger/entity_logger.h"
 
 class VarTableNode
 {
 public:
-    VarTableNode(VarTableNode* parent);
+    VarTableNode(VarTableNode* parent, const EntityLogger& entityLogger);
+    VarTableNode() = delete;
     ~VarTableNode() = default;
 
     // The func inserts the variable into the block if it doesnt exist.
@@ -25,14 +27,14 @@ public:
     // The func searches for a variable in the current scope.
     // @param sVarName: The var we are looking for.
     // @return: The meta data of the var if it exists.
-    std::optional<VarMetaData> FindVar(const std::string& sVarName);
+    std::optional<VarMetaData> FindVar(const std::string& sVarName) const;
 
     // The func return the stackOffset.
-    int GetStackOffset();
+    int GetStackOffset() const;
 
     // The func returns the block at the given index.
     // @return: nullpt -> The block doesnt exist. Otherwise -> The block at the given index.
-    VarTableNode* GetBlock(int nBlockIndex);
+    VarTableNode* GetBlock(int nBlockIndex) const;
 
     // Getters
     const std::unordered_map<std::string, VarMetaData>& GetVars() const noexcept;
@@ -48,5 +50,6 @@ private:
     VarTableNode* m_parent;
     std::vector<std::unique_ptr<VarTableNode>> m_children;
     int m_nCurrentStackOffset;
+    const EntityLogger& m_entityLogger;
 
 };
