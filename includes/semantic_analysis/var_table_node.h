@@ -6,11 +6,13 @@
 #include <memory>
 
 #include "var_metadata.h"
+#include "includes/logger/entity_logger.h"
 
 class VarTableNode
 {
 public:
-    VarTableNode(VarTableNode* parent);
+    VarTableNode(VarTableNode* parent, const EntityLogger& entityLogger);
+    VarTableNode() = delete;
     ~VarTableNode() = default;
 
     // The func inserts the variable into the block if it doesnt exist.
@@ -48,5 +50,6 @@ private:
     VarTableNode* m_parent;
     std::vector<std::unique_ptr<VarTableNode>> m_children;
     int m_nCurrentStackOffset;
+    const EntityLogger& m_entityLogger;
 
 };

@@ -1,8 +1,9 @@
 #include "includes/semantic_analysis/var_table_node.h"
 
-VarTableNode::VarTableNode(VarTableNode* parent):
+VarTableNode::VarTableNode(VarTableNode* parent, const EntityLogger& entityLogger):
     m_parent(parent),
-    m_nCurrentStackOffset(0)
+    m_nCurrentStackOffset(0),
+    m_entityLogger(entityLogger)
 {
 }
 
@@ -16,12 +17,14 @@ bool VarTableNode::InsertVar(const VarMetaData& varMetaData)
 
     this->m_nCurrentStackOffset -= varMetaData.offsetInsideFrame;
     this->m_vars.insert({varMetaData.sName, varMetaData});
+    m_entityLogger.Info("Added a new var to the varTable");
     return true;
 }
 
 VarTableNode* VarTableNode::CreateBlock()
 {
-    this->m_children.push_back(std::make_unique<VarTableNode>(this));
+    m_entityLogger.Info("Created a new block inside the varTable");
+    this->m_children.push_back(std::make_unique<VarTableNode>(this, m_entityLogger));
     return this->m_children.back().get();
 }
 
