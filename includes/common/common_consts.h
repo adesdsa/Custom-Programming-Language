@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 enum class Scope
 {
     GLOBAL,
@@ -23,3 +25,5 @@ enum class AccessRights
     CONST_ACCESS,
     READ_ONLY_ACCESS
 };
+
+inline const std::string k_semanticAnalysisLoggerName = "SEMANTIC_ANALYSIS";
