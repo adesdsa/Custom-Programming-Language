@@ -64,6 +64,7 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 if (funcData) paramType = funcData->GetRType();
                 else return ExpressionType::UNKNOWN;
             }
+            else return ExpressionType::UNKNOWN;
             
             if (currType == ExpressionType::UNKNOWN)
             {
