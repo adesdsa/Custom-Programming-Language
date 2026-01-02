@@ -14,8 +14,8 @@ class ASTExtractor
 {
 public:
     // TODO: Make command IsType, IsValue, IsScope, IsAccessRight a static methods
-    static std::optional<std::string> ExtractVarName(ASTNode* varDecNode);
-    static std::optional<Type> ExtractVarType(ASTNode* varDecNode);
+    static const std::string& ExtractVarName(ASTNode* varDecNode);
+    static Type ExtractVarType(ASTNode* varDecNode);
     static Scope ExtractVarScope(ASTNode* varDecNode);
     static AccessRights ExtractVarAccessRight(ASTNode* varDecNode);
 

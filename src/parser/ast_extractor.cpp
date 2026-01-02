@@ -20,11 +20,11 @@ Type ASTExtractor::ExtractVarType(ASTNode* varDecNode)
         std::optional<Type> type = StringToType(token.GetValue());
         if (type.has_value())
         {
-            return type;
+            return type.value();
         }
     }
 
-    std::exception();  // shouldn't get here after syntax checking
+    throw std::exception();  // shouldn't get here after syntax checking
 }
 
 Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)

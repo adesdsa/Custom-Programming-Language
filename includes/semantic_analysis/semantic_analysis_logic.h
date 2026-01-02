@@ -14,7 +14,7 @@ struct DecoratedAST
     DecoratedAST(const AST& ast, const EntityLogger& semanticAnalysisLogger) :
         ast(ast),
         funcTable(semanticAnalysisLogger),
-        varTable(nullptr)
+        varTable(nullptr, semanticAnalysisLogger)
     {}
 };
 

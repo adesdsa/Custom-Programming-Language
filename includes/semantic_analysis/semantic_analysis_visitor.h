@@ -3,6 +3,7 @@
 #include "includes/common/abstract_ast_visitor.h"
 #include "includes/errors/error_manager.h"
 #include "includes/parser/ast_extractor.h"
+#include "includes/semantic_analysis/var_factory.h"
 
 #include "includes/semantic_analysis/var_metadata.h"
 
@@ -22,12 +23,15 @@
 class SemanticAnalysisVisitor : public IASTVisitor
 {
 public:
-    SemanticAnalysisVisitor();
+    SemanticAnalysisVisitor(const EntityLogger& entityLogger);
     ~SemanticAnalysisVisitor() = default;
 
     virtual void VisitVarDeclaration(ASTNode* node) override;
     virtual void VisitExpression(ASTNode* node) override;
 
 private:
+    const EntityLogger& m_entityLogger;
     ErrorManager& m_errorManager;
+
+    VarFactory m_varFactory;
 };

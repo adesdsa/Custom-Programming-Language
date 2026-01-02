@@ -1,7 +1,9 @@
 #include "includes/semantic_analysis/semantic_analysis_visitor.h"
 
-SemanticAnalysisVisitor::SemanticAnalysisVisitor() :
-    m_errorManager(ErrorManager::GetInstance())
+SemanticAnalysisVisitor::SemanticAnalysisVisitor(const EntityLogger& entityLogger) :
+    m_entityLogger(entityLogger),
+    m_errorManager(ErrorManager::GetInstance()),
+    m_varFactory(entityLogger)
 {
     this->InitializeHandlers();
 }
@@ -14,11 +16,17 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     Scope varScope = ASTExtractor::ExtractVarScope(node);
 
     // FIXME: sketch:
-    // VarMetadata var = this->m_varFactory(varName, varType, varAccessRight, varScope);
+    VarMetaData var = this->m_varFactory.CreateVarMetadata(
+        varName, 
+        varType, 
+        varAccessRight, 
+        varScope
+    );
+
     // this->m_facade.   => call facade tests on `var`
 }
 
 void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
 {
-    
+
 }
