@@ -345,7 +345,21 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     if (m_bBuildingParam)
     {
         m_bIgnoreCurrToken = true;
-        if (AddToCurrParam(currToken, nextToken)) 
+
+        if (IsValue(currToken, ")"))
+        {
+            m_iParanthesesCounter--;
+        }
+
+        if (m_iParanthesesCounter == 0)
+        {
+            if (AddToCurrParam(currToken, currToken)) 
+            {
+                m_bBuildingParam = false;
+                return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+            }
+        }
+        else if (AddToCurrParam(currToken, nextToken)) 
         {
             m_bBuildingParam = false;
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
@@ -354,11 +368,13 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     }
     else if (IsValueToken(currToken))
     {
-        if (IsType(currToken, TokenTypes::IDENTIFIER)) {
+        if (IsType(currToken, TokenTypes::IDENTIFIER)) 
+        {
             if (IsValue(nextToken, "(") || IsValue(nextToken, "["))
             {
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
+                m_iParanthesesCounter = 1;
                 AddToCurrParam(currToken, nextToken);
                 return false;
             }

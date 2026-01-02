@@ -27,6 +27,16 @@ const std::string &FuncMetaData::GetName() const noexcept
     return this->m_name;
 }
 
+const Type& FuncMetaData::GetRType() const noexcept
+{
+    return this->m_rtype;
+}
+
+const std::vector<VarMetaData>& FuncMetaData::GetFuncParams() const noexcept
+{
+    return m_params;
+}
+
 bool FuncMetaData::IsFuncDefined() const noexcept
 {
     return this->m_isDefined;
