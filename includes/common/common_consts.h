@@ -16,7 +16,7 @@ enum class Type
     INT_TYPE,
     DOUBLE_TYPE, 
     UNSIGNED_INT_TYPE,
-    UNSIGNED_DOUBLE_TYPE
+    UNSIGNED_DOUBLE_TYPE,
 };
 
 enum class AccessRights
@@ -26,4 +26,10 @@ enum class AccessRights
     READ_ONLY_ACCESS
 };
 
-inline const std::string k_semanticAnalysisLoggerName = "SEMANTIC_ANALYSIS";
+enum class ExpressionType
+{
+    BOOLEAN,
+    MATHEMATICAL,
+    UNKNOWN,
+    VOID_TYPE
+};

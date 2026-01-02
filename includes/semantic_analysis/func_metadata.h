@@ -36,6 +36,8 @@ public:
 
     // Getters
     const std::string& GetName() const noexcept;
+    const Type& GetRType() const noexcept;
+    const std::vector<VarMetaData>& GetFuncParams() const noexcept;
     bool IsFuncDefined() const noexcept;
     bool IsFuncDeclared() const noexcept;
 

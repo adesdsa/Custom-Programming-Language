@@ -209,9 +209,13 @@ void FullCommand::CheckLine()
     }
     else if (m_line[0].GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
     {
-        if (m_line[1].GetType() == CommandTypes::BLOCK_START ||
-            m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
-                bLegalLine = true;
+        if (m_line[1].GetType() == CommandTypes::BLOCK_START)
+        {
+            m_line[0].SetType(CommandTypes::FINISHED_FUNC_DEFINITION);
+            bLegalLine = true;
+        }
+        else if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
+            bLegalLine = true;
     }
     else if (m_line[0].GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
@@ -388,10 +392,8 @@ void FullCommand::ReformCommand(Command& checkedCommand)
                 iParamIndex++;
             }
             else if (!bExpectingExpression && (CheckValue(
-                checkedCommand[i], "not") ||
-                CheckValue(checkedCommand[i], "*") ||
-                CheckValue(checkedCommand[i], "&"))) 
-                continue; // If t's not/*/& we skip.
+                checkedCommand[i], "not"))) 
+                continue; // If t's not we skip.
             else if (!CheckValue(checkedCommand[i], ","))
                 FoundIllegal(checkedCommand,
                     "Expected to get a parameter seperator",
