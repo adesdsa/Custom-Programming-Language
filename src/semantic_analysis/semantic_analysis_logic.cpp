@@ -1,9 +1,14 @@
 #include "includes/semantic_analysis/semantic_analysis_logic.h"
 
 SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
-    m_semanticAnalysisLogger(k_semanticAnalysisLoggerName),
+    m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),
     m_astIterator(ast),
-    m_decoratedAST(ast, this->m_semanticAnalysisLogger)
+    m_decoratedAST(ast, this->m_semanticAnalysisLogger),
+    m_semanticAnalysisVisitor(
+        this->m_semanticAnalysisLogger,
+        this->m_decoratedAST.varTable,
+        this->m_decoratedAST.funcTable
+    )
 {
     this->m_semanticAnalysisLogger.Info(
         "Finished initializing Semantic Analysis component successfully"
@@ -12,6 +17,7 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
 
 const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 {
+    SemanticAnalysisVisitor semanticAnalysisVisitor()
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();

@@ -5,7 +5,7 @@
 
 #include "var_table_node.h"
 #include "func_table.h"
-#include "semantic_consts.h"
+#include  "includes/common/common_consts.h"
 #include "includes/parser/command.h"
 
 /// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment).

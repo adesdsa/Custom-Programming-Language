@@ -8,6 +8,7 @@
 
 namespace ErrorTypes
 {
+    inline constexpr std::string_view INTERNAL_ERROR = "internal error";
     inline constexpr std::string_view SYNTAX_ERROR = "syntax error";
     inline constexpr std::string_view TYPE_ERROR = "type error";
     inline constexpr std::string_view NAME_ERROR = "name error";
