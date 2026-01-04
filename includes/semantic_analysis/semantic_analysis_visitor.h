@@ -10,6 +10,8 @@
 
 // TODO: Continue each visitor method
 
+constexpr const int IDENTIFIER_NAME_INDEX = 0;
+
 
 /**
  * @brief Responsible for combining all semantic analysis logic all together:
@@ -36,6 +38,8 @@ public:
 
     virtual void VisitVarDeclaration(ASTNode* node) override;
     virtual void VisitExpression(ASTNode* node) override;
+    virtual void VisitIdentifier(ASTNode* node) override;
+    virtual void VisitIdentifierValue(ASTNode* node) override;
 
 private:
     /*****************\

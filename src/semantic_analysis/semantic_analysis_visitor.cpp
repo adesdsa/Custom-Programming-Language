@@ -1,4 +1,5 @@
 #include "includes/semantic_analysis/semantic_analysis_visitor.h"
+#include "semantic_analysis_visitor.h"
 
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,
@@ -88,4 +89,28 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
 
     // for later use, VisitAssignment/VisitReturn/VisitIf/VisitWhile ...
     this->m_lastExpressionType = expressionType;
+}
+
+void SemanticAnalysisVisitor::VisitIdentifier(ASTNode *node)
+{
+    const std::string& identifierName = node->command.GetTokens()[IDENTIFIER_NAME_INDEX].GetValue();
+
+    // can't make assignment to an identifer that doesn't exist
+    if (!SemanticCheckerFacade::CheckVarExistence(*this->m_currentScope, identifierName))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Undefined variable '" + identifierName + "'",
+                node->command.GetTokens()[0].GetLine(),
+                node->command.GetTokens()[0].GetColumn(),
+                "Variable must be declared before use"
+            )
+        );
+    }
+}
+
+void SemanticAnalysisVisitor::VisitIdentifierValue(ASTNode *node)
+{
+    this->VisitIdentifier(node);  // same logic
 }
