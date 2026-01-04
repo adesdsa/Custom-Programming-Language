@@ -11,7 +11,8 @@ SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     m_funcTable(functable),
     m_varFactory(entityLogger),
     m_funcFactory(entityLogger),
-    m_currentScope(&varTable)  // starts at root scope
+    m_currentScope(&varTable),  // starts at root scope
+    m_lastExpressionType(ExpressionType::UNKNOWN)
 {
     this->InitializeHandlers();
 }
@@ -66,5 +67,25 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
 {
+    ExpressionType expressionType = SemanticCheckerFacade::CheckExpression(
+        node->command,
+        this->m_funcTable,
+        *this->m_currentScope
+    );
 
+    if (expressionType == ExpressionType::UNKNOWN)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::TYPE_ERROR,
+                "Invalid expression: undefined identifier or type mismatch",
+                node->command.GetTokens()[0].GetLine(),
+                node->command.GetTokens()[0].GetColumn(),
+                "Ensure all variables and functions are defined, and operand types are compatible"
+            )
+        );
+    }
+
+    // for later use, VisitAssignment/VisitReturn/VisitIf/VisitWhile ...
+    this->m_lastExpressionType = expressionType;
 }

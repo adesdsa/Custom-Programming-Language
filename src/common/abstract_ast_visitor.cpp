@@ -16,11 +16,11 @@ void IASTVisitor::InitializeHandlers()
 {
     this->m_handlers = {
         {CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); }},
+        {CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); }},
         /*
         {CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); }},
         {CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); }},
         {CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); }},
-        {CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); }},
         {CommandTypes::FINISHED_FUNC_DECLARATION,[this](ASTNode* n) { VisitFuncDeclaration(n); }},
         {CommandTypes::FINISHED_FUNC_CALL,       [this](ASTNode* n) { VisitFuncCall(n); }},
         {CommandTypes::IF,                       [this](ASTNode* n) { VisitIf(n); }},

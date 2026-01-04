@@ -8,8 +8,6 @@
 #include "includes/semantic_analysis/semantic_checker_facade.h"
 #include "includes/semantic_analysis/var_metadata.h"
 
-// TODO: Add DecoratedAST here
-// TODO: imp SEMANTIC_ANALYSIS.md
 // TODO: Continue each visitor method
 
 
@@ -24,7 +22,7 @@
  *          DecoratedAST the object (if exist)
  *    5. ELSE: Store corresponding logic errors in errorManager
  * 
- * @see SEMANTIC_ANALYSIS.md
+ * @see docs/SEMANTIC_ANALYSIS.md
 */
 class SemanticAnalysisVisitor : public IASTVisitor
 {
@@ -40,16 +38,30 @@ public:
     virtual void VisitExpression(ASTNode* node) override;
 
 private:
+    /*****************\
+    |      Utils      |
+    \*****************/
     const EntityLogger& m_entityLogger;
     ErrorManager& m_errorManager;
 
-    // Symbol tables (references to DecoratedAST's tables)
+    /*****************\
+    |  Symbol Tables  |
+    \*****************/
     VarTableNode& m_varTable;
     FuncTable& m_funcTable;
 
-    // Factories
+    /*************\
+    |  Factories  |
+    \*************/
     VarFactory m_varFactory;
     FuncFactory m_funcFactory;
 
+    /******************************\
+    |  Helper Fields For Handlers  |
+    \******************************/
+
     VarTableNode* m_currentScope;  // tracks current scope block
+
+    // stores result of last VisitExpression for parent context to use
+    ExpressionType m_lastExpressionType;
 };

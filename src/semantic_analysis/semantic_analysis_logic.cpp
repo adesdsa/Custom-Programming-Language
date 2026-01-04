@@ -17,10 +17,10 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
 
 const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 {
-    SemanticAnalysisVisitor semanticAnalysisVisitor()
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();
+        this->m_semanticAnalysisVisitor.Visit(curr);
         (void)this->m_astIterator.Next();
     }
 
