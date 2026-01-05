@@ -33,7 +33,24 @@ protected:
     virtual void VisitExpression(ASTNode* node) = 0;
     virtual void VisitIdentifier(ASTNode* node) = 0;
     virtual void VisitIdentifierValue(ASTNode* node) = 0;
-    // ... etc
+    virtual void VisitAssignment(ASTNode* node) = 0;
+    virtual void VisitFuncDeclaration(ASTNode* node) = 0;
+    virtual void VisitFuncDefinition(ASTNode* node) = 0;
+    virtual void VisitFuncCall(ASTNode* node) = 0;
+    virtual void VisitIf(ASTNode* node) = 0;
+    virtual void VisitElif(ASTNode* node) = 0;
+    virtual void VisitElse(ASTNode* node) = 0;
+    virtual void VisitWhile(ASTNode* node) = 0;
+    virtual void VisitFor(ASTNode* node) = 0;
+    virtual void VisitReturn(ASTNode* node) = 0;
+    virtual void VisitControlStatement(ASTNode* node) = 0;
+    virtual void VisitBlockStart(ASTNode* node) = 0;
+    virtual void VisitBlockEnd(ASTNode* node) = 0;
+    virtual void VisitEndOfCommand(ASTNode* node) = 0;
+    virtual void VisitSizeof(ASTNode* node) = 0;
+    virtual void VisitVoidCommand(ASTNode* node) = 0;
+    virtual void VisitPass(ASTNode* node) = 0;
+    virtual void VisitEof(ASTNode* node) = 0;
 
     /// @brief Initialize dispatch map, each child should call it in constructor
     void InitializeHandlers();

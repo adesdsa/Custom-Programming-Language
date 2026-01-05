@@ -18,10 +18,10 @@ void IASTVisitor::InitializeHandlers()
         {CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); }},
         {CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); }},
         {CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); }},
-        /*
         {CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); }},
         {CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); }},
         {CommandTypes::FINISHED_FUNC_DECLARATION,[this](ASTNode* n) { VisitFuncDeclaration(n); }},
+        {CommandTypes::FINISHED_FUNC_DEFINITION, [this](ASTNode* n) { VisitFuncDefinition(n); }},
         {CommandTypes::FINISHED_FUNC_CALL,       [this](ASTNode* n) { VisitFuncCall(n); }},
         {CommandTypes::IF,                       [this](ASTNode* n) { VisitIf(n); }},
         {CommandTypes::ELIF,                     [this](ASTNode* n) { VisitElif(n); }},
@@ -33,13 +33,9 @@ void IASTVisitor::InitializeHandlers()
         {CommandTypes::BLOCK_START,              [this](ASTNode* n) { VisitBlockStart(n); }},
         {CommandTypes::BLOCK_END,                [this](ASTNode* n) { VisitBlockEnd(n); }},
         {CommandTypes::END_OF_COMMAND,           [this](ASTNode* n) { VisitEndOfCommand(n); }},
-        {CommandTypes::ARRAY_DECLARATION,        [this](ASTNode* n) { VisitArrayDeclaration(n); }},
-        {CommandTypes::ARRAY_ACCESS,             [this](ASTNode* n) { VisitArrayAccess(n); }},
-        {CommandTypes::ARRAY_VALUE,              [this](ASTNode* n) { VisitArrayValue(n); }},
         {CommandTypes::SIZEOF,                   [this](ASTNode* n) { VisitSizeof(n); }},
         {CommandTypes::VOID_COMMAND,             [this](ASTNode* n) { VisitVoidCommand(n); }},
         {CommandTypes::PASS,                     [this](ASTNode* n) { VisitPass(n); }},
         {CommandTypes::EOF_TOKEN,                [this](ASTNode* n) { VisitEof(n); }},
-        */
     };
 }

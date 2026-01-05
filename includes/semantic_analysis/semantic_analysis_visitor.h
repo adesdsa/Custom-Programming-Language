@@ -8,24 +8,8 @@
 #include "includes/semantic_analysis/semantic_checker_facade.h"
 #include "includes/semantic_analysis/var_metadata.h"
 
-// TODO: Continue each visitor method
-
 constexpr const int IDENTIFIER_NAME_INDEX = 0;
 
-
-/**
- * @brief Responsible for combining all semantic analysis logic all together:
- * 
- * Contains all handler for each command:
- *    1. Deconstruct command
- *    2. Create corresponding metadata (if needed) based on step 1 result
- *    3. Call facade on the metadata (if exist) or result of step 1
- *    4. IF: Facade passed -> Insert into the corresponding field in 
- *          DecoratedAST the object (if exist)
- *    5. ELSE: Store corresponding logic errors in errorManager
- * 
- * @see docs/SEMANTIC_ANALYSIS.md
-*/
 class SemanticAnalysisVisitor : public IASTVisitor
 {
 public:
@@ -40,32 +24,65 @@ public:
     virtual void VisitExpression(ASTNode* node) override;
     virtual void VisitIdentifier(ASTNode* node) override;
     virtual void VisitIdentifierValue(ASTNode* node) override;
+    virtual void VisitAssignment(ASTNode* node) override;
+    virtual void VisitFuncDeclaration(ASTNode* node) override;
+    virtual void VisitFuncDefinition(ASTNode* node) override;
+    virtual void VisitFuncCall(ASTNode* node) override;
+    virtual void VisitIf(ASTNode* node) override;
+    virtual void VisitElif(ASTNode* node) override;
+    virtual void VisitElse(ASTNode* node) override;
+    virtual void VisitWhile(ASTNode* node) override;
+    virtual void VisitFor(ASTNode* node) override;
+    virtual void VisitReturn(ASTNode* node) override;
+    virtual void VisitControlStatement(ASTNode* node) override;
+    virtual void VisitBlockStart(ASTNode* node) override;
+    virtual void VisitBlockEnd(ASTNode* node) override;
+    virtual void VisitEndOfCommand(ASTNode* node) override;
+    virtual void VisitSizeof(ASTNode* node) override;
+    virtual void VisitVoidCommand(ASTNode* node) override;
+    virtual void VisitPass(ASTNode* node) override;
+    virtual void VisitEof(ASTNode* node) override;
 
 private:
-    /*****************\
-    |      Utils      |
-    \*****************/
     const EntityLogger& m_entityLogger;
     ErrorManager& m_errorManager;
 
-    /*****************\
-    |  Symbol Tables  |
-    \*****************/
     VarTableNode& m_varTable;
     FuncTable& m_funcTable;
 
-    /*************\
-    |  Factories  |
-    \*************/
     VarFactory m_varFactory;
     FuncFactory m_funcFactory;
 
-    /******************************\
-    |  Helper Fields For Handlers  |
-    \******************************/
-
-    VarTableNode* m_currentScope;  // tracks current scope block
-
-    // stores result of last VisitExpression for parent context to use
+    VarTableNode* m_currentScope;
     ExpressionType m_lastExpressionType;
+
+    std::string m_lastIdentifierName;
+    bool m_pendingAssignment = false;
+    size_t m_assignmentLine = 0;
+    size_t m_assignmentColumn = 0;
+    bool m_identifierError = false;
+    
+    std::string m_currentFunctionName;
+    std::vector<ExpressionType> m_funcCallArgTypes;
+
+    /// @brief If some logic errors already detected in handler
+        /// then next handlers in the chain may need use this knowlage
+    void SignalFailureForNextHandlers() noexcept;
+
+    /// @brief Clears all state related to the deferred assignment type check mechanism.
+    /// 
+    /// Called when:
+    ///   - Assignment completes (after type check in VisitExpression)
+    ///   - Assignment fails (invalid/const/readonly identifier)
+    ///   - Guards trigger (null node, empty tokens)
+    ///
+    /// Resets:
+    ///   - m_lastIdentifierName: Variable name waiting for type check
+    ///   - m_pendingAssignment:  Flag for VisitExpression to do type check
+    ///   - m_assignmentLine/Col: Location of '=' for error messages
+    ///   - m_identifierError:    Flag indicating VisitIdentifier found error
+    void ResetAssignmentState() noexcept;
+
+    std::string TypeToString(Type type) const noexcept;
+    std::string ExpressionTypeToString(ExpressionType expressionType) const noexcept;
 };
