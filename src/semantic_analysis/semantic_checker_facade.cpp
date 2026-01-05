@@ -16,15 +16,17 @@ bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNo
 bool SemanticCheckerFacade::CheckFuncDeclaration(const FuncTable& funcTable, const std::string& funcName)
 {
     DefaultExpressionChecks();
-    if (funcTable.FindFunctionByName(funcName) == nullptr) return false;
-    return funcTable.FindFunctionByName(funcName)->IsFuncDeclared();
+    FuncMetaData* searchedFuncMetadata = funcTable.FindFunctionByName(funcName);
+    if (!searchedFuncMetadata) return false;
+    return searchedFuncMetadata->IsFuncDeclared();
 }
 
 bool SemanticCheckerFacade::CheckFuncDefinition(const FuncTable& funcTable, const std::string& funcName)
 {
     DefaultExpressionChecks();
-    if (funcTable.FindFunctionByName(funcName) == nullptr) return false;
-    return funcTable.FindFunctionByName(funcName)->IsFuncDefined();
+    FuncMetaData* searchedFuncMetadata = funcTable.FindFunctionByName(funcName);
+    if (!searchedFuncMetadata) return false;
+    return searchedFuncMetadata->IsFuncDefined();
 }
 
 ExpressionType SemanticCheckerFacade::CheckExpression(
@@ -34,71 +36,73 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
 {
     DefaultExpressionChecks();
     /// @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
-    ExpressionType currType = ExpressionType::UNKNOWN;
+    ExpressionType expressionType = ExpressionType::UNKNOWN;
     size_t uParamIndex = 0;
 
-    // Incase the expression has a single void param
-    if (expression.GetTokens().size() == 1 && expression[0].GetValue() == "void")
+    // Incase the expression has a single void param.
+    if (expression.GetTokens().size() == 1 && expression[FIRST_TOKEN_INDEX].GetValue() == "void")
     {
         return ExpressionType::VOID_TYPE;
     }
 
     for (size_t i = 0; i < expression.GetTokens().size(); i++)
     {
-        // If its a parameter its either identifier or function.
+        // If its a parameter its either identifier function or sizeof
         if (expression[i].GetType() == TokenTypes::HAS_PARAM)
         {
             ExpressionType paramType = ExpressionType::UNKNOWN;
             const Command& currCommand = expression.GetParams()[uParamIndex];
 
-            // Identifier.
+            // Firstly we find the paramType.
             if (currCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
-                auto doesExist = currVarTableNode.FindVar(currCommand[0].GetValue());
-                if (doesExist)
-                {
-                    auto varData = *doesExist;
-                    paramType = TypeToExpressionType(varData.type);
-                }
-                else return ExpressionType::UNKNOWN;
+                auto doesExist = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+
+                if (doesExist) paramType = TypeToExpressionType(*varData.type); // Saving the var's type.
+                else return ExpressionType::UNKNOWN; // Incase the var doesnt exist.
             }
-            // Function.
             else if (currCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
             {
-                FuncMetaData* funcData = funcTable.FindFunctionByName(currCommand[0].GetValue());
-                if (funcData) paramType = TypeToExpressionType(funcData->GetRType());
-                else return ExpressionType::UNKNOWN;
+                FuncMetaData* funcData = funcTable.FindFunctionByName(currCommand[IDENTIFIER_INDEX].GetValue());
+
+                if (funcData) paramType = TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
+                else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
             }
-            else return ExpressionType::UNKNOWN;
-            
-            if (currType == ExpressionType::UNKNOWN) // Incase it's first expression part.
+            if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
-                currType = paramType;
+                paramType = ExpressionType::MATHEMATICAL; // Sizeof return int.
             }
-            else if (paramType != currType)
+            else return ExpressionType::UNKNOWN; // Undefined behaviour.
+            
+            // Checking that the paramType is corrent.
+            if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
+            {
+                expressionType = paramType; // Setting the paramType as the expressionType because it's the first expression part.
+            }
+            else if (paramType != expressionType) // If the expression isn't the same type all the way it's an error.
             {
                 return ExpressionType::UNKNOWN;
             }
             uParamIndex++;
         }
-        else if (expression[i].GetValue() == "void")
+        else if (expression[i].GetValue() == "void") // Void in the middle of the expression is illegal.
         {
             return ExpressionType::UNKNOWN;
         }
-        else
+        else // Any const value or operator
         {
-            if (currType == ExpressionType::UNKNOWN) // Incase it's first expression part.
+            if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
             {
-                currType = TokenToExpressionType(expression[i]);
+                expressionType = TokenToExpressionType(expression[i]); // Setting the paramType as the first token type because it's the first expression part.
             }
-            else if (TokenToExpressionType(expression[i]) != currType)
+            else if (TokenToExpressionType(expression[i]) != expressionType) // If the expression isn't the same type all the way it's an error.
             {
                 return ExpressionType::UNKNOWN;
             }
         }
     }
 
-    return currType;
+    return expressionType;
 }
 
 bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
@@ -112,7 +116,7 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
     // Checking that the declaration and given parameters are the same amount.
     if (funcParams.size() != paramTypes.size()) return false;
 
-    if (funcParams[0].type == Type::VOID_TYPE) return true; /// Void as a param is a hardcoded check inside the parser.
+    if (funcParams[FIRST_PARAMETER_INDEX].type == Type::VOID_TYPE) return true; /// Void as a param is a hardcoded check inside the parser.
 
     // Checking that all of the parameter types are the right function declared types.
     for (size_t i = 0; i < paramTypes.size(); i++)
@@ -124,16 +128,16 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
 
 inline bool SemanticCheckerFacade::CheckReturnInsideFunc()
 {
-    return !m_operationHistory.empty();
+    return !this->m_operationHistory.empty();
 }
 
 bool SemanticCheckerFacade::CheckFunctionReturnType(const ExpressionType& returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable)
 {
     if (!CheckReturnInsideFunc()) return false;
-    if (!m_bFinishedBlock)
+    if (!this->m_bFinishedBlock)
     {
-        SwitchTop(OperationKind::Return);
-        m_bFinishedBlock = true;
+        SwitchTopOfOperationHistory(OperationKind::Return);
+        this->m_bFinishedBlock = true;
     }
     const FuncMetaData* func = funcTable.FindFunctionByName(sFuncName);
     if (!func) return false;
@@ -150,14 +154,14 @@ bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName,
 
 bool SemanticCheckerFacade::CheckControlStatement()
 {
-    return !m_entryHistory.empty() && m_entryHistory.top() == BlockKind::Loop;
+    return !this->m_entryHistory.empty() && this->m_entryHistory.top() == BlockKind::Loop;
 }
 
 bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsReturnVoid)
 {
-    if (m_bLoopFlag)
+    if (this->m_bLoopFlag)
     {
-        m_uLoopBlockCnt++;
+        this->m_uLoopBlockCnt++;
     }
     else
     {
@@ -165,38 +169,38 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
         {
         case BlockKind::Function:
             // Resetting for a new func.
-            m_operationHistory = std::stack<OperationKind>();
-            m_entryHistory = std::stack<BlockKind>();
-            m_uLoopBlockCnt = 0;
-            m_operationHistory.push(OperationKind::None);
-            m_bIsReturnVoid = bIsReturnVoid;
-            m_bLoopFlag = false;
-            m_bFinishedBlock = false;
+            this->m_operationHistory = std::stack<OperationKind>();
+            this->m_entryHistory = std::stack<BlockKind>();
+            this->m_uLoopBlockCnt = 0;
+            this->m_operationHistory.push(OperationKind::None);
+            this->m_bIsReturnVoid = bIsReturnVoid;
+            this->m_bLoopFlag = false;
+            this->m_bFinishedBlock = false;
             break;
         
         case BlockKind::If:
-            m_operationHistory.push(OperationKind::None); // Starting a new block.
+            this->m_operationHistory.push(OperationKind::None); // Starting a new block.
             break;
         
         case BlockKind::Else:
             if (ElseElifBlockEnter()) return false;
-            m_operationHistory.push(OperationKind::None); // Starting a new block.
+            this->m_operationHistory.push(OperationKind::None); // Starting a new block.
             break;
         
         case BlockKind::Elif:
             if (ElseElifBlockEnter()) return false;
-            m_operationHistory.push(OperationKind::None); // Starting a new block.
+            this->m_operationHistory.push(OperationKind::None); // Starting a new block.
             break;
 
         case BlockKind::Loop:
-            m_bLoopFlag = true;
-            ++m_uLoopBlockCnt;
+            this->m_bLoopFlag = true;
+            ++this->m_uLoopBlockCnt;
             break;
 
         default:
             break;
         }
-        m_entryHistory.push(entryKind);
+        this->m_entryHistory.push(entryKind);
     }
 
     return true;
@@ -204,20 +208,20 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
 
 bool SemanticCheckerFacade::ExitedBlock()
 {
-    if (m_bLoopFlag)
+    if (this->m_bLoopFlag)
     {
-        m_uLoopBlockCnt--;
-        if (m_uLoopBlockCnt == 0) m_bLoopFlag = false;
+        this->m_uLoopBlockCnt--;
+        if (this->m_uLoopBlockCnt == 0) this->m_bLoopFlag = false;
         return true;
     }
-    OperationKind lastOperation = m_operationHistory.top();
+    OperationKind lastOperation = this->m_operationHistory.top();
 
-    switch (m_entryHistory.top())
+    switch (this->m_entryHistory.top())
     {
     case BlockKind::Function:
-        if (!m_bIsReturnVoid)
+        if (!this->m_bIsReturnVoid)
         {
-            switch (m_operationHistory.top())
+            switch (this->m_operationHistory.top())
             {
             // The function stopped with a return.
             case OperationKind::ElseReturn:
@@ -229,22 +233,24 @@ bool SemanticCheckerFacade::ExitedBlock()
                 return false; // non void func didnt return.
                 break;
             }
+            this->m_bFinishedBlock = false;
+            this->m_bIsReturnVoid = false;
         }
         break;
     
     case BlockKind::If:
-        m_operationHistory.pop();
+        this->m_operationHistory.pop();
         // If The block ended with a return.
         if (lastOperation == OperationKind::Return ||
             lastOperation == OperationKind::ElseReturn)
         {
-            SwitchTop(OperationKind::IfReturn);
-            m_bFinishedBlock = false;
+            SwitchTopOfOperationHistory(OperationKind::IfReturn);
+            this->m_bFinishedBlock = false;
         }
         else
         {
-            SwitchTop(OperationKind::If);
-            m_bFinishedBlock = false;
+            SwitchTopOfOperationHistory(OperationKind::If);
+            this->m_bFinishedBlock = false;
         }
         break;
 
@@ -260,15 +266,15 @@ bool SemanticCheckerFacade::ExitedBlock()
         break;
     }
 
-    m_entryHistory.pop();
+    this->m_entryHistory.pop();
     return true;
 }
 
 bool SemanticCheckerFacade::IsBlockFinished()
 {
-    return !m_operationHistory.empty() &&
-        (m_operationHistory.top() == OperationKind::Return ||
-        m_operationHistory.top() == OperationKind::ElseReturn);
+    return !this->m_operationHistory.empty() &&
+        (this->m_operationHistory.top() == OperationKind::Return ||
+        this->m_operationHistory.top() == OperationKind::ElseReturn);
 }
 
 ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
@@ -281,7 +287,10 @@ ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
 ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
 {
     /// First we check if the token is an operator
-    if (token.GetValue() != "=" && token.GetType() == TokenTypes::OPERATOR || token.GetType() == TokenTypes::KEYWORD)
+    if (
+        (token.GetValue() != "=" && token.GetType() == TokenTypes::OPERATOR)
+        ||
+        token.GetType() == TokenTypes::KEYWORD)
     {
         if (token.GetValue() == "==" ||
             token.GetValue() == "and" ||
@@ -307,57 +316,61 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (gottenType == ExpressionType::UNKNOWN) return false;
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
     if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
-    if (gottenType == ExpressionType::MATHEMATICAL && (
-        expectedType == Type::DOUBLE_TYPE ||
+    if (gottenType == ExpressionType::MATHEMATICAL &&
+        (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||
         expectedType == Type::UNSIGNED_DOUBLE_TYPE ||
-        expectedType == Type::UNSIGNED_INT_TYPE)) return true;
+        expectedType == Type::UNSIGNED_INT_TYPE)
+    ) return true;
 
     return false;
 }
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
-    if (!m_bLoopFlag &&
-        !m_bFinishedBlock)
+    if (!this->m_bLoopFlag &&
+        !this->m_bFinishedBlock)
     {
-        SwitchTop(OperationKind::Expression);
+        SwitchTopOfOperationHistory(OperationKind::Expression);
     }
 }
 
 bool SemanticCheckerFacade::ElseElifBlockEnter()
 {
-    if (m_operationHistory.top() != OperationKind::If &&
-        m_operationHistory.top() != OperationKind::IfReturn &&
-        m_operationHistory.top() != OperationKind::Elif &&
-        m_operationHistory.top() != OperationKind::ElifReturn)
+    if (this->m_operationHistory.top() != OperationKind::If &&
+        this->m_operationHistory.top() != OperationKind::IfReturn &&
+        this->m_operationHistory.top() != OperationKind::Elif &&
+        this->m_operationHistory.top() != OperationKind::ElifReturn)
     {
         return true; // else not after if or elif
     }
-    m_operationHistory.push(OperationKind::None);
+    this->m_operationHistory.push(OperationKind::None);
     return false;
 }
 
 void SemanticCheckerFacade::ElseElifBlockExit(OperationKind kind)
 {
-    OperationKind lastOperation = m_operationHistory.top();
-    m_operationHistory.pop();
+    OperationKind lastOperation = this->m_operationHistory.top();
+    this->m_operationHistory.pop();
     // If The block ended with a return and before that the last condition also returned.
-    if ((lastOperation == OperationKind::Return ||
-        lastOperation == OperationKind::ElseReturn) &&
-        (m_operationHistory.top() == OperationKind::IfReturn ||
-        m_operationHistory.top() == OperationKind::ElifReturn))
+    if (
+        (lastOperation == OperationKind::Return ||
+        lastOperation == OperationKind::ElseReturn)
+        &&
+        (this->m_operationHistory.top() == OperationKind::IfReturn ||
+        this->m_operationHistory.top() == OperationKind::ElifReturn)
+    )
     {
         switch (kind)
         {
         case OperationKind::Elif:
-            SwitchTop(OperationKind::ElifReturn);
-            m_bFinishedBlock = false;
+            SwitchTopOfOperationHistory(OperationKind::ElifReturn);
+            this->m_bFinishedBlock = false;
             break;
         
         case OperationKind::Else:
-            SwitchTop(OperationKind::ElseReturn);
-            m_bFinishedBlock = true;
+            SwitchTopOfOperationHistory(OperationKind::ElseReturn);
+            this->m_bFinishedBlock = true;
             break;
         default:
             break;
@@ -365,16 +378,20 @@ void SemanticCheckerFacade::ElseElifBlockExit(OperationKind kind)
     }
     else
     {
-        m_bFinishedBlock = false;
-        SwitchTop(kind);
+        this->m_bFinishedBlock = false;
+        SwitchTopOfOperationHistory(kind);
     }
 }
 
-void SemanticCheckerFacade::SwitchTop(OperationKind operationKind)
+inline void SemanticCheckerFacade::SwitchTopOfOperationHistory(OperationKind operationKind)
 {
-    if (!m_operationHistory.empty())
+    if (!this->m_operationHistory.empty())
     {
-        m_operationHistory.pop();
-        m_operationHistory.push(operationKind);
+        this->m_operationHistory.pop();
+        this->m_operationHistory.push(operationKind);
+    }
+    else
+    {
+        this->m_operationHistory.push(operationKind);
     }
 }
