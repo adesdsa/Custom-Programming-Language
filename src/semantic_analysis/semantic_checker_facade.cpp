@@ -163,58 +163,57 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
     {
         this->m_uLoopBlockCnt++;
     }
-    else
-    {
-        switch (entryKind)
-        {
-        case BlockKind::Function:
-            // Resetting for a new func.
-            this->m_operationHistory = std::stack<OperationKind>();
-            this->m_entryHistory = std::stack<BlockKind>();
-            this->m_uLoopBlockCnt = 0;
-            this->m_operationHistory.push(OperationKind::None);
-            this->m_bIsReturnVoid = bIsReturnVoid;
-            this->m_bLoopFlag = false;
-            this->m_bFinishedBlock = false;
-            break;
-        
-        case BlockKind::If:
-            this->m_operationHistory.push(OperationKind::None); // Starting a new block.
-            break;
-        
-        case BlockKind::Else:
-            if (ElseElifBlockEnter()) return false;
-            this->m_operationHistory.push(OperationKind::None); // Starting a new block.
-            break;
-        
-        case BlockKind::Elif:
-            if (ElseElifBlockEnter()) return false;
-            this->m_operationHistory.push(OperationKind::None); // Starting a new block.
-            break;
 
-        case BlockKind::Loop:
+    switch (entryKind)
+    {
+    case BlockKind::Function:
+        // Resetting for a new func.
+        this->m_operationHistory = std::stack<OperationKind>();
+        this->m_entryHistory = std::stack<BlockKind>();
+        this->m_uLoopBlockCnt = 0;
+        this->m_operationHistory.push(OperationKind::None);
+        this->m_bIsReturnVoid = bIsReturnVoid;
+        this->m_bLoopFlag = false;
+        this->m_bFinishedBlock = false;
+        break;
+    
+    case BlockKind::If:
+        this->m_operationHistory.push(OperationKind::None); // Starting a new block.
+        break;
+    
+    case BlockKind::Else:
+        if (ElseElifBlockEnter()) return false;
+        this->m_operationHistory.push(OperationKind::None); // Starting a new block.
+        break;
+    
+    case BlockKind::Elif:
+        if (ElseElifBlockEnter()) return false;
+        this->m_operationHistory.push(OperationKind::None); // Starting a new block.
+        break;
+
+    case BlockKind::Loop:
+        if (!this->m_bLoopFlag)
+        {
             this->m_bLoopFlag = true;
             ++this->m_uLoopBlockCnt;
-            break;
-
-        default:
-            break;
         }
-        this->m_entryHistory.push(entryKind);
+        break;
+
+    default:
+        break;
     }
 
+    this->m_entryHistory.push(entryKind);
     return true;
 }
 
 bool SemanticCheckerFacade::ExitedBlock()
 {
+    OperationKind lastOperation = this->m_operationHistory.top();
     if (this->m_bLoopFlag)
     {
         this->m_uLoopBlockCnt--;
-        if (this->m_uLoopBlockCnt == 0) this->m_bLoopFlag = false;
-        return true;
     }
-    OperationKind lastOperation = this->m_operationHistory.top();
 
     switch (this->m_entryHistory.top())
     {
@@ -260,6 +259,22 @@ bool SemanticCheckerFacade::ExitedBlock()
 
     case BlockKind::Elif:
         ElseElifBlockExit(OperationKind::Elif);
+        break;
+
+    case BlockKind::Loop:
+        if (this->m_uLoopBlockCnt == 0) this->m_bLoopFlag = false;
+        this->m_operationHistory.pop();
+        // If The block ended with a return.
+        if (lastOperation == OperationKind::Return ||
+            lastOperation == OperationKind::ElseReturn)
+        {
+            SwitchTopOfOperationHistory(OperationKind::Return);
+            this->m_bFinishedBlock = false;
+        }
+        else
+        {
+            SwitchTopOfOperationHistory(OperationKind::Expression);
+        }
         break;
 
     default:
@@ -328,8 +343,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
-    if (!this->m_bLoopFlag &&
-        !this->m_bFinishedBlock)
+    if (!this->m_bFinishedBlock)
     {
         SwitchTopOfOperationHistory(OperationKind::Expression);
     }
