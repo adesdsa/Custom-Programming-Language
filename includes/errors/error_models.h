@@ -28,7 +28,7 @@ public:
         std::string_view type, 
         std::string content, 
         size_t line, 
-        uint16_t column, 
+        size_t column, 
         std::string hint
     );
 
@@ -38,7 +38,7 @@ private:
     std::string_view m_type;
     std::string m_content;
     size_t m_line;
-    uint16_t m_column;
+    size_t m_column;
     std::string m_hint;
 };
 

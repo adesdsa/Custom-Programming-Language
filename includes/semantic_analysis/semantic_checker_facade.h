@@ -104,6 +104,9 @@ public:
     /// @return bool: True-> Block returned therefore it is finished, False-> Otherwise.
     static bool IsBlockFinished();
 
+    /// @brief The func turns a Type into ExpressionType
+    static ExpressionType TypeToExpressionType(const Type& type);
+
 private:
 enum class OperationKind
     {
@@ -125,9 +128,6 @@ enum class OperationKind
     static std::stack<OperationKind> m_operationHistory;
     static std::stack<BlockKind> m_entryHistory;
     static bool m_bIsReturnVoid;
-
-    /// @brief The func turns a Type into ExpressionType
-    static ExpressionType TypeToExpressionType(const Type& type);
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.

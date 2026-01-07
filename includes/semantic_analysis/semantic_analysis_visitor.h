@@ -65,6 +65,9 @@ private:
     std::string m_currentFunctionName;
     std::vector<ExpressionType> m_funcCallArgTypes;
 
+    /// @brief IF & ELSE IF & ELSE all have same checks, this will handle all
+    void VisitIfOrElseIfOrWhile(ASTNode* node);
+
     /// @brief If some logic errors already detected in handler
         /// then next handlers in the chain may need use this knowlage
     void SignalFailureForNextHandlers() noexcept;
@@ -83,6 +86,18 @@ private:
     ///   - m_identifierError:    Flag indicating VisitIdentifier found error
     void ResetAssignmentState() noexcept;
 
+    /// @brief  Converts `Type` enum to string. For instance: BOOL_TYPE will become "bool"
+    /// @param type `Type enum`: Type to convert to string
+    /// @return `std::string`: Type converted in string format.
     std::string TypeToString(Type type) const noexcept;
+
+    /// @brief  Converts `ExpressionType` enum to string.
+    /// @param expressionType `ExpressionType enum`: Type to convert to string
+    /// @return `std::string`: Type converted in string format.
     std::string ExpressionTypeToString(ExpressionType expressionType) const noexcept;
+
+    /// @brief Evaluate given node into an `ExpressionType enum`
+    /// @param node `ASTNode*`: node that passed as agrument to function call 
+    /// @return `ExpressionType enum`: infered type of the node's expression
+    ExpressionType EvaluateNodeType(ASTNode* node) const noexcept;
 };
