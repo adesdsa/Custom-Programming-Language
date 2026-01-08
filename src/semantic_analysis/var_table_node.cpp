@@ -59,6 +59,11 @@ VarTableNode* VarTableNode::GetBlock(int nBlockIndex) const
     return this->m_children[nBlockIndex].get();
 }
 
+VarTableNode* VarTableNode::GetParent() const
+{
+    return this->m_parent;
+}
+
 const std::unordered_map<std::string, VarMetaData> &VarTableNode::GetVars() const noexcept
 {
     return this->m_vars;
