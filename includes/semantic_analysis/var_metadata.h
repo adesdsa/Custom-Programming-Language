@@ -27,6 +27,15 @@ struct VarMetaData
         offsetInsideFrame(offset)
     {}
 
+    bool operator==(const VarMetaData& other) const
+    {
+        return sName == other.sName &&
+               type == other.type &&
+               accessRights == other.accessRights &&
+               scope == other.scope &&
+               offsetInsideFrame == other.offsetInsideFrame;
+    }
+
     std::string sName;
     Type type;
     AccessRights accessRights;
