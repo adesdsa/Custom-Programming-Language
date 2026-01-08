@@ -40,6 +40,73 @@ Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)
     return Scope::LET;  // Default scope
 }
 
+Type ASTExtractor::ExtractFuncReturnType(ASTNode* funcDecNode)
+{
+    if (!funcDecNode) return Type::VOID_TYPE;
+    
+    // check children for VOID_COMMAND (indicates void return type)
+    for (
+        ASTNode* child = funcDecNode->nodeFirstChild; 
+        child != nullptr; 
+        child = child->nodeNextSibling
+    )
+    {
+        if (child->command.GetType() == CommandTypes::VOID_COMMAND)
+        {
+            return Type::VOID_TYPE;
+        }
+    }
+    
+    const auto& tokens = funcDecNode->command.GetTokens();
+
+    for (auto token = tokens.rbegin(); token != tokens.rend(); token++)
+    {
+        std::optional<Type> type = StringToType(token->GetValue());
+        if (type.has_value())
+        {
+            return type.value();
+        }
+    }
+    
+    return Type::VOID_TYPE;
+}
+
+const std::vector<VarMetaData> ASTExtractor::ExtractFuncParams(
+    ASTNode* funcDecNode, 
+    const VarFactory& varFactory
+)
+{
+    std::vector<VarMetaData> params;
+    
+    if (!funcDecNode) return params;
+    
+    for (
+        ASTNode* child = funcDecNode->nodeFirstChild; 
+        child != nullptr; 
+        child = child->nodeNextSibling
+    )
+    {
+        // process VAR_DECLARATION children (these are parameters)
+        if (child->command.GetType() == CommandTypes::VAR_DECLARATION)
+        {
+            const std::string& paramName = ExtractVarName(child);
+            Type paramType = ExtractVarType(child);
+            AccessRights paramAccess = ExtractVarAccessRight(child);
+            
+            params.push_back(
+                varFactory.CreateVarMetadata(
+                    paramName,
+                    paramType,
+                    paramAccess,
+                    Scope::LET  // params are local
+                )
+            );
+        }
+    }
+
+    return params;
+}
+
 AccessRights ASTExtractor::ExtractVarAccessRight(ASTNode* varDecNode)
 {
     for (const Token& token : varDecNode->command.GetTokens())

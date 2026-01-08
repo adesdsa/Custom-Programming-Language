@@ -16,7 +16,9 @@ SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     m_pendingAssignment(false),
     m_assignmentLine(0),
     m_assignmentColumn(0),
-    m_identifierError(false)
+    m_identifierError(false),
+    m_pendingBlockKind(SemanticCheckerFacade::BlockKind::Function),
+    m_hasPendingBlock(false)
 {
     this->InitializeHandlers();
 }
@@ -45,6 +47,8 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
                 "Check if variable already declared, remember no shadowing allowed!"
             )
         );
+
+        return;  // @note: stop logic here, no need to re-insert var again
     }
 
     VarMetaData var = this->m_varFactory.CreateVarMetadata(
@@ -222,6 +226,7 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
     }
     
     const std::vector<Token>& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
     
     ExpressionType expressionType = SemanticCheckerFacade::CheckExpression(
         node->command,
@@ -301,8 +306,29 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
             )
         );
     }
+
+    // saves function data
+    Type returnType = ASTExtractor::ExtractFuncReturnType(node);
+    const std::vector<VarMetaData>& params = ASTExtractor::ExtractFuncParams(node, this->m_varFactory);
     
-    this->m_currentFunctionName = funcName;
+    FuncMetaData func = this->m_funcFactory.CreateFuncMetadata(
+        funcName,
+        returnType,
+        params
+    );
+    
+    if (!this->m_funcTable.InsertFunction(std::move(func)))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "Failed to register function '" + funcName + "'",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
+                "This is an internal error, please report it"
+            )
+        );
+    }
 }
 
 void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
@@ -325,10 +351,27 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
                 "Function can only be defined once"
             )
         );
+
+        return;
+    }
+
+    FuncMetaData* existingFunc = this->m_funcTable.FindFunctionByName(funcName);
+    if (existingFunc != nullptr)
+    {
+        existingFunc->SetDefined();
+    }
+    else
+    {
+        // func not exist yet, both defination & decleration
+        this->VisitFuncDeclaration(node);
     }
     
-    this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Function);
-    this->HandleExitedBlockCheck(node);
+    // Track current function for return type checking
+    this->m_currentFunctionName = funcName;
+    
+    // signal VisitBlockStart what kind of block is coming
+    this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Function;
+    this->m_hasPendingBlock = true;
 }
 
 void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
@@ -390,8 +433,9 @@ void SemanticAnalysisVisitor::VisitElse(ASTNode* node)
 {
     if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
-    this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Else);
-    this->HandleExitedBlockCheck(node);
+    // signal VisitBlockStart what kind of block is coming
+    this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Else;
+    this->m_hasPendingBlock = true;
 }
 
 void SemanticAnalysisVisitor::VisitWhile(ASTNode* node)
@@ -466,7 +510,9 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
         }
     }
     
-    this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Loop);
+    // signal VisitBlockStart what kind of block is coming
+    this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Loop;
+    this->m_hasPendingBlock = true;
 }
 
 void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
@@ -490,9 +536,12 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
         );
     }
 
+    const auto& exprType = this->EvaluateNodeType(node->nodeNextSibling);
+    if (exprType == ExpressionType::UNKNOWN) return;
+
     if (
         !SemanticCheckerFacade::CheckFunctionReturnType(
-            this->EvaluateNodeType(node->nodeNextSibling),
+            exprType,
             this->m_currentFunctionName,
             this->m_funcTable
         )
@@ -537,21 +586,31 @@ void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node) return;
 
     this->m_currentScope = this->m_currentScope->CreateBlock();
+    
+    // enter block in facade if a control structure set pending block kind
+    if (this->m_hasPendingBlock)
+    {
+        this->HandleEnteredBlockCheck(node, this->m_pendingBlockKind);
+        this->m_hasPendingBlock = false;
+    }
 }
 
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node) return;
     
+    // Exit scope - move to parent
     const auto& parent = this->m_currentScope->GetParent();
-
     if (parent != nullptr)
     {
         this->m_currentScope = parent;
     }
+
+    // Exit block in facade (handles return path analysis)
+    this->HandleExitedBlockCheck(node);
 }
 
 void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
@@ -589,7 +648,9 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
     
     if (!condition) return;
 
-    const auto& conditionTokens = condition->command.GetTokens()[0];
+    const auto& tokens = condition->command.GetTokens();
+    if (tokens.empty()) return;
+    const auto& conditionTokens = tokens[0];
 
     if (condition->command.GetType() == CommandTypes::EXPRESSION)
     {
@@ -629,7 +690,8 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 
     else if (condition->command.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        const auto func = this->m_funcTable.FindFunctionByName(this->m_currentFunctionName);
+        const std::string& calledFuncName = condition->command.GetTokens()[0].GetValue();
+        const auto func = this->m_funcTable.FindFunctionByName(calledFuncName);
 
         if (func && func->GetRType() != Type::BOOL_TYPE)
         { 
@@ -648,10 +710,11 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
     else
     {
         this->m_entityLogger.Error(
-            "Invalid condition at line: " + conditionTokens.GetLine()
+            "Invalid condition at line: " + std::to_string(conditionTokens.GetLine())
         );
     }
 
+    // Determine block kind based on node type
     const auto& nodeType = node->command.GetType();
     SemanticCheckerFacade::BlockKind blockKind = SemanticCheckerFacade::BlockKind::If;
 
@@ -664,22 +727,9 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
         blockKind = SemanticCheckerFacade::BlockKind::Loop;
     }
 
-    this->HandleEnteredBlockCheck(node, blockKind);
-    
-    if (!SemanticCheckerFacade::ExitedBlock())
-    {
-        const auto& errorToken = node->command.GetTokens()[0];
-
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::FUNC_MISSING_RETURN_ERROR,
-                "Not all paths of non void function have a return statement",
-                errorToken.GetLine(),
-                errorToken.GetLine(),
-                "Non void functions must return a value at all end-points"
-            )
-        );
-    }
+    // signal VisitBlockStart what kind of block is coming
+    this->m_pendingBlockKind = blockKind;
+    this->m_hasPendingBlock = true;
 }
 
 void SemanticAnalysisVisitor::SignalFailureForNextHandlers() noexcept
@@ -732,10 +782,15 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
     
     std::string_view nodeType = node->command.GetType();
     
-    // base case: identifier -> lookup variable type
     if (nodeType == CommandTypes::IDENTIFIER_VALUE)
     {
-        const std::string& varName = node->command.GetTokens()[0].GetValue();
+        const auto& varTokens = node->command.GetTokens();
+        if (varTokens.empty())
+        {
+            return ExpressionType::UNKNOWN;
+        }
+
+        const std::string& varName = varTokens[0].GetValue();
         auto var = this->m_currentScope->FindVar(varName);
 
         if (var.has_value()) 
@@ -748,8 +803,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
         }
     }
     
-    // base case: expression -? CheckExpression handles its internal params
-    if (nodeType == CommandTypes::EXPRESSION)
+    else if (nodeType == CommandTypes::EXPRESSION)
     {
         return SemanticCheckerFacade::CheckExpression(
             node->command, 
@@ -758,14 +812,22 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
         );
     }
     
-    // otherwise, recursivly get function call
-    if (nodeType == CommandTypes::FINISHED_FUNC_CALL)
-    {        
-        FuncMetaData* funcData = m_funcTable.FindFunctionByName(this->m_currentFunctionName);
-        if (!funcData) return ExpressionType::UNKNOWN;
+    else if (nodeType == CommandTypes::FINISHED_FUNC_CALL)
+    {       
+        const std::vector<Token>& tokens = node->command.GetTokens();
+        if (tokens.empty()) 
+        {
+            return ExpressionType::UNKNOWN;
+        }
+    
+        const std::string& calledFuncName = tokens[0].GetValue();
+        FuncMetaData* func = this->m_funcTable.FindFunctionByName(calledFuncName);
+        if (!func) 
+        {
+            return ExpressionType::UNKNOWN;
+        }
 
-        // return the function's return type
-        return SemanticCheckerFacade::TypeToExpressionType(funcData->GetRType());
+        return SemanticCheckerFacade::TypeToExpressionType(func->GetRType());
     }
     
     return ExpressionType::UNKNOWN;
@@ -788,7 +850,9 @@ void SemanticAnalysisVisitor::HandleEnteredBlockCheck(
         )
     )
     {
-        const auto& errorTokens = node->command.GetTokens()[0];
+        const auto& tokens = node->command.GetTokens();
+        if (tokens.empty()) return;
+        const auto& errorTokens = tokens[0];
 
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -806,7 +870,9 @@ void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
 {
     if (!SemanticCheckerFacade::ExitedBlock())
     {
-        const auto& errorTokens = node->command.GetTokens()[0];
+        const auto& tokens = node->command.GetTokens();
+        if (tokens.empty()) return;
+        const auto& errorTokens = tokens[0];
 
         this->m_errorManager.StoreError(
             CompileTimeError(

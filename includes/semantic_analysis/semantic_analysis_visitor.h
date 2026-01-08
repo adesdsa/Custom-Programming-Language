@@ -44,26 +44,47 @@ public:
     virtual void VisitEof(ASTNode* node) override;
 
 private:
+    /**********************\
+    |        Utils         |
+    \**********************/
     const EntityLogger& m_entityLogger;
     ErrorManager& m_errorManager;
 
+    /**********************\
+    |     Decorated AST    |
+    \**********************/
     VarTableNode& m_varTable;
     FuncTable& m_funcTable;
 
+    /**********************\
+    |      Factories       |
+    \**********************/
     VarFactory m_varFactory;
     FuncFactory m_funcFactory;
 
+    /**********************\
+    |     Helper Fields    |
+    \**********************/
     VarTableNode* m_currentScope;
     ExpressionType m_lastExpressionType;
 
     std::string m_lastIdentifierName;
-    bool m_pendingAssignment = false;
-    size_t m_assignmentLine = 0;
-    size_t m_assignmentColumn = 0;
     bool m_identifierError = false;
     
     std::string m_currentFunctionName;
-    std::vector<ExpressionType> m_funcCallArgTypes;
+
+    // pending assignment tracking, consumed by VisitExpression
+    bool m_pendingAssignment = false;
+    size_t m_assignmentLine = 0;
+    size_t m_assignmentColumn = 0;
+
+    // pending block tracking, consumed by VisitBlockStart
+    SemanticCheckerFacade::BlockKind m_pendingBlockKind;
+    bool m_hasPendingBlock = false;
+
+    /**********************\
+    |    Helper Methods    |
+    \**********************/
 
     /// @brief IF & ELSE IF & ELSE all have same checks, this will handle all
     void VisitIfOrElseIfOrWhile(ASTNode* node);
