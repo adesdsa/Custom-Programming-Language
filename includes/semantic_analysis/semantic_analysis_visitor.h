@@ -101,9 +101,9 @@ private:
     /// @return `ExpressionType enum`: infered type of the node's expression
     ExpressionType EvaluateNodeType(ASTNode* node) const noexcept;
 
-    /// @brief Facade EnteredBlock is repeted at many visit so this covert repeted code
-    /// @param node `ASTNode*`: Node that the EnteredBlock check is called
-    /// @param blockkind `BlockKind`: Block kind of the node
+    /// @brief Following methods cover facade checks that are shared between Visits ||
+    //                                                                              \/
+
     void HandleEnteredBlockCheck(
         ASTNode* node, 
         SemanticCheckerFacade::BlockKind blockkind

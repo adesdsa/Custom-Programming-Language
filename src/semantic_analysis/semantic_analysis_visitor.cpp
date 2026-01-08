@@ -67,7 +67,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
 {
-    if (!node)
+    if (!node || SemanticCheckerFacade::IsBlockFinished())
     {
         this->m_identifierError = true;
         return;
@@ -139,7 +139,7 @@ void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitIdentifierValue(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
@@ -174,7 +174,7 @@ So we just set checks for VisitExpression to do later
 */
 void SemanticAnalysisVisitor::VisitAssignment(ASTNode* node)
 {
-    if (!node)
+    if (!node || SemanticCheckerFacade::IsBlockFinished())
     {
         ResetAssignmentState();
         return;
@@ -201,7 +201,7 @@ void SemanticAnalysisVisitor::VisitAssignment(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
 {
-    if (!node)
+    if (!node || SemanticCheckerFacade::IsBlockFinished())
     {
         // if VisitAssignment method set checks and we dont have expression node
         if (this->m_pendingAssignment && !this->m_lastIdentifierName.empty())
@@ -333,7 +333,7 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
@@ -388,7 +388,7 @@ void SemanticAnalysisVisitor::VisitElif(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitElse(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Else);
     this->HandleExitedBlockCheck(node);
@@ -401,7 +401,7 @@ void SemanticAnalysisVisitor::VisitWhile(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     
@@ -471,7 +471,7 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     size_t line = tokens.empty() ? 0 : tokens[0].GetLine();
@@ -512,7 +512,7 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     if (!SemanticCheckerFacade::CheckControlStatement())
     {    
@@ -537,14 +537,14 @@ void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
 
     this->m_currentScope = this->m_currentScope->CreateBlock();
 }
 
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     const auto& parent = this->m_currentScope->GetParent();
 
@@ -581,7 +581,7 @@ void SemanticAnalysisVisitor::VisitEof(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 {
-    if (!node) return;
+    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     // IF/ELSE IF/WHILE ()
     //  condition() <-------- node->nodeFirstChild
