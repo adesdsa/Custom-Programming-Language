@@ -35,6 +35,7 @@ public:
     // The func returns the block at the given index.
     // @return: nullpt -> The block doesnt exist. Otherwise -> The block at the given index.
     VarTableNode* GetBlock(int nBlockIndex) const;
+    VarTableNode* GetParent() const noexcept;
 
     // Getters
     const std::unordered_map<std::string, VarMetaData>& GetVars() const noexcept;

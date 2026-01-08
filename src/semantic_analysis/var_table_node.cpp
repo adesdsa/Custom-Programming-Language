@@ -28,6 +28,11 @@ VarTableNode* VarTableNode::CreateBlock()
     return this->m_children.back().get();
 }
 
+VarTableNode* VarTableNode::GetParent() const noexcept
+{
+    return this->m_parent;
+}
+
 std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName) const
 {
     auto findValue = this->m_vars.find(sVarName);

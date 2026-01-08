@@ -516,6 +516,9 @@ void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
     
     if (!SemanticCheckerFacade::CheckControlStatement())
     {    
+        const auto& tokens = node->command.GetTokens();
+        if (tokens.empty()) return;
+
         const std::string& statement = tokens[0].GetValue();
         size_t line = tokens[0].GetLine();
         size_t column = tokens[0].GetColumn();
@@ -535,13 +538,20 @@ void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
 void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 {
     if (!node) return;
+
     this->m_currentScope = this->m_currentScope->CreateBlock();
 }
 
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 {
     if (!node) return;
-    this->HandleExitedBlockCheck(node);
+    
+    const auto& parent = this->m_currentScope->GetParent();
+
+    if (parent != nullptr)
+    {
+        this->m_currentScope = parent;
+    }
 }
 
 void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
@@ -773,7 +783,7 @@ void SemanticAnalysisVisitor::HandleEnteredBlockCheck(
     bool isVoidReturnType = func->GetRType() == Type::VOID_TYPE;
     if (
         !SemanticCheckerFacade::EnteredBlock(
-            SemanticCheckerFacade::BlockKind::Function, 
+            blockkind, 
             isVoidReturnType
         )
     )
