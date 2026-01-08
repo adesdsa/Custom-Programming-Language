@@ -327,37 +327,8 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
         );
     }
     
-    this->m_currentFunctionName = funcName;
-    
-    FuncMetaData* funcMetadata = this->m_funcTable.FindFunctionByName(funcName);
-    bool isVoid = funcMetadata && funcMetadata->GetRType() == Type::VOID_TYPE;
-    if (
-        !SemanticCheckerFacade::EnteredBlock(SemanticCheckerFacade::BlockKind::Function, isVoid)
-    )
-    {
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
-                "Invalid usage of else if/else keywords without matching if keyword",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
-                "else if/else keyword are only allowed after usage of if keyword"
-            )
-        );
-    }
-
-    if (!SemanticCheckerFacade::ExitedBlock())
-    {
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::FUNC_MISSING_RETURN_ERROR,
-                "Not all paths of non void function " + funcName + " have a return statement",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
-                "Non void functions must return a value at all end-points"
-            )
-        );
-    }
+    this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Function);
+    this->HandleExitedBlockCheck(node);
 }
 
 void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
@@ -419,40 +390,8 @@ void SemanticAnalysisVisitor::VisitElse(ASTNode* node)
 {
     if (!node) return;
     
-    if (
-        !SemanticCheckerFacade::EnteredBlock(
-            SemanticCheckerFacade::BlockKind::Else, 
-            this->m_currentFunctionName
-        )
-    )
-    {
-        const auto& errorToken = node->command.GetTokens()[0];
-
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
-                "Invalid usage of else if/else keywords without matching if keyword",
-                errorToken.GetLine(),
-                errorToken.GetColumn(),
-                "else if/else keyword are only allowed after usage of if keyword"
-            )
-        );
-    }
-    
-    if (!SemanticCheckerFacade::ExitedBlock())
-    {
-        const auto& errorToken = node->command.GetTokens()[0];
-
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::FUNC_MISSING_RETURN_ERROR,
-                "Not all paths of non void function have a return statement",
-                errorToken.GetLine(),
-                errorToken.GetLine(),
-                "Non void functions must return a value at all end-points"
-            )
-        );
-    }
+    this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Else);
+    this->HandleExitedBlockCheck(node);
 }
 
 void SemanticAnalysisVisitor::VisitWhile(ASTNode* node)
@@ -462,7 +401,72 @@ void SemanticAnalysisVisitor::VisitWhile(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
 {
-    // TODO:
+    if (!node) return;
+    
+    const std::vector<Token>& tokens = node->command.GetTokens();
+    
+    /**
+        @brief Helper Flags:
+
+        * @struct for loop:
+
+        * (VAR_DECLERATION/IDENTIFIER) -> ASSIGNMENT -> EXPRESSION/FUNC_CALL/etc
+        * <------------------------- init part of the for ---------------------->
+
+        *              EXPRESSION
+        * <------ condition part of the for ----->
+
+        *   IDENTIFIER -> ASSIGNMENT -> EXPRESSION/FUNC_CALL/etc
+        * <---------- Increasement part of the for --------------->
+        
+        * @note We only need to the condition part because init & inc part just need
+        * to be valid but have no effect on for so it would be handle in their visit
+        * however, the condition part just checks that it must be a boolean
+    */
+
+    bool passedFirstAssignment = false;
+    bool passedInitValue = false;
+    ASTNode* conditionNode = nullptr;
+    
+    for (ASTNode* child = node->nodeFirstChild; child != nullptr; child = child->nodeNextSibling)
+    {        
+        if (!passedFirstAssignment)
+        {
+            if (child->command.GetType() == CommandTypes::ASSIGNMENT)
+            {
+                passedFirstAssignment = true;
+            }
+        }
+        else if (!passedInitValue)
+        {
+            passedInitValue = true;
+        }
+        else if (!conditionNode)
+        {
+            conditionNode = child;
+            break;  // found the condition part of the for loop
+        }
+    }
+    
+    if (conditionNode)
+    {
+        ExpressionType condType = EvaluateNodeType(conditionNode);
+        
+        if (condType != ExpressionType::BOOLEAN)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "for loop condition must be a boolean expression",
+                    tokens[0].GetLine(),
+                    tokens[0].GetColumn(),
+                    "Provide a boolean condition"
+                )
+            );
+        }
+    }
+    
+    this->HandleEnteredBlockCheck(node, SemanticCheckerFacade::BlockKind::Loop);
 }
 
 void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
@@ -485,18 +489,21 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
             )
         );
     }
-    
-    if (!SemanticCheckerFacade::CheckFunctionReturnType(
-            this->m_lastExpressionType,
+
+    if (
+        !SemanticCheckerFacade::CheckFunctionReturnType(
+            this->EvaluateNodeType(node->nodeNextSibling),
             this->m_currentFunctionName,
-            this->m_funcTable))
+            this->m_funcTable
+        )
+    )
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Return type mismatch in function '" + this->m_currentFunctionName + "'",
+                "return type mismatch in function '" + this->m_currentFunctionName + "'",
                 line,
-                static_cast<uint16_t>(column),
+                column,
                 "Ensure return type matches function declaration"
             )
         );
@@ -507,21 +514,18 @@ void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
 {
     if (!node) return;
     
-    const std::vector<Token>& tokens = node->command.GetTokens();
-    if (tokens.empty()) return;
-    
-    const std::string& statement = tokens[0].GetValue();
-    size_t line = tokens[0].GetLine();
-    size_t column = tokens[0].GetColumn();
-    
     if (!SemanticCheckerFacade::CheckControlStatement())
-    {
+    {    
+        const std::string& statement = tokens[0].GetValue();
+        size_t line = tokens[0].GetLine();
+        size_t column = tokens[0].GetColumn();
+
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
                 "'" + statement + "' statement outside of loop",
                 line,
-                static_cast<uint16_t>(column),
+                column,
                 statement + " can only be used inside a loop"
             )
         );
@@ -537,23 +541,7 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 {
     if (!node) return;
-    
-    const std::vector<Token>& tokens = node->command.GetTokens();
-    size_t line = tokens.empty() ? 0 : tokens[0].GetLine();
-    size_t column = tokens.empty() ? 0 : tokens[0].GetColumn();
-    
-    if (!SemanticCheckerFacade::ExitedBlock())
-    {
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::FUNC_MISSING_RETURN_ERROR,
-                "Not all code paths return a value in function '" + this->m_currentFunctionName + "'",
-                line,
-                static_cast<uint16_t>(column),
-                "Ensure all code paths return a value"
-            )
-        );
-    }
+    this->HandleExitedBlockCheck(node);
 }
 
 void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
@@ -631,8 +619,7 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 
     else if (condition->command.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        const std::string& funcName = condition->command.GetTokens()[0].GetValue();
-        const auto func = this->m_funcTable.FindFunctionByName(funcName);
+        const auto func = this->m_funcTable.FindFunctionByName(this->m_currentFunctionName);
 
         if (func && func->GetRType() != Type::BOOL_TYPE)
         { 
@@ -660,27 +647,14 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 
     if (nodeType == CommandTypes::ELIF)
     {
-        blockKind = SemanticCheckerFacade::BlockKind::Elif
+        blockKind = SemanticCheckerFacade::BlockKind::Elif;
     }
     else if (nodeType == CommandTypes::WHILE)
     {
-        blockKind - SemanticCheckerFacade::BlockKind::Loop;
+        blockKind = SemanticCheckerFacade::BlockKind::Loop;
     }
 
-    if (!SemanticCheckerFacade::EnteredBlock(blockKind, this->m_currentFunctionName))
-    {
-        const auto& errorToken = node->command.GetTokens()[0];
-
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
-                "Invalid usage of else if/else keywords without matching if keyword",
-                errorToken.GetLine(),
-                errorToken.GetColumn(),
-                "else if/else keyword are only allowed after usage of if keyword"
-            )
-        );
-    }
+    this->HandleEnteredBlockCheck(node, blockKind);
     
     if (!SemanticCheckerFacade::ExitedBlock())
     {
@@ -776,10 +750,8 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
     
     // otherwise, recursivly get function call
     if (nodeType == CommandTypes::FINISHED_FUNC_CALL)
-    {
-        const std::string& funcName = node->command.GetTokens()[0].GetValue();
-        
-        FuncMetaData* funcData = m_funcTable.FindFunctionByName(funcName);
+    {        
+        FuncMetaData* funcData = m_funcTable.FindFunctionByName(this->m_currentFunctionName);
         if (!funcData) return ExpressionType::UNKNOWN;
 
         // return the function's return type
@@ -787,4 +759,58 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
     }
     
     return ExpressionType::UNKNOWN;
+}
+
+void SemanticAnalysisVisitor::HandleEnteredBlockCheck(
+        ASTNode* node, 
+        SemanticCheckerFacade::BlockKind blockkind
+    ) const
+{
+    const auto& func = this->m_funcTable.FindFunctionByName(this->m_currentFunctionName);
+
+    if (!func) return;
+
+    bool isVoidReturnType = func->GetRType() == Type::VOID_TYPE;
+    if (
+        !SemanticCheckerFacade::EnteredBlock(
+            SemanticCheckerFacade::BlockKind::Function, 
+            isVoidReturnType
+        )
+    )
+    {
+        const auto& errorTokens = node->command.GetTokens()[0];
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
+                "Invalid usage of else if/else keywords without matching if keyword",
+                errorTokens.GetLine(),
+                errorTokens.GetColumn(),
+                "else if/else keyword are only allowed after usage of if keyword"
+            )
+        );
+    }
+}
+
+void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
+{
+    if (!SemanticCheckerFacade::ExitedBlock())
+    {
+        const auto& errorTokens = node->command.GetTokens()[0];
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::FUNC_MISSING_RETURN_ERROR,
+
+                "Not all paths of non void function " + 
+                this->m_currentFunctionName + 
+                " have a return statement",
+
+                errorTokens.GetLine(),
+                errorTokens.GetColumn(),
+
+                "Non void functions must return a value at all end-points"
+            )
+        );
+    }
 }
