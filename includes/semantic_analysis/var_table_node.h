@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 #include <optional>
 #include <vector>
 #include <unordered_map>
@@ -45,6 +46,9 @@ public:
     VarTableNode& operator[](size_t index);
 
     const VarTableNode& operator[](size_t index) const;
+
+    // temp for test
+    void PrintVarTable() const;
 
 private:
     std::unordered_map<std::string, VarMetaData> m_vars;

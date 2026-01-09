@@ -83,3 +83,15 @@ const VarTableNode& VarTableNode::operator[](size_t index) const
 {
     return *m_children.at(index);
 }
+
+void VarTableNode::PrintVarTable() const
+{
+    for (auto it = m_vars.begin(); it != m_vars.end(); ++it)
+    {
+        std::cout << it->second.sName << std::endl;
+    }
+    for (int i = 0; i < m_children.size(); i++)
+    {
+        m_children[i]->PrintVarTable();
+    }
+}

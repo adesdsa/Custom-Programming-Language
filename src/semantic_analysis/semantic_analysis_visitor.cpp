@@ -18,7 +18,9 @@ SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     m_assignmentColumn(0),
     m_identifierError(false),
     m_pendingBlockKind(SemanticCheckerFacade::BlockKind::Function),
-    m_hasPendingBlock(false)
+    m_hasPendingBlock(false),
+    m_bStartedFuncDefinition(false),
+    m_bStartedFuncDeclaration(false)
 {
     this->InitializeHandlers();
 }
@@ -50,6 +52,8 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
         return;  // @note: stop logic here, no need to re-insert var again
     }
+
+    if (this->m_bStartedFuncDeclaration) return; // If we are in func declaration var's arent saved in this scope.
 
     VarMetaData var = this->m_varFactory.CreateVarMetadata(
         varName, varType, varAccessRight, varScope
@@ -328,11 +332,19 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
             )
         );
     }
+
+    // We set this flag only if it's only declaration and not both declaration and definition.
+    if (!this->m_bStartedFuncDefinition)
+    {
+        this->m_bStartedFuncDeclaration = true;
+    }
 }
 
 void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
 {
     if (!node) return;
+
+    this->m_bStartedFuncDefinition = true; // Setting the flag from the start incase its defination & decleration.
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
@@ -371,6 +383,9 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
     // signal VisitBlockStart what kind of block is coming
     this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Function;
     this->m_hasPendingBlock = true;
+
+    // New var block starts now to save arguements.
+    this->m_currentScope = this->m_currentScope->CreateBlock();
 }
 
 void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
@@ -587,7 +602,15 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 {
     if (!node) return;
 
-    this->m_currentScope = this->m_currentScope->CreateBlock();
+    // If we are in func definition the block was already created.
+    if (!this->m_bStartedFuncDefinition)
+    {
+        this->m_currentScope = this->m_currentScope->CreateBlock();
+    }
+    else
+    {
+        this->m_bStartedFuncDefinition = false;
+    }
     
     bool calledEnteredBlock = false;
     
@@ -631,7 +654,10 @@ void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
 {
-    // skip, no logic needed
+    if (this->m_bStartedFuncDeclaration)
+    {
+        this->m_bStartedFuncDeclaration = false; // Flag reset.
+    }
 }
 
 void SemanticAnalysisVisitor::VisitSizeof(ASTNode* node)
