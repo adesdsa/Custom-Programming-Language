@@ -2,6 +2,16 @@
 
 #include <string>
 
+// indexes of tokens
+constexpr int FIRST_TOKEN_INDEX = 0;
+constexpr int IDENTIFIER_NAME_INDEX = 0;
+constexpr int IDENTIFIER_INDEX = 0;
+constexpr int FIRST_PARAMETER_INDEX = 0;
+constexpr int FUNCTION_NAME_TOKEN_INDEX = 0;
+constexpr int VAR_NAME_TOKEN_INDEX = 0;
+constexpr int CONDITION_TOKEN_INDEX = 0;
+constexpr int STATEMENT_TOKEN_INDEX = 0;
+
 enum class Scope
 {
     GLOBAL,

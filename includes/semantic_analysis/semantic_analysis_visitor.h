@@ -10,13 +10,6 @@
 #include "includes/semantic_analysis/semantic_checker_facade.h"
 #include "includes/semantic_analysis/var_metadata.h"
 
-constexpr int IDENTIFIER_NAME_INDEX = 0;
-constexpr int FIRST_TOKEN_INDEX = 0; 
-constexpr int FUNCTION_NAME_TOKEN_INDEX = 0;
-constexpr int VAR_NAME_TOKEN_INDEX = 0;
-constexpr int CONDITION_TOKEN_INDEX = 0;
-constexpr int STATEMENT_TOKEN_INDEX = 0;
-
 class SemanticAnalysisVisitor : public IASTVisitor
 {
 public:

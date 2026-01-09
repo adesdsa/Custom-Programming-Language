@@ -8,10 +8,6 @@
 #include  "includes/common/common_consts.h"
 #include "includes/parser/command.h"
 
-constexpr int FIRST_TOKEN_INDEX = 0;
-constexpr int IDENTIFIER_INDEX = 0;
-constexpr int FIRST_PARAMETER_INDEX = 0;
-
 /// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment).
 /// @note Before using please read all checks and learn where they need to be used.
 class SemanticCheckerFacade
