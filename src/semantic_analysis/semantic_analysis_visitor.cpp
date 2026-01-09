@@ -42,8 +42,8 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
                 "Variable '" + varName + "' is already declared in this scope",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Check if variable already declared, remember no shadowing allowed!"
             )
         );
@@ -61,8 +61,8 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::INTERNAL_ERROR,
                 "Failed to insert variable '" + varName + "'",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "This is an internal error, please report it"
             )
         );
@@ -199,8 +199,8 @@ void SemanticAnalysisVisitor::VisitAssignment(ASTNode* node)
 
     // tell VisitExpression to run type check
     this->m_pendingAssignment = true;
-    this->m_assignmentLine = tokens[0].GetLine();
-    this->m_assignmentColumn = tokens[0].GetColumn();
+    this->m_assignmentLine = tokens[FIRST_TOKEN_INDEX].GetLine();
+    this->m_assignmentColumn = tokens[FIRST_TOKEN_INDEX].GetColumn();
 }
 
 void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
@@ -240,8 +240,8 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
                 "Invalid expression: type mismatch or undefined identifier/function",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"
             )
         );
@@ -292,7 +292,7 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
     
-    const std::string& funcName = tokens[0].GetValue();
+    const std::string& funcName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
     
     if (SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
     {
@@ -300,8 +300,8 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
                 "Function '" + funcName + "' is already declared",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Function names must be unique"
             )
         );
@@ -322,8 +322,8 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::INTERNAL_ERROR,
                 "Failed to register function '" + funcName + "'",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "This is an internal error, please report it"
             )
         );
@@ -337,7 +337,7 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
     
-    const std::string& funcName = tokens[0].GetValue();
+    const std::string& funcName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
     
     if (SemanticCheckerFacade::CheckFuncDefinition(this->m_funcTable, funcName))
     {
@@ -345,8 +345,8 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
                 "Function '" + funcName + "' is already defined",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Function can only be defined once"
             )
         );
@@ -380,7 +380,7 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
     
-    const std::string& funcName = tokens[0].GetValue();
+    const std::string& funcName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
     
     if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
     {
@@ -388,8 +388,8 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
                 "Undefined function '" + funcName + "'",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Function must be declared before calling"
             )
         );
@@ -410,8 +410,8 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::ARGUMENT_ERROR,
                 "Invalid arguments for function '" + funcName + "'",
-                tokens[0].GetLine(),
-                tokens[0].GetColumn(),
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Check the number and types of arguments"
             )
         );
@@ -501,8 +501,8 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
                 CompileTimeError(
                     ErrorTypes::TYPE_ERROR,
                     "for loop condition must be a boolean expression",
-                    tokens[0].GetLine(),
-                    tokens[0].GetColumn(),
+                    tokens[FIRST_TOKEN_INDEX].GetLine(),
+                    tokens[FIRST_TOKEN_INDEX].GetColumn(),
                     "Provide a boolean condition"
                 )
             );
@@ -519,8 +519,8 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
     if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
-    size_t line = tokens.empty() ? 0 : tokens[0].GetLine();
-    size_t column = tokens.empty() ? 0 : tokens[0].GetColumn();
+    size_t line = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetLine();
+    size_t column = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetColumn();
     
     if (!SemanticCheckerFacade::CheckReturnInsideFunc())
     {
@@ -567,9 +567,9 @@ void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
         const auto& tokens = node->command.GetTokens();
         if (tokens.empty()) return;
 
-        const std::string& statement = tokens[0].GetValue();
-        size_t line = tokens[0].GetLine();
-        size_t column = tokens[0].GetColumn();
+        const std::string& statement = tokens[STATEMENT_TOKEN_INDEX].GetValue();
+        size_t line = tokens[FIRST_TOKEN_INDEX].GetLine();
+        size_t column = tokens[FIRST_TOKEN_INDEX].GetColumn();
 
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -666,7 +666,7 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 
     const auto& tokens = condition->command.GetTokens();
     if (tokens.empty()) return;
-    const auto& conditionTokens = tokens[0];
+    const auto& conditionTokens = tokens[CONDITION_TOKEN_INDEX];
 
     if (condition->command.GetType() == CommandTypes::EXPRESSION)
     {
@@ -687,7 +687,7 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 
     else if (condition->command.GetType() == CommandTypes::IDENTIFIER_VALUE)
     {
-        const std::string& varName = condition->command.GetTokens()[0].GetValue();
+        const std::string& varName = condition->command.GetTokens()[VAR_NAME_TOKEN_INDEX].GetValue();
         auto var = this->m_currentScope->FindVar(varName);
     
         if (var.has_value() && var->type != Type::BOOL_TYPE)
@@ -706,7 +706,7 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 
     else if (condition->command.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        const std::string& calledFuncName = condition->command.GetTokens()[0].GetValue();
+        const std::string& calledFuncName = condition->command.GetTokens()[FUNCTION_NAME_TOKEN_INDEX].GetValue();
         const auto func = this->m_funcTable.FindFunctionByName(calledFuncName);
 
         if (func && func->GetRType() != Type::BOOL_TYPE)
@@ -806,7 +806,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
             return ExpressionType::UNKNOWN;
         }
 
-        const std::string& varName = varTokens[0].GetValue();
+        const std::string& varName = varTokens[VAR_NAME_TOKEN_INDEX].GetValue();
         auto var = this->m_currentScope->FindVar(varName);
 
         if (var.has_value()) 
@@ -836,7 +836,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
             return ExpressionType::UNKNOWN;
         }
     
-        const std::string& calledFuncName = tokens[0].GetValue();
+        const std::string& calledFuncName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
         FuncMetaData* func = this->m_funcTable.FindFunctionByName(calledFuncName);
         if (!func) 
         {
@@ -875,7 +875,7 @@ bool SemanticAnalysisVisitor::HandleEnteredBlockCheck(
         const auto& tokens = node->command.GetTokens();
         if (!tokens.empty())
         {
-            const auto& errorTokens = tokens[0];
+            const auto& errorTokens = tokens[FIRST_TOKEN_INDEX];
 
             this->m_errorManager.StoreError(
                 CompileTimeError(
@@ -900,7 +900,7 @@ void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
     {
         const auto& tokens = node->command.GetTokens();
         if (tokens.empty()) return;
-        const auto& errorTokens = tokens[0];
+        const auto& errorTokens = tokens[FIRST_TOKEN_INDEX];
 
         this->m_errorManager.StoreError(
             CompileTimeError(
