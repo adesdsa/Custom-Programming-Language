@@ -12,7 +12,6 @@ bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
     
     if (existingFunction)
     {
-        // prototype exists but definition is not exists yet
         if (
             existingFunction->IsFuncDeclared() && 
             !existingFunction->IsFuncDefined() && 

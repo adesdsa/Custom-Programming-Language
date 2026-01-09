@@ -16,8 +16,12 @@ bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNo
 bool SemanticCheckerFacade::CheckFuncDeclaration(const FuncTable& funcTable, const std::string& funcName)
 {
     DefaultExpressionChecks();
-    if (funcTable.FindFunctionByName(funcName) == nullptr) return false;
-    return funcTable.FindFunctionByName(funcName)->IsFuncDeclared();
+    FuncMetaData* result = funcTable.FindFunctionByName(funcName);
+    if (result == nullptr)
+    {
+        return false;
+    }
+    return result->IsFuncDeclared();
 }
 
 bool SemanticCheckerFacade::CheckFuncDefinition(const FuncTable& funcTable, const std::string& funcName)
@@ -210,6 +214,12 @@ bool SemanticCheckerFacade::ExitedBlock()
         if (m_uLoopBlockCnt == 0) m_bLoopFlag = false;
         return true;
     }
+    
+    if (m_operationHistory.empty() || m_entryHistory.empty())
+    {
+        return true;
+    }
+    
     OperationKind lastOperation = m_operationHistory.top();
 
     switch (m_entryHistory.top())
@@ -318,8 +328,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
-    if (!m_bLoopFlag &&
-        !m_bFinishedBlock)
+    if (!m_bLoopFlag && !m_bFinishedBlock)
     {
         SwitchTop(OperationKind::Expression);
     }
@@ -327,6 +336,11 @@ inline void SemanticCheckerFacade::DefaultExpressionChecks()
 
 bool SemanticCheckerFacade::ElseElifBlockEnter()
 {
+    if (m_operationHistory.empty())
+    {
+        return true;
+    }
+    
     if (m_operationHistory.top() != OperationKind::If &&
         m_operationHistory.top() != OperationKind::IfReturn &&
         m_operationHistory.top() != OperationKind::Elif &&
@@ -340,8 +354,19 @@ bool SemanticCheckerFacade::ElseElifBlockEnter()
 
 void SemanticCheckerFacade::ElseElifBlockExit(OperationKind kind)
 {
+    if (m_operationHistory.empty())
+    {
+        return;
+    }
+    
     OperationKind lastOperation = m_operationHistory.top();
     m_operationHistory.pop();
+    
+    if (m_operationHistory.empty())
+    {
+        return;
+    }
+    
     // If The block ended with a return and before that the last condition also returned.
     if ((lastOperation == OperationKind::Return ||
         lastOperation == OperationKind::ElseReturn) &&

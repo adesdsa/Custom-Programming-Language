@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stack>
+
 #include "includes/common/abstract_ast_visitor.h"
 #include "includes/errors/error_manager.h"
 #include "includes/parser/ast_extractor.h"
@@ -81,6 +83,10 @@ private:
     // pending block tracking, consumed by VisitBlockStart
     SemanticCheckerFacade::BlockKind m_pendingBlockKind;
     bool m_hasPendingBlock = false;
+    
+    // stack to track which blocks called EnteredBlock and need ExitedBlock
+    // Each bool represents: did this block level call EnteredBlock?
+    std::stack<bool> m_blockEnteredStack;
 
     /**********************\
     |    Helper Methods    |
@@ -125,10 +131,12 @@ private:
     /// @brief Following methods cover facade checks that are shared between Visits ||
     //                                                                              \/
 
-    void HandleEnteredBlockCheck(
+    /// @brief Calls SemanticCheckerFacade::EnteredBlock for the given block kind.
+    /// @return true if EnteredBlock was called, false otherwise (e.g., function not found)
+    bool HandleEnteredBlockCheck(
         ASTNode* node, 
         SemanticCheckerFacade::BlockKind blockkind
-    ) const;
+    );
 
     void HandleExitedBlockCheck(ASTNode* node) const;
 };

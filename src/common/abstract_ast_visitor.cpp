@@ -8,34 +8,41 @@ void IASTVisitor::Visit(ASTNode* node)
 
     if (commandHandler != m_handlers.end())
     {
-        commandHandler->second(node);  // call the corresponding handler method
+        try
+        {
+            commandHandler->second(node);  // call the corresponding handler method
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 }
 
 void IASTVisitor::InitializeHandlers()
 {
-    this->m_handlers = {
-        {CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); }},
-        {CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); }},
-        {CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); }},
-        {CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); }},
-        {CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); }},
-        {CommandTypes::FINISHED_FUNC_DECLARATION,[this](ASTNode* n) { VisitFuncDeclaration(n); }},
-        {CommandTypes::FINISHED_FUNC_DEFINITION, [this](ASTNode* n) { VisitFuncDefinition(n); }},
-        {CommandTypes::FINISHED_FUNC_CALL,       [this](ASTNode* n) { VisitFuncCall(n); }},
-        {CommandTypes::IF,                       [this](ASTNode* n) { VisitIf(n); }},
-        {CommandTypes::ELIF,                     [this](ASTNode* n) { VisitElif(n); }},
-        {CommandTypes::ELSE,                     [this](ASTNode* n) { VisitElse(n); }},
-        {CommandTypes::WHILE,                    [this](ASTNode* n) { VisitWhile(n); }},
-        {CommandTypes::FOR,                      [this](ASTNode* n) { VisitFor(n); }},
-        {CommandTypes::RETURN,                   [this](ASTNode* n) { VisitReturn(n); }},
-        {CommandTypes::CONTROL_STATEMENT,        [this](ASTNode* n) { VisitControlStatement(n); }},
-        {CommandTypes::BLOCK_START,              [this](ASTNode* n) { VisitBlockStart(n); }},
-        {CommandTypes::BLOCK_END,                [this](ASTNode* n) { VisitBlockEnd(n); }},
-        {CommandTypes::END_OF_COMMAND,           [this](ASTNode* n) { VisitEndOfCommand(n); }},
-        {CommandTypes::SIZEOF,                   [this](ASTNode* n) { VisitSizeof(n); }},
-        {CommandTypes::VOID_COMMAND,             [this](ASTNode* n) { VisitVoidCommand(n); }},
-        {CommandTypes::PASS,                     [this](ASTNode* n) { VisitPass(n); }},
-        {CommandTypes::EOF_TOKEN,                [this](ASTNode* n) { VisitEof(n); }},
-    };
+    this->m_handlers.reserve(22);  // pre-allocate for efficiency
+    
+    this->m_handlers.emplace(CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); });
+    this->m_handlers.emplace(CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); });
+    this->m_handlers.emplace(CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); });
+    this->m_handlers.emplace(CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); });
+    this->m_handlers.emplace(CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); });
+    this->m_handlers.emplace(CommandTypes::FINISHED_FUNC_DECLARATION,[this](ASTNode* n) { VisitFuncDeclaration(n); });
+    this->m_handlers.emplace(CommandTypes::FINISHED_FUNC_DEFINITION, [this](ASTNode* n) { VisitFuncDefinition(n); });
+    this->m_handlers.emplace(CommandTypes::FINISHED_FUNC_CALL,       [this](ASTNode* n) { VisitFuncCall(n); });
+    this->m_handlers.emplace(CommandTypes::IF,                       [this](ASTNode* n) { VisitIf(n); });
+    this->m_handlers.emplace(CommandTypes::ELIF,                     [this](ASTNode* n) { VisitElif(n); });
+    this->m_handlers.emplace(CommandTypes::ELSE,                     [this](ASTNode* n) { VisitElse(n); });
+    this->m_handlers.emplace(CommandTypes::WHILE,                    [this](ASTNode* n) { VisitWhile(n); });
+    this->m_handlers.emplace(CommandTypes::FOR,                      [this](ASTNode* n) { VisitFor(n); });
+    this->m_handlers.emplace(CommandTypes::RETURN,                   [this](ASTNode* n) { VisitReturn(n); });
+    this->m_handlers.emplace(CommandTypes::CONTROL_STATEMENT,        [this](ASTNode* n) { VisitControlStatement(n); });
+    this->m_handlers.emplace(CommandTypes::BLOCK_START,              [this](ASTNode* n) { VisitBlockStart(n); });
+    this->m_handlers.emplace(CommandTypes::BLOCK_END,                [this](ASTNode* n) { VisitBlockEnd(n); });
+    this->m_handlers.emplace(CommandTypes::END_OF_COMMAND,           [this](ASTNode* n) { VisitEndOfCommand(n); });
+    this->m_handlers.emplace(CommandTypes::SIZEOF,                   [this](ASTNode* n) { VisitSizeof(n); });
+    this->m_handlers.emplace(CommandTypes::VOID_COMMAND,             [this](ASTNode* n) { VisitVoidCommand(n); });
+    this->m_handlers.emplace(CommandTypes::PASS,                     [this](ASTNode* n) { VisitPass(n); });
+    this->m_handlers.emplace(CommandTypes::EOF_TOKEN,                [this](ASTNode* n) { VisitEof(n); });
 }

@@ -15,12 +15,21 @@ class IASTVisitor
 public:
     virtual ~IASTVisitor() = default;
 
+    // Prevent copying/moving - lambdas capture 'this' pointer
+    IASTVisitor(const IASTVisitor&) = delete;
+    IASTVisitor& operator=(const IASTVisitor&) = delete;
+    IASTVisitor(IASTVisitor&&) = delete;
+    IASTVisitor& operator=(IASTVisitor&&) = delete;
+
     /// @brief Call the right handler method based on the node command type:
     ///     `node->command->GetType()`
     /// @param node: Node to visit
     void Visit(ASTNode* node);
 
 protected:
+    /// @brief Default constructor for derived classes
+    IASTVisitor() = default;
+
     /**
         ******************************************************************
         * Following methods are handler methods for each type.           *

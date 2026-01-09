@@ -12,7 +12,7 @@
 class FuncTable
 {
 public:
-    FuncTable(const EntityLogger entityLogger) : m_entityLogger(entityLogger) {};
+    FuncTable(const EntityLogger& entityLogger) : m_entityLogger(entityLogger) {};
     ~FuncTable() = default;
     
     /// @brief: Search through the table for given function and return pointer to it.

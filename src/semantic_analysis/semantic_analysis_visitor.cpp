@@ -307,7 +307,6 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
         );
     }
 
-    // saves function data
     Type returnType = ASTExtractor::ExtractFuncReturnType(node);
     const std::vector<VarMetaData>& params = ASTExtractor::ExtractFuncParams(node, this->m_varFactory);
     
@@ -590,12 +589,17 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 
     this->m_currentScope = this->m_currentScope->CreateBlock();
     
+    bool calledEnteredBlock = false;
+    
     // enter block in facade if a control structure set pending block kind
     if (this->m_hasPendingBlock)
     {
-        this->HandleEnteredBlockCheck(node, this->m_pendingBlockKind);
+        calledEnteredBlock = this->HandleEnteredBlockCheck(node, this->m_pendingBlockKind);
         this->m_hasPendingBlock = false;
     }
+    
+    // track whether this block level called EnteredBlock for matching ExitedBlock call
+    this->m_blockEnteredStack.push(calledEnteredBlock);
 }
 
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
@@ -609,8 +613,20 @@ void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
         this->m_currentScope = parent;
     }
 
-    // Exit block in facade (handles return path analysis)
-    this->HandleExitedBlockCheck(node);
+    // Only call ExitedBlock if we called EnteredBlock for this block level
+    bool shouldCallExitedBlock = !this->m_blockEnteredStack.empty() && 
+                                  this->m_blockEnteredStack.top();
+    
+    if (!this->m_blockEnteredStack.empty())
+    {
+        this->m_blockEnteredStack.pop();
+    }
+    
+    if (shouldCallExitedBlock)
+    {
+        // Exit block in facade (handles return path analysis)
+        this->HandleExitedBlockCheck(node);
+    }
 }
 
 void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
@@ -833,37 +849,49 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
     return ExpressionType::UNKNOWN;
 }
 
-void SemanticAnalysisVisitor::HandleEnteredBlockCheck(
+bool SemanticAnalysisVisitor::HandleEnteredBlockCheck(
         ASTNode* node, 
         SemanticCheckerFacade::BlockKind blockkind
-    ) const
-{
-    const auto& func = this->m_funcTable.FindFunctionByName(this->m_currentFunctionName);
-
-    if (!func) return;
-
-    bool isVoidReturnType = func->GetRType() == Type::VOID_TYPE;
-    if (
-        !SemanticCheckerFacade::EnteredBlock(
-            blockkind, 
-            isVoidReturnType
-        )
     )
+{
+    bool isVoidReturnType = false;
+    
+    // Only need function lookup for Function blocks to determine return type
+    if (blockkind == SemanticCheckerFacade::BlockKind::Function)
+    {
+        const auto* func = this->m_funcTable.FindFunctionByName(this->m_currentFunctionName);
+        if (!func)
+        {
+            // Can't enter function block without function metadata
+            // This shouldn't happen if VisitFuncDefinition works correctly
+            return false;
+        }
+        isVoidReturnType = func->GetRType() == Type::VOID_TYPE;
+    }
+    
+    // Call EnteredBlock for ALL block types (Function, If, Else, Elif, Loop)
+    if (!SemanticCheckerFacade::EnteredBlock(blockkind, isVoidReturnType))
     {
         const auto& tokens = node->command.GetTokens();
-        if (tokens.empty()) return;
-        const auto& errorTokens = tokens[0];
+        if (!tokens.empty())
+        {
+            const auto& errorTokens = tokens[0];
 
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
-                "Invalid usage of else if/else keywords without matching if keyword",
-                errorTokens.GetLine(),
-                errorTokens.GetColumn(),
-                "else if/else keyword are only allowed after usage of if keyword"
-            )
-        );
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
+                    "Invalid usage of else if/else keywords without matching if keyword",
+                    errorTokens.GetLine(),
+                    errorTokens.GetColumn(),
+                    "else if/else keyword are only allowed after usage of if keyword"
+                )
+            );
+        }
+        // EnteredBlock failed, but we still called it so it may have partially modified state
+        // Return true because EnteredBlock was called
     }
+    
+    return true;  // EnteredBlock was called
 }
 
 void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
