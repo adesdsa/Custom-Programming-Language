@@ -624,7 +624,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
             m_uParameterIndex++;
         return false;
     }
-    else if (IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
+    else if (m_tokens.size() == 2 && IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
     {
         m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
@@ -633,6 +633,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
         m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
         m_parameters[m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;
         m_uParameterIndex++;
+        return false;
     }
     else return AddToCurrParam(currToken, nextToken);
 }

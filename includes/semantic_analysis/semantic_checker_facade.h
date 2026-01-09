@@ -8,6 +8,10 @@
 #include  "includes/common/common_consts.h"
 #include "includes/parser/command.h"
 
+constexpr int FIRST_TOKEN_INDEX = 0;
+constexpr int IDENTIFIER_INDEX = 0;
+constexpr int FIRST_PARAMETER_INDEX = 0;
+
 /// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment).
 /// @note Before using please read all checks and learn where they need to be used.
 class SemanticCheckerFacade
@@ -108,7 +112,7 @@ public:
     static ExpressionType TypeToExpressionType(const Type& type);
 
 private:
-enum class OperationKind
+    enum class OperationKind // This class repressends the last operation that happened in the block.
     {
         None,
         Return,
@@ -121,13 +125,12 @@ enum class OperationKind
         Expression
     };
 
-    /// @todo add docs for all params
-    static bool m_bLoopFlag;
-    static bool m_bFinishedBlock;
-    static size_t m_uLoopBlockCnt;
-    static std::stack<OperationKind> m_operationHistory;
-    static std::stack<BlockKind> m_entryHistory;
-    static bool m_bIsReturnVoid;
+    static std::stack<OperationKind> m_operationHistory; // The last operation that happened in a block level(block inside block).
+    static std::stack<BlockKind> m_entryHistory;        // The last block that was entered.
+    static size_t m_uLoopBlockCnt;                     // A counter that represents the amount of blocks entered when in a loop.
+    static bool m_bFinishedBlock;                     // A flag that represents if we finished the current block (if there was a 100% return).
+    static bool m_bIsReturnVoid;                     // A flag that represents if the function returns void.
+    static bool m_bLoopFlag;                        // A flag that represents if we are inside a loop rn (if true no need to do control flow checks).
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.
@@ -151,6 +154,7 @@ enum class OperationKind
     static void ElseElifBlockExit(OperationKind kind);
 
     /// @brief The func is used to switch the top of the m_operationHistory stack.
+    /// It is used to ensure that we only change the top if there is one, and it automatically pops and then pushed to change.
     /// @param operationKind The operation we add.
-    static void SwitchTop(OperationKind operationKind);
+    static inline void SwitchTopOfOperationHistory(OperationKind operationKind);
 };

@@ -52,5 +52,4 @@ private:
     std::vector<std::unique_ptr<VarTableNode>> m_children;
     int m_nCurrentStackOffset;
     const EntityLogger& m_entityLogger;
-
 };
