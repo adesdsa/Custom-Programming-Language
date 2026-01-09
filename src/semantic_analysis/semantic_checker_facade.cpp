@@ -229,7 +229,7 @@ bool SemanticCheckerFacade::ExitedBlock()
     case BlockKind::Function:
         if (!m_bIsReturnVoid)
         {
-            switch (m_operationHistory.top())
+            switch (lastOperation)
             {
             // The function stopped with a return.
             case OperationKind::ElseReturn:
@@ -238,12 +238,16 @@ bool SemanticCheckerFacade::ExitedBlock()
                 break;
             // The function stopped without a return.
             default:
+                m_operationHistory.pop();
+                m_bFinishedBlock = false;
+                m_bIsReturnVoid = true;
                 return false; // non void func didnt return.
                 break;
             }
-            m_bFinishedBlock = false;
-            m_bIsReturnVoid = false;
         }
+        m_bFinishedBlock = false;
+        m_bIsReturnVoid = true;
+        m_operationHistory.pop();
         break;
     
     case BlockKind::If:
@@ -278,7 +282,6 @@ bool SemanticCheckerFacade::ExitedBlock()
             lastOperation == OperationKind::ElseReturn)
         {
             SwitchTopOfOperationHistory(OperationKind::Return);
-            m_bFinishedBlock = false;
         }
         else
         {
@@ -352,8 +355,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
-    if (!m_bLoopFlag &&
-        !m_bFinishedBlock)
+    if (!m_bFinishedBlock && !m_entryHistory.empty())
     {
         SwitchTopOfOperationHistory(OperationKind::Expression);
     }
