@@ -47,9 +47,6 @@ public:
 
     const VarTableNode& operator[](size_t index) const;
 
-    // temp for test
-    void PrintVarTable() const;
-
 private:
     std::unordered_map<std::string, VarMetaData> m_vars;
     VarTableNode* m_parent;
