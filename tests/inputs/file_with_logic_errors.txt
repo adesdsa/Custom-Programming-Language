@@ -24,14 +24,14 @@ main(void) -> int
     let x: void;    #double declaration different type
     x = 2;  #legal
     y = 2;  #undeclared variable
-    let const y: int = 3;   #legal
+    const let y: int = 3;   #legal
     y = 5;  #cont mutating
-    let readonly z: int = 4;    #legal
+    readonly let z: int = 4;    #legal
     z = 5;  #readonly mutating
     x = 1 and true;     #undefined expressionType
     x = true;   #wrong assignment type
     x = foo();  #undeclared function
-    for (x = 0; x + 1; x++)     #for loop without boolean expression
+    for (x = 0; x + 1; x=x+1)     #for loop without boolean expression
     {
         x = x;  #legal
     }
