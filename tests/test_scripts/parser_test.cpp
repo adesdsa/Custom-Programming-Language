@@ -39,6 +39,17 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
     currentNextSibling = currentNextSibling->nodeNextSibling;
 
 
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::RETURN);
+
+    astPtr = currentNextSibling->nodeNextSibling;
+    currentNextSibling = currentNextSibling->nodeNextSibling;
+
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
+
+    astPtr = currentNextSibling->nodeNextSibling;
+    currentNextSibling = currentNextSibling->nodeNextSibling;
+
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::END_OF_COMMAND);
     /*
         FINISHED_FUNC_CALL (println)
             EXPRESSION(3)
