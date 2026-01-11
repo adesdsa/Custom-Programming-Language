@@ -93,7 +93,7 @@ test-parser:
 # =====================
 # Semantic Analysis Tests
 # =====================
-test-parser:
+test-semantic_analysis:
   stage: test
   image: ubuntu:22.04
   needs:
