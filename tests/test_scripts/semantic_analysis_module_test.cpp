@@ -10,7 +10,7 @@
 TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample) 
 {
     // Setup: Parse and run semantic analysis
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
 
@@ -61,7 +61,7 @@ TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample)
     FuncMetaData* addFunc = funcTable.FindFunctionByName("Add");
     ASSERT_NE(addFunc, nullptr);
     EXPECT_EQ(addFunc->GetName(), "Add");
-    EXPECT_EQ(addFunc->GetRType(), Type::VOID_TYPE);
+    EXPECT_EQ(addFunc->GetRType(), Type::INT_TYPE);
     EXPECT_TRUE(addFunc->IsFuncDefined());
     
     const auto& addParams = addFunc->GetFuncParams();
@@ -79,7 +79,7 @@ TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample)
 TEST(SemanticAnalysisTest, HappyFlowFullProgram) 
 {
     // Setup: Parse and run semantic analysis
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
 
@@ -161,6 +161,10 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
 // TEST: Negative Flow - Semantic errors
 TEST(SemanticAnalysisTest, NegativeFlowSemanticErrors) 
 {
-    // TODO: Add test input with semantic errors
-    GTEST_SKIP() << "Semantic error tests not yet implemented";
+    // Setup: Parse and run semantic analysis
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/file_with_logic_errors.txt"));
+    const AST& ast = parser.MainFlow();
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+    
+    EXPECT_THROW(semanticAnalysisComponent.MainFlow(), CompilationAbortException);
 }

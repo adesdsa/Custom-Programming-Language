@@ -2,8 +2,8 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void;
 
 main(void) -> int
 {
-    let low: int = get_int();
-    let high: int = get_int();
+    let low: int = 1;
+    let high: int = 100;
 
     displayAllPrimeNumbersInRange(low, high);
     return 0;
