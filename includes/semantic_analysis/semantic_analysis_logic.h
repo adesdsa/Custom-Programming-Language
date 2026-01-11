@@ -14,7 +14,7 @@ struct DecoratedAST
     DecoratedAST(const AST& ast, const EntityLogger& semanticAnalysisLogger) :
         ast(ast),
         funcTable(semanticAnalysisLogger),
-        varTable(nullptr)
+        varTable(nullptr, semanticAnalysisLogger)
     {}
 };
 
@@ -54,7 +54,7 @@ public:
     const DecoratedAST& MainFlow();
 
 private:
-    const EntityLogger& m_semanticAnalysisLogger;
+    EntityLogger m_semanticAnalysisLogger;
     ASTIterator m_astIterator;
     DecoratedAST m_decoratedAST;
 };

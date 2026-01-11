@@ -1,7 +1,7 @@
 #include "includes/semantic_analysis/semantic_analysis_logic.h"
 
 SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
-    m_semanticAnalysisLogger(k_semanticAnalysisLoggerName),
+    m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),
     m_astIterator(ast),
     m_decoratedAST(ast, this->m_semanticAnalysisLogger)
 {
