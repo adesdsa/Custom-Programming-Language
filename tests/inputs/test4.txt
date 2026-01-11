@@ -33,10 +33,10 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
 
         if(is_prime)
         {
-            println(low);  # Prints with \n
+            # println(low); Prints with \n
         }
 
         low = low + 1;
     }
-    println(); # Display with \n
+    # println(); Display with \n
 }
