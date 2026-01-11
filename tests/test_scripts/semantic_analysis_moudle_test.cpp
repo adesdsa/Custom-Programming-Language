@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>  // gtest FrameWork
 
+#include "includes/parser/parser_logic.h"
 #include "includes/semantic_analysis/semantic_analysis_logic.h"
 #include "includes/utils/tests_utils.h"
 #include "includes/utils/system_utils.h"
@@ -8,97 +9,158 @@
 // TEST: Happy Flow - Single function
 TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample) 
 {
-    SemanticAnalysisLogicComponent semanticAnalysisAgent(
-        SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt")
-    );
+    // Setup: Parse and run semantic analysis
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
+    const AST& ast = parser.MainFlow();
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
 
     EntityLogger testLogger("GENERAL");
-
-    testLogger.Info("Runs Semantic Analaysis MainFlow");
-    const DecoratedAST& resultDecoratedAST = semanticAnalysisComponent.MainFlow();
+    testLogger.Info("Running Semantic Analysis MainFlow");
     
-    testLogger.Info("Compare mocked VarTable to the result VarTable");
-
-    /// @note The block are numbered from 0->n (n=number of blocks) their order is from first BLOCK_START in the file until the last.
-    VarTableNode* currVarTableNode = resultDecoratedAST.varTable;
-    VarMetaData currVarMetaData;
-    std::optional<VarMetaData> maybeValue;
-    VarMetaData tempMetaDataHolder;
-
-    ASSERT_NE(currVarTableNode, nullptr);  // Check that AST root exists
+    const DecoratedAST& result = semanticAnalysisComponent.MainFlow();
 
     /////////////////////////////////////////////////////////////////
-    // Global vars checks:                                          |
-    // Expected vars: 0                                             |
-    // Expected children: 1                                         |
-    //      1. Add(let a: int, let b: int) -> void                  |
+    // VarTable Checks                                              |
     /////////////////////////////////////////////////////////////////
-    EXPECT_EQ(currVarTableNode->GetVars().size(), 0);
-    EXPECT_EQ(currVarTableNode->GetChildren().size(), 1);
-
-    currVarTableNode = &(*currVarTableNode)[0]; // First child from comment at line 18.
-
-    /////////////////////////////////////////////////////////////////
-    // First block checks (Add(let a: int, let b: int) -> void):    |
-    // Expected vars: 2                                             |
-    //      1. let a: int                                           |
-    //      2. let b: int                                           |
-    // Expected children: 0                                         |
-    /////////////////////////////////////////////////////////////////
-    EXPECT_EQ(currVarTableNode->GetVars().size(), 2);
-    EXPECT_EQ(currVarTableNode->GetChildren().size(), 0);
-
-    // First var: [a, int, default ,let, 4]
-    maybeValue = currVarTableNode->FindVar("a");
-    ASSERT_TRUE(maybeValue.has_value());
-    currVarMetaData = maybeValue.value();
-    tempMetaDataHolder = VarMetaData("a", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 4);
-    EXPECT_EQ(currVarMetaData, tempMetaDataHolder);
-
-    // Second var: [b, int, default, let, 4]
-    maybeValue = currVarTableNode->FindVar("b");
-    ASSERT_TRUE(maybeValue.has_value());
-    currVarMetaData = maybeValue.value();
-    tempMetaDataHolder = VarMetaData("b", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 4);
-    EXPECT_EQ(currVarMetaData, tempMetaDataHolder);
-
-    /// Finished comparing VarTable
+    testLogger.Info("Validating VarTable");
     
-    testLogger.Info("Compare mocked VarTable to the result VarTable");
+    const VarTableNode* globalScope = &result.varTable;
+    ASSERT_NE(globalScope, nullptr);
 
-    // Starts compaing FuncTable
-    testLogger.Info("Compare mocked FuncTable to the result FuncTable");
+    // Global scope: no vars, 1 child (Add function scope)
+    EXPECT_EQ(globalScope->GetVars().size(), 0);
+    EXPECT_EQ(globalScope->GetChildren().size(), 1);
 
-    FuncTable& funcTableResult = resultDecoratedAST.funcTable;
-    FuncMetaData currFuncMetaData;
-    std::optional<FuncMetaData> maybeValue;
-    FuncMetaData mockFuncMetaData;
+    // Add function scope: 2 params (a, b)
+    const VarTableNode* addFuncScope = &(*globalScope)[0];
+    EXPECT_EQ(addFuncScope->GetVars().size(), 2);
+    EXPECT_EQ(addFuncScope->GetChildren().size(), 0);
 
-    ASSERT_NE(funcTableResult, nullptr);
+    // Param a
+    auto maybeA = addFuncScope->FindVar("a");
+    ASSERT_TRUE(maybeA.has_value());
+    EXPECT_EQ(maybeA->sName, "a");
+    EXPECT_EQ(maybeA->type, Type::INT_TYPE);
+    EXPECT_EQ(maybeA->scope, Scope::LET);
 
-    // Add(let a: int, let b: int) -> void
-    maybeValue = resultDecoratedAST->FindVar("Add");
-    ASSERT_TRUE(maybeValue.has_value());
+    // Param b
+    auto maybeB = addFuncScope->FindVar("b");
+    ASSERT_TRUE(maybeB.has_value());
+    EXPECT_EQ(maybeB->sName, "b");
+    EXPECT_EQ(maybeB->type, Type::INT_TYPE);
+    EXPECT_EQ(maybeB->scope, Scope::LET);
 
-    currFuncMetaData = maybeValue.value();
-    mockFuncMetaData = FuncMetaData(
-        testLogger,
-        "Add",
-        Type::VOID_TYPE,
-
-    );
-    EXPECT_EQ(currFuncMetaData, mockFuncMetaData);
-
+    /////////////////////////////////////////////////////////////////
+    // FuncTable Checks                                             |
+    /////////////////////////////////////////////////////////////////
+    testLogger.Info("Validating FuncTable");
     
+    const FuncTable& funcTable = result.funcTable;
+
+    // Function: Add(let a: int, let b: int) -> void
+    FuncMetaData* addFunc = funcTable.FindFunctionByName("Add");
+    ASSERT_NE(addFunc, nullptr);
+    EXPECT_EQ(addFunc->GetName(), "Add");
+    EXPECT_EQ(addFunc->GetRType(), Type::VOID_TYPE);
+    EXPECT_TRUE(addFunc->IsFuncDefined());
+    
+    const auto& addParams = addFunc->GetFuncParams();
+    EXPECT_EQ(addParams.size(), 2);
+    EXPECT_EQ(addParams[0].sName, "a");
+    EXPECT_EQ(addParams[0].type, Type::INT_TYPE);
+    EXPECT_EQ(addParams[1].sName, "b");
+    EXPECT_EQ(addParams[1].type, Type::INT_TYPE);
+
+    testLogger.Info("HappyFlowSmallCodeExample PASSED");
 }
+
 
 // TEST: Happy Flow - main function + other function and logic
 TEST(SemanticAnalysisTest, HappyFlowFullProgram) 
 {
+    // Setup: Parse and run semantic analysis
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
+    const AST& ast = parser.MainFlow();
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+
+    EntityLogger testLogger("GENERAL");
+    testLogger.Info("Running Semantic Analysis MainFlow on full program");
     
+    const DecoratedAST& result = semanticAnalysisComponent.MainFlow();
+
+    /////////////////////////////////////////////////////////////////
+    // VarTable Checks                                              |
+    /////////////////////////////////////////////////////////////////
+    testLogger.Info("Validating VarTable");
+    
+    const VarTableNode* globalScope = &result.varTable;
+    ASSERT_NE(globalScope, nullptr);
+
+    // Global scope: no vars, 2 children (main + displayAllPrimeNumbersInRange)
+    EXPECT_EQ(globalScope->GetVars().size(), 0);
+    EXPECT_EQ(globalScope->GetChildren().size(), 2);
+
+    // main function scope - has locals: low, high
+    const VarTableNode* mainScope = &(*globalScope)[0];
+    EXPECT_EQ(mainScope->GetVars().size(), 2);
+    
+    auto maybeLow = mainScope->FindVar("low");
+    ASSERT_TRUE(maybeLow.has_value());
+    EXPECT_EQ(maybeLow->type, Type::INT_TYPE);
+    EXPECT_EQ(maybeLow->scope, Scope::LET);
+
+    auto maybeHigh = mainScope->FindVar("high");
+    ASSERT_TRUE(maybeHigh.has_value());
+    EXPECT_EQ(maybeHigh->type, Type::INT_TYPE);
+    EXPECT_EQ(maybeHigh->scope, Scope::LET);
+
+    // displayAllPrimeNumbersInRange function scope - has params: low, high
+    const VarTableNode* displayPrimeScope = &(*globalScope)[1];
+    
+    auto maybeParamLow = displayPrimeScope->FindVar("low");
+    ASSERT_TRUE(maybeParamLow.has_value());
+    EXPECT_EQ(maybeParamLow->type, Type::INT_TYPE);
+
+    auto maybeParamHigh = displayPrimeScope->FindVar("high");
+    ASSERT_TRUE(maybeParamHigh.has_value());
+    EXPECT_EQ(maybeParamHigh->type, Type::INT_TYPE);
+
+    /////////////////////////////////////////////////////////////////
+    // FuncTable Checks                                             |
+    /////////////////////////////////////////////////////////////////
+    testLogger.Info("Validating FuncTable");
+    
+    const FuncTable& funcTable = result.funcTable;
+
+    // Function: main(void) -> int
+    FuncMetaData* mainFunc = funcTable.FindFunctionByName("main");
+    ASSERT_NE(mainFunc, nullptr);
+    EXPECT_EQ(mainFunc->GetName(), "main");
+    EXPECT_EQ(mainFunc->GetRType(), Type::INT_TYPE);
+    EXPECT_TRUE(mainFunc->IsFuncDefined());
+    EXPECT_EQ(mainFunc->GetFuncParams().size(), 0);
+
+    // Function: displayAllPrimeNumbersInRange(low: int, high: int) -> void
+    FuncMetaData* displayFunc = funcTable.FindFunctionByName("displayAllPrimeNumbersInRange");
+    ASSERT_NE(displayFunc, nullptr);
+    EXPECT_EQ(displayFunc->GetName(), "displayAllPrimeNumbersInRange");
+    EXPECT_EQ(displayFunc->GetRType(), Type::VOID_TYPE);
+    EXPECT_TRUE(displayFunc->IsFuncDeclared());
+    EXPECT_TRUE(displayFunc->IsFuncDefined());
+    
+    const auto& displayParams = displayFunc->GetFuncParams();
+    EXPECT_EQ(displayParams.size(), 2);
+    EXPECT_EQ(displayParams[0].sName, "low");
+    EXPECT_EQ(displayParams[0].type, Type::INT_TYPE);
+    EXPECT_EQ(displayParams[1].sName, "high");
+    EXPECT_EQ(displayParams[1].type, Type::INT_TYPE);
+
+    testLogger.Info("HappyFlowFullProgram PASSED");
 }
 
-// TEST: Negative Flow - Code with logic errors
-TEST(SemanticAnalysisTest, NegativeFlowSyntaxErrors) 
+// TEST: Negative Flow - Semantic errors
+TEST(SemanticAnalysisTest, NegativeFlowSemanticErrors) 
 {
+    // TODO: Add test input with semantic errors
+    GTEST_SKIP() << "Semantic error tests not yet implemented";
 }
