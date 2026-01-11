@@ -14,13 +14,7 @@ int main(int argc, const char* argv[])
 
     try
     {
-        const char* fakeArgv[] = {
-        argv[0],
-        "C:\\school\\test4.txt"
-        };
-
-        int fakeArgc = 2;
-        CompilerOrchestrator compilerOrchestrator(fakeArgc, fakeArgv);
+        CompilerOrchestrator compilerOrchestrator(argc, argv);
         compilerOrchestrator.MainFlow();
     }
     catch(const CompilationAbortException& abortError)

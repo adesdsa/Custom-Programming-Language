@@ -73,6 +73,10 @@ private:
     
     std::string m_currentFunctionName;
 
+    bool m_bStartedFuncDefinition; // If we are in a func definition we open the block in the 
+    // varTable before we get to the '{' Token inorder to save the arguments.
+    bool m_bStartedFuncDeclaration; // If we are in a func declaration we dont save the var's yet.
+
     // pending assignment tracking, consumed by VisitExpression
     bool m_pendingAssignment = false;
     size_t m_assignmentLine = 0;

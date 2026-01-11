@@ -15,10 +15,6 @@ void CompilerOrchestrator::MainFlow()
 
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
-    if (true)
-    {
-
-    }
 }
 
 std::wstring CompilerOrchestrator::DesriralizeCLI(int argc, const char *argv[])
