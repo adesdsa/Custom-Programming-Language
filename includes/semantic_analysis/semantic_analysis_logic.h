@@ -4,6 +4,7 @@
 #include "includes/semantic_analysis/func_table.h"
 #include "includes/semantic_analysis/var_table_node.h"
 #include "includes/semantic_analysis/ast_iterator.h"
+#include "includes/semantic_analysis/semantic_analysis_visitor.h"
 
 struct DecoratedAST
 {
@@ -57,4 +58,5 @@ private:
     EntityLogger m_semanticAnalysisLogger;
     ASTIterator m_astIterator;
     DecoratedAST m_decoratedAST;
+    SemanticAnalysisVisitor m_semanticAnalysisVisitor;
 };

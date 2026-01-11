@@ -47,6 +47,11 @@ bool FuncMetaData::IsFuncDeclared() const noexcept
     return this->m_isDeclared;
 }
 
+void FuncMetaData::SetDefined() noexcept
+{
+    this->m_isDefined = true;
+}
+
 bool FuncMetaData::HasSameSignature(const FuncMetaData& other) const
 {
     if (this->m_name != other.m_name) return false;

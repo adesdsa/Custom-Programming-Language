@@ -9,10 +9,11 @@ FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName) const
 bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
 {
     auto existingFunction = this->FindFunctionByName(funcMetadata.GetName());
+    // We use move and only then GetName, by this point the metada is empty so we need to save the name.
+    std::string sFuncName = funcMetadata.GetName();
     
     if (existingFunction)
     {
-        // prototype exists but definition is not exists yet
         if (
             existingFunction->IsFuncDeclared() && 
             !existingFunction->IsFuncDefined() && 
@@ -20,18 +21,18 @@ bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
         )
         {
             this->m_entityLogger.Info("Insert function declaration to an existing function definition");
-            this->m_functions[funcMetadata.GetName()] =
+            this->m_functions[sFuncName] =
                 std::make_unique<FuncMetaData>(std::move(funcMetadata));
             return true;
         }
         this->m_entityLogger.Warnning(
-            "Function " + funcMetadata.GetName() + " already exists. Inseration failed"
+            "Function " + sFuncName + " already exists. Inseration failed"
         );
         return false;
     }
 
     this->m_entityLogger.Info("Inserting a new function into function table");
-    this->m_functions[funcMetadata.GetName()] = std::make_unique<FuncMetaData>(
+    this->m_functions[sFuncName] = std::make_unique<FuncMetaData>(
         std::move(funcMetadata)
     );
     return true;

@@ -4,7 +4,7 @@ CompileTimeError::CompileTimeError(
         std::string_view type, 
         std::string content, 
         size_t line, 
-        uint16_t column, 
+        size_t column, 
         std::string hint
     ) :
         m_type(type), 

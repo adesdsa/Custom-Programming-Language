@@ -41,6 +41,8 @@ public:
     bool IsFuncDefined() const noexcept;
     bool IsFuncDeclared() const noexcept;
 
+    void SetDefined() noexcept;
+
     /// @brief Check for given function's signature equality.
     /// @param other: Function to compare to the original.
     /// @return bool: true -> Both signatures are same, fasle -> Otherwise.
