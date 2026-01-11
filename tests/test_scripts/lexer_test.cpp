@@ -52,15 +52,11 @@ TEST(LexerTest, SmallCodeExample)
         Token("{",TokenTypes::PUNCTUATION,6, 1),
 
         // Line 7
-        Token("println",TokenTypes::IDENTIFIER,7, 5),
-        Token("(", TokenTypes::PUNCTUATION,7, 12),
-        Token("3", TokenTypes::VALUE,7, 13),
-        Token("+", TokenTypes::OPERATOR,7, 15),
-        Token("2", TokenTypes::VALUE,7, 17),
-        Token("==", TokenTypes::OPERATOR,7, 19),
-        Token("5", TokenTypes::VALUE,7, 22),
-        Token(")",TokenTypes::PUNCTUATION,7, 23),
-        Token(";",TokenTypes::PUNCTUATION,7, 24),
+        Token("return",TokenTypes::IDENTIFIER,7, 5),
+        Token("3", TokenTypes::VALUE,7, 12),
+        Token("+", TokenTypes::OPERATOR,7, 14),
+        Token("2", TokenTypes::VALUE,7, 16),
+        Token(";",TokenTypes::PUNCTUATION,7, 17),
 
         // Line 8
         Token("}",TokenTypes::PUNCTUATION,8, 1),
