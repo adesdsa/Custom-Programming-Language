@@ -28,6 +28,11 @@ VarTableNode* VarTableNode::CreateBlock()
     return this->m_children.back().get();
 }
 
+VarTableNode* VarTableNode::GetParent() const noexcept
+{
+    return this->m_parent;
+}
+
 std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName) const
 {
     auto findValue = this->m_vars.find(sVarName);
@@ -57,11 +62,6 @@ VarTableNode* VarTableNode::GetBlock(int nBlockIndex) const
         return nullptr;
     }
     return this->m_children[nBlockIndex].get();
-}
-
-VarTableNode* VarTableNode::GetParent() const
-{
-    return this->m_parent;
 }
 
 const std::unordered_map<std::string, VarMetaData> &VarTableNode::GetVars() const noexcept

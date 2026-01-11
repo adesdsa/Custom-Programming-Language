@@ -5,12 +5,8 @@
 
 #include "var_table_node.h"
 #include "func_table.h"
-#include "semantic_consts.h"
+#include  "includes/common/common_consts.h"
 #include "includes/parser/command.h"
-
-constexpr int FIRST_TOKEN_INDEX = 0;
-constexpr int IDENTIFIER_INDEX = 0;
-constexpr int FIRST_PARAMETER_INDEX = 0;
 
 /// @note No one of the funcs checks that a var or func exist it's the developer's responsebility (the funcs are: CheckFuncArguments, CheckFunctionReturnType, CheckAssignment).
 /// @note Before using please read all checks and learn where they need to be used.
@@ -108,6 +104,9 @@ public:
     /// @return bool: True-> Block returned therefore it is finished, False-> Otherwise.
     static bool IsBlockFinished();
 
+    /// @brief The func turns a Type into ExpressionType
+    static ExpressionType TypeToExpressionType(const Type& type);
+
 private:
     enum class OperationKind // This class repressends the last operation that happened in the block.
     {
@@ -128,9 +127,6 @@ private:
     static bool m_bFinishedBlock;                     // A flag that represents if we finished the current block (if there was a 100% return).
     static bool m_bIsReturnVoid;                     // A flag that represents if the function returns void.
     static bool m_bLoopFlag;                        // A flag that represents if we are inside a loop rn (if true no need to do control flow checks).
-
-    /// @brief The func turns a Type into ExpressionType
-    static ExpressionType TypeToExpressionType(const Type& type);
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.
