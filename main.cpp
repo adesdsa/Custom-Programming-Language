@@ -14,7 +14,13 @@ int main(int argc, const char* argv[])
 
     try
     {
-        CompilerOrchestrator compilerOrchestrator(argc, argv);
+        const char* fakeArgv[] = {
+        "program.exe",
+        "C:\\school\\test4.txt"
+        };
+
+        int fakeArgc = 2;
+        CompilerOrchestrator compilerOrchestrator(fakeArgc, fakeArgv);
         compilerOrchestrator.MainFlow();
     }
     catch(const CompilationAbortException& abortError)
