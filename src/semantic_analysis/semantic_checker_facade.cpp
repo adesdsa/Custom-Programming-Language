@@ -49,6 +49,22 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
         return ExpressionType::VOID_TYPE;
     }
 
+    // Incase the expression is a single func call or identifier value.
+    if (expression.GetType() == CommandTypes::IDENTIFIER_VALUE)
+    {
+        auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
+        if (!varData.has_value())  return ExpressionType::UNKNOWN;
+
+        return TypeToExpressionType(varData.value().type);
+    }
+    if (expression.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+    {
+        FuncMetaData* funcData = funcTable.FindFunctionByName(expression[IDENTIFIER_INDEX].GetValue());
+
+        if (funcData) return TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
+        else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
+    }
+
     for (size_t i = 0; i < expression.GetTokens().size(); i++)
     {
         // If its a parameter its either identifier function or sizeof
@@ -147,6 +163,8 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
     // Checking that the declaration and given parameters are the same amount.
     if (funcParams.size() != paramTypes.size()) return false;
 
+    if (funcParams.size() == 0) return true; // No args no checks.
+
     if (funcParams[FIRST_PARAMETER_INDEX].type == Type::VOID_TYPE) return true; /// Void as a param is a hardcoded check inside the parser.
 
     // Checking that all of the parameter types are the right function declared types.
@@ -197,12 +215,15 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
         m_uLoopBlockCnt++;
     }
 
+    m_entryHistory.push(entryKind);
+
     switch (entryKind)
     {
     case BlockKind::Function:
         // Resetting for a new func.
         m_operationHistory = std::stack<OperationKind>();
         m_entryHistory = std::stack<BlockKind>();
+        m_entryHistory.push(entryKind); // Reenter value.
         m_uLoopBlockCnt = 0;
         m_operationHistory.push(OperationKind::None);
         m_bIsReturnVoid = bIsReturnVoid;
@@ -236,7 +257,6 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
         break;
     }
 
-    m_entryHistory.push(entryKind);
     return true;
 }
 

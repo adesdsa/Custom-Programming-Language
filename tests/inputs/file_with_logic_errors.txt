@@ -45,7 +45,7 @@ main(void) -> int
     }
     if (x + 1)  #if without boolean expression
     {
-        x = x;  #legal
+        x = y;  #legal
     }
     return 1;   #legal
 }

@@ -148,4 +148,9 @@ private:
     );
 
     void HandleExitedBlockCheck(ASTNode* node) const;
+
+    /// @brief The func is used to handle single Command assignments
+    /// which means either identifier_value or finished_func_call
+    /// @param node `ASTNode*`: node that passed as agrument to function call  
+    void HandleSingleCommandAssignement(ASTNode* node);
 };

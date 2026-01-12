@@ -166,6 +166,8 @@ void SemanticAnalysisVisitor::VisitIdentifierValue(ASTNode* node)
             )
         );
     }
+
+    HandleSingleCommandAssignement(node);
 }
 
 /*
@@ -461,6 +463,8 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
             )
         );
     }
+
+    HandleSingleCommandAssignement(node);
 }
 
 void SemanticAnalysisVisitor::VisitIf(ASTNode* node)
@@ -924,7 +928,7 @@ bool SemanticAnalysisVisitor::HandleEnteredBlockCheck(
                 CompileTimeError(
                     ErrorTypes::STATEMENT_OUT_OF_BLOCK_ERROR,
                     "Invalid usage of else if/else keywords without matching if keyword",
-                    errorTokens.GetLine(),
+                    errorTokens.GetLine() - 1,
                     errorTokens.GetColumn(),
                     "else if/else keyword are only allowed after usage of if keyword"
                 )
@@ -960,4 +964,66 @@ void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
             )
         );
     }
+}
+
+void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
+{
+    const std::vector<Token>& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+
+    ExpressionType expressionType = SemanticCheckerFacade::CheckExpression(
+        node->command,
+        this->m_funcTable,
+        *this->m_currentScope
+    );
+
+    if (expressionType == ExpressionType::UNKNOWN)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::TYPE_ERROR,
+                "Invalid expression: type mismatch or undefined identifier/function",
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                "Ensure all variables and functions are defined, and operand types are compatible"
+            )
+        );
+    }
+    this->m_lastExpressionType = expressionType;
+
+    // no pending assignment to complete
+    if (!this->m_pendingAssignment || this->m_lastIdentifierName.empty()) return;
+
+    /// complete assignment check, @see VisitAssignment docs
+    if (
+        expressionType != ExpressionType::UNKNOWN &&
+        !SemanticCheckerFacade::CheckAssignment(
+            this->m_lastIdentifierName,
+            expressionType,
+            *this->m_currentScope)
+        )
+    {
+        auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+
+        std::string expectedType = "unknown";
+        if (var.has_value())
+        {
+            expectedType = this->TypeToString(var->type);
+        }
+
+        std::string gotType = this->ExpressionTypeToString(expressionType);
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::TYPE_ERROR,
+                "Type mismatch: cannot assign '" + gotType + "' to variable '" +
+                this->m_lastIdentifierName + "' of type '" + expectedType + "'",
+                this->m_assignmentLine,
+                this->m_assignmentColumn,
+                "Ensure the expression type matches the variable type"
+            )
+        );
+    }
+
+    ResetAssignmentState();
 }
