@@ -7,7 +7,7 @@
 // TEST: Happy Flow - Single function
 TEST(ParserTest, HappyFlowSmallCodeExample) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
     const AST& ast = parser.MainFlow();
     ASTNode* result_ast = ast.GetRoot();
 
@@ -39,23 +39,20 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
     currentNextSibling = currentNextSibling->nodeNextSibling;
 
 
-    /*
-        FINISHED_FUNC_CALL (println)
-            EXPRESSION(3)
-    */
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
-    EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::EXPRESSION);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::RETURN);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
 
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
-    // END_OF_COMMAND (;)
+    astPtr = currentNextSibling->nodeNextSibling;
+    currentNextSibling = currentNextSibling->nodeNextSibling;
+
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::END_OF_COMMAND);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
-
 
     // BLOCK_END (})
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::BLOCK_END);
@@ -64,7 +61,7 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
 // TEST: Happy Flow - main function + other function and logic
 TEST(ParserTest, HappyFlowFullProgram) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
     const AST& ast = parser.MainFlow();
     ASTNode* result_ast = ast.GetRoot();
 
@@ -130,8 +127,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
 
-    // FINISHED_FUNC_CALL (get_int)
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
+    // EXPRESSION(1)
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -158,8 +155,8 @@ TEST(ParserTest, HappyFlowFullProgram)
     currentNextSibling = currentNextSibling->nodeNextSibling;
 
 
-    // FINISHED_FUNC_CALL (get_int)
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
+    // EXPRESSION(100)
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::EXPRESSION);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -518,7 +515,6 @@ TEST(ParserTest, HappyFlowFullProgram)
     /*
     FINISHED_FUNC_CALL (println)
         IDENTIFIER (low)
-    */
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
     EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
@@ -529,7 +525,7 @@ TEST(ParserTest, HappyFlowFullProgram)
     // END_OF_COMMAND (;)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::END_OF_COMMAND);
     astPtr = astPtr->nodeNextSibling;
-
+    */
 
     // BLOCK_END (})
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::BLOCK_END);

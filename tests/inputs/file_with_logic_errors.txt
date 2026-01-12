@@ -1,0 +1,75 @@
+f1(arg1: int, arg2: unsigned double, arg3: bool) -> bool;
+
+f2() -> void;
+f2() -> void;   #double declaration
+
+f3() -> void
+{
+    pass;
+    continue;   #control statement outside of loop
+    return void;
+    #junk code after return
+    if(true)
+    {
+        pass;
+    }
+}
+
+f4() -> int;
+
+main(void) -> int
+{
+    let x: int = f1(1, 2.3, false);     #legal
+    let x: int;     #double declaration
+    let x: void;    #double declaration different type
+    x = 2;  #legal
+    y = 2;  #undeclared variable
+    const let y: int = 3;   #legal
+    y = 5;  #cont mutating
+    readonly let z: int = 4;    #legal
+    z = 5;  #readonly mutating
+    x = 1 and true;     #undefined expressionType
+    x = true;   #wrong assignment type
+    x = foo();  #undeclared function
+    for (x = 0; x + 1; x=x+1)     #for loop without boolean expression
+    {
+        x = x;  #legal
+    }
+    else    #else not after if or elif
+    {
+        x = x;  #legal
+    }
+    elif (x + 1)    #elif not after if or elif and if without boolean expression
+    {
+        x = x;  #legal
+    }
+    if (x + 1)  #if without boolean expression
+    {
+        x = x;  #legal
+    }
+    return 1;   #legal
+}
+
+f1(arg1: int, arg2: unsigned double, arg3: bool) -> bool
+{
+    arg1 = arg2;    #legal
+    arg1 = f2();    #illegal assignment type
+    return arg1;    #wrong return type
+}
+
+f2(arg1: int) -> void
+{
+    return 1;   #function is without return
+}
+
+f2() -> void    #double func definition
+{
+    return; #legal
+}
+
+return true;    #return out of function
+
+f4() -> int     #not all code paths return a value
+{
+    let x: int = 0;
+}
