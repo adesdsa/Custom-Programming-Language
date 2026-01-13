@@ -105,7 +105,8 @@ TEST(LexerTest, FullProgram)
         Token(":", TokenTypes::PUNCTUATION, 5, 12),
         Token("int", TokenTypes::KEYWORD, 5, 14),
         Token("=", TokenTypes::OPERATOR, 5, 18),
-        Token("1", TokenTypes::VALUE, 5, 20),                
+        Token("1", TokenTypes::VALUE, 5, 20),    
+        Token(";", TokenTypes::PUNCTUATION, 5, 21),
 
         // Line 6
         Token("let", TokenTypes::KEYWORD, 6, 5),
@@ -114,6 +115,8 @@ TEST(LexerTest, FullProgram)
         Token("int", TokenTypes::KEYWORD, 6, 15),
         Token("=", TokenTypes::OPERATOR, 6, 19),
         Token("100", TokenTypes::VALUE, 6, 21),
+        Token(";", TokenTypes::PUNCTUATION, 6, 24),
+
 
         // Line 8
         Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 8, 5),
