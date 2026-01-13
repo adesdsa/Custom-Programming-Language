@@ -2,7 +2,6 @@
 
 SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
     m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),
-    m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(ast),
     m_decoratedAST(ast, this->m_semanticAnalysisLogger),
     m_semanticAnalysisVisitor(
@@ -25,11 +24,5 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
         (void)this->m_astIterator.Next();
     }
 
-    if (this->m_errorManager.HasErrorsOccured())
-    {
-        this->m_errorManager.HandleErrors();
-    }
-
-    this->m_semanticAnalysisLogger.Info("Finished semantically analyze file");
     return this->m_decoratedAST;
 }

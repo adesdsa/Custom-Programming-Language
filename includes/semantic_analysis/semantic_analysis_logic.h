@@ -56,8 +56,6 @@ public:
 
 private:
     EntityLogger m_semanticAnalysisLogger;
-    ErrorManager& m_errorManager;
-
     ASTIterator m_astIterator;
     DecoratedAST m_decoratedAST;
     SemanticAnalysisVisitor m_semanticAnalysisVisitor;

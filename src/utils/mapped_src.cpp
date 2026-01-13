@@ -1,6 +1,6 @@
 ﻿#include "includes/utils/mapped_src.h"
 
-MappedSRC::MappedSRC(std::filesystem::path filePath) :
+MappedSRC::MappedSRC(const std::filesystem::path& filePath) :
     m_sChunkContent(nullptr),
     m_ulIndex(0),
     m_uChunkOffset(0),

@@ -90,13 +90,6 @@ private:
     // Each bool represents: did this block level call EnteredBlock?
     std::stack<bool> m_blockEnteredStack;
 
-    // pending for loop condition check, consumed by VisitExpression
-    // The condition can't be checked in VisitFor because the loop variable isn't in scope yet
-    bool m_pendingForConditionCheck = false;
-    size_t m_forConditionLine = 0;
-    size_t m_forConditionColumn = 0;
-    int m_forExpressionCount = 0;  // 0=init value, 1=condition, 2+=increment
-
     /**********************\
     |    Helper Methods    |
     \**********************/

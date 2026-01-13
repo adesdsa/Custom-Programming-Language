@@ -254,29 +254,6 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
     }
     this->m_lastExpressionType = expressionType;
 
-    if (this->m_pendingForConditionCheck)
-    {
-        this->m_forExpressionCount++;
-        
-        if (this->m_forExpressionCount == 2)
-        {
-            if (expressionType != ExpressionType::BOOLEAN)
-            {
-                this->m_errorManager.StoreError(
-                    CompileTimeError(
-                        ErrorTypes::TYPE_ERROR,
-                        "for loop condition must be a boolean expression",
-                        this->m_forConditionLine,
-                        static_cast<uint16_t>(this->m_forConditionColumn),
-                        "Provide a boolean condition"
-                    )
-                );
-            }
-            this->m_pendingForConditionCheck = false;
-            this->m_forExpressionCount = 0;
-        }
-    }
-
     // no pending assignment to complete
     if (!this->m_pendingAssignment || this->m_lastIdentifierName.empty()) return;
 
@@ -398,15 +375,8 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
     }
     else
     {
-        // func not exist yet, both declaration & definition
+        // func not exist yet, both defination & decleration
         this->VisitFuncDeclaration(node);
-        
-        // After creating via VisitFuncDeclaration, mark as defined too
-        FuncMetaData* newFunc = this->m_funcTable.FindFunctionByName(funcName);
-        if (newFunc != nullptr)
-        {
-            newFunc->SetDefined();
-        }
     }
     
     // Track current function for return type checking
@@ -540,10 +510,23 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
         }
     }
     
-    this->m_pendingForConditionCheck = true;
-    this->m_forConditionLine = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetLine();
-    this->m_forConditionColumn = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetColumn();
-    this->m_forExpressionCount = 0;
+    if (conditionNode)
+    {
+        ExpressionType condType = EvaluateNodeType(conditionNode);
+        
+        if (condType != ExpressionType::BOOLEAN)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "for loop condition must be a boolean expression",
+                    tokens[FIRST_TOKEN_INDEX].GetLine(),
+                    tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                    "Provide a boolean condition"
+                )
+            );
+        }
+    }
     
     // signal VisitBlockStart what kind of block is coming
     this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Loop;

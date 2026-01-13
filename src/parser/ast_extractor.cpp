@@ -44,8 +44,19 @@ Type ASTExtractor::ExtractFuncReturnType(ASTNode* funcDecNode)
 {
     if (!funcDecNode) return Type::VOID_TYPE;
     
-    // return type is the last type keyword in the function declaration tokens
-    // (after the -> arrow). Children contain parameters, not return type.
+    // check children for VOID_COMMAND (indicates void return type)
+    for (
+        ASTNode* child = funcDecNode->nodeFirstChild; 
+        child != nullptr; 
+        child = child->nodeNextSibling
+    )
+    {
+        if (child->command.GetType() == CommandTypes::VOID_COMMAND)
+        {
+            return Type::VOID_TYPE;
+        }
+    }
+    
     const auto& tokens = funcDecNode->command.GetTokens();
 
     for (auto token = tokens.rbegin(); token != tokens.rend(); token++)

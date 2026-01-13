@@ -85,32 +85,7 @@ test-parser:
     - valgrind --leak-check=full ./build/unit_tests --gtest_filter=ParserTest.*
   artifacts:
     reports:
-      junit: build/test_results/parser.xml
-    paths:
-      - build/test_results/
-    expire_in: 1h
-
-# =====================
-# Semantic Analysis Tests
-# =====================
-test-semantic_analysis:
-  stage: test
-  image: ubuntu:22.04
-  needs:
-    - job: build
-      artifacts: true 
-  script:
-    - apt-get update && apt-get install -y valgrind
-    - ln -s $CI_PROJECT_DIR/tests /tests
-    - chmod +x build/unit_tests
-    # Run tests
-    - mkdir -p build/test_results
-    - ./build/unit_tests --gtest_filter=SemanticAnalysisTest.* --gtest_output=xml:build/test_results/semantic_analysis.xml
-    # Memory check
-    - valgrind --leak-check=full ./build/unit_tests --gtest_filter=SemanticAnalysisTest.*
-  artifacts:
-    reports:
-      junit: build/test_results/semantic_analysis.xml
+      junit: build/test_results/lexer.xml
     paths:
       - build/test_results/
     expire_in: 1h

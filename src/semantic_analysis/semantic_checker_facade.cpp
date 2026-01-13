@@ -41,7 +41,6 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     /// @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
     ExpressionType expressionType = ExpressionType::UNKNOWN;
     size_t uParamIndex = 0;
-    bool hasComparisonOperator = false;
 
     // Incase the expression has a single void param.
     if (expression.GetTokens().size() == 1 && expression[FIRST_TOKEN_INDEX].GetValue() == "void")
@@ -88,16 +87,13 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 if (funcData) paramType = TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
                 else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
             }
-            else if (currCommand.GetType() == CommandTypes::SIZEOF)
+            if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
                 paramType = ExpressionType::MATHEMATICAL; // Sizeof return int.
             }
-            else
-            {
-                return ExpressionType::UNKNOWN; // Undefined behaviour.
-            }
+            else return ExpressionType::UNKNOWN; // Undefined behaviour.
             
-            // Checking that the paramType is correct.
+            // Checking that the paramType is corrent.
             if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
             {
                 expressionType = paramType; // Setting the paramType as the expressionType because it's the first expression part.
@@ -114,39 +110,15 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
         }
         else // Any const value or operator
         {
-            ExpressionType tokenType = TokenToExpressionType(expression[i]);
-            
-            const std::string& tokenValue = expression[i].GetValue();
-            bool isComparisonOp = (tokenValue == "==" || tokenValue == "!=" ||
-                                   tokenValue == "<" || tokenValue == ">" ||
-                                   tokenValue == "<=" || tokenValue == ">=");
-            
-            bool isBooleanOp = (tokenValue == "and" || tokenValue == "or" ||
-                                tokenValue == "not" || tokenValue == "xor");
-            
-            if (isComparisonOp)
+            if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
             {
-                hasComparisonOperator = true;
+                expressionType = TokenToExpressionType(expression[i]); // Setting the paramType as the first token type because it's the first expression part.
             }
-            else if (isBooleanOp)
-            {
-                hasComparisonOperator = true;
-                expressionType = ExpressionType::MATHEMATICAL;
-            }
-            else if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
-            {
-                expressionType = tokenType; // Setting the paramType as the first token type because it's the first expression part.
-            }
-            else if (tokenType != expressionType) // If the expression isn't the same type all the way it's an error.
+            else if (TokenToExpressionType(expression[i]) != expressionType) // If the expression isn't the same type all the way it's an error.
             {
                 return ExpressionType::UNKNOWN;
             }
         }
-    }
-
-    if (hasComparisonOperator)
-    {
-        return ExpressionType::BOOLEAN;
     }
 
     return expressionType;
@@ -203,9 +175,7 @@ bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName,
 
 bool SemanticCheckerFacade::CheckControlStatement()
 {
-    // Use m_bLoopFlag to check if we're inside any loop, not just if the current block is a loop.
-    // This correctly handles nested blocks (e.g., if inside for).
-    return m_bLoopFlag;
+    return !m_entryHistory.empty() && m_entryHistory.top() == BlockKind::Loop;
 }
 
 bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsReturnVoid)
@@ -370,11 +340,6 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
         token.GetType() == TokenTypes::KEYWORD)
     {
         if (token.GetValue() == "==" ||
-            token.GetValue() == "!=" ||
-            token.GetValue() == "<" ||
-            token.GetValue() == ">" ||
-            token.GetValue() == "<=" ||
-            token.GetValue() == ">=" ||
             token.GetValue() == "and" ||
             token.GetValue() == "or" ||
             token.GetValue() == "not" ||

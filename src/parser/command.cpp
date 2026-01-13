@@ -1,5 +1,4 @@
 #include "includes/parser/command.h"
-#include "includes/parser/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
@@ -47,12 +46,6 @@ void Command::SetType(std::string_view type) {
 
 void Command::SetExpression(bool indicator) {
     m_bExpression = indicator;
-}
-
-void Command::SetValue(Token token)
-{
-    this->m_tokens.clear();
-    this->m_tokens.push_back(token);
 }
 
 Token& Command::operator[](size_t index) {

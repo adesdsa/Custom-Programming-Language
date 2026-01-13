@@ -9,7 +9,7 @@ TEST(LexerTest, EmptyInput)
 {
     std::vector<Token> expected;
 
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/empty_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/test1.txt"));
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
 
     TestsUtils::CompareTokens(results, expected);
@@ -20,7 +20,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 {
     std::vector<Token> expected;
 
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/only_trivia_tokens_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/test2.txt"));
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
     
     TestsUtils::CompareTokens(results, expected);
@@ -29,7 +29,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 // TEST: A small code example
 TEST(LexerTest, SmallCodeExample) 
 {
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
 
     std::vector<Token> expected = {
         // Line 5
@@ -46,17 +46,21 @@ TEST(LexerTest, SmallCodeExample)
         Token("int",TokenTypes::KEYWORD,5, 24),
         Token(")",TokenTypes::PUNCTUATION,5, 27),
         Token("->",TokenTypes::PUNCTUATION,5, 29),
-        Token("int",TokenTypes::KEYWORD,5, 32),
+        Token("void",TokenTypes::KEYWORD,5, 32),
 
         // Line 6
         Token("{",TokenTypes::PUNCTUATION,6, 1),
 
         // Line 7
-        Token("return",TokenTypes::KEYWORD,7, 5),
-        Token("3", TokenTypes::VALUE,7, 12),
-        Token("+", TokenTypes::OPERATOR,7, 14),
-        Token("2", TokenTypes::VALUE,7, 16),
-        Token(";",TokenTypes::PUNCTUATION,7, 17),
+        Token("println",TokenTypes::IDENTIFIER,7, 5),
+        Token("(", TokenTypes::PUNCTUATION,7, 12),
+        Token("3", TokenTypes::VALUE,7, 13),
+        Token("+", TokenTypes::OPERATOR,7, 15),
+        Token("2", TokenTypes::VALUE,7, 17),
+        Token("==", TokenTypes::OPERATOR,7, 19),
+        Token("5", TokenTypes::VALUE,7, 22),
+        Token(")",TokenTypes::PUNCTUATION,7, 23),
+        Token(";",TokenTypes::PUNCTUATION,7, 24),
 
         // Line 8
         Token("}",TokenTypes::PUNCTUATION,8, 1),
@@ -70,7 +74,7 @@ TEST(LexerTest, SmallCodeExample)
 // TEST: Full program example
 TEST(LexerTest, FullProgram) 
 {
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
 
     std::vector<Token> expected = {
         // Line 1
@@ -105,7 +109,10 @@ TEST(LexerTest, FullProgram)
         Token(":", TokenTypes::PUNCTUATION, 5, 12),
         Token("int", TokenTypes::KEYWORD, 5, 14),
         Token("=", TokenTypes::OPERATOR, 5, 18),
-        Token("1", TokenTypes::VALUE, 5, 20),                
+        Token("get_int", TokenTypes::IDENTIFIER, 5, 20),
+        Token("(", TokenTypes::PUNCTUATION, 5, 27),
+        Token(")", TokenTypes::PUNCTUATION, 5, 28),
+        Token(";", TokenTypes::PUNCTUATION, 5, 29),                      
 
         // Line 6
         Token("let", TokenTypes::KEYWORD, 6, 5),
@@ -113,7 +120,10 @@ TEST(LexerTest, FullProgram)
         Token(":", TokenTypes::PUNCTUATION, 6, 13),
         Token("int", TokenTypes::KEYWORD, 6, 15),
         Token("=", TokenTypes::OPERATOR, 6, 19),
-        Token("100", TokenTypes::VALUE, 6, 21),
+        Token("get_int", TokenTypes::IDENTIFIER, 6, 21),
+        Token("(", TokenTypes::PUNCTUATION, 6, 28),
+        Token(")", TokenTypes::PUNCTUATION, 6, 29),
+        Token(";", TokenTypes::PUNCTUATION, 6, 30),
 
         // Line 8
         Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 8, 5),
@@ -257,14 +267,12 @@ TEST(LexerTest, FullProgram)
         // Line 35  
         Token("{", TokenTypes::PUNCTUATION, 35, 9),
 
-        /*
         // Line 36
         Token("println", TokenTypes::IDENTIFIER, 36, 13),
         Token("(", TokenTypes::PUNCTUATION, 36, 20),
         Token("low", TokenTypes::IDENTIFIER, 36, 21),
         Token(")", TokenTypes::PUNCTUATION, 36, 24),
         Token(";", TokenTypes::PUNCTUATION, 36, 25),
-        */
 
         // Line 37
         Token("}", TokenTypes::PUNCTUATION, 37, 9),
@@ -280,13 +288,11 @@ TEST(LexerTest, FullProgram)
         // Line 40
         Token("}", TokenTypes::PUNCTUATION, 40, 5),
 
-        /*
         // Line 41
         Token("println", TokenTypes::IDENTIFIER, 41, 5),
         Token("(", TokenTypes::PUNCTUATION, 41, 12),
         Token(")", TokenTypes::PUNCTUATION, 41, 13),
         Token(";", TokenTypes::PUNCTUATION, 41, 14),
-        */
 
         // Line 42
         Token("}", TokenTypes::PUNCTUATION, 42, 1),
