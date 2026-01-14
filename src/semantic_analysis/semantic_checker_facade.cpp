@@ -514,8 +514,16 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
 
     for (int i = 0; i < expressionSet.size(); i++)
     {
+        // Incase we see math but actually the next operator is a comparrison 
+        // operator so we started a comparrison expression => boolean and not math.
+        if (expressionSet[i] == ExpressionType::MATHEMATICAL &&
+            i + 1 < expressionSet.size() &&
+            expressionSet[i + 1] == ExpressionType::COMPARRISON_OPERATOR)
+        {
+            currExpressionType = ExpressionType::COMPARRISON_OPERATOR;
+        }
         // Incase it's first part, it cant start with comparrison.
-        if (currExpressionType == ExpressionType::UNKNOWN && expressionSet[i] != ExpressionType::COMPARRISON_OPERATOR)
+        else if (currExpressionType == ExpressionType::UNKNOWN && expressionSet[i] != ExpressionType::COMPARRISON_OPERATOR)
         {
             currExpressionType = expressionSet[i];
         }
@@ -524,7 +532,7 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         {
             continue;
         }
-        // Incase it was a boolean untill now and we have a comparrison. e.g.: 1 < 2
+        // Incase it was a boolean untill now and we start a comparrison. e.g.: 1 < 2
         else if (currExpressionType == ExpressionType::BOOLEAN && 
             expressionSet[i] == ExpressionType::MATHEMATICAL && 
             i + 1 < expressionSet.size() && 
@@ -532,10 +540,9 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         {
             currExpressionType = ExpressionType::COMPARRISON_OPERATOR;
         }
-        // Incase we do comparrison right now we must compare math to math.
+        // Incase we started a comparrison we check if it's ending is legal.
         else if (currExpressionType == ExpressionType::COMPARRISON_OPERATOR && 
-            i + 1 < expressionSet.size() && 
-            expressionSet[i + 1] == ExpressionType::MATHEMATICAL)
+            expressionSet[i] == ExpressionType::MATHEMATICAL)
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }

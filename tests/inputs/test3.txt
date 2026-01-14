@@ -1,8 +1,0 @@
-# Calculates and return the sum of a and b.
-# @param a: The first integer to be added.
-# @param b: The second integer to be added.
-# @return: The sum of a and b.
-Add(let a: int, let b: int) -> void
-{
-    println(3 + 2 == 5);  # Comment
-}
