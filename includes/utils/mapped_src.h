@@ -17,7 +17,7 @@ constexpr const bool k_bPrevChunk = false;
 class MappedSRC
 {
 public:
-    MappedSRC(const std::filesystem::path& filePath);
+    MappedSRC(std::filesystem::path filePath);
 
     ~MappedSRC() = default;
 
@@ -41,11 +41,13 @@ public:
     // @return: true -> EOF, false -> otherwise.
     bool GetChunk(bool bLoadOption);
 
+
+
 private:
     mio::mmap_source m_mappedChunk;                 // The currently memory-mapped portion of the file.
     const char* m_sChunkContent;                   // Pointer to the chunk's data inside the mapped region.
     size_t m_ulIndex;                             // Current index (position) within the chunk.
     size_t m_uChunkOffset;                       // Offset in the file where this chunk begins.
-    const std::filesystem::path& m_filePath;   // Relative path to the mapped file.  
+    std::filesystem::path m_filePath;   // Relative path to the mapped file.  
     size_t m_uFileSize;                        // Total size of the file in bytes.
 };

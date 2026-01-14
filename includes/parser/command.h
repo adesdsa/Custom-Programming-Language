@@ -123,6 +123,8 @@ public:
     // Set if the Command is an expression e.g.:
     // legal EXPRESSION, legal FUNC_CALL...
     void SetExpression(bool indicator);
+    // Set the a single Token as the Command.
+    void SetValue(Token token);
 
     // Operators
     Token& operator[](size_t index);

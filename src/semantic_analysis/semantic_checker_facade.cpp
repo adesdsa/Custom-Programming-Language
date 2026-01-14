@@ -87,11 +87,14 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 if (funcData) paramType = TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
                 else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
             }
-            if (currCommand.GetType() == CommandTypes::SIZEOF)
+            else if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
                 paramType = ExpressionType::MATHEMATICAL; // Sizeof return int.
             }
-            else return ExpressionType::UNKNOWN; // Undefined behaviour.
+            else
+            {
+                return ExpressionType::UNKNOWN; // Undefined behaviour.
+            }
             
             parsedExpression.push_back(paramType);
             uParamIndex++;
@@ -169,7 +172,9 @@ bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName,
 
 bool SemanticCheckerFacade::CheckControlStatement()
 {
-    return !m_entryHistory.empty() && m_entryHistory.top() == BlockKind::Loop;
+    // Use m_bLoopFlag to check if we're inside any loop, not just if the current block is a loop.
+    // This correctly handles nested blocks (e.g., if inside for).
+    return m_bLoopFlag;
 }
 
 bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsReturnVoid)
