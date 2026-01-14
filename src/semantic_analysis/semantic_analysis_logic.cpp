@@ -1,4 +1,6 @@
 #include "includes/semantic_analysis/semantic_analysis_logic.h"
+#include "includes/semantic_analysis/semantic_checker_facade.h"
+#include "includes/errors/error_manager.h"
 
 SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
     m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),
@@ -24,6 +26,7 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
         this->m_semanticAnalysisVisitor.Visit(curr);
         (void)this->m_astIterator.Next();
     }
+    this->HandleUndefinedFunctions();
 
     if (this->m_errorManager.HasErrorsOccured())
     {
@@ -32,4 +35,25 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 
     this->m_semanticAnalysisLogger.Info("Finished semantically analyze file");
     return this->m_decoratedAST;
+}
+
+void SemanticAnalysisLogicComponent::HandleUndefinedFunctions()
+{
+    const std::vector<FuncMetaData*> undefinedFunctions = SemanticCheckerFacade::AreAllFunctionsDefined(
+        this->m_decoratedAST.funcTable
+    );
+
+    // provide final check for every undefined function
+    for (const FuncMetaData* undefinedFunc : undefinedFunctions)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::LINKING_EROR,
+                "Function '" + undefinedFunc->GetName() + "' has been declared but never defined",
+                undefinedFunc->GetDeclarationLine(),
+                undefinedFunc->GetDeclarationColumn(),
+                "Please provide a function definition for function: " + undefinedFunc->GetName()
+            )
+        );
+    }
 }

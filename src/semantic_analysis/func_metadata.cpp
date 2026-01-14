@@ -5,12 +5,16 @@ FuncMetaData::FuncMetaData(
     const std::string& funcName,
     Type funcRtype,
     const std::vector<VarMetaData>& funcParams,
+    size_t declarationLine,
+    size_t declarationColumn,
     std::unique_ptr<VarTableNode> functionScopeRoot
 ) :
     m_entityLogger(entityLogger),
     m_name(funcName),
     m_rtype(funcRtype),
     m_params(funcParams),  // case of no params funcParams will be {}
+    m_declarationLine(declarationLine),
+    m_declarationColumn(declarationColumn),
     m_functionScopeRoot(std::move(functionScopeRoot)) 
 {
     // if there is body to the function, it definition
@@ -45,6 +49,16 @@ bool FuncMetaData::IsFuncDefined() const noexcept
 bool FuncMetaData::IsFuncDeclared() const noexcept
 {
     return this->m_isDeclared;
+}
+
+size_t FuncMetaData::GetDeclarationLine() const noexcept
+{
+    return this->m_declarationLine;
+}
+
+size_t FuncMetaData::GetDeclarationColumn() const noexcept
+{
+    return this->m_declarationColumn;
 }
 
 void FuncMetaData::SetDefined() noexcept

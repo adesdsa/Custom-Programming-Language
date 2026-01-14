@@ -323,6 +323,23 @@ bool SemanticCheckerFacade::IsBlockFinished()
         m_operationHistory.top() == OperationKind::ElseReturn);
 }
 
+std::vector<FuncMetaData*> SemanticCheckerFacade::AreAllFunctionsDefined(
+    const FuncTable& funcTable
+)
+{
+    std::vector<FuncMetaData*> undefinedFunctions;
+
+    for (const auto& [funcName, funcMetadata] : funcTable.GetAllFunctions())
+    {
+        if (!funcMetadata->IsFuncDefined())
+        {
+            undefinedFunctions.push_back(funcMetadata.get());
+        }
+    }
+
+    return undefinedFunctions;
+}
+
 ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
 {
     if (type == Type::BOOL_TYPE) return ExpressionType::BOOLEAN;

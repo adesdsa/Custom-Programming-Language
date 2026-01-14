@@ -342,7 +342,9 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
     FuncMetaData func = this->m_funcFactory.CreateFuncMetadata(
         funcName,
         returnType,
-        params
+        params,
+        tokens[FIRST_TOKEN_INDEX].GetLine(),
+        tokens[FIRST_TOKEN_INDEX].GetColumn()
     );
     
     if (!this->m_funcTable.InsertFunction(std::move(func)))

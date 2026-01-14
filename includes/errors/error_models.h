@@ -6,6 +6,9 @@
 #include <cstdint>
 #include <sstream>
 
+constexpr int IGNORE_LINE = -1;
+constexpr int IGNORE_COL = -1;
+
 namespace ErrorTypes
 {
     inline constexpr std::string_view INTERNAL_ERROR = "internal error";
@@ -18,6 +21,7 @@ namespace ErrorTypes
     inline constexpr std::string_view ACCESS_RIGHT_ERROR = "access rights error";
     inline constexpr std::string_view FUNC_MISSING_RETURN_ERROR = "not all function paths returns value error";
     inline constexpr std::string_view STATEMENT_OUT_OF_BLOCK_ERROR = "statement out of block error";
+    inline constexpr std::string_view UNDEFINED_FUNCTION_ERROR = "function is not defined error";
 }
 
 // TODO: Add field of path to file in which the error occured

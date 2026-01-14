@@ -11,11 +11,13 @@ public:
     ~FuncFactory() = default;
 
     FuncMetaData CreateFuncMetadata(
-    const std::string& funcName,
-    Type funcRtype,
-    const std::vector<VarMetaData>& funcParams = NO_PARAMS,
-    std::unique_ptr<VarTableNode> functionScopeRoot = nullptr
-) const;
+        const std::string& funcName,
+        Type funcRtype,
+        const std::vector<VarMetaData>& funcParams,
+        size_t declarationLine,
+        size_t declarationColumn,
+        std::unique_ptr<VarTableNode> functionScopeRoot = nullptr
+    ) const;
 
 private:
     const EntityLogger& m_entityLogger;

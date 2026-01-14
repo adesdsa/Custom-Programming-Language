@@ -37,3 +37,9 @@ bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
     );
     return true;
 }
+
+const std::unordered_map<std::string, std::unique_ptr<FuncMetaData>>&
+FuncTable::GetAllFunctions() const noexcept
+{
+    return this->m_functions;
+}

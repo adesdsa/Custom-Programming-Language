@@ -104,6 +104,13 @@ public:
     /// @return bool: True-> Block returned therefore it is finished, False-> Otherwise.
     static bool IsBlockFinished();
 
+    /// @brief Check that all functions that have been declared are also defined
+    /// @param funcTable Table of all the the declared functions 
+    /// @return vector<FuncMetaData*>: Vector of pointers to all functions that are not defined
+    /// @note Incase that all functions are defined vector will be empty
+    /// @note This function should be call after finish visitor logic
+    static std::vector<FuncMetaData*> AreAllFunctionsDefined(const FuncTable& funcTable);
+
     /// @brief The func turns a Type into ExpressionType
     static ExpressionType TypeToExpressionType(const Type& type);
 
