@@ -22,6 +22,8 @@ public:
         const std::string& funcName,
         Type funcRtype,
         const std::vector<VarMetaData>& funcParams,
+        size_t declarationLine,
+        size_t declarationColumn,
         std::unique_ptr<VarTableNode> functionScopeRoot = nullptr
     );
     ~FuncMetaData() = default;
@@ -40,6 +42,8 @@ public:
     const std::vector<VarMetaData>& GetFuncParams() const noexcept;
     bool IsFuncDefined() const noexcept;
     bool IsFuncDeclared() const noexcept;
+    size_t GetDeclarationLine() const noexcept;
+    size_t GetDeclarationColumn() const noexcept;
 
     void SetDefined() noexcept;
 
@@ -62,6 +66,12 @@ private:
     std::string m_name;
     Type m_rtype;
     std::vector<VarMetaData> m_params;
+
+    /************************\
+    |  DECLARATION LOCATION  |
+    \************************/
+    size_t m_declarationLine;
+    size_t m_declarationColumn;
 
     /*****************\
     |  FUNCTION BODY  |

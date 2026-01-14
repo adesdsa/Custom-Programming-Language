@@ -26,6 +26,9 @@ public:
     /// @note && means passing ownership of this object.
     bool InsertFunction(FuncMetaData&& funcMetadata);
 
+    const std::unordered_map<std::string, std::unique_ptr<FuncMetaData>>&
+    GetAllFunctions() const noexcept;
+
 private:
     const EntityLogger& m_entityLogger;
 
