@@ -26,7 +26,19 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
         this->m_semanticAnalysisVisitor.Visit(curr);
         (void)this->m_astIterator.Next();
     }
+    this->HandleUndefinedFunctions();
 
+    if (this->m_errorManager.HasErrorsOccured())
+    {
+        this->m_errorManager.HandleErrors();
+    }
+
+    this->m_semanticAnalysisLogger.Info("Finished semantically analyze file");
+    return this->m_decoratedAST;
+}
+
+void SemanticAnalysisLogicComponent::HandleUndefinedFunctions()
+{
     const std::vector<FuncMetaData*> undefinedFunctions = SemanticCheckerFacade::AreAllFunctionsDefined(
         this->m_decoratedAST.funcTable
     );
@@ -44,12 +56,4 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
             )
         );
     }
-
-    if (this->m_errorManager.HasErrorsOccured())
-    {
-        this->m_errorManager.HandleErrors();
-    }
-
-    this->m_semanticAnalysisLogger.Info("Finished semantically analyze file");
-    return this->m_decoratedAST;
 }
