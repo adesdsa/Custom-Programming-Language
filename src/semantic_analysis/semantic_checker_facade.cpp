@@ -39,9 +39,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
 {
     DefaultExpressionChecks();
     /// @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
-    ExpressionType expressionType = ExpressionType::UNKNOWN;
     size_t uParamIndex = 0;
-    bool hasComparisonOperator = false;
+    std::vector<ExpressionType> parsedExpression;
 
     // Incase the expression has a single void param.
     if (expression.GetTokens().size() == 1 && expression[FIRST_TOKEN_INDEX].GetValue() == "void")
@@ -97,59 +96,29 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 return ExpressionType::UNKNOWN; // Undefined behaviour.
             }
             
-            // Checking that the paramType is correct.
-            if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
-            {
-                expressionType = paramType; // Setting the paramType as the expressionType because it's the first expression part.
-            }
-            else if (paramType != expressionType) // If the expression isn't the same type all the way it's an error.
-            {
-                return ExpressionType::UNKNOWN;
-            }
+            parsedExpression.push_back(paramType);
             uParamIndex++;
         }
         else if (expression[i].GetValue() == "void") // Void in the middle of the expression is illegal.
         {
             return ExpressionType::UNKNOWN;
         }
+        else if (expression[i].GetValue() == "(")
+        {
+            parsedExpression.push_back(ExpressionType::PARANTHESES_OPEN);
+        }
+        else if (expression[i].GetValue() == ")")
+        {
+            parsedExpression.push_back(ExpressionType::PARANTHESES_CLOSE);
+        }
         else // Any const value or operator
         {
-            ExpressionType tokenType = TokenToExpressionType(expression[i]);
-            
-            const std::string& tokenValue = expression[i].GetValue();
-            bool isComparisonOp = (tokenValue == "==" || tokenValue == "!=" ||
-                                   tokenValue == "<" || tokenValue == ">" ||
-                                   tokenValue == "<=" || tokenValue == ">=");
-            
-            bool isBooleanOp = (tokenValue == "and" || tokenValue == "or" ||
-                                tokenValue == "not" || tokenValue == "xor");
-            
-            if (isComparisonOp)
-            {
-                hasComparisonOperator = true;
-            }
-            else if (isBooleanOp)
-            {
-                hasComparisonOperator = true;
-                expressionType = ExpressionType::MATHEMATICAL;
-            }
-            else if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
-            {
-                expressionType = tokenType; // Setting the paramType as the first token type because it's the first expression part.
-            }
-            else if (tokenType != expressionType) // If the expression isn't the same type all the way it's an error.
-            {
-                return ExpressionType::UNKNOWN;
-            }
+            parsedExpression.push_back(TokenToExpressionType(expression[i]));
         }
     }
 
-    if (hasComparisonOperator)
-    {
-        return ExpressionType::BOOLEAN;
-    }
-
-    return expressionType;
+    parsedExpression = SimplifyExpressionParantheses(parsedExpression);
+    return SimplifyExpressionSet(parsedExpression);
 }
 
 bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
@@ -369,19 +338,18 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
         ||
         token.GetType() == TokenTypes::KEYWORD)
     {
-        if (token.GetValue() == "==" ||
-            token.GetValue() == "!=" ||
-            token.GetValue() == "<" ||
-            token.GetValue() == ">" ||
-            token.GetValue() == "<=" ||
-            token.GetValue() == ">=" ||
-            token.GetValue() == "and" ||
+        if (token.GetValue() == "and" ||
             token.GetValue() == "or" ||
-            token.GetValue() == "not" ||
-            token.GetValue() == "xor" ||
-            token.GetValue() == "is")
+            token.GetValue() == "not" || 
+            token.GetValue() == "xor")
         {
             return ExpressionType::BOOLEAN;
+        }
+        else if (token.GetValue() == "==" ||
+            token.GetValue() == "<" ||
+            token.GetValue() == ">")
+        {
+            return ExpressionType::COMPARRISON_OPERATOR;
         }
         else return ExpressionType::MATHEMATICAL;
     }
@@ -491,4 +459,92 @@ inline void SemanticCheckerFacade::SwitchTopOfOperationHistory(OperationKind ope
     {
         m_operationHistory.push(operationKind);
     }
+}
+
+std::vector<ExpressionType> SemanticCheckerFacade::SimplifyExpressionParantheses(std::vector<ExpressionType> parsedExpression)
+{
+    int openIndex = -1;
+    int closeIndex = -1;
+
+    // Find innermost (...)
+    for (int i = 0; i < static_cast<int>(parsedExpression.size()); ++i)
+    {
+        if (parsedExpression[i] == ExpressionType::PARANTHESES_OPEN)
+        {
+            openIndex = i;
+        }
+        else if (parsedExpression[i] == ExpressionType::PARANTHESES_CLOSE && openIndex != -1)
+        {
+            closeIndex = i;
+            break;
+        }
+    }
+
+    if (openIndex == -1 || closeIndex == -1)
+    {
+        return parsedExpression; // No parentheses left OR unbalanced.
+    }
+
+    // Extract inside of parentheses.
+    std::vector<ExpressionType> inner(
+        parsedExpression.begin() + openIndex + 1,
+        parsedExpression.begin() + closeIndex
+    );
+
+    ExpressionType result = SimplifyExpressionSet(inner);
+    if (result == ExpressionType::UNKNOWN)
+    {
+        std::vector<ExpressionType> tempVector;
+        tempVector.push_back(ExpressionType::UNKNOWN);
+        return tempVector;
+    }
+
+    // Remove parentheses and content
+    parsedExpression.erase(parsedExpression.begin() + openIndex, parsedExpression.begin() + closeIndex + 1);
+
+    // Insert reduced result
+    parsedExpression.insert(parsedExpression.begin() + openIndex, result);
+
+    return SimplifyExpressionParantheses(parsedExpression);
+}
+
+ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<ExpressionType> expressionSet)
+{
+    ExpressionType currExpressionType = ExpressionType::UNKNOWN;
+
+    for (int i = 0; i < expressionSet.size(); i++)
+    {
+        // Incase it's first part, it cant start with comparrison.
+        if (currExpressionType == ExpressionType::UNKNOWN && expressionSet[i] != ExpressionType::COMPARRISON_OPERATOR)
+        {
+            currExpressionType = expressionSet[i];
+        }
+        // Incase the parts are equals.
+        else if (currExpressionType == expressionSet[i])
+        {
+            continue;
+        }
+        // Incase it was a boolean untill now and we have a comparrison. e.g.: 1 < 2
+        else if (currExpressionType == ExpressionType::BOOLEAN && 
+            expressionSet[i] == ExpressionType::MATHEMATICAL && 
+            i + 1 < expressionSet.size() && 
+            expressionSet[i + 1] == ExpressionType::COMPARRISON_OPERATOR)
+        {
+            currExpressionType = ExpressionType::COMPARRISON_OPERATOR;
+        }
+        // Incase we do comparrison right now we must compare math to math.
+        else if (currExpressionType == ExpressionType::COMPARRISON_OPERATOR && 
+            i + 1 < expressionSet.size() && 
+            expressionSet[i + 1] == ExpressionType::MATHEMATICAL)
+        {
+            currExpressionType = ExpressionType::BOOLEAN;
+        }
+        // Unknown behaviour.
+        else
+        {
+            return ExpressionType::UNKNOWN;
+        }
+    }
+
+    return currExpressionType;
 }
