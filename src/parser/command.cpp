@@ -488,8 +488,7 @@ inline bool Command::IsOperator(Token& token)
         IsValue(token, "=")) ||
         IsValue(token, "and") ||
         IsValue(token, "or") ||
-        IsValue(token, "xor") ||
-        IsValue(token, "is");
+        IsValue(token, "xor");
 }
 
 inline bool Command::IsValueToken(Token& token)
