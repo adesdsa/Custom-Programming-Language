@@ -50,5 +50,6 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
         this->m_errorManager.HandleErrors();
     }
 
+    this->m_semanticAnalysisLogger.Info("Finished semantically analyze file");
     return this->m_decoratedAST;
 }

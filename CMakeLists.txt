@@ -86,7 +86,7 @@ option(BUILD_TESTS "Build unit tests" OFF)
 
 if(BUILD_TESTS)
     enable_testing()
-    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
+    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/test_scripts/*.cpp)
 
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE gtest_main CPLib)

@@ -160,4 +160,20 @@ private:
     /// It is used to ensure that we only change the top if there is one, and it automatically pops and then pushed to change.
     /// @param operationKind The operation we add.
     static inline void SwitchTopOfOperationHistory(OperationKind operationKind);
+
+    /// @brief The func is used to parse all the parantheses into a simple epxressionType vector.
+    /// e.g. true and (1 < 2) will be passed as next arguemnt -> 
+    /// BOOLEAN BOOLEAN PARANTHESES_OPEN MATHEMATICAL COMPARRISON_OPERATOR MATHEMATICAL PARANTHESES_CLOSE
+    /// this will then be returned as -> BOOLEAN BOOLEAN BOOLEAN after simplifying.
+    /// @param parsedExpression The expression after it was parsed from tokens to ExpressionType.
+    /// @return std::vector<ExpressionType> -> [ExpressionType::UNKNOWN] if found illegal combination, 
+    /// Simplified vector without parantheses if legal.
+    static std::vector<ExpressionType> SimplifyExpressionParantheses(std::vector<ExpressionType> parsedExpression);
+
+    /// @brief The func simplifies an expression without parantheses into a single type.
+    /// e.g. if we have the expression 1 < 2 which is MATHEMATICAL COMPARISSON_OPERATOR MATHEMATICAL
+    /// it will turn to BOOLEAN.
+    /// @param expressionSet A vector of ExpressionTypes that represents an expression without any parantheses.
+    /// @return The ExpressionType that the expression represents.
+    static ExpressionType SimplifyExpressionSet(std::vector<ExpressionType> expressionSet);
 };

@@ -39,8 +39,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
 {
     DefaultExpressionChecks();
     /// @note: The semantic checker doesnt distuinguish between INT and DOUBLE only between MATH and BOOL, That's why it only uses DOUBLE_TYPE
-    ExpressionType expressionType = ExpressionType::UNKNOWN;
     size_t uParamIndex = 0;
+    std::vector<ExpressionType> parsedExpression;
 
     // Incase the expression has a single void param.
     if (expression.GetTokens().size() == 1 && expression[FIRST_TOKEN_INDEX].GetValue() == "void")
@@ -87,41 +87,38 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 if (funcData) paramType = TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
                 else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
             }
-            if (currCommand.GetType() == CommandTypes::SIZEOF)
+            else if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
                 paramType = ExpressionType::MATHEMATICAL; // Sizeof return int.
             }
-            else return ExpressionType::UNKNOWN; // Undefined behaviour.
+            else
+            {
+                return ExpressionType::UNKNOWN; // Undefined behaviour.
+            }
             
-            // Checking that the paramType is corrent.
-            if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
-            {
-                expressionType = paramType; // Setting the paramType as the expressionType because it's the first expression part.
-            }
-            else if (paramType != expressionType) // If the expression isn't the same type all the way it's an error.
-            {
-                return ExpressionType::UNKNOWN;
-            }
+            parsedExpression.push_back(paramType);
             uParamIndex++;
         }
         else if (expression[i].GetValue() == "void") // Void in the middle of the expression is illegal.
         {
             return ExpressionType::UNKNOWN;
         }
+        else if (expression[i].GetValue() == "(")
+        {
+            parsedExpression.push_back(ExpressionType::PARANTHESES_OPEN);
+        }
+        else if (expression[i].GetValue() == ")")
+        {
+            parsedExpression.push_back(ExpressionType::PARANTHESES_CLOSE);
+        }
         else // Any const value or operator
         {
-            if (expressionType == ExpressionType::UNKNOWN) // Incase it's first expression part.
-            {
-                expressionType = TokenToExpressionType(expression[i]); // Setting the paramType as the first token type because it's the first expression part.
-            }
-            else if (TokenToExpressionType(expression[i]) != expressionType) // If the expression isn't the same type all the way it's an error.
-            {
-                return ExpressionType::UNKNOWN;
-            }
+            parsedExpression.push_back(TokenToExpressionType(expression[i]));
         }
     }
 
-    return expressionType;
+    parsedExpression = SimplifyExpressionParantheses(parsedExpression);
+    return SimplifyExpressionSet(parsedExpression);
 }
 
 bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>& paramTypes, const std::string& sFuncName, const FuncTable& funcTable)
@@ -175,7 +172,9 @@ bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName,
 
 bool SemanticCheckerFacade::CheckControlStatement()
 {
-    return !m_entryHistory.empty() && m_entryHistory.top() == BlockKind::Loop;
+    // Use m_bLoopFlag to check if we're inside any loop, not just if the current block is a loop.
+    // This correctly handles nested blocks (e.g., if inside for).
+    return m_bLoopFlag;
 }
 
 bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsReturnVoid)
@@ -356,14 +355,18 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
         ||
         token.GetType() == TokenTypes::KEYWORD)
     {
-        if (token.GetValue() == "==" ||
-            token.GetValue() == "and" ||
+        if (token.GetValue() == "and" ||
             token.GetValue() == "or" ||
-            token.GetValue() == "not" ||
-            token.GetValue() == "xor" ||
-            token.GetValue() == "is")
+            token.GetValue() == "not" || 
+            token.GetValue() == "xor")
         {
             return ExpressionType::BOOLEAN;
+        }
+        else if (token.GetValue() == "==" ||
+            token.GetValue() == "<" ||
+            token.GetValue() == ">")
+        {
+            return ExpressionType::COMPARRISON_OPERATOR;
         }
         else return ExpressionType::MATHEMATICAL;
     }
@@ -473,4 +476,99 @@ inline void SemanticCheckerFacade::SwitchTopOfOperationHistory(OperationKind ope
     {
         m_operationHistory.push(operationKind);
     }
+}
+
+std::vector<ExpressionType> SemanticCheckerFacade::SimplifyExpressionParantheses(std::vector<ExpressionType> parsedExpression)
+{
+    int openIndex = -1;
+    int closeIndex = -1;
+
+    // Find innermost (...)
+    for (int i = 0; i < static_cast<int>(parsedExpression.size()); ++i)
+    {
+        if (parsedExpression[i] == ExpressionType::PARANTHESES_OPEN)
+        {
+            openIndex = i;
+        }
+        else if (parsedExpression[i] == ExpressionType::PARANTHESES_CLOSE && openIndex != -1)
+        {
+            closeIndex = i;
+            break;
+        }
+    }
+
+    if (openIndex == -1 || closeIndex == -1)
+    {
+        return parsedExpression; // No parentheses left OR unbalanced.
+    }
+
+    // Extract inside of parentheses.
+    std::vector<ExpressionType> inner(
+        parsedExpression.begin() + openIndex + 1,
+        parsedExpression.begin() + closeIndex
+    );
+
+    ExpressionType result = SimplifyExpressionSet(inner);
+    if (result == ExpressionType::UNKNOWN)
+    {
+        std::vector<ExpressionType> tempVector;
+        tempVector.push_back(ExpressionType::UNKNOWN);
+        return tempVector;
+    }
+
+    // Remove parentheses and content
+    parsedExpression.erase(parsedExpression.begin() + openIndex, parsedExpression.begin() + closeIndex + 1);
+
+    // Insert reduced result
+    parsedExpression.insert(parsedExpression.begin() + openIndex, result);
+
+    return SimplifyExpressionParantheses(parsedExpression);
+}
+
+ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<ExpressionType> expressionSet)
+{
+    ExpressionType currExpressionType = ExpressionType::UNKNOWN;
+
+    for (int i = 0; i < expressionSet.size(); i++)
+    {
+        // Incase we see math but actually the next operator is a comparrison 
+        // operator so we started a comparrison expression => boolean and not math.
+        if (expressionSet[i] == ExpressionType::MATHEMATICAL &&
+            i + 1 < expressionSet.size() &&
+            expressionSet[i + 1] == ExpressionType::COMPARRISON_OPERATOR)
+        {
+            currExpressionType = ExpressionType::COMPARRISON_OPERATOR;
+        }
+        // Incase it's first part, it cant start with comparrison.
+        else if (currExpressionType == ExpressionType::UNKNOWN && expressionSet[i] != ExpressionType::COMPARRISON_OPERATOR)
+        {
+            currExpressionType = expressionSet[i];
+        }
+        // Incase the parts are equals.
+        else if (currExpressionType == expressionSet[i])
+        {
+            continue;
+        }
+        // Incase it was a boolean untill now and we start a comparrison. e.g.: 1 < 2
+        else if (currExpressionType == ExpressionType::BOOLEAN && 
+            expressionSet[i] == ExpressionType::MATHEMATICAL && 
+            i + 1 < expressionSet.size() && 
+            expressionSet[i + 1] == ExpressionType::COMPARRISON_OPERATOR)
+        {
+            currExpressionType = ExpressionType::COMPARRISON_OPERATOR;
+        }
+        // Incase we started a comparrison we check if it's ending is legal.
+        else if (currExpressionType == ExpressionType::COMPARRISON_OPERATOR && 
+            expressionSet[i] == ExpressionType::MATHEMATICAL)
+        {
+            currExpressionType = ExpressionType::BOOLEAN;
+        }
+        // Unknown behaviour.
+        else
+        {
+            return ExpressionType::UNKNOWN;
+        }
+    }
+
+    return currExpressionType;
 }
