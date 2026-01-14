@@ -8,7 +8,8 @@
 TEST(ParserTest, HappyFlowSmallCodeExample) 
 {
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
-    ASTNode* result_ast = parser.MainFlow();
+    const AST& ast = parser.MainFlow();
+    ASTNode* result_ast = ast.GetRoot();
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 
@@ -17,11 +18,11 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
     ASTNode* astPtr = result_ast;
 
     /*
-    FINISHED_FUNC_DECLARATION (Add)
+    FINISHED_FUNC_DEFINITION (Add)
         VAR_DECLARATION (a)
         VAR_DECLARATION (b)
     */
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DEFINITION);
 
     astPtr = currentNextSibling->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::VAR_DECLARATION);
@@ -64,7 +65,9 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
 TEST(ParserTest, HappyFlowFullProgram) 
 {
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
-    ASTNode* result_ast = parser.MainFlow();
+    const AST& ast = parser.MainFlow();
+    ASTNode* result_ast = ast.GetRoot();
+
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 
@@ -95,10 +98,10 @@ TEST(ParserTest, HappyFlowFullProgram)
 
 
     /*
-    FINISHED_FUNC_DECLARATION (main)
+    FINISHED_FUNC_DEFINITION (main)
         VOID_COMMAND (void)
     */
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DEFINITION);
 
     astPtr = currentNextSibling->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::VOID_COMMAND);
@@ -220,11 +223,11 @@ TEST(ParserTest, HappyFlowFullProgram)
 
 
     /*
-    FINISHED_FUNC_DECLARATION (displayAllPrimeNumbersInRange)
+    FINISHED_FUNC_DEFINITION (displayAllPrimeNumbersInRange)
         VAR_DECLARATION (low)
         VAR_DECLARATION (high)
     */
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION);
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DEFINITION);
 
     astPtr = currentNextSibling->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::VAR_DECLARATION);

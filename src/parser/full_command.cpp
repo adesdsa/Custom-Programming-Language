@@ -160,82 +160,106 @@ void FullCommand::CheckLine()
     // Command2 ASSIGNMENT and so on.
     //
 
-    if (m_line[0].GetType() == CommandTypes::IDENTIFIER ||
-        m_line[0].GetType() == CommandTypes::ARRAY_ACCESS)
+    try
     {
-        if (m_line[1].GetType() == CommandTypes::ASSIGNMENT)
-            if (m_line[2].IsExpression())
-                if (m_line[3].GetType() == CommandTypes::END_OF_COMMAND)
-                    bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::ELSE)
-    {
-        if (m_line[1].GetType() == CommandTypes::BLOCK_START)
-            bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::RETURN)
-    {
-        if (m_line[1].IsExpression() ||
-            m_line[1].GetType() == CommandTypes::VOID_COMMAND) 
-            if (m_line[2].GetType() == CommandTypes::END_OF_COMMAND)
+        if (m_line.at(0).GetType() == CommandTypes::IDENTIFIER ||
+            m_line.at(0).GetType() == CommandTypes::ARRAY_ACCESS)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::ASSIGNMENT)
+                if (m_line.at(2).IsExpression())
+                    if (m_line.at(3).GetType() == CommandTypes::END_OF_COMMAND)
+                        bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::ELSE)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::BLOCK_START)
                 bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::VAR_DECLARATION)
-    {
-        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
-            bLegalLine = true;
-        else if (m_line[1].GetType() == CommandTypes::ASSIGNMENT)
-            if (m_line[2].IsExpression())
-                if (m_line[3].GetType() == CommandTypes::END_OF_COMMAND)
-                    bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::CONTROL_STATEMENT)
-    {
-        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
-            bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::ELIF ||
-        m_line[0].GetType() == CommandTypes::IF ||
-        m_line[0].GetType() == CommandTypes::FOR ||
-        m_line[0].GetType() == CommandTypes::WHILE)
-    {
-        if (m_line[1].GetType() == CommandTypes::BLOCK_START)
-            bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::SIZEOF)
-    {
-        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
-            bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
-    {
-        if (m_line[1].GetType() == CommandTypes::BLOCK_START ||
-            m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::RETURN)
+        {
+            if (m_line.size() == 2)
+            {
+                // Empty return will be translated as return void.
+                Command tempCommand;
+                tempCommand.SetType(CommandTypes::VOID_COMMAND);
+                tempCommand.SetValue(Token("void",
+                    TokenTypes::KEYWORD,
+                    this->m_line.at(0)[0].GetLine(),
+                    this->m_line.at(0)[0].GetColumn()));
+                this->m_line.insert(this->m_line.begin() + 1, tempCommand);
                 bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::FINISHED_FUNC_CALL)
-    {
-        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
-            bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::ARRAY_DECLARATION)
-    {
-        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
-            bLegalLine = true;
-        else if (m_line[1].GetType() == CommandTypes::ASSIGNMENT)
-            if (m_line[2].GetType() == CommandTypes::ARRAY_VALUE)
-                if (m_line[3].GetType() == CommandTypes::END_OF_COMMAND)
+            }
+            if (m_line.at(1).IsExpression() ||
+                m_line.at(1).GetType() == CommandTypes::VOID_COMMAND)
+                if (m_line.at(2).GetType() == CommandTypes::END_OF_COMMAND)
                     bLegalLine = true;
-    }
-    else if (m_line[0].GetType() == CommandTypes::PASS)
-    {
-        if (m_line[1].GetType() == CommandTypes::END_OF_COMMAND)
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::VAR_DECLARATION)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+            else if (m_line.at(1).GetType() == CommandTypes::ASSIGNMENT)
+                if (m_line.at(2).IsExpression())
+                    if (m_line.at(3).GetType() == CommandTypes::END_OF_COMMAND)
+                        bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::CONTROL_STATEMENT)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::ELIF ||
+            m_line.at(0).GetType() == CommandTypes::IF ||
+            m_line.at(0).GetType() == CommandTypes::FOR ||
+            m_line.at(0).GetType() == CommandTypes::WHILE)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::BLOCK_START)
+                bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::SIZEOF)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::FINISHED_FUNC_DECLARATION)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::BLOCK_START)
+            {
+                m_line.at(0).SetType(CommandTypes::FINISHED_FUNC_DEFINITION);
+                bLegalLine = true;
+            }
+            else if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::FINISHED_FUNC_CALL)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::ARRAY_DECLARATION)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+            else if (m_line.at(1).GetType() == CommandTypes::ASSIGNMENT)
+                if (m_line.at(2).GetType() == CommandTypes::ARRAY_VALUE)
+                    if (m_line.at(3).GetType() == CommandTypes::END_OF_COMMAND)
+                        bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::PASS)
+        {
+            if (m_line.at(1).GetType() == CommandTypes::END_OF_COMMAND)
+                bLegalLine = true;
+        }
+        else if (m_line.at(0).GetType() == CommandTypes::BLOCK_END)
             bLegalLine = true;
+        else if (m_line.at(0).GetType() == CommandTypes::EOF_TOKEN)
+            bLegalLine = m_uBlockStartCnt == m_uBlockCloseCnt;
+
     }
-    else if (m_line[0].GetType() == CommandTypes::BLOCK_END)
-        bLegalLine = true;
-    else if (m_line[0].GetType() == CommandTypes::EOF_TOKEN)
-        bLegalLine = m_uBlockStartCnt == m_uBlockCloseCnt;
+    catch (const std::out_of_range& e)
+    {
+        bLegalLine = false;
+    }
 
     if (!bLegalLine) {
         m_entityLogger.Info("Found and illegal FullCommand");
@@ -388,10 +412,8 @@ void FullCommand::ReformCommand(Command& checkedCommand)
                 iParamIndex++;
             }
             else if (!bExpectingExpression && (CheckValue(
-                checkedCommand[i], "not") ||
-                CheckValue(checkedCommand[i], "*") ||
-                CheckValue(checkedCommand[i], "&"))) 
-                continue; // If t's not/*/& we skip.
+                checkedCommand[i], "not"))) 
+                continue; // If t's not we skip.
             else if (!CheckValue(checkedCommand[i], ","))
                 FoundIllegal(checkedCommand,
                     "Expected to get a parameter seperator",

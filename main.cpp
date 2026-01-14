@@ -1,8 +1,6 @@
 ﻿#include <iostream>
 
-#include "includes/utils/tests_utils.h"
-#include "includes/utils/system_utils.h"
-#include "includes/parser/parser_logic.h"
+#include "includes/compiler_orchestrator.h"
 
 namespace ReturnCode
 {
@@ -10,14 +8,14 @@ namespace ReturnCode
     inline constexpr const int k_nFailed = 1;
 }
 
-int main(void)
+int main(int argc, const char* argv[])
 {
     int nReturnValue = ReturnCode::k_nSuccess;
 
     try
     {
-        ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
-        parser.MainFlow();
+        CompilerOrchestrator compilerOrchestrator(argc, argv);
+        compilerOrchestrator.MainFlow();
     }
     catch(const CompilationAbortException& abortError)
     {

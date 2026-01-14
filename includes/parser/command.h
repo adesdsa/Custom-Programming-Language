@@ -29,6 +29,7 @@ namespace CommandTypes
     inline constexpr std::string_view PASS                          = "PASS";
     inline constexpr std::string_view ARRAY_VALUE                   = "ARRAY_VALUE";
     inline constexpr std::string_view IDENTIFIER_VALUE              = "IDENTIFIER_VALUE";   // IDENTIFIER call where the values is used
+    inline constexpr std::string_view FINISHED_FUNC_DEFINITION      = "FINISHED_FUNC_DEFINITION";
 
 
     /// 
@@ -122,6 +123,8 @@ public:
     // Set if the Command is an expression e.g.:
     // legal EXPRESSION, legal FUNC_CALL...
     void SetExpression(bool indicator);
+    // Set the a single Token as the Command.
+    void SetValue(Token token);
 
     // Operators
     Token& operator[](size_t index);

@@ -1,4 +1,5 @@
 #include "includes/parser/command.h"
+#include "includes/parser/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
@@ -46,6 +47,12 @@ void Command::SetType(std::string_view type) {
 
 void Command::SetExpression(bool indicator) {
     m_bExpression = indicator;
+}
+
+void Command::SetValue(Token token)
+{
+    this->m_tokens.clear();
+    this->m_tokens.push_back(token);
 }
 
 Token& Command::operator[](size_t index) {
@@ -275,6 +282,7 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
         }
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
+    else if (IsType(nextToken) && IsValue(currToken, "unsigned")) return false;
     else return FoundUnknown(currToken);
 }
 
@@ -344,7 +352,21 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     if (m_bBuildingParam)
     {
         m_bIgnoreCurrToken = true;
-        if (AddToCurrParam(currToken, nextToken)) 
+
+        if (IsValue(currToken, ")"))
+        {
+            m_iParanthesesCounter--;
+        }
+
+        if (m_iParanthesesCounter == 0)
+        {
+            if (AddToCurrParam(currToken, currToken)) 
+            {
+                m_bBuildingParam = false;
+                return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+            }
+        }
+        else if (AddToCurrParam(currToken, nextToken)) 
         {
             m_bBuildingParam = false;
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
@@ -353,11 +375,13 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     }
     else if (IsValueToken(currToken))
     {
-        if (IsType(currToken, TokenTypes::IDENTIFIER)) {
+        if (IsType(currToken, TokenTypes::IDENTIFIER)) 
+        {
             if (IsValue(nextToken, "(") || IsValue(nextToken, "["))
             {
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
+                m_iParanthesesCounter = 1;
                 AddToCurrParam(currToken, nextToken);
                 return false;
             }
@@ -471,8 +495,7 @@ inline bool Command::IsOperator(Token& token)
         IsValue(token, "=")) ||
         IsValue(token, "and") ||
         IsValue(token, "or") ||
-        IsValue(token, "xor") ||
-        IsValue(token, "is");
+        IsValue(token, "xor");
 }
 
 inline bool Command::IsValueToken(Token& token)
@@ -607,7 +630,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
             m_uParameterIndex++;
         return false;
     }
-    else if (IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
+    else if (m_tokens.size() == 2 && IsType(currToken) && m_sType == CommandTypes::SIZEOF_START)
     {
         m_tokens.push_back(Token(
             TokenTypes::HAS_PARAM,
@@ -616,6 +639,7 @@ bool Command::HandleKeywordParams(Token& currToken, Token& nextToken)
         m_parameters[m_uParameterIndex].m_tokens.push_back(currToken);
         m_parameters[m_uParameterIndex].m_sType = CommandTypes::VAR_TYPE;
         m_uParameterIndex++;
+        return false;
     }
     else return AddToCurrParam(currToken, nextToken);
 }

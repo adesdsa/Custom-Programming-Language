@@ -1,8 +1,8 @@
 #include "includes/logger/console.h"
 
-
 Console::Console()
 {
+    static int x = 0;
     this->m_supportsColor = DetectColorSupport();
 }
 

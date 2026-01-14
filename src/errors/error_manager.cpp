@@ -20,6 +20,8 @@ bool ErrorManager::HasErrorsOccured() const noexcept
 
 void ErrorManager::HandleErrors() const
 {
+    if (!this->HasErrorsOccured()) return;
+    
     this->DisplayErrorsInUI();
     this->AbortCompilation();
 }
