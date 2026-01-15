@@ -2,6 +2,7 @@
 
 #include "includes/backend/codegen/ir/ir_base_value.h"
 
+/// @brief A class that represents a magic boolean value.
 class IRConstantBool : public IRBaseValue
 {
 public:
@@ -15,4 +16,3 @@ public:
 private:
     bool m_BValue;
 };
-

@@ -5,6 +5,9 @@
 
 #include "includes/backend/codegen/ir/ir_type.h"
 
+/// @brief This is an abstract interface class that is designed to hold a single variable.
+/// All variables have same kind name and type(IRType) and a different value thus an 
+/// abstract interface is right in this case.
 class IRBaseValue 
 {
 public:
