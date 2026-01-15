@@ -10,43 +10,43 @@ IRType::IRType(const IRTypeKind k,
 
 std::shared_ptr<const IRType> IRType::GetVoid() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Void);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Void);
     return instance;
 }
 
 std::shared_ptr<const IRType> IRType::GetInt1() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Int1);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Int1);
     return instance;
 }
 
 std::shared_ptr<const IRType> IRType::GetInt8() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Int8);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Int8);
     return instance;
 }
 
 std::shared_ptr<const IRType> IRType::GetInt32() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Int32);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Int32);
     return instance;
 }
 
 std::shared_ptr<const IRType> IRType::GetInt64() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Int64);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Int64);
     return instance;
 }
 
 std::shared_ptr<const IRType> IRType::GetFloat32() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Float32);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Float32);
     return instance;
 }
 
 std::shared_ptr<const IRType> IRType::GetFloat64() 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Float64);
+    static auto instance = std::make_shared<const IRType>(IRTypeKind::Float64);
     return instance;
 }
 
