@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "includes/semantic_analysis/func_metadata.h"
-
 /// @note: all types based on bits. e.g., Int1 = 1 bit
 enum class IRTypeKind {
     Void,
