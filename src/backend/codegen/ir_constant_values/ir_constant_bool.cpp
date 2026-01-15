@@ -4,7 +4,7 @@ IRConstantBool::IRConstantBool(bool val) :
     IRBaseValue("", IRType::GetInt1()), 
     m_bValue(val) {}
 
-std::string IRConstantBool::ToString() const override 
+std::string IRConstantBool::ToString() const
 {
     return this->m_bValue ? "true" : "false";
 }

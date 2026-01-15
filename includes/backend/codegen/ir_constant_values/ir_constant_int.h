@@ -7,7 +7,7 @@ class IRConstantInt : public IRBaseValue
 {
 public:
     /// @note: we set name to be empty because it just a magic value with no identifier
-    IRConstantInt(int64_t val, std::shared_ptr<IRType> type);
+    IRConstantInt(int64_t val, std::shared_ptr<const IRType> type);
     
     std::string ToString() const override;
 
