@@ -1,56 +1,62 @@
 #include "includes/backend/codegen/ir/ir_type.h"
 
-IRType::IRType(IRTypeKind k) : m_kind(k),  m_returnType(nullptr) {}
+IRType::IRType(const IRTypeKind k, 
+        std::shared_ptr<const IRType> funcReturnType, 
+        std::vector<std::shared_ptr<const IRType>> funcParams) : 
+        m_kind(k),
+        m_returnType(funcReturnType),
+        m_paramTypes(funcParams)
+        {}
 
-std::shared_ptr<IRType> IRType::GetVoid() noexcept
+std::shared_ptr<const IRType> IRType::GetVoid() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Void);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Void);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetInt1() noexcept
+std::shared_ptr<const IRType> IRType::GetInt1() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Int1);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Int1);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetInt8() noexcept
+std::shared_ptr<const IRType> IRType::GetInt8() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Int8);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Int8);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetInt32() noexcept
+std::shared_ptr<const IRType> IRType::GetInt32() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Int32);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Int32);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetInt64() noexcept
+std::shared_ptr<const IRType> IRType::GetInt64() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Int64);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Int64);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetFloat32() noexcept
+std::shared_ptr<const IRType> IRType::GetFloat32() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Float32);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Float32);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetFloat64() noexcept
+std::shared_ptr<const IRType> IRType::GetFloat64() 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Float64);
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Float64);
     return instance;
 }
 
-std::shared_ptr<IRType> IRType::GetFunction(
-    std::shared_ptr<IRType> returnType, 
-    std::vector<std::shared_ptr<IRType>> paramTypes) noexcept
+std::shared_ptr<const IRType> IRType::GetFunction(
+    std::shared_ptr<const IRType> returnType, 
+    std::vector<std::shared_ptr<const IRType>> paramTypes) 
 {
-    static auto instance = std::make_shared<IRType>(IRTypeKind::Function);
-    instance->m_returnType = returnType;
-    instance->m_paramTypes = paramTypes;
+    auto instance = std::make_shared<const IRType>(IRTypeKind::Function,
+        std::move(returnType),
+        std::move(paramTypes));
     return instance;
 }
 
@@ -70,12 +76,17 @@ size_t IRType::GetSizeInBytes() const noexcept
     }
 }
 
-std::shared_ptr<IRType> IRType::GetReturnType() const noexcept
+IRTypeKind IRType::GetType() const noexcept
+{
+    return m_kind;
+}
+
+std::shared_ptr<const IRType> IRType::GetReturnType() const noexcept
 {
     return this->m_returnType;
 }
 
-std::vector<std::shared_ptr<IRType>> IRType::GetParameters() const noexcept
+const std::vector<std::shared_ptr<const IRType>>& IRType::GetParameters() const noexcept
 {
     return this->m_paramTypes;
 }

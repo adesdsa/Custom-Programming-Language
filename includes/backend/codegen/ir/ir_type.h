@@ -20,40 +20,44 @@ enum class IRTypeKind {
 class IRType 
 {
 public:
-    IRType(IRTypeKind k);
+    /// @note The second and third params are only used when creating a func.
+    IRType(const IRTypeKind k, 
+        std::shared_ptr<const IRType> funcReturnType = nullptr, 
+        std::vector<std::shared_ptr<const IRType>> funcParams = {});
     ~IRType() = default;
 
     // ===== STATIC FACTORY METHODS =====
-    static std::shared_ptr<IRType> GetVoid() noexcept;
+    static std::shared_ptr<const IRType> GetVoid();
 
-    static std::shared_ptr<IRType> GetInt1() noexcept;
+    static std::shared_ptr<const IRType> GetInt1();
 
-    static std::shared_ptr<IRType> GetInt8() noexcept;
+    static std::shared_ptr<const IRType> GetInt8();
 
-    static std::shared_ptr<IRType> GetInt32() noexcept;
+    static std::shared_ptr<const IRType> GetInt32();
 
-    static std::shared_ptr<IRType> GetInt64() noexcept;
+    static std::shared_ptr<const IRType> GetInt64();
 
-    static std::shared_ptr<IRType> GetFloat32() noexcept;
+    static std::shared_ptr<const IRType> GetFloat32();
 
-    static std::shared_ptr<IRType> GetFloat64() noexcept;
+    static std::shared_ptr<const IRType> GetFloat64();
 
-    static std::shared_ptr<IRType> GetFunction(
-        std::shared_ptr<IRType> returnType, 
-        std::vector<std::shared_ptr<IRType>> paramTypes
-    ) noexcept;
+    static std::shared_ptr<const IRType> GetFunction(
+        std::shared_ptr<const IRType> returnType, 
+        std::vector<std::shared_ptr<const IRType>> paramTypes
+    );
 
     // ===== INSTANCE METHODS =====
     size_t GetSizeInBytes() const noexcept;
 
-    std::shared_ptr<IRType> GetReturnType() const noexcept;
-    std::vector<std::shared_ptr<IRType>> GetParameters() const noexcept;
+    IRTypeKind GetType() const noexcept;
+    std::shared_ptr<const IRType> GetReturnType() const noexcept;
+    const std::vector<std::shared_ptr<const IRType>>& GetParameters() const noexcept;
 
 private:
-    IRTypeKind m_kind;
+    const IRTypeKind m_kind;
     
     // in case of a function
-    std::shared_ptr<IRType> m_returnType;
-    std::vector<std::shared_ptr<IRType>> m_paramTypes;
+    std::shared_ptr<const IRType> m_returnType;
+    std::vector<std::shared_ptr<const IRType>> m_paramTypes;
 };
 
