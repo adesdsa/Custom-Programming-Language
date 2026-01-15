@@ -47,7 +47,7 @@ public:
     // ===== INSTANCE METHODS =====
     size_t GetSizeInBytes() const noexcept;
 
-    IRTypeKind GetType() const noexcept;
+    IRTypeKind GetKind() const noexcept;
     std::shared_ptr<const IRType> GetReturnType() const noexcept;
     const std::vector<std::shared_ptr<const IRType>>& GetParameters() const noexcept;
 

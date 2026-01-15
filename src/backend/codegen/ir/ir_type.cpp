@@ -76,7 +76,7 @@ size_t IRType::GetSizeInBytes() const noexcept
     }
 }
 
-IRTypeKind IRType::GetType() const noexcept
+IRTypeKind IRType::GetKind() const noexcept
 {
     return m_kind;
 }
