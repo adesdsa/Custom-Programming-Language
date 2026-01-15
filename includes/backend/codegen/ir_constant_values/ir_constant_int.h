@@ -7,12 +7,12 @@ class IRConstantInt : public IRBaseValue
 {
 public:
     /// @note: we set name to be empty because it just a magic value with no identifier
-    IRConstantInt(int64_t val, std::shared_ptr<const IRType> type);
+    IRConstantInt(int64_t NVal, std::shared_ptr<const IRType> type);
     
     std::string ToString() const override;
 
     int64_t GetValue() const noexcept;
 
 private:
-    int64_t m_nValue;
+    int64_t m_NValue;
 };

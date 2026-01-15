@@ -6,13 +6,13 @@ class IRConstantBool : public IRBaseValue
 {
 public:
     /// @note: we set name to be empty because it just a magic value with no identifier
-    IRConstantBool(bool val);
+    IRConstantBool(bool BVal);
     
     std::string ToString() const override;
 
     bool GetBool() const noexcept;
 
 private:
-    bool m_bValue;
+    bool m_BValue;
 };
 
