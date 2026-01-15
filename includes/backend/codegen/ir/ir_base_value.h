@@ -8,13 +8,18 @@
 class IRBaseValue 
 {
 public:
-    std::string m_sName; // identifier (e.g., "x", "t0")
-    std::shared_ptr<IRType> m_type;
-
     IRBaseValue(const std::string& name, std::shared_ptr<IRType> type);
 
     virtual ~IRBaseValue() = default;
 
     virtual std::string ToString() const = 0;
+
+    virtual std::string GetName() const noexcept;
+
+    virtual std::shared_ptr<IRType> GetType() const noexcept;
+
+private:
+    std::string m_sName; // identifier (e.g., "x", "t0")
+    std::shared_ptr<IRType> m_type;
 };
 
