@@ -1,0 +1,35 @@
+#pragma once
+
+#include "ir_base_value.h"
+#include "ir_function.h"
+
+class IRFunction;  // forward declaration
+
+/// @brief The class is used to represent an intermidiate language function arguement.
+/// Lets say we have the next function declaration:
+/// Foo(int x)
+/// And the function call:
+/// Foo( x );
+///      |
+///      |
+///      ----> This is the part that this class represents.
+class IRArgument : public IRBaseValue 
+{
+public:
+    IRArgument(const std::string& SName,
+        std::shared_ptr<IRType> type,
+        size_t UIndex,
+        IRFunction* func = nullptr
+    );
+
+    // Getters.
+    size_t GetIndex() const noexcept;
+    IRFunction* GetParent() const noexcept;
+
+    std::string ToString() const override;
+
+private:
+    size_t m_UArgIndex;  // order of the param in the function params start from 0
+    IRFunction* m_parent;   // function that owns this argument
+};
+
