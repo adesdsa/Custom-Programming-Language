@@ -17,7 +17,7 @@ class IRArgument : public IRBaseValue
 {
 public:
     IRArgument(const std::string& name,
-        std::shared_ptr<IRType> type,
+        std::shared_ptr<const IRType> type,
         size_t index,
         IRFunction* func = nullptr
     );

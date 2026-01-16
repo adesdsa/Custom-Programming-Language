@@ -1,7 +1,7 @@
 #include "includes/backend/codegen/ir/ir_argument.h"
 
 IRArgument::IRArgument(const std::string& name,
-    std::shared_ptr<IRType> type,
+    std::shared_ptr<const IRType> type,
     size_t index,
     IRFunction* func) :
     IRBaseValue(name, type),
