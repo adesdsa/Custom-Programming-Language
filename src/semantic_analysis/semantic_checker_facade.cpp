@@ -386,7 +386,6 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||
-        expectedType == Type::UNSIGNED_DOUBLE_TYPE ||
         expectedType == Type::UNSIGNED_INT_TYPE)
     ) return true;
 
