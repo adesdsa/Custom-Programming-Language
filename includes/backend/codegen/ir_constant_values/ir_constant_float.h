@@ -9,12 +9,12 @@ public:
     /// @note: we take upper bound value as double because at the end of the day it can 
     /// hold all the smaller floats and can be easly converted to them.
     /// @note: we set name to be empty because it just a magic value with no identifier
-    IRConstantFloat(int64_t NVal, std::shared_ptr<const IRType> type);
+    IRConstantFloat(double fVal, std::shared_ptr<const IRType> type);
     
     std::string ToString() const override;
 
     double GetValue() const noexcept;
 
 private:
-    double m_FValue;
+    double m_fValue;
 };

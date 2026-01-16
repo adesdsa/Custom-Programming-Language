@@ -1,15 +1,15 @@
 #include "includes/backend/codegen/ir_constant_values/ir_constant_bool.h"
 
-IRConstantBool::IRConstantBool(bool BVal) : 
+IRConstantBool::IRConstantBool(bool bVal) : 
     IRBaseValue("", IRType::GetInt1()), 
-    m_BValue(BVal) {}
+    m_bValue(bVal) {}
 
 std::string IRConstantBool::ToString() const
 {
-    return this->m_BValue ? "true" : "false";
+    return this->m_bValue ? "true" : "false";
 }
 
 bool IRConstantBool::GetBool() const noexcept
 {
-    return this->m_BValue;
+    return this->m_bValue;
 }
