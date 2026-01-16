@@ -29,8 +29,8 @@ IRArgument* IRFunction::GetArgument(size_t index) const
 
 IRArgument* IRFunction::GetArgument(const std::string& name) const
 {
-    auto it = this->m_argumentMap.find(name);
-    return (it != this->m_argumentMap.end()) ? it->second : nullptr;
+    auto result = this->m_argumentMap.find(name);
+    return (result != this->m_argumentMap.end()) ? result->second : nullptr;
 }
 
 const std::vector<std::unique_ptr<IRArgument>>& IRFunction::GetArguments() const noexcept
@@ -51,8 +51,8 @@ BasicBlock* IRFunction::GetEntryBlock() const
 
 BasicBlock* IRFunction::GetBasicBlock(const std::string& label) const
 {
-    auto it = this->m_blockMap.find(label);
-    return (it != this->m_blockMap.end()) ? it->second : nullptr;
+    auto result = this->m_blockMap.find(label);
+    return (result != this->m_blockMap.end()) ? result->second : nullptr;
 }
 
 const std::vector<std::unique_ptr<BasicBlock>>& IRFunction::GetBasicBlocks() const noexcept
