@@ -16,9 +16,9 @@ class IRFunction;  // forward declaration
 class IRArgument : public IRBaseValue 
 {
 public:
-    IRArgument(const std::string& sName,
+    IRArgument(const std::string& name,
         std::shared_ptr<IRType> type,
-        size_t uIndex,
+        size_t index,
         IRFunction* func = nullptr
     );
 
@@ -29,7 +29,7 @@ public:
     std::string ToString() const override;
 
 private:
-    size_t m_uArgIndex;  // order of the param in the function params start from 0
+    size_t m_argIndex;  // order of the param in the function params start from 0
     IRFunction* m_parent;   // function that owns this argument
 };
 

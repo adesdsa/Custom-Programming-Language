@@ -1,16 +1,16 @@
 #include "includes/backend/codegen/ir/ir_argument.h"
 
-IRArgument::IRArgument(const std::string& sName,
+IRArgument::IRArgument(const std::string& name,
     std::shared_ptr<IRType> type,
-    size_t uIndex,
+    size_t index,
     IRFunction* func) :
-    IRBaseValue(sName, type),
-    m_uArgIndex(uIndex),
+    IRBaseValue(name, type),
+    m_argIndex(index),
     m_parent(func) {}
 
 size_t IRArgument::GetIndex() const noexcept 
 { 
-    return this->m_uArgIndex;
+    return this->m_argIndex;
 }
 
 IRFunction* IRArgument::GetParent() const noexcept 
