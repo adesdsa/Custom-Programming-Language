@@ -1,14 +1,14 @@
 #include "includes/backend/codegen/ir_constant_values/ir_constant_float.h"
 
-IRConstantFloat::IRConstantFloat(double fVal, std::shared_ptr<const IRType> type)
-    : IRBaseValue("", type), m_fValue(fVal) {}
+IRConstantFloat::IRConstantFloat(double val, std::shared_ptr<const IRType> type)
+    : IRBaseValue("", type), m_value(val) {}
 
 std::string IRConstantFloat::ToString() const
 {
-    return std::to_string(this->m_fValue);
+    return std::to_string(this->m_value);
 }
 
 double IRConstantFloat::GetValue() const noexcept
 {
-    return this->m_fValue;
+    return this->m_value;
 }
