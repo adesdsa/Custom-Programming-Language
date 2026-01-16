@@ -6,7 +6,7 @@
 #include "includes/backend/codegen/ir/ir_type.h"
 
 /// @brief This is an abstract interface class that holds certain metadata
-/// that any llvm IR stores.
+/// that any llvm IR object that has a value stores.
 /// Any llvm IR object that can hold a value should inherit this.
 class IRBaseValue 
 {
