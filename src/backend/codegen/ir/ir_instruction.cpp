@@ -23,7 +23,7 @@ const std::vector<IRBaseValue*>& IRInstruction::GetOperands() const noexcept
 
 IRBaseValue* IRInstruction::GetOperand(size_t index) const
 {
-    if (this->m_operands.size() > index) return nullptr;
+    if (this->m_operands.size() <= index) return nullptr;
     return this->m_operands[index];
 }
 
