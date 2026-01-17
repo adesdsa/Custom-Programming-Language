@@ -15,6 +15,8 @@ enum class IRTypeKind {
     Function  // non fixed amount of bits
 };
 
+/// @brief A class that represents the special intermidiate language 
+/// types (please @see IRTypeKind enumerator).
 class IRType 
 {
 public:
