@@ -34,6 +34,7 @@ IRFunction* IRModule::AddFunction(const std::string& name, std::shared_ptr<const
         returnType
     ));
     this->m_functionMap[name] = this->m_functions.back().get();
+    this->m_functionMap[name]->SetParent(this);
     
     return this->m_functionMap[name];
 }
@@ -68,6 +69,7 @@ IRGlobalVariable* IRModule::AddVariable(const std::string& name, std::shared_ptr
         type
     ));
     this->m_globalMap[name] = this->m_globals.back().get();
+    this->m_globalMap[name]->SetParent(this);
     
     return this->m_globalMap[name];
 }
