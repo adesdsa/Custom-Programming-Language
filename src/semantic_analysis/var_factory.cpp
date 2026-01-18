@@ -31,10 +31,6 @@ VarMetaData VarFactory::CreateVarMetadata(
     case Type::INT_TYPE:
         varOffsetInsideFrame = sizeof(int);
         break;
-    
-    case Type::UNSIGNED_DOUBLE_TYPE:
-        varOffsetInsideFrame = sizeof(double);
-        break;
 
     case Type::UNSIGNED_INT_TYPE:
         varOffsetInsideFrame = sizeof(int);

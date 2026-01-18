@@ -822,7 +822,6 @@ std::string SemanticAnalysisVisitor::TypeToString(
         case Type::INT_TYPE:             return "int";
         case Type::DOUBLE_TYPE:          return "double";
         case Type::UNSIGNED_INT_TYPE:    return "unsigned int";
-        case Type::UNSIGNED_DOUBLE_TYPE: return "unsigned double";
         case Type::VOID_TYPE:            return "void";
         default:                         return "unknown";
     }

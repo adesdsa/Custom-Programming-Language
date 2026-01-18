@@ -25,8 +25,7 @@ enum class Type
     BOOL_TYPE,
     INT_TYPE,
     DOUBLE_TYPE, 
-    UNSIGNED_INT_TYPE,
-    UNSIGNED_DOUBLE_TYPE,
+    UNSIGNED_INT_TYPE
 };
 
 enum class AccessRights
