@@ -282,7 +282,10 @@ bool Command::ParseVarDeclarationStart(Token& currToken, Token& nextToken)
         }
         else return FinishAndAssignType(CommandTypes::VAR_DECLARATION);
     }
-    else if (IsType(nextToken) && IsValue(currToken, "unsigned")) return false;
+    else if (IsType(nextToken) && 
+    IsValue(currToken, "unsigned") && 
+    !IsValue(currToken, "double")) // Floats can't be unsigned.
+    return false;
     else return FoundUnknown(currToken);
 }
 
