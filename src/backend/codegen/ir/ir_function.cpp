@@ -3,7 +3,8 @@
 IRFunction::IRFunction(const std::string& name,
     std::shared_ptr<const IRType> returnType) :
     m_name(name),
-    m_returnType(returnType) 
+    m_returnType(returnType),
+    m_parent(nullptr)
 {}
 
 const std::string& IRFunction::GetName() const noexcept
@@ -91,6 +92,7 @@ BasicBlock* IRFunction::AddBasicBlock(const std::string& label)
 
     this->m_basicBlocks.push_back(std::make_unique<BasicBlock>(label));
     this->m_blockMap[label] = this->m_basicBlocks.back().get();
+    this->m_blockMap[label]->SetParent(this);
     
     return this->m_blockMap[label];
 }

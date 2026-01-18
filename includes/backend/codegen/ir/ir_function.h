@@ -36,13 +36,14 @@ public:
     IRArgument* GetArgument(size_t index) const;
     IRArgument* GetArgument(const std::string& name) const;
     const std::vector<std::unique_ptr<IRArgument>>& GetArguments() const noexcept;
+    /// @return m_arguments size
     size_t GetNumArguments() const noexcept;
 
     // <======= Block Getters =======>
     BasicBlock* GetEntryBlock() const;
     BasicBlock* GetBasicBlock(const std::string& label) const;
     const std::vector<std::unique_ptr<BasicBlock>>& GetBasicBlocks() const noexcept;
-    /// @return m_arguments size
+    /// @return m_basicBlocks size
     size_t GetNumBasicBlocks() const noexcept;
 
     IRArgument* AddArgument(const std::string& name, std::shared_ptr<const IRType> type);
