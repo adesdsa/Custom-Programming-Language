@@ -7,12 +7,17 @@ class IRFunction;  // forward declaration
 
 /// @brief The class is used to represent an intermidiate language function arguement.
 /// Lets say we have the next function declaration:
-/// Foo(int x)
-/// And the function call:
-/// Foo( x );
-///      |
-///      |
-///      ----> This is the part that this class represents.
+/// define i32 @max(i32 %a, i32 %b)  
+/// {
+///                     ^^     ^^
+///                     │      └── IRArgument: 
+///                     │         name="b", type=Int32, index=1
+///                     │         parent = max 
+///                     │
+///                     └── IRArgument: 
+///                           name="a",type=Int32 index=0,
+///                           parent = max
+/// }
 class IRArgument : public IRBaseValue 
 {
 public:
