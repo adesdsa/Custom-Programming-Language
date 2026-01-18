@@ -1,7 +1,9 @@
 #include "includes/backend/codegen/ir/ir_function.h"
 
-IRFunction::IRFunction(const std::string& name,
-    std::shared_ptr<const IRType> returnType) :
+IRFunction::IRFunction(
+    const std::string& name,
+    std::shared_ptr<const IRType> returnType
+) :
     m_name(name),
     m_returnType(returnType),
     m_parent(nullptr)

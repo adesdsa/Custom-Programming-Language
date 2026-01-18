@@ -1,12 +1,14 @@
 #include "includes/backend/codegen/ir/ir_type.h"
 
-IRType::IRType(const IRTypeKind k, 
-        std::shared_ptr<const IRType> funcReturnType, 
-        std::vector<std::shared_ptr<const IRType>> funcParams) : 
-        m_kind(k),
-        m_returnType(funcReturnType),
-        m_paramTypes(funcParams)
-        {}
+IRType::IRType(
+    const IRTypeKind k, 
+    std::shared_ptr<const IRType> funcReturnType, 
+    std::vector<std::shared_ptr<const IRType>> funcParams
+) : 
+    m_kind(k),
+    m_returnType(funcReturnType),
+    m_paramTypes(funcParams)
+{}
 
 std::shared_ptr<const IRType> IRType::GetVoid() 
 {

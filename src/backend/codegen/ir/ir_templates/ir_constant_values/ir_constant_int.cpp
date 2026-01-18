@@ -1,7 +1,9 @@
 #include "includes/backend/codegen/ir_constant_values/ir_constant_int.h"
 
-IRConstantInt::IRConstantInt(int64_t val, std::shared_ptr<const IRType> type)
-    : IRBaseValue("", type), m_value(val) {}
+IRConstantInt::IRConstantInt(int64_t val, std::shared_ptr<const IRType> type) : 
+    IRBaseValue("", type), 
+    m_value(val) 
+{}
 
 std::string IRConstantInt::ToString() const
 {

@@ -1,7 +1,9 @@
 #include "includes/backend/codegen/ir_constant_values/ir_constant_float.h"
 
-IRConstantFloat::IRConstantFloat(double val, std::shared_ptr<const IRType> type)
-    : IRBaseValue("", type), m_value(val) {}
+IRConstantFloat::IRConstantFloat(double val, std::shared_ptr<const IRType> type) : 
+    IRBaseValue("", type), 
+    m_value(val) 
+{}
 
 std::string IRConstantFloat::ToString() const
 {

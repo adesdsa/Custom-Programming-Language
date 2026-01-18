@@ -1,6 +1,9 @@
 #include "includes/backend/codegen/ir/ir_global_vars.h"
 
-IRGlobalVariable::IRGlobalVariable(const std::string& name, std::shared_ptr<const IRType> type) : 
+IRGlobalVariable::IRGlobalVariable(
+    const std::string& name, 
+    std::shared_ptr<const IRType> type
+) : 
     IRBaseValue(name, type), 
     m_parent(nullptr), 
     m_initializer(nullptr)

@@ -1,10 +1,12 @@
 #include "includes/backend/codegen/ir/ir_instruction.h"
 
-IRInstruction::IRInstruction(const std::string& name,
+IRInstruction::IRInstruction(c
+    onst std::string& name,
     std::shared_ptr<const IRType> type,
     IROpcode opcode,
     std::vector<IRBaseValue*> operands,
-    BasicBlock* codeBlock) :
+    BasicBlock* codeBlock
+) :
     IRBaseValue(name, type),
     m_opcode(opcode),
     m_operands(std::move(operands)),

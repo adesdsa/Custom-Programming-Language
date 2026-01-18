@@ -17,12 +17,10 @@ public:
 
     virtual std::string ToString() const = 0;
 
-    virtual std::string GetName() const noexcept;
-
-    virtual std::shared_ptr<const IRType> GetType() const noexcept;
+    const std::string& GetName() const noexcept;
+    std::shared_ptr<const IRType> GetType() const noexcept;
 
 private:
     std::string m_name; // identifier (e.g., "x", "t0")
     std::shared_ptr<const IRType> m_type;
 };
-

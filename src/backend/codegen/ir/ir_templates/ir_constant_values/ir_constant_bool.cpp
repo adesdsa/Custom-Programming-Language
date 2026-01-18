@@ -2,7 +2,8 @@
 
 IRConstantBool::IRConstantBool(bool val) : 
     IRBaseValue("", IRType::GetInt1()), 
-    m_value(val) {}
+    m_value(val) 
+{}
 
 std::string IRConstantBool::ToString() const
 {
