@@ -7,7 +7,7 @@ IRInstruction::IRInstruction(const std::string& name,
     BasicBlock* codeBlock) :
     IRBaseValue(name, type),
     m_opcode(opcode),
-    m_operands(operands),
+    m_operands(std::move(operands)),
     m_parent(codeBlock)
 {}
 
@@ -54,4 +54,14 @@ std::string IRInstruction::ToString() const
     if (this->GetName().empty()) return "";
 
     return "%" + this->GetName();
+}
+
+void IRInstruction::SetParent(BasicBlock* block) noexcept
+{
+    this->m_parent = block;
+}
+
+void IRInstruction::AddOperand(IRBaseValue* operand) noexcept
+{
+    this->m_operands.push_back(operand);
 }

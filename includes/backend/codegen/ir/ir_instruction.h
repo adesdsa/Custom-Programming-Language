@@ -31,6 +31,10 @@ public:
 
     std::string ToString() const override;
 
+    void SetParent(BasicBlock* block) noexcept;
+
+    void AddOperand(IRBaseValue* operand) noexcept;
+
 private:
     IROpcode m_opcode;  // operation of the instruction: add, sub, load etc...
     std::vector<IRBaseValue*> m_operands;  // operands of the instruction operation
