@@ -2,7 +2,8 @@
 
 BasicBlock::BasicBlock(const std::string& label) :
     m_label(label),
-    m_terminator(nullptr)
+    m_terminator(nullptr),
+    m_parent(nullptr)
 {}
 
 const std::string& BasicBlock::GetLabel() const noexcept
@@ -57,6 +58,9 @@ void BasicBlock::AddSuccessor(BasicBlock* block)
 
 void BasicBlock::AddInstruction(std::unique_ptr<IRInstruction> instruction)
 {
+    if (this->m_terminator) return; // After endpoint no more adding.
+
+    instruction->SetParent(this);
     if (instruction->IsTerminator())
     {
         this->m_terminator = instruction.get();
