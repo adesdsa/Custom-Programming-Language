@@ -5,6 +5,9 @@
 
 #include "includes/backend/codegen/ir/ir_type.h"
 
+/// @brief This is an abstract interface class that holds certain metadata
+/// that any llvm IR object that has a value stores.
+/// Any llvm IR object that can hold a value should inherit this.
 class IRBaseValue 
 {
 public:
@@ -19,7 +22,7 @@ public:
     virtual std::shared_ptr<const IRType> GetType() const noexcept;
 
 private:
-    std::string m_sName; // identifier (e.g., "x", "t0")
+    std::string m_name; // identifier (e.g., "x", "t0")
     std::shared_ptr<const IRType> m_type;
 };
 
