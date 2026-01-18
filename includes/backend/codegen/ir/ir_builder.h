@@ -32,10 +32,10 @@ public:
     // ===== CONSTANTS =====
     IRConstantInt* GetInt8(int64_t value)
     {
-      this->m_intConstants.push_back(
+      this->m_constants.push_back(
         std::make_unique<IRConstantInt>(value,  IRType::GetInt8())
     );
-    return m_intConstants.back().get();
+    return m_constants.back().get();
     }
     // same logic for ||
     //                \/
@@ -82,6 +82,7 @@ public:
 
     // ===== FLOAT COMPARISON =====
     IRInstruction* CreateFCmpEQ(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateFCmpNE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFCmpLT(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFCmpLE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFCmpGT(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
@@ -134,10 +135,16 @@ public:
     // ===== FUNCTION CALLS =====
     IRInstruction* CreateCall(IRFunction* func, const std::vector<IRBaseValue*>& args, const std::string& name = "");
 
+    // ===== CONSTANTS =====
+    /// @note After calling this function and moving all of the values using std::move call ClearConstants().
+    const std::vector<std::unique_ptr<IRBaseValue>>& DumpConstants() const noexcept;
+    /// @note Must be called after all values are moved from m_constants.
+    void ClearConstants() noexcept;
+
 private:
     BasicBlock* m_insertBlock;   // Where new instructions go
     size_t m_tempCounter;        // For auto-generating names: t0, t1, t2...
-    std::vector<std::unique_ptr<IRBaseValue>> m_intConstants;
+    std::vector<std::unique_ptr<IRBaseValue>> m_constants; // After moving the values call ClearConstants().
     const EntityLogger& m_entitylogger;
 
     /// @brief Generate next temporary name (t0, t1, t2...)

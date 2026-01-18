@@ -24,7 +24,8 @@ public:
     IRArgument(const std::string& name,
         std::shared_ptr<const IRType> type,
         size_t index,
-        IRFunction* func = nullptr
+        IRFunction* func = nullptr,
+        IRBaseValue* value = nullptr
     );
 
     // Getters.
@@ -36,5 +37,6 @@ public:
 private:
     size_t m_argIndex;  // order of the param in the function params start from 0
     IRFunction* m_parent;   // function that owns this argument
+    IRBaseValue* m_value;
 };
 
