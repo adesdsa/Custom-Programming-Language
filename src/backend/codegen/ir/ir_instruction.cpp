@@ -48,6 +48,21 @@ bool IRInstruction::IsTerminator() const noexcept
     );
 }
 
+bool IRInstruction::IsFuncCall() const noexcept
+{
+    return this->m_calledFunc != nullptr;
+}
+
+void IRInstruction::SetCalledFunction(IRFunction* func) noexcept
+{
+    this->m_calledFunc = func;
+}
+
+IRFunction* IRInstruction::GetCalledFunction() const noexcept
+{
+    return this->m_calledFunc;
+}
+
 std::string IRInstruction::ToString() const
 {
     // some instructions do not have a name

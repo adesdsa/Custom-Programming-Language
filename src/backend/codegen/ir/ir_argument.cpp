@@ -3,12 +3,10 @@
 IRArgument::IRArgument(const std::string& name,
     std::shared_ptr<const IRType> type,
     size_t index,
-    IRFunction* func,
-    IRBaseValue* value) :
+    IRFunction* func) :
     IRBaseValue(name, type),
     m_argIndex(index),
-    m_parent(func),
-    m_value(value) {}
+    m_parent(func){}
 
 size_t IRArgument::GetIndex() const noexcept 
 { 

@@ -24,7 +24,7 @@ IRConstantInt* IRBuilder::GetInt8(int64_t value)
     std::make_unique<IRConstantInt>(value,  IRType::GetInt8())
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantInt*>(m_constants.back().get());
 }
 
 IRConstantInt* IRBuilder::GetInt32(int64_t value)
@@ -33,7 +33,7 @@ IRConstantInt* IRBuilder::GetInt32(int64_t value)
     std::make_unique<IRConstantInt>(value,  IRType::GetInt32())
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantInt*>(m_constants.back().get());
 }
 
 IRConstantInt* IRBuilder::GetInt64(int64_t value)
@@ -42,7 +42,7 @@ IRConstantInt* IRBuilder::GetInt64(int64_t value)
     std::make_unique<IRConstantInt>(value,  IRType::GetInt64())
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantInt*>(m_constants.back().get());
 }
 
 IRConstantBool* IRBuilder::GetTrue()
@@ -51,7 +51,7 @@ IRConstantBool* IRBuilder::GetTrue()
     std::make_unique<IRConstantBool>(true)
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantBool*>(m_constants.back().get());
 }
 
 IRConstantBool* IRBuilder::GetFalse()
@@ -60,7 +60,7 @@ IRConstantBool* IRBuilder::GetFalse()
     std::make_unique<IRConstantBool>(false)
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantBool*>(m_constants.back().get());
 }
 
 IRConstantBool* IRBuilder::GetBool(bool value)
@@ -69,7 +69,7 @@ IRConstantBool* IRBuilder::GetBool(bool value)
     std::make_unique<IRConstantBool>(value)
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantBool*>(m_constants.back().get());
 }
 
 IRConstantFloat* IRBuilder::GetFloat(double value)
@@ -78,7 +78,7 @@ IRConstantFloat* IRBuilder::GetFloat(double value)
     std::make_unique<IRConstantFloat>(value,  IRType::GetFloat32())
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantFloat*>(m_constants.back().get());
 }
 
 IRConstantFloat* IRBuilder::GetDouble(double value)
@@ -87,7 +87,7 @@ IRConstantFloat* IRBuilder::GetDouble(double value)
     std::make_unique<IRConstantFloat>(value,  IRType::GetFloat64())
     );
 
-    return m_constants.back().get();
+    return static_cast<IRConstantFloat*>(m_constants.back().get());
 }
 
 // ===== INTEGER ARITHMETIC =====
@@ -154,6 +154,34 @@ IRInstruction* IRBuilder::CreateSRem(
 {
     return CreateBinaryOp(
         IROpcode::SRem,
+        lhs,
+        rhs,
+        lhs->GetType(),
+        name
+    );
+}
+
+IRInstruction* IRBuilder::CreateUDiv(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    return CreateBinaryOp(
+        IROpcode::UDiv,
+        lhs,
+        rhs,
+        lhs->GetType(),
+        name
+    );
+}
+
+IRInstruction* IRBuilder::CreateURem(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    return CreateBinaryOp(
+        IROpcode::URem,
         lhs,
         rhs,
         lhs->GetType(),
@@ -300,6 +328,62 @@ IRInstruction* IRBuilder::CreateICmpSGE(
     );
 }
 
+IRInstruction* IRBuilder::CreateICmpULT(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    return CreateBinaryOp(
+        IROpcode::ICmpUlt,
+        lhs,
+        rhs,
+        IRType::GetInt1(),
+        name
+    );
+}
+
+IRInstruction* IRBuilder::CreateICmpULE(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    return CreateBinaryOp(
+        IROpcode::ICmpUle,
+        lhs,
+        rhs,
+        IRType::GetInt1(),
+        name
+    );
+}
+
+IRInstruction* IRBuilder::CreateICmpUGT(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    return CreateBinaryOp(
+        IROpcode::ICmpUgt,
+        lhs,
+        rhs,
+        IRType::GetInt1(),
+        name
+    );
+}
+
+IRInstruction* IRBuilder::CreateICmpUGE(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    return CreateBinaryOp(
+        IROpcode::ICmpUge,
+        lhs,
+        rhs,
+        IRType::GetInt1(),
+        name
+    );
+}
+
 IRInstruction* IRBuilder::CreateFCmpEQ(
     IRBaseValue* lhs,
     IRBaseValue* rhs,
@@ -320,7 +404,7 @@ IRInstruction* IRBuilder::CreateFCmpNE(
     const std::string& name)
 {
     return CreateBinaryOp(
-        IROpcode::FCmpNE,
+        IROpcode::FCmpNe,
         lhs,
         rhs,
         IRType::GetInt1(),
@@ -487,7 +571,7 @@ IRInstruction* IRBuilder::CreateLoad(
 {
     return CreateBinaryOp(
         IROpcode::Load,
-        nullptr,
+        ptr,
         nullptr,
         IRType::GetVoid(),
         name
@@ -531,7 +615,7 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
         "",
         IRType::GetVoid(),
         IROpcode::CondBr,
-        std::vector<IRBaseValue*>{cond, trueBB, falseBB},
+        std::vector<IRBaseValue*>{cond},
         m_insertBlock
     );
     
@@ -576,18 +660,17 @@ IRInstruction* IRBuilder::CreateCall(
     const std::vector<IRBaseValue*>& args,
     const std::string& name)
 {
-    for (auto arg: args)
-    {
-        func->AddArgument(std::move(arg));
-    }
-
-    return CreateBinaryOp(
-        IROpcode::Call,
-        func,
-        nullptr,
+    auto inst = std::make_unique<IRInstruction>(
+        name,
         func->GetReturnType(),
-        name
+        IROpcode::Call,
+        args,
+        this->m_insertBlock
     );
+
+    inst->SetCalledFunction(func);
+
+    return Insert(std::move(inst));
 }
 
 const std::vector<std::unique_ptr<IRBaseValue>>& IRBuilder::DumpConstants() const noexcept

@@ -6,6 +6,7 @@
 #include "includes/shared/common/codegen/ir/ir_common_types.h"
 
 class BasicBlock;
+class IRFunction;
 
 /// @brief Represents a single LLVM-like IR instruction.
 /// An instruction has an opcode and zero or more operands, also it's parent block is saved.
@@ -29,6 +30,12 @@ public:
     /// br/CondBr/ret so the code will know where to continue after the block.
     bool IsTerminator() const noexcept;
 
+    bool IsFuncCall() const noexcept;
+
+    void SetCalledFunction(IRFunction* func) noexcept;
+
+    IRFunction* GetCalledFunction() const noexcept;
+
     std::string ToString() const override;
 
     void SetParent(BasicBlock* block) noexcept;
@@ -39,5 +46,6 @@ private:
     IROpcode m_opcode;  // operation of the instruction: add, sub, load etc...
     std::vector<IRBaseValue*> m_operands;  // operands of the instruction operation
     BasicBlock* m_parent;  // block of code this instrcution is inside
+    IRFunction* m_calledFunc; // incase we are inside a CALL this is the func that is called and the operands are the args
 };
 

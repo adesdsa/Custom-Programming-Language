@@ -30,15 +30,7 @@ public:
     BasicBlock* GetInsertBlock() const noexcept;
 
     // ===== CONSTANTS =====
-    IRConstantInt* GetInt8(int64_t value)
-    {
-      this->m_constants.push_back(
-        std::make_unique<IRConstantInt>(value,  IRType::GetInt8())
-    );
-    return m_constants.back().get();
-    }
-    // same logic for ||
-    //                \/
+    IRConstantInt* GetInt8(int64_t value);
     IRConstantInt* GetInt32(int64_t value);
     IRConstantInt* GetInt64(int64_t value);
     IRConstantBool* GetTrue();
@@ -48,18 +40,13 @@ public:
     IRConstantFloat* GetDouble(double value);
 
     // ===== INTEGER ARITHMETIC =====
-    IRInstruction* CreateAdd(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "")
-    {
-       {
-    return CreateBinaryOp(IROpcode::Add, lhs, rhs, lhs->GetType(), name);
-       }
-    }
-    // same logic ||
-    //            \/
+    IRInstruction* CreateAdd(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateSub(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateMul(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateSDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateSRem(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateUDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateURem(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
 
     // ===== FLOAT ARITHMETIC =====
     IRInstruction* CreateFAdd(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
@@ -68,17 +55,16 @@ public:
     IRInstruction* CreateFDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
 
     // ===== INTEGER COMPARISON =====
-    IRInstruction* CreateICmpEQ(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "")
-    {
-      {
-    return CreateBinaryOp(IROpcode::ICmpEq, lhs, rhs, IRType::GetInt1(), name);
-      }
-    }
+    IRInstruction* CreateICmpEQ(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateICmpNE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateICmpSLT(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateICmpSLE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateICmpSGT(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateICmpSGE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateICmpULT(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateICmpULE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateICmpUGT(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateICmpUGE(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
 
     // ===== FLOAT COMPARISON =====
     IRInstruction* CreateFCmpEQ(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
@@ -99,35 +85,10 @@ public:
     // ===== MEMORY =====
     IRInstruction* CreateAlloca(std::shared_ptr<const IRType> type, const std::string& name = "");
     IRInstruction* CreateLoad(IRBaseValue* ptr, const std::string& name = "");
-    IRInstruction* CreateStore(IRBaseValue* value, IRBaseValue* ptr)
-    // Store has no result (void), and no name
-    auto inst = std::make_unique<IRInstruction>(
-        "",  // No name
-        IRType::GetVoid(),
-        IROpcode::Store,
-        std::vector<IRBaseValue*>{value, ptr},
-        m_insertBlock
-    );
-    
-    return Insert(std::move(inst));
+    IRInstruction* CreateStore(IRBaseValue* value, IRBaseValue* ptr);
 
     // ===== CONTROL FLOW (Terminators) =====
-    void CreateBr(BasicBlock* target)
-    {
-        auto inst = std::make_unique<IRInstruction>(
-            "",
-            IRType::GetVoid(),
-            IROpcode::Br,
-            std::vector<IRBaseValue*>{},  // Target stored differently - see note
-            m_insertBlock
-        );
-        
-        // Update CFG
-        m_insertBlock->AddSuccessor(target);
-        target->AddPredecessor(m_insertBlock);
-        
-        m_insertBlock->AddInstruction(std::move(inst));
-    }
+    void CreateBr(BasicBlock* target);
     void CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* falseBB);
     void CreateRet(IRBaseValue* value);
     void CreateRetVoid();
@@ -151,35 +112,14 @@ private:
     std::string NextTemp();
     
     /// @brief Helper to create binary operations
-    IRInstruction* CreateBinaryOp(IROpcode opcode, 
-                                  IRBaseValue* lhs, 
-                                  IRBaseValue* rhs, 
-                                  std::shared_ptr<const IRType> resultType,
-                                  const std::string& name)
-    {
-        std::string instName = name.empty() ? NextTemp() : name;
-        
-        auto inst = std::make_unique<IRInstruction>(
-            instName,
-            resultType,
-            opcode,
-            std::vector<IRBaseValue*>{lhs, rhs},
-            m_insertBlock
-        );
-    
-      return Insert(std::move(inst));
-    }
+    IRInstruction* CreateBinaryOp(
+        IROpcode opcode, 
+        IRBaseValue* lhs, 
+        IRBaseValue* rhs, 
+        std::shared_ptr<const IRType> resultType,
+        const std::string& name
+    );
     
     /// @brief Insert instruction into current block
     IRInstruction* Insert(std::unique_ptr<IRInstruction> inst);
-    {
-    if (m_insertBlock == nullptr) 
-    {
-        throw std::runtime_error("IRBuilder: No insert block set");
-    }
-    
-    IRInstruction* ptr = inst.get();
-    m_insertBlock->AddInstruction(std::move(inst));
-    return ptr;
-    }
-}
+};
