@@ -6,8 +6,8 @@
 #include <memory>
 #include <map>
 
-#include "includes/backend/codegen/ir/ir_function.h"
-#include "includes/backend/codegen/ir/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_function.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
 
 /// @brief Represents an entire IR module, containing functions and global variables.
 ///

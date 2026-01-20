@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>  // gtest FrameWork
 
-#include "includes/parser/parser_logic.h"
-#include "includes/semantic_analysis/semantic_analysis_logic.h"
-#include "includes/utils/tests_utils.h"
-#include "includes/utils/system_utils.h"
+#include "includes/frontend/parser/parser_logic.h"
+#include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
+#include "includes/shared/utils/tests_utils.h"
+#include "includes/shared/utils/system_utils.h"
 
 
 // TEST: Happy Flow - Single function

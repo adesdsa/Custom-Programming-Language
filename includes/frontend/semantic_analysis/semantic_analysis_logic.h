@@ -1,10 +1,10 @@
 #pragma once
 
-#include "includes/parser/ast.h"
-#include "includes/semantic_analysis/func_table.h"
-#include "includes/semantic_analysis/var_table_node.h"
-#include "includes/semantic_analysis/ast_iterator.h"
-#include "includes/semantic_analysis/semantic_analysis_visitor.h"
+#include "includes/frontend/parser/ast.h"
+#include "includes/frontend/semantic_analysis/func_table.h"
+#include "includes/frontend/semantic_analysis/var_table_node.h"
+#include "includes/frontend/semantic_analysis/ast_iterator.h"
+#include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
 
 struct DecoratedAST
 {

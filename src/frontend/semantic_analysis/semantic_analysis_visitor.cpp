@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/semantic_analysis_visitor.h"
+#include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
 
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,

@@ -1,11 +1,11 @@
-#include "includes/backend/codegen/ir/ir_type.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 IRType::IRType(
-    const IRTypeKind k, 
+    const IRTypeKind kind, 
     std::shared_ptr<const IRType> funcReturnType, 
     std::vector<std::shared_ptr<const IRType>> funcParams
 ) : 
-    m_kind(k),
+    m_kind(kind),
     m_returnType(funcReturnType),
     m_paramTypes(funcParams)
 {}

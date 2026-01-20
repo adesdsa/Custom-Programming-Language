@@ -1,4 +1,4 @@
-#include "includes/backend/codegen/ir/ir_argument.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
 
 IRArgument::IRArgument(
     const std::string& name,

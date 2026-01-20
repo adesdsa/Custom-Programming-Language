@@ -1,4 +1,4 @@
-#include "includes/errors/error_models.h"
+#include "includes/shared/errors/error_models.h"
 
 CompileTimeError::CompileTimeError(
         std::string_view type, 

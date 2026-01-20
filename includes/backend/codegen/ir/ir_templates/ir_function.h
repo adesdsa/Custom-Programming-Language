@@ -5,8 +5,8 @@
 #include <memory>
 #include <map>
 
-#include "includes/backend/codegen/ir/ir_argument.h"
-#include "includes/backend/codegen/ir/ir_basic_block.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_basic_block.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
 
 constexpr int ENTRY_BLOCK_INDEX = 0;
 
@@ -24,8 +24,10 @@ class IRModule;
 class IRFunction 
 {
 public:
-    IRFunction(const std::string& name,
-        std::shared_ptr<const IRType> returnType);
+    IRFunction(
+        const std::string& name,
+        std::shared_ptr<const IRType> returnType
+    );
 
     // <======= Getters =======>
     const std::string& GetName() const noexcept;
@@ -56,7 +58,8 @@ private:
     const std::shared_ptr<const IRType> m_returnType;              
     IRModule* m_parent;  // moudle that own the function                                      
 
-    /// @note: Following contains both vector and map version for best complexity in the job we need to do
+    /// @note: Following contains both vector and map version 
+    // for best complexity in the job we need to do
 
     std::vector<std::unique_ptr<IRArgument>> m_arguments;
     std::map<std::string, IRArgument*> m_argumentMap;

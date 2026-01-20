@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/func_metadata.h"
+#include "includes/frontend/semantic_analysis/func_metadata.h"
 
 FuncMetaData::FuncMetaData(
     const EntityLogger& entityLogger,

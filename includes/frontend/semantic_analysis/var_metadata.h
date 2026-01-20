@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-#include "includes/common/common_consts.h"
+#include "includes/shared/common/common_consts.h"
 
 // Usage example:
 //  scope->currentStackOffset = 0; // start of function

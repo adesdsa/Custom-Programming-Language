@@ -2,13 +2,13 @@
 
 #include <stack>
 
-#include "includes/common/abstract_ast_visitor.h"
-#include "includes/errors/error_manager.h"
-#include "includes/parser/ast_extractor.h"
-#include "includes/semantic_analysis/var_factory.h"
-#include "includes/semantic_analysis/func_factory.h"
-#include "includes/semantic_analysis/semantic_checker_facade.h"
-#include "includes/semantic_analysis/var_metadata.h"
+#include "includes/shared/common/abstract_ast_visitor.h"
+#include "includes/shared/errors/error_manager.h"
+#include "includes/frontend/parser/ast_extractor.h"
+#include "includes/frontend/semantic_analysis/var_factory.h"
+#include "includes/frontend/semantic_analysis/func_factory.h"
+#include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
+#include "includes/frontend/semantic_analysis/var_metadata.h"
 
 class SemanticAnalysisVisitor : public IASTVisitor
 {

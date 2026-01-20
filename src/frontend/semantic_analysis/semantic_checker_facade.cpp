@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/semantic_checker_facade.h"
+#include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
 
 bool SemanticCheckerFacade::m_bLoopFlag = false;
 size_t SemanticCheckerFacade::m_uLoopBlockCnt = 0;

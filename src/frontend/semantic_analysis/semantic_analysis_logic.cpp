@@ -1,6 +1,6 @@
-#include "includes/semantic_analysis/semantic_analysis_logic.h"
-#include "includes/semantic_analysis/semantic_checker_facade.h"
-#include "includes/errors/error_manager.h"
+#include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
+#include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
+#include "includes/shared/errors/error_manager.h"
 
 SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
     m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),

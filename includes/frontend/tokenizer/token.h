@@ -4,7 +4,7 @@
 
 #include "patterns.h"
 
-#include "includes/logger/entity_logger.h"
+#include "includes/shared/logger/entity_logger.h"
 
 // All supported token types
 namespace TokenTypes

@@ -3,8 +3,8 @@
 #include "ast.h"
 #include "full_command.h"
 
-#include "includes/tokenizer/lexer.h"
-#include "includes/errors/error_manager.h"
+#include "includes/frontend/tokenizer/lexer.h"
+#include "includes/shared/errors/error_manager.h"
 
 class ParserLogic
 {

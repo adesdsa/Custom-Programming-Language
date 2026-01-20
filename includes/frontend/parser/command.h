@@ -4,8 +4,8 @@
 #include <string>
 #include <string_view>
 
-#include "includes/tokenizer/token.h"
-#include "includes/errors/error_models.h"
+#include "includes/frontend/tokenizer/token.h"
+#include "includes/shared/errors/error_models.h"
 
 
 namespace CommandTypes

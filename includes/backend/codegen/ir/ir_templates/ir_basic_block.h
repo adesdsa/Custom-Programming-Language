@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include "includes/backend/codegen/ir/ir_instruction.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
 class IRFunction;  // Forward declaration.
 

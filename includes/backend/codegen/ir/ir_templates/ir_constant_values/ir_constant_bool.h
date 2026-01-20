@@ -1,6 +1,6 @@
 #pragma once
 
-#include "includes/backend/codegen/ir/ir_base_value.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 
 /// @brief A class that represents a magic boolean value.
 class IRConstantBool : public IRBaseValue

@@ -1,4 +1,4 @@
-#include "includes/parser/parser_logic.h"
+#include "includes/frontend/parser/parser_logic.h"
 
 ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
     m_entityLogger("PARSER"),

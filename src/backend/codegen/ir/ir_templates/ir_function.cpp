@@ -1,4 +1,5 @@
-#include "includes/backend/codegen/ir/ir_function.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_function.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
 
 IRFunction::IRFunction(
     const std::string& name,

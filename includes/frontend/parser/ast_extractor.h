@@ -6,8 +6,8 @@
 #include "ast.h"
 #include "command.h"
 
-#include "includes/common/common_consts.h"
-#include "includes/semantic_analysis/var_factory.h"
+#include "includes/shared/common/common_consts.h"
+#include "includes/frontend/semantic_analysis/var_factory.h"
 
 /// @brief Extracts raw values from AST nodes
 /// @note Pure utility class, no validation just extraction

@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/var_factory.h"
+#include "includes/frontend/semantic_analysis/var_factory.h"
 
 VarFactory::VarFactory(const EntityLogger& entityLogger):
     m_entityLogger(entityLogger)

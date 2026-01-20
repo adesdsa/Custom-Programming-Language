@@ -4,7 +4,8 @@
 #include <vector>
 
 /// @note: all types based on bits. e.g., Int1 = 1 bit
-enum class IRTypeKind {
+enum class IRTypeKind 
+{
     Void,
     Int1,
     Int8,

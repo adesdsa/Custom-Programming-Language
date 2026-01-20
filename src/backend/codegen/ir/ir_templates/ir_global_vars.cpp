@@ -1,4 +1,4 @@
-#include "includes/backend/codegen/ir/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
 
 IRGlobalVariable::IRGlobalVariable(
     const std::string& name, 

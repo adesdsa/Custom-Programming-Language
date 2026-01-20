@@ -5,7 +5,7 @@
 #include <memory>
 #include <algorithm>
 
-#include "includes/logger/entity_logger.h"
+#include "includes/shared/logger/entity_logger.h"
 
 #include "var_table_node.h"
 

@@ -6,7 +6,7 @@
 #include <memory>
 
 #include "var_metadata.h"
-#include "includes/logger/entity_logger.h"
+#include "includes/shared/logger/entity_logger.h"
 
 class VarTableNode
 {

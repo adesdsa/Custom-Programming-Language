@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/var_table_node.h"
+#include "includes/frontend/semantic_analysis/var_table_node.h"
 
 VarTableNode::VarTableNode(VarTableNode* parent, const EntityLogger& entityLogger):
     m_parent(parent),

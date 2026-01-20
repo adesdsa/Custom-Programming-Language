@@ -1,6 +1,6 @@
 #pragma once
 
-#include "includes/parser/ast.h"
+#include "includes/frontend/parser/ast.h"
 
 /// @brief On-demand + DFS iterator for given ast.
 /// @see DFS - @link https://en.wikipedia.org/wiki/Depth-first_search

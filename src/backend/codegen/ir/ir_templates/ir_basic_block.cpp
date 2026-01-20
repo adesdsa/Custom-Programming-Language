@@ -1,4 +1,4 @@
-#include "includes/backend/codegen/ir/ir_basic_block.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_basic_block.h"
 
 BasicBlock::BasicBlock(const std::string& label) :
     m_label(label),

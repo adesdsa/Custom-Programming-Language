@@ -1,9 +1,8 @@
 #pragma once
 
-#include "ir_base_value.h"
-#include "ir_function.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 
-class IRFunction;  // forward declaration
+class IRFunction;  // Forward declaration (don't include ir_function.h - circular dependency!)
 
 /// @brief The class is used to represent an intermidiate language function arguement.
 /// Lets say we have the next function declaration:

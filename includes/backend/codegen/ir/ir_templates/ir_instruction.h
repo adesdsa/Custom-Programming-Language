@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "includes/backend/codegen/ir/ir_base_value.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 #include "includes/shared/common/codegen/ir/ir_common_types.h"
 
 class BasicBlock;

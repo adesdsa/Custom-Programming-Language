@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/func_factory.h"
+#include "includes/frontend/semantic_analysis/func_factory.h"
 
 FuncFactory::FuncFactory(const EntityLogger &entityLogger) : m_entityLogger(entityLogger) {}
 

@@ -1,4 +1,4 @@
-#include "includes/semantic_analysis/func_table.h"
+#include "includes/frontend/semantic_analysis/func_table.h"
 
 FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName) const
 {

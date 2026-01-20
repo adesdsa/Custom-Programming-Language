@@ -1,7 +1,7 @@
-#include "includes/backend/codegen/ir/ir_instruction.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
-IRInstruction::IRInstruction(c
-    onst std::string& name,
+IRInstruction::IRInstruction(
+    const std::string& name,
     std::shared_ptr<const IRType> type,
     IROpcode opcode,
     std::vector<IRBaseValue*> operands,

@@ -1,4 +1,4 @@
-#include "includes/tokenizer/token_factory.h"
+#include "includes/frontend/tokenizer/token_factory.h"
 
 TokenFactory::TokenFactory(
     const std::filesystem::path& filePath,

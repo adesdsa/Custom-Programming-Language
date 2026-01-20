@@ -1,5 +1,4 @@
-#include "includes/parser/command.h"
-#include "includes/parser/command.h"
+#include "includes/frontend/parser/command.h"
 
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),

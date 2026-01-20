@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 
-#include "includes/backend/codegen/ir/ir_type.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 /// @brief This is an abstract interface class that holds certain metadata
 /// that any llvm IR object that has a value stores.

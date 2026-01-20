@@ -1,4 +1,4 @@
-#include "includes/common/abstract_ast_visitor.h"
+#include "includes/shared/common/abstract_ast_visitor.h"
 
 void IASTVisitor::Visit(ASTNode* node)
 {

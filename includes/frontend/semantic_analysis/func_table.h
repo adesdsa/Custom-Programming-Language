@@ -4,7 +4,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "includes/logger/entity_logger.h"
+#include "includes/shared/logger/entity_logger.h"
 
 #include "func_metadata.h"
 

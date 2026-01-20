@@ -1,8 +1,8 @@
 #pragma once
 
 #include "command.h"
-#include "includes/logger/entity_logger.h"
-#include "includes/errors/error_models.h"
+#include "includes/shared/logger/entity_logger.h"
+#include "includes/shared/errors/error_models.h"
 
 
 //  The class is used to create Commands and check if their
