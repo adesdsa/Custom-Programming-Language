@@ -7,7 +7,7 @@
 
 #include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
-class IRFunction;  // Forward declaration.
+class IRFunction;
 
 /// @brief Represents a single basic block in a function's control-flow graph (CFG).
 ///

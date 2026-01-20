@@ -11,7 +11,7 @@ public:
     
     std::string ToString() const override;
 
-    bool GetBool() const noexcept;
+    bool GetValue() const noexcept;
 
 private:
     bool m_value;
