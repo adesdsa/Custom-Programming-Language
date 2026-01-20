@@ -56,9 +56,11 @@ std::shared_ptr<const IRType> IRType::GetFunction(
     std::shared_ptr<const IRType> returnType, 
     std::vector<std::shared_ptr<const IRType>> paramTypes) 
 {
-    auto instance = std::make_shared<const IRType>(IRTypeKind::Function,
+    auto instance = std::make_shared<const IRType>(
+        IRTypeKind::Function,
         std::move(returnType),
-        std::move(paramTypes));
+        std::move(paramTypes)
+    );
     return instance;
 }
 
@@ -80,7 +82,7 @@ size_t IRType::GetSizeInBytes() const noexcept
 
 IRTypeKind IRType::GetKind() const noexcept
 {
-    return m_kind;
+    return this->m_kind;
 }
 
 std::shared_ptr<const IRType> IRType::GetReturnType() const noexcept

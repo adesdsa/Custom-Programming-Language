@@ -2,7 +2,7 @@
 
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 
-class IRFunction;  // Forward declaration (don't include ir_function.h - circular dependency!)
+class IRFunction;
 
 /// @brief The class is used to represent an intermidiate language function arguement.
 /// Lets say we have the next function declaration:

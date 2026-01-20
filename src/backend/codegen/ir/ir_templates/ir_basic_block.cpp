@@ -2,8 +2,8 @@
 
 BasicBlock::BasicBlock(const std::string& label) :
     m_label(label),
-    m_terminator(nullptr),
-    m_parent(nullptr)
+    m_parent(nullptr),
+    m_terminator(nullptr)
 {}
 
 const std::string& BasicBlock::GetLabel() const noexcept
