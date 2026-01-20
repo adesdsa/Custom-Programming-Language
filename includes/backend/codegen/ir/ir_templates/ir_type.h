@@ -61,4 +61,3 @@ private:
     std::shared_ptr<const IRType> m_returnType;
     std::vector<std::shared_ptr<const IRType>> m_paramTypes;
 };
-
