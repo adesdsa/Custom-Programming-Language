@@ -1,23 +1,8 @@
 #pragma once
 
-#include "includes/frontend/parser/ast.h"
-#include "includes/frontend/semantic_analysis/func_table.h"
-#include "includes/frontend/semantic_analysis/var_table_node.h"
-#include "includes/frontend/semantic_analysis/ast_iterator.h"
+#include "includes/shared/common/ast_helpers/decorated_ast.h"
+#include "includes/shared/common/ast_helpers/ast_iterator.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
-
-struct DecoratedAST
-{
-    const AST& ast;
-    FuncTable funcTable;
-    VarTableNode varTable;
-
-    DecoratedAST(const AST& ast, const EntityLogger& semanticAnalysisLogger) :
-        ast(ast),
-        funcTable(semanticAnalysisLogger),
-        varTable(nullptr, semanticAnalysisLogger)
-    {}
-};
 
 class SemanticAnalysisLogicComponent
 {
