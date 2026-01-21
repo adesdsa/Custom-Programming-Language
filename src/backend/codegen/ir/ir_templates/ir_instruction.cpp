@@ -85,7 +85,7 @@ void IRInstruction::AddOperand(IRBaseValue* operand) noexcept
 
 bool IRInstruction::IsPhi() const noexcept
 {
-    return this->GetType() == IROpcode::Phi;
+    return this->m_opcode == IROpcode::Phi;
 }
 
 void IRInstruction::AddIncoming(IRBaseValue* value, BasicBlock* from)

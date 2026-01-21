@@ -686,7 +686,7 @@ IRInstruction* IRBuilder::CreatePhi(
     );
 
     // Phi nodes must be first in the block
-    return m_insertBlock->InsertPhi(std::move(inst));
+    return InsertPhi(std::move(inst));
 }
 
 const std::vector<std::unique_ptr<IRBaseValue>>& IRBuilder::DumpConstants() const noexcept

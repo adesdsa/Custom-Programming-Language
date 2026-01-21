@@ -79,5 +79,5 @@ void BasicBlock::AddFirstInstruction(std::unique_ptr<IRInstruction> instruction)
         this->m_terminator = instruction.get();
     }
 
-    this->m_instructions.insert(v.begin(), std::move(instruction));
+    this->m_instructions.insert(this->m_instructions.begin(), std::move(instruction));
 }

@@ -5,14 +5,14 @@
 #include <vector>
 #include <memory>
 
-#include "includes/backend/codegen/ir/ir_module.h"
-#include "includes/backend/codegen/ir/ir_function.h"
-#include "includes/backend/codegen/ir/ir_basic_block.h"
-#include "includes/backend/codegen/ir/ir_instruction.h"
-#include "includes/backend/codegen/ir_constant_values/ir_constant_int.h"
-#include "includes/backend/codegen/ir_constant_values/ir_constant_float.h"
-#include "includes/backend/codegen/ir_constant_values/ir_constant_bool.h"
-#include "includes/logger/entity_logger.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_module.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_function.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_basic_block.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_float.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_bool.h"
+#include "includes/shared/logger/entity_logger.h"
 #include "includes/shared/common/codegen/ir/ir_common_types.h"
 
 /// @brief Helper class that simplifies IR construction.
@@ -98,7 +98,7 @@ public:
     IRInstruction* CreateCall(IRFunction* func, const std::vector<IRBaseValue*>& args, const std::string& name = "");
 
     // ===== OTHERS =====
-    IRInstruction* IRBuilder::CreatePhi(std::shared_ptr<const IRType> type, const std::string& name);
+    IRInstruction* CreatePhi(std::shared_ptr<const IRType> type, const std::string& name);
 
     // ===== CONSTANTS =====
     /// @note After calling this function and moving all of the values using std::move call ClearConstants().
@@ -128,5 +128,5 @@ private:
     IRInstruction* Insert(std::unique_ptr<IRInstruction> inst);
 
     /// @brief Insert Phi instruction into current block, must be the first instruction
-    IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
+    IRInstruction* InsertPhi(std::unique_ptr<IRInstruction> inst);
 };
