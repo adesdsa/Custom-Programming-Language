@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>  // gtest FrameWork
 
-#include "includes/tokenizer/lexer.h"
-#include "includes/utils/tests_utils.h"
-#include "includes/utils/system_utils.h"
+#include "includes/frontend/tokenizer/lexer.h"
+#include "includes/shared/utils/tests_utils.h"
+#include "includes/shared/utils/system_utils.h"
 
 // TEST: Empty source file
 TEST(LexerTest, EmptyInput) 
