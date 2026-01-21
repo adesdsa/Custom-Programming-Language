@@ -14,6 +14,7 @@ int main(int argc, const char* argv[])
 
     try
     {
+
         CompilerOrchestrator compilerOrchestrator(argc, argv);
         compilerOrchestrator.MainFlow();
     }
