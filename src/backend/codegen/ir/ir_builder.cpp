@@ -673,6 +673,22 @@ IRInstruction* IRBuilder::CreateCall(
     return Insert(std::move(inst));
 }
 
+IRInstruction* IRBuilder::CreatePhi(
+    std::shared_ptr<const IRType> type,
+    const std::string& name)
+{
+    auto inst = std::make_unique<IRInstruction>(
+        name,
+        type,
+        IROpcode::Phi,
+        std::vector<IRBaseValue*>{}, // incoming values added later
+        m_insertBlock
+    );
+
+    // Phi nodes must be first in the block
+    return m_insertBlock->InsertPhi(std::move(inst));
+}
+
 const std::vector<std::unique_ptr<IRBaseValue>>& IRBuilder::DumpConstants() const noexcept
 {
     return this->m_constants;
@@ -711,7 +727,6 @@ IRInstruction* IRBuilder::CreateBinaryOp(
     return Insert(std::move(inst));
 }
 
-/// @brief Insert instruction into current block
 IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 {
     if (this->m_insertBlock == nullptr) 
@@ -721,5 +736,18 @@ IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 
     IRInstruction* ptr = inst.get();
     this->m_insertBlock->AddInstruction(std::move(inst));
+    return ptr;
+}
+
+/// @brief Insert instruction into current block
+IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
+{
+    if (this->m_insertBlock == nullptr) 
+    {
+        throw std::runtime_error("IRBuilder: No insert block set");
+    }
+
+    IRInstruction* ptr = inst.get();
+    this->m_insertBlock->AddFirstInstruction(std::move(inst));
     return ptr;
 }

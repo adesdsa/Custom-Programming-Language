@@ -41,7 +41,8 @@ public:
     void SetParent(IRFunction* func) noexcept;
     void AddPredecessor(BasicBlock* block);
     void AddSuccessor(BasicBlock* block);
-    void AddInstruction(std::unique_ptr<IRInstruction> instruction);  
+    void AddInstruction(std::unique_ptr<IRInstruction> instruction);
+    void AddFirstInstruction(std::unique_ptr<IRInstruction> instruction);
 
 private:
     const std::string m_label;  // block name                                   

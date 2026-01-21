@@ -68,3 +68,16 @@ void BasicBlock::AddInstruction(std::unique_ptr<IRInstruction> instruction)
 
     this->m_instructions.push_back(std::move(instruction));
 }
+
+void BasicBlock::AddFirstInstruction(std::unique_ptr<IRInstruction> instruction)
+{
+    if (this->m_terminator) return; // After endpoint no more adding.
+
+    instruction->SetParent(this);
+    if (instruction->IsTerminator())
+    {
+        this->m_terminator = instruction.get();
+    }
+
+    this->m_instructions.insert(v.begin(), std::move(instruction));
+}

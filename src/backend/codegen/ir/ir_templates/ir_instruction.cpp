@@ -82,3 +82,31 @@ void IRInstruction::AddOperand(IRBaseValue* operand) noexcept
 {
     this->m_operands.push_back(operand);
 }
+
+bool IRInstruction::IsPhi() const noexcept
+{
+    return this->GetType() == IROpcode::Phi;
+}
+
+void IRInstruction::AddIncoming(IRBaseValue* value, BasicBlock* from)
+{
+    if (!IsPhi()) return;
+
+    this->m_incoming.push_back({ value, from });
+}
+
+size_t IRInstruction::GetNumIncoming() const noexcept
+{
+    return this->m_incoming.size();
+}
+
+const PhiIncoming& IRInstruction::GetIncoming(size_t index) const
+{
+    return this->m_incoming.at(index);
+}
+
+const std::vector<PhiIncoming>& IRInstruction::GetIncomingList() const noexcept
+{
+    return this->m_incoming;
+}
+
