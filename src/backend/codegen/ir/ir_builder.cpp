@@ -3,7 +3,8 @@
 IRBuilder::IRBuilder(const EntityLogger& entitylogger) :
     m_insertBlock(nullptr),
     m_entitylogger(entitylogger),
-    m_tempCounter(0)
+    m_tempCounter(0),
+    m_errorManager(ErrorManager::GetInstance())
 {}
 
 
@@ -475,11 +476,29 @@ IRInstruction* IRBuilder::CreateAnd(
 {
     if (lhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateAnd: lhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateAnd: lhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
     if (rhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateAnd: rhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateAnd: rhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -498,11 +517,29 @@ IRInstruction* IRBuilder::CreateOr(
 {
     if (lhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateOr: lhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateOr: lhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
     if (rhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateOr: rhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateOr: rhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -521,11 +558,29 @@ IRInstruction* IRBuilder::CreateXor(
 {
     if (lhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateXor: lhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateXor: lhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
     if (rhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateXor: rhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateXor: rhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -544,11 +599,29 @@ IRInstruction* IRBuilder::CreateShl(
 {
     if (lhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateShl: lhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateShl: lhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
     if (rhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateShl: rhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateShl: rhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -567,11 +640,29 @@ IRInstruction* IRBuilder::CreateAShr(
 {
     if (lhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateAShr: lhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateAShr: lhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
     if (rhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateAShr: rhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateAShr: rhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -590,11 +681,29 @@ IRInstruction* IRBuilder::CreateLShr(
 {
     if (lhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateLShr:lhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateLShr:lhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
     if (rhs == nullptr)
     {
-        throw std::runtime_error("IRBuilder:CreateLShr: rhs is nullptr");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder:CreateLShr: rhs is nullptr",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -625,12 +734,30 @@ IRInstruction* IRBuilder::CreateLoad(
 {
     if (this->m_insertBlock == nullptr)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     if (ptr == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateLoad: ptr is null");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateLoad: ptr is null",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     return CreateBinaryOp(
@@ -660,18 +787,36 @@ void IRBuilder::CreateBr(BasicBlock* target)
 {
     if (this->m_insertBlock == nullptr)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return;
     }
     if (target == nullptr)
     {
-        throw std::runtime_error("IRBuilder::CreateBr: target is null");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder::CreateBr: target is null",
+                0,
+                0,
+                ""
+            )
+        );
+        return;
     }
 
     auto inst = std::make_unique<IRInstruction>(
         "",
         IRType::GetVoid(),
         IROpcode::Br,
-        std::vector<IRBaseValue*>{},  // Target stored differently - see note
+        std::vector<IRBaseValue*>{},  // Target stored as successor to current block.
         m_insertBlock
     );
     
@@ -686,7 +831,16 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
 {
     if (this->m_insertBlock == nullptr)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return;
     }
 
     auto inst = std::make_unique<IRInstruction>(
@@ -711,7 +865,16 @@ void IRBuilder::CreateRet(IRBaseValue* value)
 {
     if (this->m_insertBlock == nullptr)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return;
     }
 
     auto inst = std::make_unique<IRInstruction>(
@@ -729,7 +892,16 @@ void IRBuilder::CreateRetVoid()
 {
     if (this->m_insertBlock == nullptr)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return;
     }
 
     auto inst = std::make_unique<IRInstruction>(
@@ -819,7 +991,16 @@ IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 {
     if (this->m_insertBlock == nullptr) 
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     }
 
     IRInstruction* ptr = inst.get();
@@ -831,7 +1012,16 @@ IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
 {
     if (this->m_insertBlock == nullptr)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "IRBuilder: No insert block set",
+                0,
+                0,
+                ""
+            )
+        );
+        return nullptr;
     } 
 
     IRInstruction* ptr = inst.get();

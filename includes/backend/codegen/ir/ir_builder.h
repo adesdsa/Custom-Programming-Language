@@ -14,6 +14,7 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_bool.h"
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/shared/common/codegen/ir/ir_common_types.h"
+#include "includes/shared/errors/error_manager.h"
 
 /// @brief Helper class that simplifies IR construction.
 ///
@@ -110,7 +111,9 @@ private:
     BasicBlock* m_insertBlock;   // Where new instructions go
     size_t m_tempCounter;        // For auto-generating names: t0, t1, t2...
     std::vector<std::unique_ptr<IRBaseValue>> m_constants; // After moving the values call ClearConstants().
+    
     const EntityLogger& m_entitylogger;
+    ErrorManager& m_errorManager;
 
     /// @brief Generate next temporary name (t0, t1, t2...)
     std::string NextTemp();
