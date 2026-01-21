@@ -1,4 +1,4 @@
-#include "includes/frontend/semantic_analysis/ast_iterator.h"
+#include "includes/shared/common/ast_helpers/ast_iterator.h"
 
 ASTIterator::ASTIterator(const AST& ast) :
     m_cursor(ast.GetRoot()),

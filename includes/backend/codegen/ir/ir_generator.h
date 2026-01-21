@@ -15,7 +15,34 @@ public:
     IRGenerator(const DecoratedAST& decoratedAST);
     ~IRGenerator() = default;
 
-    /// @note Please provide full pipeline docs
+    /*****************************************************************************
+     * @brief Runs Whole IR Generation Pipeline:                                 |
+     *                                                                           |
+     * INPUT: `decoratedAST`                                                     |
+     * OUTPUT: LLVM like IR stored inside LLVM IRMoudle                          |
+     *                                                                           |
+     *                                                                           |
+     * 1.0  @see `IRGenerator`                                                   |
+     *      @param `DecoratedAST`                                                |
+     *      @brief Iterating through each node in the AST and preform job:       |                                        |
+     *      @return LLVM IR stored inside LLVM IRMoudle                          |                                 |
+     *                                                                           |
+     * 1.1. @see `IRVisitor`                                                     |
+     *      @param ASTNode*                                                      |
+     *      @brief `Detect right handler for the node and call it                |                                        |
+     *      @return None (Save changes at IRMoudle)                              |
+     *                                                                           |
+     *  
+     * 1.1.1 @see `IRBuilder`                                                    |
+     *     @param ASTNode*                                                       |
+     *     @brief Builds IR code based on the command in the ASTNode             |
+     *     @return None (Save changes at IRMoudle)                               |                                                          |
+     *                                                                           |
+     * 1.1.2 @see `Optimizer`                                                    |
+     *     @param IR code from previous step                                     |
+     *     @brief Change the IR code by optimizing it                            |
+     *     @return None (Change the code at IRMoudle)                            |
+     ****************************************************************************/
     const IRModule& MainFlow();
 
 private:
