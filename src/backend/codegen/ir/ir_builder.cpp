@@ -829,13 +829,12 @@ IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 
 IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
 {
-    // insert before first non-Phi
-    auto it = this->m_instructions.begin();
-    while (it != this->m_instructions.end() && (*it)->GetOpcode() == IROpcode::Phi)
+    if (this->m_insertBlock == nullptr)
     {
-        ++it;
-    }
+        throw std::runtime_error("IRBuilder: No insert block set");
+    } 
 
-    it = this->m_instructions.insert(it, std::move(inst));
-    return it->get();
+    IRInstruction* ptr = inst.get();
+    this->m_insertBlock->AddFirstInstruction(std::move(inst));
+    return ptr;
 }

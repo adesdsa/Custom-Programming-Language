@@ -79,5 +79,12 @@ void BasicBlock::AddFirstInstruction(std::unique_ptr<IRInstruction> instruction)
         this->m_terminator = instruction.get();
     }
 
-    this->m_instructions.insert(this->m_instructions.begin(), std::move(instruction));
+    // insert before first non-Phi
+    auto it = this->m_instructions.begin();
+    while (it != this->m_instructions.end() && (*it)->GetOpcode() == IROpcode::Phi)
+    {
+        ++it;
+    }
+
+    it = this->m_instructions.insert(it, std::move(instruction));
 }

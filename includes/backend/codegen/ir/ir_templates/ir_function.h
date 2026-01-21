@@ -4,7 +4,6 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include <cstddef>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_basic_block.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
