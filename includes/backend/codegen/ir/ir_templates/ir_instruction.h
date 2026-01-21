@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
-#include "includes/shared/common/codegen/ir/ir_common_types.h"
+#include "includes/backend/codegen/ir/ir_common_types.h"
 
 class BasicBlock;
 
@@ -40,4 +40,3 @@ private:
     std::vector<IRBaseValue*> m_operands;  // operands of the instruction operation
     BasicBlock* m_parent;  // block of code this instrcution is inside
 };
-
