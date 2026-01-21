@@ -473,11 +473,20 @@ IRInstruction* IRBuilder::CreateAnd(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (lhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateAnd: lhs is nullptr");
+    }
+    if (rhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateAnd: rhs is nullptr");
+    }
+
     return CreateBinaryOp(
         IROpcode::And,
         lhs,
         rhs,
-        IRType::GetInt1(),
+        lhs->GetType(),
         name
     );
 }
@@ -487,11 +496,20 @@ IRInstruction* IRBuilder::CreateOr(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (lhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateOr: lhs is nullptr");
+    }
+    if (rhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateOr: rhs is nullptr");
+    }
+
     return CreateBinaryOp(
         IROpcode::Or,
         lhs,
         rhs,
-        IRType::GetInt1(),
+        lhs->GetType(),
         name
     );
 }
@@ -501,11 +519,20 @@ IRInstruction* IRBuilder::CreateXor(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (lhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateXor: lhs is nullptr");
+    }
+    if (rhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateXor: rhs is nullptr");
+    }
+
     return CreateBinaryOp(
         IROpcode::Xor,
         lhs,
         rhs,
-        IRType::GetInt1(),
+        lhs->GetType(),
         name
     );
 }
@@ -515,11 +542,20 @@ IRInstruction* IRBuilder::CreateShl(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (lhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateShl: lhs is nullptr");
+    }
+    if (rhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateShl: rhs is nullptr");
+    }
+
     return CreateBinaryOp(
         IROpcode::Shl,
         lhs,
         rhs,
-        IRType::GetInt1(),
+        lhs->GetType(),
         name
     );
 }
@@ -529,11 +565,20 @@ IRInstruction* IRBuilder::CreateAShr(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (lhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateAShr: lhs is nullptr");
+    }
+    if (rhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateAShr: rhs is nullptr");
+    }
+
     return CreateBinaryOp(
         IROpcode::AShr,
         lhs,
         rhs,
-        IRType::GetInt1(),
+        lhs->GetType(),
         name
     );
 }
@@ -543,11 +588,20 @@ IRInstruction* IRBuilder::CreateLShr(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (lhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateLShr:lhs is nullptr");
+    }
+    if (rhs == nullptr)
+    {
+        throw std::runtime_error("IRBuilder:CreateLShr: rhs is nullptr");
+    }
+
     return CreateBinaryOp(
         IROpcode::LShr,
         lhs,
         rhs,
-        IRType::GetInt1(),
+        lhs->GetType(),
         name
     );
 }
@@ -569,11 +623,21 @@ IRInstruction* IRBuilder::CreateLoad(
     IRBaseValue* ptr,
     const std::string& name)
 {
+    if (this->m_insertBlock == nullptr)
+    {
+        throw std::runtime_error("IRBuilder: No insert block set");
+    }
+
+    if (ptr == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateLoad: ptr is null");
+    }
+
     return CreateBinaryOp(
         IROpcode::Load,
         ptr,
         nullptr,
-        IRType::GetVoid(),
+        ptr->GetType(),
         name
     );
 }
@@ -594,6 +658,15 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
 
 void IRBuilder::CreateBr(BasicBlock* target)
 {
+    if (this->m_insertBlock == nullptr)
+    {
+        throw std::runtime_error("IRBuilder: No insert block set");
+    }
+    if (target == nullptr)
+    {
+        throw std::runtime_error("IRBuilder::CreateBr: target is null");
+    }
+
     auto inst = std::make_unique<IRInstruction>(
         "",
         IRType::GetVoid(),
@@ -611,6 +684,11 @@ void IRBuilder::CreateBr(BasicBlock* target)
 
 void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* falseBB)
 {
+    if (this->m_insertBlock == nullptr)
+    {
+        throw std::runtime_error("IRBuilder: No insert block set");
+    }
+
     auto inst = std::make_unique<IRInstruction>(
         "",
         IRType::GetVoid(),
@@ -631,6 +709,11 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
 
 void IRBuilder::CreateRet(IRBaseValue* value)
 {
+    if (this->m_insertBlock == nullptr)
+    {
+        throw std::runtime_error("IRBuilder: No insert block set");
+    }
+
     auto inst = std::make_unique<IRInstruction>(
         "",
         value->GetType(),
@@ -644,6 +727,11 @@ void IRBuilder::CreateRet(IRBaseValue* value)
 
 void IRBuilder::CreateRetVoid()
 {
+    if (this->m_insertBlock == nullptr)
+    {
+        throw std::runtime_error("IRBuilder: No insert block set");
+    }
+
     auto inst = std::make_unique<IRInstruction>(
         "",
         IRType::GetVoid(),
@@ -739,15 +827,15 @@ IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
     return ptr;
 }
 
-/// @brief Insert instruction into current block
 IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
 {
-    if (this->m_insertBlock == nullptr) 
+    // insert before first non-Phi
+    auto it = this->m_instructions.begin();
+    while (it != this->m_instructions.end() && (*it)->GetOpcode() == IROpcode::Phi)
     {
-        throw std::runtime_error("IRBuilder: No insert block set");
+        ++it;
     }
 
-    IRInstruction* ptr = inst.get();
-    this->m_insertBlock->AddFirstInstruction(std::move(inst));
-    return ptr;
+    it = this->m_instructions.insert(it, std::move(inst));
+    return it->get();
 }
