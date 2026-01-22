@@ -1056,7 +1056,7 @@ void IRBuilder::CreateBr(BasicBlock* target)
     );
     
     // Update CFG
-    thhis->m_insertBlock->AddSuccessor(target);
+    this->m_insertBlock->AddSuccessor(target);
     target->AddPredecessor(m_insertBlock);
     
     this->m_insertBlock->AddInstruction(std::move(inst));
@@ -1163,7 +1163,7 @@ IRInstruction* IRBuilder::CreateCall(
     if (!this->m_insertBlock)
     {
         StoreInternalError("IRBuilder: No insert block set");
-        return;
+        return nullptr;
     }
 
     auto inst = std::make_unique<IRInstruction>(
