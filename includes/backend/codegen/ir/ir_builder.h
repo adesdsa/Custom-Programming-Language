@@ -132,4 +132,6 @@ private:
 
     /// @brief Insert Phi instruction into current block, must be the first instruction
     IRInstruction* InsertPhi(std::unique_ptr<IRInstruction> inst);
+
+    void StoreInternalError(std::string msg) const;
 };

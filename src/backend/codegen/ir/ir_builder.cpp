@@ -10,6 +10,7 @@ IRBuilder::IRBuilder(const EntityLogger& entitylogger) :
 
 void IRBuilder::SetInsertPoint(BasicBlock* block) noexcept
 {
+    // No need to check that block!=nullptr because we might want to set that there isnt next one.
     this->m_insertBlock = block;
 }
 
@@ -97,6 +98,18 @@ IRInstruction* IRBuilder::CreateAdd(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateAdd: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateAdd: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new Add instruction");
     return CreateBinaryOp(
         IROpcode::Add,
         lhs,
@@ -111,6 +124,18 @@ IRInstruction* IRBuilder::CreateSub(
     IRBaseValue* rhs, 
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateSub: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateSub: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new Sub instruction");
     return CreateBinaryOp(
         IROpcode::Sub,
         lhs,
@@ -125,6 +150,18 @@ IRInstruction* IRBuilder::CreateMul(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateMul: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateMul: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new Mul instruction");
     return CreateBinaryOp(
         IROpcode::Mul,
         lhs,
@@ -139,6 +176,18 @@ IRInstruction* IRBuilder::CreateSDiv(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateSDiv: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateSDiv: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new SDiv instruction");
     return CreateBinaryOp(
         IROpcode::SDiv,
         lhs,
@@ -153,6 +202,18 @@ IRInstruction* IRBuilder::CreateSRem(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateSRem: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateSRem: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new SRem instruction");
     return CreateBinaryOp(
         IROpcode::SRem,
         lhs,
@@ -167,6 +228,18 @@ IRInstruction* IRBuilder::CreateUDiv(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateUDiv: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateUDiv: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new UDiv instruction");
     return CreateBinaryOp(
         IROpcode::UDiv,
         lhs,
@@ -181,6 +254,18 @@ IRInstruction* IRBuilder::CreateURem(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateURem: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateURem: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new URem instruction");
     return CreateBinaryOp(
         IROpcode::URem,
         lhs,
@@ -195,6 +280,18 @@ IRInstruction* IRBuilder::CreateFAdd(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFAdd: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFAdd: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FAdd instruction");
     return CreateBinaryOp(
         IROpcode::FAdd,
         lhs,
@@ -204,10 +301,23 @@ IRInstruction* IRBuilder::CreateFAdd(
     );
 }
 
-IRInstruction* IRBuilder::CreateFSub(IRBaseValue* lhs,
+IRInstruction* IRBuilder::CreateFSub(
+    IRBaseValue* lhs,
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFSub: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFSub: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FSub instruction");
     return CreateBinaryOp(
         IROpcode::FSub,
         lhs,
@@ -222,6 +332,18 @@ IRInstruction* IRBuilder::CreateFMul(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFMul: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFMul: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FMul instruction");
     return CreateBinaryOp(
         IROpcode::FMul,
         lhs,
@@ -236,6 +358,18 @@ IRInstruction* IRBuilder::CreateFDiv(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFDiv: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFDiv: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FDiv instruction");
     return CreateBinaryOp(
         IROpcode::FDiv,
         lhs,
@@ -250,6 +384,18 @@ IRInstruction* IRBuilder::CreateICmpEQ(
     IRBaseValue* rhs,
     const std::string& name)
 {   
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpEQ: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpEQ: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpEQ instruction");
     return CreateBinaryOp(
         IROpcode::ICmpEq,
         lhs,
@@ -264,6 +410,18 @@ IRInstruction* IRBuilder::CreateICmpNE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpNE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpNE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpNE instruction");
     return CreateBinaryOp(
         IROpcode::ICmpNe,
         lhs,
@@ -278,6 +436,18 @@ IRInstruction* IRBuilder::CreateICmpSLT(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSLT: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSLT: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpSLT instruction");
     return CreateBinaryOp(
         IROpcode::ICmpSlt,
         lhs,
@@ -292,6 +462,18 @@ IRInstruction* IRBuilder::CreateICmpSLE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSLE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSLE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpSLE instruction");
     return CreateBinaryOp(
         IROpcode::ICmpSle,
         lhs,
@@ -306,6 +488,18 @@ IRInstruction* IRBuilder::CreateICmpSGT(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSGT: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSGT: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpSGT instruction");
     return CreateBinaryOp(
         IROpcode::ICmpSgt,
         lhs,
@@ -320,6 +514,18 @@ IRInstruction* IRBuilder::CreateICmpSGE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSGE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpSGE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpSGE instruction");
     return CreateBinaryOp(
         IROpcode::ICmpSge,
         lhs,
@@ -334,6 +540,18 @@ IRInstruction* IRBuilder::CreateICmpULT(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpULT: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpULT: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpULT instruction");
     return CreateBinaryOp(
         IROpcode::ICmpUlt,
         lhs,
@@ -348,6 +566,18 @@ IRInstruction* IRBuilder::CreateICmpULE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpULE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpULE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpULE instruction");
     return CreateBinaryOp(
         IROpcode::ICmpUle,
         lhs,
@@ -362,6 +592,18 @@ IRInstruction* IRBuilder::CreateICmpUGT(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpUGT: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpUGT: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpUGT instruction");
     return CreateBinaryOp(
         IROpcode::ICmpUgt,
         lhs,
@@ -376,6 +618,18 @@ IRInstruction* IRBuilder::CreateICmpUGE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpUGE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateICmpUGE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new ICmpUGE instruction");
     return CreateBinaryOp(
         IROpcode::ICmpUge,
         lhs,
@@ -390,6 +644,18 @@ IRInstruction* IRBuilder::CreateFCmpEQ(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpEQ: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpEQ: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FCmpEQ instruction");
     return CreateBinaryOp(
         IROpcode::FCmpEq,
         lhs,
@@ -404,6 +670,18 @@ IRInstruction* IRBuilder::CreateFCmpNE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpNE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpNE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FCmpNE instruction");
     return CreateBinaryOp(
         IROpcode::FCmpNe,
         lhs,
@@ -418,6 +696,18 @@ IRInstruction* IRBuilder::CreateFCmpLT(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpLT: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpLT: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FCmpLT instruction");
     return CreateBinaryOp(
         IROpcode::FCmpLt,
         lhs,
@@ -432,6 +722,18 @@ IRInstruction* IRBuilder::CreateFCmpLE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpLE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpLE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FCmpLE instruction");
     return CreateBinaryOp(
         IROpcode::FCmpLe,
         lhs,
@@ -446,6 +748,18 @@ IRInstruction* IRBuilder::CreateFCmpGT(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpGT: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpGT: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FCmpGT instruction");
     return CreateBinaryOp(
         IROpcode::FCmpGt,
         lhs,
@@ -460,6 +774,18 @@ IRInstruction* IRBuilder::CreateFCmpGE(
     IRBaseValue* rhs,
     const std::string& name)
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpGE: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFCmpGE: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new FCmpGE instruction");
     return CreateBinaryOp(
         IROpcode::FCmpGe,
         lhs,
@@ -474,33 +800,18 @@ IRInstruction* IRBuilder::CreateAnd(
     IRBaseValue* rhs,
     const std::string& name)
 {
-    if (lhs == nullptr)
+    if (!lhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateAnd: lhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateAnd: lhs is nullptr");
         return nullptr;
     }
-    if (rhs == nullptr)
+    if (!rhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateAnd: rhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateAnd: rhs is nullptr");
         return nullptr;
     }
 
+    m_entitylogger.Info("Created a new And instruction");
     return CreateBinaryOp(
         IROpcode::And,
         lhs,
@@ -515,33 +826,18 @@ IRInstruction* IRBuilder::CreateOr(
     IRBaseValue* rhs,
     const std::string& name)
 {
-    if (lhs == nullptr)
+    if (!lhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateOr: lhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateOr: lhs is nullptr");
         return nullptr;
     }
-    if (rhs == nullptr)
+    if (!rhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateOr: rhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateOr: rhs is nullptr");
         return nullptr;
     }
 
+    m_entitylogger.Info("Created a new Or instruction");
     return CreateBinaryOp(
         IROpcode::Or,
         lhs,
@@ -556,33 +852,18 @@ IRInstruction* IRBuilder::CreateXor(
     IRBaseValue* rhs,
     const std::string& name)
 {
-    if (lhs == nullptr)
+    if (!lhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateXor: lhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateXor: lhs is nullptr");
         return nullptr;
     }
-    if (rhs == nullptr)
+    if (!rhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateXor: rhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateXor: rhs is nullptr");
         return nullptr;
     }
 
+    m_entitylogger.Info("Created a new Xor instruction");
     return CreateBinaryOp(
         IROpcode::Xor,
         lhs,
@@ -597,33 +878,18 @@ IRInstruction* IRBuilder::CreateShl(
     IRBaseValue* rhs,
     const std::string& name)
 {
-    if (lhs == nullptr)
+    if (!lhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateShl: lhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateShl: lhs is nullptr");
         return nullptr;
     }
-    if (rhs == nullptr)
+    if (!rhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateShl: rhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateShl: rhs is nullptr");
         return nullptr;
     }
 
+    m_entitylogger.Info("Created a new Shl instruction");
     return CreateBinaryOp(
         IROpcode::Shl,
         lhs,
@@ -638,33 +904,18 @@ IRInstruction* IRBuilder::CreateAShr(
     IRBaseValue* rhs,
     const std::string& name)
 {
-    if (lhs == nullptr)
+    if (!lhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateAShr: lhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateAShr: lhs is nullptr");
         return nullptr;
     }
-    if (rhs == nullptr)
+    if (!rhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateAShr: rhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateAShr: rhs is nullptr");
         return nullptr;
     }
 
+    m_entitylogger.Info("Created a new AShr instruction");
     return CreateBinaryOp(
         IROpcode::AShr,
         lhs,
@@ -679,33 +930,18 @@ IRInstruction* IRBuilder::CreateLShr(
     IRBaseValue* rhs,
     const std::string& name)
 {
-    if (lhs == nullptr)
+    if (!lhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateLShr:lhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateLShr: lhs is nullptr");
         return nullptr;
     }
-    if (rhs == nullptr)
+    if (!rhs)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder:CreateLShr: rhs is nullptr",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateLShr: rhs is nullptr");
         return nullptr;
     }
 
+    m_entitylogger.Info("Created a new LShr instruction");
     return CreateBinaryOp(
         IROpcode::LShr,
         lhs,
@@ -719,58 +955,66 @@ IRInstruction* IRBuilder::CreateAlloca(
     std::shared_ptr<const IRType> type,
     const std::string& name)
 {
-    return CreateBinaryOp(
-        IROpcode::Alloca,
-        nullptr,
-        nullptr,
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
+    std::string instName = name.empty() ? NextTemp() : name;
+    
+    auto inst = std::make_unique<IRInstruction>(
+        name,
         type,
-        name
+        IROpcode::Alloca,
+        std::vector<IRBaseValue*>{},
+        m_insertBlock
     );
+
+    m_entitylogger.Info("Created a new Alloca instruction");
+    return Insert(std::move(inst));
 }
 
 IRInstruction* IRBuilder::CreateLoad(
     IRBaseValue* ptr,
     const std::string& name)
 {
-    if (this->m_insertBlock == nullptr)
+    if (!this->m_insertBlock)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
+    if (!ptr)
+    {
+        StoreInternalError("IRBuilder::CreateLoad: ptr is null");
         return nullptr;
     }
 
-    if (ptr == nullptr)
-    {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateLoad: ptr is null",
-                0,
-                0,
-                ""
-            )
-        );
-        return nullptr;
-    }
-
-    return CreateBinaryOp(
-        IROpcode::Load,
-        ptr,
-        nullptr,
+    std::string instName = name.empty() ? NextTemp() : name;
+    
+    auto inst = std::make_unique<IRInstruction>(
+        name,
         ptr->GetType(),
-        name
+        IROpcode::Load,
+        std::vector<IRBaseValue*>{ptr},
+        m_insertBlock
     );
+
+    m_entitylogger.Info("Created a new Load instruction");
+    return Insert(std::move(inst));
 }
 
 IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
 {
+    if (!value)
+    {
+        StoreInternalError("IRBuilder::CreateStore: value is null");
+        return nullptr;
+    }
+    if (!ptr)
+    {
+        StoreInternalError("IRBuilder::CreateStore: ptr is null");
+    }
+        
     // Store has no result (void), and no name
     auto inst = std::make_unique<IRInstruction>(
         "",  // No name
@@ -780,35 +1024,20 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
         m_insertBlock
     );
 
+    m_entitylogger.Info("Created a new Store instruction");
     return Insert(std::move(inst));
 }
 
 void IRBuilder::CreateBr(BasicBlock* target)
 {
-    if (this->m_insertBlock == nullptr)
+    if (!this->m_insertBlock)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder: No insert block set");
         return;
     }
-    if (target == nullptr)
+    if (!target)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder::CreateBr: target is null",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateBr: target is null");
         return;
     }
 
@@ -825,21 +1054,28 @@ void IRBuilder::CreateBr(BasicBlock* target)
     target->AddPredecessor(m_insertBlock);
     
     m_insertBlock->AddInstruction(std::move(inst));
+    m_entitylogger.Info("Handled a new Br instruction");
 }
 
 void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* falseBB)
 {
-    if (this->m_insertBlock == nullptr)
+    if (!cond)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateCondBr: cond is null");
+        return nullptr;
+    }
+    if (!trueBB)
+    {
+        StoreInternalError("IRBuilder::CreateCondBr: trueBB is null");
+    }
+    if (!falseBB)
+    {
+        StoreInternalError("IRBuilder::CreateCondBr: falseBB is null");
+        return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
         return;
     }
 
@@ -859,21 +1095,19 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
     falseBB->AddPredecessor(m_insertBlock);
     
     m_insertBlock->AddInstruction(std::move(inst));
+    m_entitylogger.Info("Handled a new CondBr instruction");
 }
 
 void IRBuilder::CreateRet(IRBaseValue* value)
 {
-    if (this->m_insertBlock == nullptr)
+    if (!value)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::CreateRet: value is null");
+        return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
         return;
     }
 
@@ -886,21 +1120,14 @@ void IRBuilder::CreateRet(IRBaseValue* value)
     );
     
     m_insertBlock->AddInstruction(std::move(inst));
+    m_entitylogger.Info("Handled a new Ret instruction");
 }
 
 void IRBuilder::CreateRetVoid()
 {
-    if (this->m_insertBlock == nullptr)
+    if (!this->m_insertBlock)
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder: No insert block set");
         return;
     }
 
@@ -913,6 +1140,7 @@ void IRBuilder::CreateRetVoid()
     );
     
     m_insertBlock->AddInstruction(std::move(inst));
+    m_entitylogger.Info("Handled a new RetVoid instruction");
 }
 
 IRInstruction* IRBuilder::CreateCall(
@@ -920,6 +1148,12 @@ IRInstruction* IRBuilder::CreateCall(
     const std::vector<IRBaseValue*>& args,
     const std::string& name)
 {
+    if (!func)
+    {
+        StoreInternalError("IRBuilder::CreateCall: func is null");
+        return nullptr;
+    }
+
     auto inst = std::make_unique<IRInstruction>(
         name,
         func->GetReturnType(),
@@ -930,6 +1164,7 @@ IRInstruction* IRBuilder::CreateCall(
 
     inst->SetCalledFunction(func);
 
+    m_entitylogger.Info("Created a new Call instruction");
     return Insert(std::move(inst));
 }
 
@@ -937,6 +1172,12 @@ IRInstruction* IRBuilder::CreatePhi(
     std::shared_ptr<const IRType> type,
     const std::string& name)
 {
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return;
+    }
+
     auto inst = std::make_unique<IRInstruction>(
         name,
         type,
@@ -945,6 +1186,7 @@ IRInstruction* IRBuilder::CreatePhi(
         m_insertBlock
     );
 
+    m_entitylogger.Info("Created a new Phi instruction");
     // Phi nodes must be first in the block
     return InsertPhi(std::move(inst));
 }
@@ -963,6 +1205,7 @@ std::string IRBuilder::NextTemp()
 {
     std::string name = "t" + std::to_string(this->m_tempCounter);
     this->m_tempCounter++;
+    m_entitylogger.Info("New temp is: " + name);
     return name;
 }
 
@@ -974,6 +1217,17 @@ IRInstruction* IRBuilder::CreateBinaryOp(
     const std::string& name
 )
 {
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateBinaryOp: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateBinaryOp: rhs is nullptr");
+        return nullptr;
+    }
+
     std::string instName = name.empty() ? NextTemp() : name;
     
     auto inst = std::make_unique<IRInstruction>(
@@ -989,17 +1243,14 @@ IRInstruction* IRBuilder::CreateBinaryOp(
 
 IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 {
-    if (this->m_insertBlock == nullptr) 
+    if (!inst.get())
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::Insert: inst is nullptr");
+        return nullptr;
+    }
+    if (!this->m_insertBlock) 
+    {
+        StoreInternalError("IRBuilder: No insert block set");
         return nullptr;
     }
 
@@ -1010,21 +1261,31 @@ IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 
 IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
 {
-    if (this->m_insertBlock == nullptr)
+    if (!inst.get())
     {
-        m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "IRBuilder: No insert block set",
-                0,
-                0,
-                ""
-            )
-        );
+        StoreInternalError("IRBuilder::Insert: inst is nullptr");
+        return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
         return nullptr;
     } 
 
     IRInstruction* ptr = inst.get();
     this->m_insertBlock->AddFirstInstruction(std::move(inst));
     return ptr;
+}
+
+void IRBuilder::StoreInternalError(std::string msg) const
+{
+    m_errorManager.StoreError(
+        CompileTimeError(
+            ErrorTypes::INTERNAL_ERROR,
+            msg,
+            0,
+            0,
+            ""
+        )
+    );
 }
