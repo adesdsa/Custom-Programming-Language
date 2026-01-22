@@ -1,7 +1,7 @@
 #include "includes/backend/codegen/ir/ir_generator.h"
 
 IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
-    m_IRLogger("IR"),
+    m_IRLogger("IR GENERATOR"),
     m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(decoratedAST.ast),
     m_irMoudle("program") // TODO: put the output file name instead
