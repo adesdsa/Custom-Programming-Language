@@ -8,6 +8,7 @@
 #include "includes/shared/utils/system_utils.h"
 #include "includes/frontend/parser/parser_logic.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
+#include "includes/backend/codegen/code_gen_manager.h"
 
 // Manager of all compilers components.
 // performs the complete compiling process.             

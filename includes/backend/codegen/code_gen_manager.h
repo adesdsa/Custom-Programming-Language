@@ -2,6 +2,9 @@
 
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 
+// Sub-Managers
+#include "includes/backend/codegen/ir/ir_generator.h"
+
 /**
     * Responsible for converting each source code into .o bin file.
     *
