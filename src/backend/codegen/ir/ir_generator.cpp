@@ -23,6 +23,6 @@ const IRModule& IRGenerator::MainFlow()
         this->m_errorManager.HandleErrors();
     }
 
-    this->m_semanticAnalysisLogger.Info("Finished generating ir");
+    this->m_IRLogger.Info("Finished generating IR");
     return this->m_irMoudle;
 }
