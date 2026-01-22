@@ -6,6 +6,6 @@ CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST) :
 
 void CodeGenManager::MainFlow()
 {
-    IRGenerator irGenerator(this->m_decoratedAST)
+    IRGenerator irGenerator(this->m_decoratedAST);
     (void)irGenerator.MainFlow();
 }
