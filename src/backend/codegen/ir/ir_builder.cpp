@@ -1062,7 +1062,7 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
     if (!cond)
     {
         StoreInternalError("IRBuilder::CreateCondBr: cond is null");
-        return nullptr;
+        return;
     }
     if (!trueBB)
     {
@@ -1071,7 +1071,7 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
     if (!falseBB)
     {
         StoreInternalError("IRBuilder::CreateCondBr: falseBB is null");
-        return nullptr;
+        return;
     }
     if (!this->m_insertBlock)
     {
@@ -1103,7 +1103,7 @@ void IRBuilder::CreateRet(IRBaseValue* value)
     if (!value)
     {
         StoreInternalError("IRBuilder::CreateRet: value is null");
-        return nullptr;
+        return;
     }
     if (!this->m_insertBlock)
     {
@@ -1175,7 +1175,7 @@ IRInstruction* IRBuilder::CreatePhi(
     if (!this->m_insertBlock)
     {
         StoreInternalError("IRBuilder: No insert block set");
-        return;
+        return nullptr;
     }
 
     auto inst = std::make_unique<IRInstruction>(
