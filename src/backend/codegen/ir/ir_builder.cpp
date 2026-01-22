@@ -963,11 +963,11 @@ IRInstruction* IRBuilder::CreateAlloca(
     std::string instName = name.empty() ? NextTemp() : name;
     
     auto inst = std::make_unique<IRInstruction>(
-        name,
+        instName,
         type,
         IROpcode::Alloca,
         std::vector<IRBaseValue*>{},
-        m_insertBlock
+        this->m_insertBlock
     );
 
     m_entitylogger.Info("Created a new Alloca instruction");
@@ -992,11 +992,11 @@ IRInstruction* IRBuilder::CreateLoad(
     std::string instName = name.empty() ? NextTemp() : name;
     
     auto inst = std::make_unique<IRInstruction>(
-        name,
+        instName,
         ptr->GetType(),
         IROpcode::Load,
         std::vector<IRBaseValue*>{ptr},
-        m_insertBlock
+        this->m_insertBlock
     );
 
     m_entitylogger.Info("Created a new Load instruction");
@@ -1013,6 +1013,12 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
     if (!ptr)
     {
         StoreInternalError("IRBuilder::CreateStore: ptr is null");
+        return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
     }
         
     // Store has no result (void), and no name
@@ -1021,7 +1027,7 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
         IRType::GetVoid(),
         IROpcode::Store,
         std::vector<IRBaseValue*>{value, ptr},
-        m_insertBlock
+        this->m_insertBlock
     );
 
     m_entitylogger.Info("Created a new Store instruction");
@@ -1046,14 +1052,14 @@ void IRBuilder::CreateBr(BasicBlock* target)
         IRType::GetVoid(),
         IROpcode::Br,
         std::vector<IRBaseValue*>{},  // Target stored as successor to current block.
-        m_insertBlock
+        this->m_insertBlock
     );
     
     // Update CFG
-    m_insertBlock->AddSuccessor(target);
+    thhis->m_insertBlock->AddSuccessor(target);
     target->AddPredecessor(m_insertBlock);
     
-    m_insertBlock->AddInstruction(std::move(inst));
+    this->m_insertBlock->AddInstruction(std::move(inst));
     m_entitylogger.Info("Handled a new Br instruction");
 }
 
@@ -1067,6 +1073,7 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
     if (!trueBB)
     {
         StoreInternalError("IRBuilder::CreateCondBr: trueBB is null");
+        return;
     }
     if (!falseBB)
     {
@@ -1084,17 +1091,17 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
         IRType::GetVoid(),
         IROpcode::CondBr,
         std::vector<IRBaseValue*>{cond},
-        m_insertBlock
+        this->m_insertBlock
     );
     
     // Update CFG
-    m_insertBlock->AddSuccessor(trueBB);
-    trueBB->AddPredecessor(m_insertBlock);
+    this->m_insertBlock->AddSuccessor(trueBB);
+    trueBB->AddPredecessor(this->m_insertBlock);
 
-    m_insertBlock->AddSuccessor(falseBB);
-    falseBB->AddPredecessor(m_insertBlock);
+    this->m_insertBlock->AddSuccessor(falseBB);
+    falseBB->AddPredecessor(this->m_insertBlock);
     
-    m_insertBlock->AddInstruction(std::move(inst));
+    this->m_insertBlock->AddInstruction(std::move(inst));
     m_entitylogger.Info("Handled a new CondBr instruction");
 }
 
@@ -1116,10 +1123,10 @@ void IRBuilder::CreateRet(IRBaseValue* value)
         value->GetType(),
         IROpcode::Ret,
         std::vector<IRBaseValue*>{value},
-        m_insertBlock
+        this->m_insertBlock
     );
     
-    m_insertBlock->AddInstruction(std::move(inst));
+    this->m_insertBlock->AddInstruction(std::move(inst));
     m_entitylogger.Info("Handled a new Ret instruction");
 }
 
@@ -1136,10 +1143,10 @@ void IRBuilder::CreateRetVoid()
         IRType::GetVoid(),
         IROpcode::Ret,
         std::vector<IRBaseValue*>{},
-        m_insertBlock
+        this->m_insertBlock
     );
     
-    m_insertBlock->AddInstruction(std::move(inst));
+    this->m_insertBlock->AddInstruction(std::move(inst));
     m_entitylogger.Info("Handled a new RetVoid instruction");
 }
 
@@ -1152,6 +1159,11 @@ IRInstruction* IRBuilder::CreateCall(
     {
         StoreInternalError("IRBuilder::CreateCall: func is null");
         return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return;
     }
 
     auto inst = std::make_unique<IRInstruction>(
@@ -1183,7 +1195,7 @@ IRInstruction* IRBuilder::CreatePhi(
         type,
         IROpcode::Phi,
         std::vector<IRBaseValue*>{}, // incoming values added later
-        m_insertBlock
+        this->m_insertBlock
     );
 
     m_entitylogger.Info("Created a new Phi instruction");
@@ -1227,6 +1239,11 @@ IRInstruction* IRBuilder::CreateBinaryOp(
         StoreInternalError("IRBuilder::CreateBinaryOp: rhs is nullptr");
         return nullptr;
     }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
 
     std::string instName = name.empty() ? NextTemp() : name;
     
@@ -1235,7 +1252,7 @@ IRInstruction* IRBuilder::CreateBinaryOp(
         resultType,
         opcode,
         std::vector<IRBaseValue*>{lhs, rhs},
-        m_insertBlock
+        this->m_insertBlock
     );
 
     return Insert(std::move(inst));
