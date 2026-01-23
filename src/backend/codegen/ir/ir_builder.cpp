@@ -2,8 +2,8 @@
 
 IRBuilder::IRBuilder(const EntityLogger& entitylogger) :
     m_insertBlock(nullptr),
-    m_entitylogger(entitylogger),
     m_tempCounter(0),
+    m_entitylogger(entitylogger),
     m_errorManager(ErrorManager::GetInstance())
 {}
 
