@@ -44,6 +44,9 @@ public:
     void AddInstruction(std::unique_ptr<IRInstruction> instruction);
     void AddFirstInstruction(std::unique_ptr<IRInstruction> instruction);
 
+    // Remove given instruction from this block
+    void RemoveInstruction(IRInstruction* instruction);
+
 private:
     const std::string m_label;  // block name                                   
     IRFunction* m_parent;  // owner of the block                                  
