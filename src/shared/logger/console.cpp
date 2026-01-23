@@ -27,7 +27,7 @@ void Console::Log(const LogMessage& logMessage) const noexcept
 {
     const std::string k_sEntityColor = this->m_supportsColor ? logMessage.entity.sColor : "";
     const std::string k_sLevelColor = this->m_supportsColor ? logMessage.debugLevel.sColor : "";
-    const int k_nEntityWidth = 12;
+    const int k_nEntityWidth = 18;
     const int k_nLevelWidth  = 8;
 
     std::cout
