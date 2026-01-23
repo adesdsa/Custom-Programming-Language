@@ -54,6 +54,8 @@ public:
 
     BasicBlock* AddBasicBlock(const std::string& label);
 
+    void RemoveBasicBlock(BasicBlock* basicBlock);
+
 private:
     const std::string m_name;                                      
     const std::shared_ptr<const IRType> m_returnType;              
