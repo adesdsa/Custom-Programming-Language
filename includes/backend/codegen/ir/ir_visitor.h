@@ -8,6 +8,7 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_function.h"
 #include "includes/frontend/parser/ast_extractor.h"
 #include "includes/backend/codegen/ir/ir_builder.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 
 
 /// @todo check that code after Br isnt added
@@ -84,6 +85,8 @@ private:
     \**********************/
     IRInstruction* m_lastSavedInstruction;
     const VarMetaData& m_currVarMetaData;
+
+    bool m_expectedReturnValue;
 
     /**********************\
     |    Helper Methods    |
