@@ -1,6 +1,6 @@
 #pragma once
 
-#include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
+#include "ir_base_value.h"
 
 class IRFunction;
 

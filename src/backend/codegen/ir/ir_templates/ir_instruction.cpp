@@ -50,6 +50,21 @@ bool IRInstruction::IsTerminator() const noexcept
     );
 }
 
+bool IRInstruction::IsFuncCall() const noexcept
+{
+    return this->m_calledFunc != nullptr;
+}
+
+void IRInstruction::SetCalledFunction(IRFunction* func) noexcept
+{
+    this->m_calledFunc = func;
+}
+
+IRFunction* IRInstruction::GetCalledFunction() const noexcept
+{
+    return this->m_calledFunc;
+}
+
 std::string IRInstruction::ToString() const
 {
     // some instructions do not have a name
@@ -67,3 +82,31 @@ void IRInstruction::AddOperand(IRBaseValue* operand) noexcept
 {
     this->m_operands.push_back(operand);
 }
+
+bool IRInstruction::IsPhi() const noexcept
+{
+    return this->m_opcode == IROpcode::Phi;
+}
+
+void IRInstruction::AddIncoming(IRBaseValue* value, BasicBlock* from)
+{
+    if (!IsPhi()) return;
+
+    this->m_incoming.push_back({ value, from });
+}
+
+size_t IRInstruction::GetNumIncoming() const noexcept
+{
+    return this->m_incoming.size();
+}
+
+const PhiIncoming& IRInstruction::GetIncoming(size_t index) const
+{
+    return this->m_incoming.at(index);
+}
+
+const std::vector<PhiIncoming>& IRInstruction::GetIncomingList() const noexcept
+{
+    return this->m_incoming;
+}
+

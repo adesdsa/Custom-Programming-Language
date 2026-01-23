@@ -7,6 +7,7 @@
 
 #include "includes/backend/codegen/ir/ir_templates/ir_basic_block.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 constexpr int ENTRY_BLOCK_INDEX = 0;
 

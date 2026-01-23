@@ -16,7 +16,6 @@ enum class IROpcode
     FSub,       // %r = fsub float %a, %b
     FMul,       // %r = fmul float %a, %b
     FDiv,       // %r = fdiv float %a, %b
-    FRem,       // %r = frem float %a, %b
 
     // Bitwise
     And,        // %r = and i32 %a, %b

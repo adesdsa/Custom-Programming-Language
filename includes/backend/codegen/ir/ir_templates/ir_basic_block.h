@@ -41,7 +41,8 @@ public:
     void SetParent(IRFunction* func) noexcept;
     void AddPredecessor(BasicBlock* block);
     void AddSuccessor(BasicBlock* block);
-    void AddInstruction(std::unique_ptr<IRInstruction> instruction);  
+    void AddInstruction(std::unique_ptr<IRInstruction> instruction);
+    void AddFirstInstruction(std::unique_ptr<IRInstruction> instruction);
 
 private:
     const std::string m_label;  // block name                                   
@@ -52,5 +53,6 @@ private:
     IRInstruction* m_terminator;  // ret, br etc...
     
     std::vector<BasicBlock*> m_predecessors;  // blocks that jump to here
-    std::vector<BasicBlock*> m_successors;    // blocks we jump to
+    std::vector<BasicBlock*> m_successors;    // blocks we jump to(if there are 2 it was a CondBr):
+                                              // If we are in a CondBr the first successor is the true, the second is the false
 };
