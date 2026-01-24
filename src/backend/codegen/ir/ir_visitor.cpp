@@ -4,11 +4,13 @@ IRVisitor::IRVisitor() {}
 
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
+    /// Getting the varMetaData
     std::string varName = ASTExtractor::ExtractVarName(node);
     const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
     if (!varMetaData) return;
-    m_currVarMetaData = varMetaData;
+    m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
 
+    // The var is saved differently if it is global or local.
     if (varMetaData.scope == Scope::GLOBAL)
     {
         m_currModule.AddVariable
@@ -40,6 +42,7 @@ void IRVisitor::VisitExpression(ASTNode* node)
 
 void IRVisitor::VisitIdentifier(ASTNode* node)
 {
+    // Getting the varMetaData and saving it for later use incase of assignment.
     std::string varName = ASTExtractor::ExtractVarName(node);
     const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
     if (!varMetaData) return;
@@ -48,17 +51,19 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
 
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
 {
-    (void)HandleVariableValue(node->command);
+    (void)HandleIdentifierValue(node->command);
 }
 
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
-    /// @todo implement
+    /// @todo check that funcCall and indetifierValue realy do return the value as m_lastSavedValue
+    // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
         this->m_irbuilder.CreateStore(
             this->m_lastSavedValue,
-            IRBaseValue(
+            /// @todo check where local vars are saved because right now the pointer is dangling
+            new IRBaseValue( 
                 varMetaData.sName,
                 TypeToIRType(
                     varMetaData.type
@@ -75,14 +80,10 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
-    const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
-    if (!funcMetaData) return;
-    this->m_currFunc = this->m_currModule.AddFunction(funcMetaData.GetName(), funcMetaData.GetRType());
-    for (auto argMetaData : funcMetaData.GetFuncParams())
-    {
-        this->m_currFunc.AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
-    }
-    m_blockHistory.push(BlockKind::functionBlock);
+    VisitFuncDefinition();
+    IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[0].GetValue());
+    if (!foundFunc) return;
+    this->m_currFunc = foundFunc;
 }
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
@@ -174,7 +175,14 @@ void IRVisitor::VisitSizeof(ASTNode* node)
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
-    /// @todo create the func inside the module
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
+    if (!funcMetaData) return;
+    IRFunction* createdFunc = this->m_currModule.AddFunction(funcMetaData.GetName(), funcMetaData.GetRType());
+
+    for (auto argMetaData : funcMetaData.GetFuncParams())
+    {
+        createdFunc.AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
+    }
 }
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
@@ -493,7 +501,7 @@ bool IRVisitor::CheckFloatness(Token token)
     return token.GetValue().find('.') != std::string::npos;
 }
 
-IRBaseValue* IRVisitor::HandleVariableValue(Command command)
+IRBaseValue* IRVisitor::HandleIdentifierValue(Command command)
 {
     /// @todo Check func correctness
     /// It should get an IdentifierValue using IRBuilder::CreateLoad
@@ -735,7 +743,7 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
                 if (!varMetaData) return;
                 if (varMetaData.type == Type::UNSIGNED_INT_TYPE) signage = true;
                 else if (varMetaData.type == Type::DOUBLE_TYPE) floatness = true;
-                rhs = HandleVariableValue(innerCommand);
+                rhs = HandleIdentifierValue(innerCommand);
             }
             else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
             {

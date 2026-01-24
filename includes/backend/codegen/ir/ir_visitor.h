@@ -100,7 +100,7 @@ private:
     |   Curr IRTemplates   |
     \**********************/
     IRModule& m_currModule;
-    IRFunction& m_currFunc;
+    IRFunction* m_currFunc;
     
     /**********************\
     |      IRBuilder       |
@@ -141,7 +141,7 @@ private:
     /// @brief Adds all the related IRInstructions to var load
     /// @param command 
     /// @return The value of the variable
-    IRBaseValue* HandleVariableValue(Command command);
+    IRBaseValue* HandleIdentifierValue(Command command);
     /// @brief Adds all the related IRInstructions to func call
     /// @param command 
     /// @return The value of the variable
