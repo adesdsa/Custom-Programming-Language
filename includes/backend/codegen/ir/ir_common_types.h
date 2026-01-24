@@ -59,3 +59,25 @@ enum class IROpcode
     // SSA
     Phi         // %r = phi i32 [%a, %bb1], [%b, %bb2]
 };
+
+enum class Operators
+{
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    And,
+    Or,
+    Xor,
+    Shl,
+    LShr,
+    AShr,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    None
+};

@@ -9,6 +9,7 @@
 #include "includes/frontend/parser/ast_extractor.h"
 #include "includes/backend/codegen/ir/ir_builder.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
+#include "includes/backend/codegen/ir/ir_common_types.h"
 
 
 /// @todo check that code after Br isnt added
@@ -92,4 +93,21 @@ private:
     |    Helper Methods    |
     \**********************/
     IRType TypeToIRType(Type type);
+    IRBaseValue* ValueToConstIR(Token token);
+    IRInstruction* ChooseOperation(Operators usedOperator, IRBaseValue* lsh, IRBaseValue* rsh, bool signage, bool floatness);
+    Operators TokenizerOperatorToIROperator(Token token);
+    bool CheckSignage(Token token);
+    bool CheckFloatness(Token token);
+    /// @brief Adds all the related IRInstructions to var load
+    /// @param command 
+    /// @return The value of the variable
+    IRBaseValue* HandleVariableValue(Command command);
+    /// @brief Adds all the related IRInstructions to func call
+    /// @param command 
+    /// @return The value of the variable
+    IRBaseValue* HandleFuncCall(Command command);
+    /// @brief Adds all the related IRInstructions to func call
+    /// @param command 
+    /// @return The value of the variable
+    IRBaseValue* HandleSizeof(Command command);
 }

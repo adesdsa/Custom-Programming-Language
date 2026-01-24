@@ -31,7 +31,207 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
 
 void IRVisitor::VisitExpression(ASTNode* node)
 {
+    size_t paramIndex = 0;
+    size_t notCnt = 0;
+    IRInstruction* lastValue = nullptr;
+    Operators lastOperator = Operators::None;
+    bool signage = false;
+    bool floatness = false;
 
+    for (auto token : node->command.GetTokens())
+    {
+        if (token.GetType() == TokenTypes::HAS_PARAM)
+        {
+            Command innerCommand = node->command[paramIndex];
+            IRBaseValue* rhs = nullptr;
+            if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
+            {
+                const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(innerCommand[0]);
+                if (!varMetaData) return;
+                if (varMetaData.type == Type::UNSIGNED_INT_TYPE) signage = true;
+                else if (varMetaData.type == Type::DOUBLE_TYPE) floatness = true;
+                rhs = HandleVariableValue(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+            {
+                const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
+                if (!funcMetaData) return;
+                if (funcMetaData.GetRType() == Type::UNSIGNED_INT_TYPE) signage = true;
+                else if (funcMetaData.GetRType() == Type::DOUBLE_TYPE) floatness = true;
+                rhs = HandleFuncCall(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::SIZEOF)
+            {
+                rhs = HandleSizeof(innerCommand);
+            }
+
+            if (!lastValue) // Incase it's epxression start
+            {
+                if (notCnt != 0) // This means the epxression started with nots
+                {
+                    if (notCnt % 2 == 0) // The nots disabled themselves
+                    {
+                        lastValue = rhs;
+                    }
+                    else
+                    {
+                        lastValue = this->m_irbuilder.CreateAnd(
+                            this->m_irbuilder.GetBool(false),
+                            rhs
+                        );
+                    }
+                    notCnt = 0; // reset
+                }
+                else if (lastOperator != Operators::None) // The expression started with a minus '-'
+                {
+                    lastValue = this->m_irbuilder.CreateMul(
+                        ValueToConstIR(
+                            Token(
+                                "-",
+                                TokenTypes::VALUE,
+                                0,
+                                0
+                            )
+                        ),
+                        rhs
+                    );
+                }
+                else // Expression starter
+                {
+                    lastValue = rhs;
+                }
+            }
+            else if (notCnt != 0)
+            {
+                if (notCnt % 2 != 0) // The nots didnt disable themselves
+                {
+                    lastValue = this->m_irbuilder.CreateAnd(
+                        this->m_irbuilder.GetBool(false),
+                        rhs
+                    );
+                }
+
+                lastValue = ChooseOperation(
+                    lastOperator,
+                    lastValue,
+                    rhs,
+                    signage,
+                    floatness
+                );
+                notCnt = 0; // reset
+            }
+            else
+            {
+                lastValue = ChooseOperation(
+                    lastOperator,
+                    lastValue,
+                    rhs,
+                    signage,
+                    floatness
+                );
+            }
+            paramIndex++;
+        }
+        else if (token.GetType() == TokenTypes::VALUE)
+        {
+            if (CheckSignage(token)) signage = true;
+            if (CheckFloatness(token)) floatness = true;
+
+            IRBaseValue* value = ValueToConstIR(token);
+
+            if (!lastValue) // Incase it's epxression start
+            {
+                if (notCnt != 0) // This means the epxression started with nots
+                {
+                    if (notCnt % 2 == 0) // The nots disabled themselves
+                    {
+                        // Creating meaningless operation to save the value
+                        lastValue = ChooseOperation(
+                            Operators::Add,
+                            0,
+                            value,
+                            signage,
+                            floatness
+                        );
+                    }
+                    else
+                    {
+                        lastValue = this->m_irbuilder.CreateAnd(
+                            this->m_irbuilder.GetBool(false),
+                            value
+                        );
+                    }
+                    notCnt = 0; // reset
+                }
+                else if (lastOperator != Operators::None) // The expression started with a minus '-'
+                {
+                    lastValue = this->m_irbuilder.CreateMul(
+                        ValueToConstIR(
+                            Token(
+                                "-",
+                                TokenTypes::VALUE,
+                                0,
+                                0
+                            )
+                        ),
+                        value
+                    );
+                }
+                else // Expression starter
+                {
+                    // Creating meaningless operation to save the value
+                    lastValue = ChooseOperation(
+                        Operators::Add,
+                        0,
+                        value,
+                        signage,
+                        floatness
+                    );
+                }
+            }
+            else if (notCnt != 0)
+            {
+                if (notCnt % 2 != 0) // The nots didnt disable themselves
+                {
+                    lastValue = this->m_irbuilder.CreateAnd(
+                        this->m_irbuilder.GetBool(false),
+                        value
+                    );
+                }
+
+                lastValue = ChooseOperation(
+                    lastOperator,
+                    lastValue,
+                    value,
+                    signage,
+                    floatness
+                );
+                notCnt = 0; // reset
+            }
+            else
+            {
+                lastValue = ChooseOperation(
+                    lastOperator,
+                    lastValue,
+                    value,
+                    signage,
+                    floatness
+                );
+            }
+        }
+        else if (token.GetValue() == "not")
+        {
+            notCnt++;
+        }
+        else if (token.GetType() == TokenTypes::OPERATOR ||
+            token.GetType() == TokenTypes::KEYWORD)
+        {
+            lastOperator = TokenizerOperatorToIROperator(token);
+        }
+        /// @todo add parantheses handling
+    }
+
+    this->m_irbuilder.ClearConstants(); /// @todo handle this
 }
 
 void IRVisitor::VisitIdentifier(ASTNode* node)
@@ -50,7 +250,7 @@ void IRVisitor::VisitIdentifierValue(ASTNode* node)
     m_currVarMetaData = varMetaData;
 
     m_irbuilder.CreateLoad(
-        IRBaseValue(
+        IRBaseValue( /// @todo fix this
             varMetaData.sName,
             TypeToIRType(
                 varMetaData.type
@@ -152,12 +352,12 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
 {
-    /// @todo phi handling + control statement related
+    /// @todo phi handling + control statement related + move in the varTable
 }
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
 {
-    /// @todo phi handling + control statement related
+    /// @todo phi handling + control statement related + move in the varTable
 }
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
@@ -194,7 +394,7 @@ void IRVisitor::VisitEof(ASTNode* node)
 }
 
 /// @todo Add handling of OS
-std::shared_ptr<const IRType> TypeToIRType(Type type)
+std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
 {
     switch (type)
     {
@@ -221,4 +421,270 @@ std::shared_ptr<const IRType> TypeToIRType(Type type)
     default:
         break;
     }
+}
+
+/// @todo Add handling of OS
+/// @todo handle ownership of consts
+IRBaseValue* IRVisitor::ValueToConstIR(Token token)
+{
+    std::string value = token.GetValue();
+
+    if (value == "true")
+    {
+        return this->m_irbuilder.GetBool(true);
+    }
+    else if (value == "false")
+    {
+        return this->m_irbuilder.GetBool(false);
+    }
+    else if (value.find('.') != std::string::npos)
+    {
+        return this->m_irbuilder.GetFloat(std::stod(value));
+    }
+    else
+    {
+        return this->m_irbuilder.GetInt32(std::stoll(value));
+    }
+}
+
+IRInstruction* IRVisitor::ChooseOperation(Operators usedOperator, IRBaseValue* lsh, IRBaseValue* rsh, bool signage, bool floatness)
+{
+    switch (usedOperator)
+    {
+    case Operators::Add:
+        if (floatness)
+        {
+            return this->m_irbuilder.CreateFAdd(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateAdd(lsh, rsh);
+        }
+        break;
+    
+    case Operators::Sub:
+        if (floatness)
+        {
+            return this->m_irbuilder.CreateFSub(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateSub(lsh, rsh);
+        }
+        break;
+    
+    case Operators::Mul:
+        if (floatness)
+        {
+            return this->m_irbuilder.CreateFMul(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateMul(lsh, rsh);
+        }
+        break;
+    
+    case Operators::Div:
+        if (signage)
+        {
+            return this->m_irbuilder.CreateUDiv(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFDiv(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateSDiv(lsh, rsh);
+        }
+        break;
+    
+    case Operators::Rem:
+        if (signage)
+        {
+            return this->m_irbuilder.CreateURem(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            /// @todo Create this func in irbuilder
+            return this->m_irbuilder.CreaFRem(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateSRem(lsh, rsh);
+        }
+        break;
+    
+    case Operators::And:
+        return this->m_irbuilder.CreateAnd(lsh, rsh);
+        break;
+    
+    case Operators::Or:
+        return this->m_irbuilder.CreateOr(lsh, rsh);
+        break;
+    
+    case Operators::Xor:
+        return this->m_irbuilder.CreateXor(lsh, rsh);
+        break;
+    
+    case Operators::Shl:
+        return this->m_irbuilder.CreateShl(lsh, rsh);
+        break;
+    
+    case Operators::LShr:
+        return this->m_irbuilder.CreateLshr(lsh, rsh);
+        break;
+    
+    case Operators::AShr:
+        return this->m_irbuilder.CreateAShr(lsh, rsh);
+        break;
+    
+    case Operators::Eq:
+        if (floatness)
+        {
+            return this->m_irbuilder.CreateFCmpEQ(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateICmpEQ(lsh, rsh);
+        }
+        break;
+    
+    case Operators::Ne:
+        if (floatness)
+        {
+            return this->m_irbuilder.CreateFCmpNE(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateICmpNE(lsh, rsh);
+        }
+        break;
+    
+    case Operators::Lt:
+        if (signage)
+        {
+            return this->m_irbuilder.CreateICmpULT(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFCmpLT(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateICmpSLT(lsh, rsh); 
+        }
+        break;
+    
+    case Operators::Le:
+        if (signage)
+        {
+            return this->m_irbuilder.CreateICmpULE(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFCmpLE(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateICmpSLE(lsh, rsh); 
+        }
+        break;
+
+    case Operators::Gt:
+        if (signage)
+        {
+            return this->m_irbuilder.CreateICmpUGT(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFCmpGT(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateICmpSGT(lsh, rsh); 
+        }
+        break;
+
+    case Operators::Ge:
+        if (signage)
+        {
+            return this->m_irbuilder.CreateICmpUGE(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFCmpGE(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateICmpSGE(lsh, rsh); 
+        }
+        break;
+    
+    default:
+        break;
+    }
+}
+
+Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
+{
+    std::string value = token.GetValue();
+    if (value == "And")
+    {
+        return Operators::And;
+    }
+    else if (value == "or")
+    {
+        return Operators::Or;
+    }
+    else if (value == "xor")
+    {
+        return Operators::Xor;
+    }
+    else if (value == "==")
+    {
+        return Operators::Eq;
+    }
+    else if (value == "//")
+    {
+        /// @todo think how to do this
+    }
+    else if (value == "+")
+    {
+        return Operators::Add;
+    }
+    else if (value == "-")
+    {
+        return Operators::Sub;
+    }
+    else if (value == "*")
+    {
+        return Operators::Mul;
+    }
+    else if (value == "/")
+    {
+        return Operators::Div;
+    }
+    else if (value == "%")
+    {
+        return Operators::Rem;
+    }
+    else if (value == ">")
+    {
+        return Operators::Gt;
+    }
+    else if (value == "<")
+    {
+        return Operators::Lt;
+    }
+}
+
+bool CheckSignage(Token token)
+{
+    return token.GetValue().find('-') != std::string::npos;
+}
+
+bool CheckFloatness(Token token)
+{
+    return token.GetValue().find('.') != std::string::npos;
 }
