@@ -100,7 +100,7 @@ BasicBlock* IRFunction::AddBasicBlock(const std::string& label)
     return this->m_blockMap[label];
 }
 
-BasicBlock* AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock)
+BasicBlock* IRFunction::AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock)
 {
     if (this->m_blockMap.find(copyBlock.get()->GetLabel()) != this->m_blockMap.end()) return nullptr;
 
@@ -109,4 +109,14 @@ BasicBlock* AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock)
     this->m_blockMap[copyBlock.get()->GetLabel()]->SetParent(this);
     
     return this->m_blockMap[copyBlock.get()->GetLabel()];
+}
+
+IRInstruction* IRFunction::FindAllocatedVar(const std::string& name)
+{
+    if (this->m_basicBlocks.size() == 0) return nullptr;
+    for (auto& instruction : this->m_basicBlocks[0].get()->GetInstructions())
+    {
+        if (instruction.get()->GetName() == name) return instruction.get();
+    }
+    return nullptr;
 }

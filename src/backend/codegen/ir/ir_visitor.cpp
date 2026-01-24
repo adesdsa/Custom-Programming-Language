@@ -1,36 +1,50 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
 
-IRVisitor::IRVisitor() {}
+IRVisitor::IRVisitor(
+    const EntityLogger& entityLogger,
+    ErrorManager& errorManager,
+    const DecoratedAST& decoratedAst,
+    IRModule& module) : 
+    m_entityLogger(entityLogger),
+    m_errorManager(errorManager),
+    m_decoratedAst(decoratedAst),
+    m_currModule(module),
+    m_irbuilder(m_entityLogger)
+{}
 
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
     /// Getting the varMetaData
     std::string varName = ASTExtractor::ExtractVarName(node);
-    const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
+    auto varMetaData = m_decoratedAst.varTable.FindVar(varName);
     if (!varMetaData) return;
     m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
 
     // The var is saved differently if it is global or local.
-    if (varMetaData.scope == Scope::GLOBAL)
+    if (varMetaData.value().scope == Scope::GLOBAL)
     {
-        m_currModule.AddVariable
-        (varMetaData.sName,
+        m_currModule.AddVariable(
+            varMetaData.value().sName,
             TypeToIRType(
-                varMetaData.type
+                varMetaData.value().type
             )
         );
     }
     else
     {
+        auto tempSave = this->m_irbuilder.GetInsertBlock();
+        this->m_irbuilder.SetInsertPoint(this->m_currFunc->GetEntryBlock());
         m_irbuilder.CreateAlloca(
             TypeToIRType(
-                varMetaData.type
+                varMetaData.value().type
             ),
-            varMetaData.sName
+            varMetaData.value().sName
         );
+        this->m_irbuilder.SetInsertPoint(tempSave);
     }
 }
 
+/// @todo add option to find func args and global vars
 void IRVisitor::VisitExpression(ASTNode* node)
 {
     IRBaseValue* expressionValue = HandleExpression(node->command);
@@ -40,18 +54,20 @@ void IRVisitor::VisitExpression(ASTNode* node)
     this->m_irbuilder.ClearConstants(); /// @todo handle this
 }
 
+/// @todo add option to find func args and global vars
 void IRVisitor::VisitIdentifier(ASTNode* node)
 {
     // Getting the varMetaData and saving it for later use incase of assignment.
     std::string varName = ASTExtractor::ExtractVarName(node);
-    const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
+    std::optional<VarMetaData> varMetaData = m_decoratedAst.varTable.FindVar(varName);
     if (!varMetaData) return;
     m_currVarMetaData = varMetaData;
 }
 
+/// @todo add option to find func args and global vars
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
 {
-    (void)HandleIdentifierValue(node->command);
+    (void)HandleIdentifierValue(node);
 }
 
 void IRVisitor::VisitAssignment(ASTNode* node)
@@ -62,12 +78,8 @@ void IRVisitor::VisitAssignment(ASTNode* node)
     {
         this->m_irbuilder.CreateStore(
             this->m_lastSavedValue,
-            /// @todo check where local vars are saved because right now the pointer is dangling
-            new IRBaseValue( 
-                varMetaData.sName,
-                TypeToIRType(
-                    varMetaData.type
-                )
+            this->m_currFunc->FindAllocatedVar(
+                this->m_currVarMetaData.value().sName
             )
         );
         this->m_expectedAssignment = false;
@@ -80,12 +92,13 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
-    VisitFuncDefinition();
+    VisitFuncDefinition(node);
     IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[0].GetValue());
     if (!foundFunc) return;
     this->m_currFunc = foundFunc;
 }
 
+/// @todo add option to find func args and global vars
 void IRVisitor::VisitFuncCall(ASTNode* node)
 {
     /// @todo check if the function is already declared if not first call visitdeclaration
@@ -127,9 +140,9 @@ void IRVisitor::VisitReturn(ASTNode* node)
     if (m_expectedReturnValue)
     {
         m_expectedReturnValue = false;
-        m_irbuilder.CreateRet(m_lastSavedValue->GetName());
+        m_irbuilder.CreateRet(this->m_lastSavedValue);
     }
-    else if (m_currFunc.GetReturnType() == IRType::GetVoid())
+    else if (m_currFunc->GetReturnType() == IRType::GetVoid())
     {
         m_irbuilder.CreateRetVoid();
     }
@@ -145,11 +158,11 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
     if (statement.GetValue() == "continue")
     {
-        this->m_irbuilder.CreateBr(this->m_currFunc.GetBasicBlocks().back().get());
+        this->m_irbuilder.CreateBr(this->m_currFunc->GetBasicBlocks().back().get());
     }
     else if (statement.GetValue() == "break")
     {
-        this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top());
+        this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top().get());
     }
 }
 
@@ -175,13 +188,13 @@ void IRVisitor::VisitSizeof(ASTNode* node)
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
-    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
     if (!funcMetaData) return;
-    IRFunction* createdFunc = this->m_currModule.AddFunction(funcMetaData.GetName(), funcMetaData.GetRType());
+    IRFunction* createdFunc = this->m_currModule.AddFunction(funcMetaData->GetName(), TypeToIRType(funcMetaData->GetRType()));
 
-    for (auto argMetaData : funcMetaData.GetFuncParams())
+    for (auto argMetaData : funcMetaData->GetFuncParams())
     {
-        createdFunc.AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
+        createdFunc->AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
     }
 }
 
@@ -319,7 +332,7 @@ IRInstruction* IRVisitor::ChooseOperation(Operators usedOperator, IRBaseValue* l
         else if (floatness)
         {
             /// @todo Create this func in irbuilder
-            return this->m_irbuilder.CreaFRem(lsh, rsh);
+            return this->m_irbuilder.CreateFRem(lsh, rsh);
         }
         else
         {
@@ -344,7 +357,7 @@ IRInstruction* IRVisitor::ChooseOperation(Operators usedOperator, IRBaseValue* l
         break;
     
     case Operators::LShr:
-        return this->m_irbuilder.CreateLshr(lsh, rsh);
+        return this->m_irbuilder.CreateLShr(lsh, rsh);
         break;
     
     case Operators::AShr:
@@ -501,31 +514,27 @@ bool IRVisitor::CheckFloatness(Token token)
     return token.GetValue().find('.') != std::string::npos;
 }
 
-IRBaseValue* IRVisitor::HandleIdentifierValue(Command command)
+IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
 {
     /// @todo Check func correctness
     /// It should get an IdentifierValue using IRBuilder::CreateLoad
+    Command command = node->command;
     std::string varName = ASTExtractor::ExtractVarName(node);
-    const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
-    if (!varMetaData) return;
+    const std::optional<VarMetaData>& varMetaData = m_decoratedAst.varTable.FindVar(varName);
+    if (!varMetaData) return nullptr;
     m_currVarMetaData = varMetaData;
 
     m_irbuilder.CreateLoad(
-        IRBaseValue(
-            varMetaData.sName,
-            TypeToIRType(
-                varMetaData.type
-            )
-        )
+        this->m_currFunc->FindAllocatedVar(varMetaData.value().sName)
     );
 }
 
 IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 {
     std::vector<IRBaseValue*> args;
-    const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
-    if (!funcMetaData) return;
-    const std::vector<VarMetaData>& params = funcMetaData.GetFuncParams();
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[0].GetValue());
+    if (!funcMetaData) return nullptr;
+    const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
     // Only if the func has arguements we add them
     if (params.size() != 0 && params[0].type != Type::VOID_TYPE)
     {
@@ -547,7 +556,7 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
 {
     /// @todo Create this func.
     /// It should find out the type of the expression in it and return the corresponding size.
-    const Command& SizeofArg = node->command.GetParams()[0];
+    const Command& SizeofArg = command.GetParams()[0];
     if (SizeofArg.GetType() == CommandTypes::EXPRESSION)
     {
         
@@ -558,7 +567,7 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     }
 }
 
-IRBaseValue* IRVisitor::HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness)
+IRBaseValue* IRVisitor::HandleExpressionAdding(IRBaseValue* oldInstruction, IRBaseValue* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness)
 {
     if (!oldInstruction) // Incase it's epxression start
     {
@@ -739,16 +748,17 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
             IRBaseValue* rhs = nullptr;
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
-                const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(innerCommand[0]);
-                if (!varMetaData) return;
-                if (varMetaData.type == Type::UNSIGNED_INT_TYPE) signage = true;
-                else if (varMetaData.type == Type::DOUBLE_TYPE) floatness = true;
-                rhs = HandleIdentifierValue(innerCommand);
+                const std::optional<VarMetaData> varMetaData = m_decoratedAst.varTable.FindVar(innerCommand[0].GetValue());
+                if (!varMetaData) return nullptr;
+                if (varMetaData.value().type == Type::UNSIGNED_INT_TYPE) signage = true;
+                else if (varMetaData.value().type == Type::DOUBLE_TYPE) floatness = true;
+                ASTNode tempNode = ASTNode(innerCommand);
+                rhs = HandleIdentifierValue(&tempNode);
             }
             else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
             {
-                const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
-                if (!funcMetaData) return;
+                FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0].GetValue());
+                if (!funcMetaData) return nullptr;
                 if (funcMetaData.GetRType() == Type::UNSIGNED_INT_TYPE) signage = true;
                 else if (funcMetaData.GetRType() == Type::DOUBLE_TYPE) floatness = true;
                 rhs = HandleFuncCall(innerCommand);

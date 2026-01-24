@@ -55,6 +55,9 @@ public:
     BasicBlock* AddBasicBlock(const std::string& label);
     BasicBlock* AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock);
 
+    // <======= Alloca Methods =======>
+    IRInstruction* FindAllocatedVar(const std::string& name);
+
 private:
     const std::string m_name;                                      
     const std::shared_ptr<const IRType> m_returnType;              

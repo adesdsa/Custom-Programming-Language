@@ -21,7 +21,7 @@ enum class BlockKind
     elifBlock,
     whileBlock,
     forBlock
-}
+};
 
 /// @brief This enum represents the type of entry a control block has done.
 /// ifBlock - will create a %then label if it is entered and will create a %else label if not entered.
@@ -35,7 +35,7 @@ enum class EntranceKind
     entry,
     exit,
     condition
-}
+};
 
 /// @todo check that code after Br isnt added
 
@@ -43,7 +43,12 @@ enum class EntranceKind
 class IRVisitor : public IASTVisitor
 {
     public:
-    IRVisitor();
+    IRVisitor(
+        const EntityLogger& entityLogger,
+        ErrorManager& errorManager,
+        const DecoratedAST& decoratedAst,
+        IRModule& module
+    );
     virtual ~IRVisitor() = default;
 
     // Prevent copying/moving - lambdas capture 'this' pointer
@@ -120,7 +125,7 @@ private:
     |     Helper Fields    |
     \**********************/
     IRBaseValue* m_lastSavedValue;
-    const VarMetaData& m_currVarMetaData;
+    std::optional<VarMetaData> m_currVarMetaData;
 
     bool m_expectedReturnValue;
     bool m_expectedAssignment;
@@ -132,7 +137,7 @@ private:
     /**********************\
     |    Helper Methods    |
     \**********************/
-    IRType TypeToIRType(Type type);
+    std::shared_ptr<const IRType> TypeToIRType(Type type);
     IRBaseValue* ValueToConstIR(Token token);
     IRInstruction* ChooseOperation(Operators usedOperator, IRBaseValue* lsh, IRBaseValue* rsh, bool signage, bool floatness);
     Operators TokenizerOperatorToIROperator(Token token);
@@ -141,7 +146,7 @@ private:
     /// @brief Adds all the related IRInstructions to var load
     /// @param command 
     /// @return The value of the variable
-    IRBaseValue* HandleIdentifierValue(Command command);
+    IRBaseValue* HandleIdentifierValue(ASTNode* node);
     /// @brief Adds all the related IRInstructions to func call
     /// @param command 
     /// @return The value of the variable
@@ -154,7 +159,7 @@ private:
     /// @param command 
     /// @return The value the expression creates
     IRBaseValue* HandleExpression(Command command);
-    IRBaseValue* HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
+    IRBaseValue* HandleExpressionAdding(IRBaseValue* oldInstruction, IRBaseValue* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
     std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
-}
+};

@@ -13,7 +13,7 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_float.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_bool.h"
 #include "includes/shared/logger/entity_logger.h"
-#include "includes/shared/common/codegen/ir/ir_common_types.h"
+#include "includes/backend/codegen/ir/ir_common_types.h"
 #include "includes/shared/errors/error_manager.h"
 
 /// @brief Helper class that simplifies IR construction.
