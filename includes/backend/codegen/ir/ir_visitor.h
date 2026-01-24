@@ -110,4 +110,5 @@ private:
     /// @param command 
     /// @return The value of the variable
     IRBaseValue* HandleSizeof(Command command);
+    IRBaseValue* HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
 }

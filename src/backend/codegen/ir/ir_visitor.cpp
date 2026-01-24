@@ -65,71 +65,8 @@ void IRVisitor::VisitExpression(ASTNode* node)
                 rhs = HandleSizeof(innerCommand);
             }
 
-            if (!lastValue) // Incase it's epxression start
-            {
-                if (notCnt != 0) // This means the epxression started with nots
-                {
-                    if (notCnt % 2 == 0) // The nots disabled themselves
-                    {
-                        lastValue = rhs;
-                    }
-                    else
-                    {
-                        lastValue = this->m_irbuilder.CreateAnd(
-                            this->m_irbuilder.GetBool(false),
-                            rhs
-                        );
-                    }
-                    notCnt = 0; // reset
-                }
-                else if (lastOperator != Operators::None) // The expression started with a minus '-'
-                {
-                    lastValue = this->m_irbuilder.CreateMul(
-                        ValueToConstIR(
-                            Token(
-                                "-",
-                                TokenTypes::VALUE,
-                                0,
-                                0
-                            )
-                        ),
-                        rhs
-                    );
-                }
-                else // Expression starter
-                {
-                    lastValue = rhs;
-                }
-            }
-            else if (notCnt != 0)
-            {
-                if (notCnt % 2 != 0) // The nots didnt disable themselves
-                {
-                    lastValue = this->m_irbuilder.CreateAnd(
-                        this->m_irbuilder.GetBool(false),
-                        rhs
-                    );
-                }
-
-                lastValue = ChooseOperation(
-                    lastOperator,
-                    lastValue,
-                    rhs,
-                    signage,
-                    floatness
-                );
-                notCnt = 0; // reset
-            }
-            else
-            {
-                lastValue = ChooseOperation(
-                    lastOperator,
-                    lastValue,
-                    rhs,
-                    signage,
-                    floatness
-                );
-            }
+            HandleExpressionAdding(lastValue, rhs, notCnt, lastOperator, signage, floatness);
+            notCnt = 0; // reset
             paramIndex++;
         }
         else if (token.GetType() == TokenTypes::VALUE)
@@ -138,86 +75,12 @@ void IRVisitor::VisitExpression(ASTNode* node)
             if (CheckFloatness(token)) floatness = true;
 
             IRBaseValue* value = ValueToConstIR(token);
-
-            if (!lastValue) // Incase it's epxression start
-            {
-                if (notCnt != 0) // This means the epxression started with nots
-                {
-                    if (notCnt % 2 == 0) // The nots disabled themselves
-                    {
-                        // Creating meaningless operation to save the value
-                        lastValue = ChooseOperation(
-                            Operators::Add,
-                            0,
-                            value,
-                            signage,
-                            floatness
-                        );
-                    }
-                    else
-                    {
-                        lastValue = this->m_irbuilder.CreateAnd(
-                            this->m_irbuilder.GetBool(false),
-                            value
-                        );
-                    }
-                    notCnt = 0; // reset
-                }
-                else if (lastOperator != Operators::None) // The expression started with a minus '-'
-                {
-                    lastValue = this->m_irbuilder.CreateMul(
-                        ValueToConstIR(
-                            Token(
-                                "-",
-                                TokenTypes::VALUE,
-                                0,
-                                0
-                            )
-                        ),
-                        value
-                    );
-                }
-                else // Expression starter
-                {
-                    // Creating meaningless operation to save the value
-                    lastValue = ChooseOperation(
-                        Operators::Add,
-                        0,
-                        value,
-                        signage,
-                        floatness
-                    );
-                }
-            }
-            else if (notCnt != 0)
-            {
-                if (notCnt % 2 != 0) // The nots didnt disable themselves
-                {
-                    lastValue = this->m_irbuilder.CreateAnd(
-                        this->m_irbuilder.GetBool(false),
-                        value
-                    );
-                }
-
-                lastValue = ChooseOperation(
-                    lastOperator,
-                    lastValue,
-                    value,
-                    signage,
-                    floatness
-                );
-                notCnt = 0; // reset
-            }
-            else
-            {
-                lastValue = ChooseOperation(
-                    lastOperator,
-                    lastValue,
-                    value,
-                    signage,
-                    floatness
-                );
-            }
+            IRInstruction* defaultInstruction = this->m_irbuilder.CreateAdd(
+                this->m_irbuilder.GetInt32(0),
+                value
+            );
+            HandleExpressionAdding(lastValue, defaultInstruction, notCnt, lastOperator, signage, floatness);
+            notCnt = 0; // reset
         }
         else if (token.GetValue() == "not")
         {
@@ -679,12 +542,79 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
     }
 }
 
-bool CheckSignage(Token token)
+bool IRVisitor::CheckSignage(Token token)
 {
     return token.GetValue().find('-') != std::string::npos;
 }
 
-bool CheckFloatness(Token token)
+bool IRVisitor::CheckFloatness(Token token)
 {
     return token.GetValue().find('.') != std::string::npos;
+}
+
+IRBaseValue* IRVisitor::HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness)
+{
+    if (!oldInstruction) // Incase it's epxression start
+    {
+        if (notCnt != 0) // This means the epxression started with nots
+        {
+            if (notCnt % 2 == 0) // The nots disabled themselves
+            {
+                return newInstruction;
+            }
+            else
+            {
+                return this->m_irbuilder.CreateAnd(
+                    this->m_irbuilder.GetBool(false),
+                    newInstruction
+                );
+            }
+        }
+        else if (lastOperator != Operators::None) // The expression started with a minus '-'
+        {
+            return this->m_irbuilder.CreateMul(
+                ValueToConstIR(
+                    Token(
+                        "-",
+                        TokenTypes::VALUE,
+                        0,
+                        0
+                    )
+                ),
+                newInstruction
+            );
+        }
+        else // Expression starter
+        {
+            return newInstruction;
+        }
+    }
+    else if (notCnt != 0)
+    {
+        if (notCnt % 2 != 0) // The nots didnt disable themselves
+        {
+            return this->m_irbuilder.CreateAnd(
+                this->m_irbuilder.GetBool(false),
+                newInstruction
+            );
+        }
+
+        return ChooseOperation(
+            lastOperator,
+            oldInstruction,
+            newInstruction,
+            signage,
+            floatness
+        );
+    }
+    else
+    {
+        return ChooseOperation(
+            lastOperator,
+            oldInstruction,
+            newInstruction,
+            signage,
+            floatness
+        );
+    }
 }
