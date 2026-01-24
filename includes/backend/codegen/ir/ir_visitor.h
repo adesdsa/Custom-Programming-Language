@@ -124,42 +124,78 @@ private:
     /**********************\
     |     Helper Fields    |
     \**********************/
+    // e.g. if we just finished an expression after return and need to return to
+    // the return we save the expression's value here.
     IRBaseValue* m_lastSavedValue;
+    // The var we might assign to.
     std::optional<VarMetaData> m_currVarMetaData;
 
     bool m_expectedReturnValue;
     bool m_expectedAssignment;
 
     std::stack<BlockKind> m_blockHistory;
+    // lets say we have two for loops in each other, we need to save where the
+    // break of the inner loop goes to and where the break of the outer loop
+    // goes to so we use stack to save it, top of the stack will be most inner loop.
     std::stack<std::unique_ptr<BasicBlock>> m_afterLoopBlocks;
-    std::stack<std::vector<IRBaseValue*>> m_funcArgs;
+    std::stack<std::vector<IRBaseValue*>> m_funcArgs; // temporary holder to save func arguements
 
     /**********************\
     |    Helper Methods    |
     \**********************/
+    /// @brief The func transforms a normal Type into an IRType object.
     std::shared_ptr<const IRType> TypeToIRType(Type type);
+    /// @brief The func transforms a const value (e.g. 1, -3.4 true) into an IRConstValue
+    /// @param token the const value that is tranformed
+    /// @return pointer to the IRConstValue
     IRBaseValue* ValueToConstIR(Token token);
+    /// @brief The func is used to choose which operation it should run through IRBuilder
+    /// @param usedOperator The operation is chosen by the operator.
+    /// @param signage True-> Signed operation. False-> Otherwise.
+    /// @param floatness True-> Float operation. False-> Otherwise.
+    /// @return The finished operation.
     IRInstruction* ChooseOperation(Operators usedOperator, IRBaseValue* lsh, IRBaseValue* rsh, bool signage, bool floatness);
+    /// @brief The func transforms a tokenizer operator into an IROperator.
+    /// @param token The operation (includes both operators and keyword operators).
+    /// @return The operation as an Operators enum.
     Operators TokenizerOperatorToIROperator(Token token);
+    /// @brief Checks if the Token is a constant unsigned value.
+    /// @param token A value Token.
+    /// @return True-> Token is unsigned. False-> Otherwise.
     bool CheckSignage(Token token);
+    /// @brief Checks if the Token is a float.
+    /// @param token A value Token.
+    /// @return True-> Token is float. False-> Otherwise.
     bool CheckFloatness(Token token);
-    /// @brief Adds all the related IRInstructions to var load
-    /// @param command 
-    /// @return The value of the variable
+    /// @brief Creates the related Load Instructions to the current block.
+    /// @param node The node that holds the Command that holds the PicoC IdentifierValue.
+    /// @return The final Instruction that holds the value of the Load.
     IRBaseValue* HandleIdentifierValue(ASTNode* node);
-    /// @brief Adds all the related IRInstructions to func call
-    /// @param command 
-    /// @return The value of the variable
+    /// @brief Creates the related FuncCall Instructions to the current block.
+    /// @param command The Command that holds the PicoC FuncCall.
+    /// @return The final Instruction that holds the value of the FuncCall.
     IRBaseValue* HandleFuncCall(Command command);
-    /// @brief Adds all the related IRInstructions to func call
-    /// @param command 
-    /// @return The value of the variable
+    /// @brief Creates the related Sizeof Instructions to the current block.
+    /// @param command The Command that holds the PicoC Sizeof.
+    /// @return The final Instruction that holds the value of the Sizeof.
     IRBaseValue* HandleSizeof(Command command);
-    /// @brief Parses an expression into the last value it is worth and adds the corresponding instruction
-    /// @param command 
-    /// @return The value the expression creates
+    /// @brief Parses an expression into SSA Instructions and adds the to the current block.
+    /// @param command The Command that holds the PicoC EXPRESSION.
+    /// @return The IRBaseValue that holds the last value of the expression.
     IRBaseValue* HandleExpression(Command command);
+    /// @brief The func does all the related checks to adding a single SSA expression to the block.
+    /// @param oldInstruction The last SSA expression Instruction.
+    /// @param newInstruction The Instruction we try adding to it.
+    /// @param notCnt The counter of how many times there was not before the newInstruction
+    /// @param lastOperator The operation that will happen between them.
+    /// @param signage Is the operation unsigned.
+    /// @param floatness Is the operation a float.
+    /// @return An IRInstruction that holds the value of the operation between the two Instructions.
     IRBaseValue* HandleExpressionToInstruction(IRBaseValue* oldInstruction, IRBaseValue* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
+    /// @brief The func creates a corresponding labelName for each nameless block.
+    /// @see EntranceKind for more info
     std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);
+    /// @brief A function that is used to check if after we got the value from here we need to give it to somewhoere.
+    /// e.g. return of assignment.
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
 };

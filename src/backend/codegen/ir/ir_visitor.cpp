@@ -285,7 +285,13 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
     }
 }
 
-IRInstruction* IRVisitor::ChooseOperation(Operators usedOperator, IRBaseValue* lsh, IRBaseValue* rsh, bool signage, bool floatness)
+IRInstruction* IRVisitor::ChooseOperation(
+    Operators usedOperator,
+    IRBaseValue* lsh,
+    IRBaseValue* rsh,
+    bool signage,
+    bool floatness
+)
 {
     switch (usedOperator)
     {
@@ -519,7 +525,7 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
 
 bool IRVisitor::CheckSignage(Token token)
 {
-    return token.GetValue().find('-') != std::string::npos;
+    return token.GetValue().find('-') == std::string::npos;
 }
 
 bool IRVisitor::CheckFloatness(Token token)
@@ -533,7 +539,7 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
     if (!varMetaData) return nullptr;
     m_currVarMetaData = varMetaData;
 
-    m_irbuilder.CreateLoad(
+    return m_irbuilder.CreateLoad(
         this->m_currFunc->FindAllocatedVar(varMetaData.value().sName)
     );
 }
@@ -800,7 +806,14 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
                 rhs = HandleSizeof(innerCommand);
             }
 
-            HandleExpressionToInstruction(lastValue, rhs, notCnt, lastOperator, signage, floatness);
+            HandleExpressionToInstruction(
+                lastValue,
+                rhs,
+                notCnt,
+                lastOperator,
+                signage,
+                floatness
+            );
             notCnt = 0; // reset
             paramIndex++;
         }
@@ -814,7 +827,14 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
                 this->m_irbuilder.GetInt32(0),
                 value
             );
-            HandleExpressionToInstruction(lastValue, defaultInstruction, notCnt, lastOperator, signage, floatness);
+            HandleExpressionToInstruction(
+                lastValue,
+                defaultInstruction,
+                notCnt,
+                lastOperator,
+                signage,
+                floatness
+            );
             notCnt = 0; // reset
         }
         else if (token.GetValue() == "not")
