@@ -113,7 +113,7 @@ void IRVisitor::VisitIdentifierValue(ASTNode* node)
     m_currVarMetaData = varMetaData;
 
     m_irbuilder.CreateLoad(
-        IRBaseValue( /// @todo fix this
+        IRBaseValue(
             varMetaData.sName,
             TypeToIRType(
                 varMetaData.type
@@ -124,21 +124,18 @@ void IRVisitor::VisitIdentifierValue(ASTNode* node)
 
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
-    m_irbuilder.CreateStore(
-        IRBaseValue(
-            m_lastSavedInstruction->GetName(),
-            m_lastSavedInstruction->GetType()
-        ), 
-        IRBaseValue(
-            varMetaData.sName,
-            TypeToIRType(varMetaData.type)
-        )
-    );
+    (void)HandleVariableValue(node->command);
 }
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
-    /// @todo save the args + more + create block
+    const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
+    if (!funcMetaData) return;
+    this->m_currFunc = this->m_currModule.AddFunction(funcMetaData.GetName(), funcMetaData.GetRType());
+    for (auto argMetaData : funcMetaData.GetFuncParams())
+    {
+        this->m_currFunc.AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
+    }
 }
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
@@ -148,32 +145,32 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
 {
-    /// @todo save the returned value of the func
+    HandleFuncCall(node->command);
 }
 
 void IRVisitor::VisitIf(ASTNode* node)
 {
-    /// @todo phi handling + create block
+    /// @todo phi handling + create IRBlock
 }
 
 void IRVisitor::VisitElif(ASTNode* node)
 {
-    /// @todo phi handling + create block
+    /// @todo phi handling + create IRBlock
 }
 
 void IRVisitor::VisitElse(ASTNode* node)
 {
-    /// @todo phi handling + create block
+    /// @todo phi handling + create IRBlock
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
 {
-    /// @todo create block
+    /// @todo search how to handle then implement + create IRBlock
 }
 
 void IRVisitor::VisitFor(ASTNode* node)
 {
-    /// @todo create block
+    /// @todo search how to handle then implement + create IRBlock
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
@@ -230,15 +227,7 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
 
 void IRVisitor::VisitSizeof(ASTNode* node)
 {
-    const Command& SizeofArg = node->command.GetParams()[0];
-    if (SizeofArg.GetType() == CommandTypes::EXPRESSION)
-    {
-        /// @todo first need to wait until we will get the value of the expression inside
-    }
-    else // Sizeof with type
-    {
-        /// @todo here save a constant value
-    }
+    HandleSizeof(node->command);
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
@@ -550,6 +539,46 @@ bool IRVisitor::CheckSignage(Token token)
 bool IRVisitor::CheckFloatness(Token token)
 {
     return token.GetValue().find('.') != std::string::npos;
+}
+
+IRBaseValue* IRVisitor::HandleVariableValue(Command command)
+{
+    /// @todo Check func correctness
+    /// It should get an IdentifierValue using IRBuilder::CreateLoad
+    std::string varName = ASTExtractor::ExtractVarName(node);
+    const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
+    if (!varMetaData) return;
+    m_currVarMetaData = varMetaData;
+
+    m_irbuilder.CreateLoad(
+        IRBaseValue(
+            varMetaData.sName,
+            TypeToIRType(
+                varMetaData.type
+            )
+        )
+    );
+}
+
+IRBaseValue* IRVisitor::HandleFuncCall(Command command);
+{
+    /// @todo Create this func.
+    /// It should get an IdentifierValue using IRBuilder::CreateCall and filling up the args
+}
+
+IRBaseValue* IRVisitor::HandleSizeof(Command command)
+{
+    /// @todo Create this func.
+    /// It should find out the type of the expression in it and return the corresponding size.
+    const Command& SizeofArg = node->command.GetParams()[0];
+    if (SizeofArg.GetType() == CommandTypes::EXPRESSION)
+    {
+        
+    }
+    else // Sizeof with type
+    {
+        /// @todo here save a constant value
+    }
 }
 
 IRBaseValue* IRVisitor::HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness)
