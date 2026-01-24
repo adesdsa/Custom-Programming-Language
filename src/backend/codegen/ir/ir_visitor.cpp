@@ -136,11 +136,7 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     {
         this->m_currFunc.AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
     }
-}
-
-void IRVisitor::VisitFuncDefinition(ASTNode* node)
-{
-    return;
+    m_blockHistory.push(BlockKind::functionBlock);
 }
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
@@ -151,26 +147,31 @@ void IRVisitor::VisitFuncCall(ASTNode* node)
 void IRVisitor::VisitIf(ASTNode* node)
 {
     /// @todo phi handling + create IRBlock
+    m_blockHistory.push(BlockKind::ifBlock);
 }
 
 void IRVisitor::VisitElif(ASTNode* node)
 {
     /// @todo phi handling + create IRBlock
+    m_blockHistory.push(BlockKind::elifBlock);
 }
 
 void IRVisitor::VisitElse(ASTNode* node)
 {
     /// @todo phi handling + create IRBlock
+    m_blockHistory.push(BlockKind::elseBlock);
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
 {
     /// @todo search how to handle then implement + create IRBlock
+    m_blockHistory.push(BlockKind::whileBlock);
 }
 
 void IRVisitor::VisitFor(ASTNode* node)
 {
     /// @todo search how to handle then implement + create IRBlock
+    m_blockHistory.push(BlockKind::forBlock);
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
@@ -220,14 +221,19 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     /// @todo phi handling + control statement related + move in the varTable
 }
 
+void IRVisitor::VisitSizeof(ASTNode* node)
+{
+    HandleSizeof(node->command);
+}
+
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
 {
     return;
 }
 
-void IRVisitor::VisitSizeof(ASTNode* node)
+void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
-    HandleSizeof(node->command);
+    return;
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stack>
+
 #include "includes/shared/common/abstract_ast_visitor.h"
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 #include "includes/shared/errors/error_manager.h"
@@ -11,6 +13,15 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 #include "includes/backend/codegen/ir/ir_common_types.h"
 
+enum class BlockKind
+{
+    functionBlock,
+    ifBlock,
+    elseBlock,
+    elifBlock,
+    whileBlock,
+    forBlock
+}
 
 /// @todo check that code after Br isnt added
 
@@ -88,6 +99,15 @@ private:
     const VarMetaData& m_currVarMetaData;
 
     bool m_expectedReturnValue;
+    
+    size_t m_funcCnt;
+    size_t m_ifCnt;
+    size_t m_elseCnt;
+    size_t m_elifCnt;
+    size_t m_whileCnt;
+    size_t m_forCnt;
+
+    std::stack<BlockKind> m_blockHistory;
 
     /**********************\
     |    Helper Methods    |
