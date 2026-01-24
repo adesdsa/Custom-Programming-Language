@@ -94,6 +94,12 @@ void IRVisitor::VisitExpression(ASTNode* node)
         /// @todo add parantheses handling
     }
 
+    if (this->m_expectedReturnValue)
+    {
+        this->m_lastSavedInstruction = lastValue;
+        this->VisitReturn(node);
+    }
+
     this->m_irbuilder.ClearConstants(); /// @todo handle this
 }
 
@@ -179,13 +185,7 @@ void IRVisitor::VisitReturn(ASTNode* node)
     if (m_expectedReturnValue)
     {
         m_expectedReturnValue = false;
-
-        m_irbuilder.CreateRet(
-            IRBaseValue(
-                m_lastSavedInstruction->GetName(),
-                m_lastSavedInstruction->GetType()
-            )
-        );
+        m_irbuilder.CreateRet(m_lastSavedInstruction->GetName());
     }
     else if (m_currFunc.GetReturnType() == IRType::GetVoid())
     {
@@ -203,22 +203,27 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
     if (statement.GetValue() == "continue")
     {
-        /// @todo will need to jump back to the start of the block
+        this->m_irbuilder.CreateBr(this->m_currFunc.GetBasicBlocks().back().get());
     }
     else if (statement.GetValue() == "break")
     {
-        /// @todo will need to find the end of the block and jump to it
+        this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top());
     }
 }
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
 {
     /// @todo phi handling + control statement related + move in the varTable
+
+    // whenever entering a loop this command shall be ran
+    //this->m_afterLoopBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(this->m_blockHistory.top(), EntranceKind::exit)));
 }
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
 {
     /// @todo phi handling + control statement related + move in the varTable
+
+    // whenever exiting a loop we need to make the top of m_afterLoopBlocks the exit block because all the break commands point to it (ownership should be switched to func)
 }
 
 void IRVisitor::VisitSizeof(ASTNode* node)
@@ -651,5 +656,102 @@ IRBaseValue* IRVisitor::HandleExpressionAdding(IRInstruction* oldInstruction, IR
             signage,
             floatness
         );
+    }
+}
+
+std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind)
+{
+    switch (blockKind)
+    {
+    case BlockKind::elifBlock:
+        switch (entryKind)
+        {
+        case EntranceKind::entry:
+            return "then" + std::to_string(this->m_thenCnt);
+            break;
+
+        case EntranceKind::exit:
+            return "else" + std::to_string(this->m_elseCnt);
+            break;
+
+        default:
+            break;
+        }
+        break;
+    
+    case BlockKind::elseBlock:
+        switch (entryKind)
+        {
+        case EntranceKind::entry:
+            return "then" + std::to_string(this->m_thenCnt);
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case BlockKind::forBlock:
+        switch (entryKind)
+        {
+        case EntranceKind::entry:
+            return "for.body" + std::to_string(this->m_bodyCnt);
+            break;
+
+        case EntranceKind::exit:
+            return "for.exit" + std::to_string(this->m_exitCnt);
+            break;
+
+        case EntranceKind::condition:
+            return "for.cond" + std::to_string(this->m_condCnt);
+            break;
+        
+        default:
+            break;
+        }
+        break;
+
+    case BlockKind::functionBlock:
+        
+        break;
+
+    case BlockKind::ifBlock:
+        switch (entryKind)
+        {
+        case EntranceKind::entry:
+            return "then" + std::to_string(this->m_thenCnt);
+            break;
+
+        case EntranceKind::exit:
+            return "else" + std::to_string(this->m_elseCnt);
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case BlockKind::whileBlock:
+        switch (entryKind)
+        {
+        case EntranceKind::entry:
+            return "while.body" + std::to_string(this->m_bodyCnt);
+            break;
+
+        case EntranceKind::exit:
+            return "while.exit" + std::to_string(this->m_exitCnt);
+            break;
+
+        case EntranceKind::condition:
+            return "while.cond" + std::to_string(this->m_condCnt);
+            break;
+
+        default:
+            break;
+        }
+        break;
+    
+    default:
+        break;
     }
 }

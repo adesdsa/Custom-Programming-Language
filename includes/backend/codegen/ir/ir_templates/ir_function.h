@@ -53,6 +53,7 @@ public:
     void SetParent(IRModule* module) noexcept;
 
     BasicBlock* AddBasicBlock(const std::string& label);
+    BasicBlock* AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock);
 
 private:
     const std::string m_name;                                      

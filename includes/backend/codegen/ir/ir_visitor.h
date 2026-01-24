@@ -23,6 +23,20 @@ enum class BlockKind
     forBlock
 }
 
+/// @brief This enum represents the type of entry a control block has done.
+/// ifBlock - will create a %then label if it is entered and will create a %else label if not entered.
+/// elifBlock - will create a %then label if it is entered and will create a %else label if not entered.
+/// elseBlock - will only create a %then label (EntranceKind::entry) this is the block that will be entered after the else.
+/// functionBlock - will only create an entry with the label entry.
+/// whileBlock - will create an entry called while.cond (EntranceKind::condition), a while.body for the code inside (EntranceKind::entry), and a while.exit after the block (EntranceKind::exit)
+/// forBlock - will create an entry called for.cond (EntranceKind::condition), a for.body for the code inside (EntranceKind::entry), and a for.exit after the block (EntranceKind::exit)
+enum class EntranceKind
+{
+    entry,
+    exit,
+    condition
+}
+
 /// @todo check that code after Br isnt added
 
 class IRVisitor : public IASTVisitor
@@ -93,21 +107,24 @@ private:
     IRBuilder m_irbuilder;
 
     /**********************\
+    |   Labeling Counters  |
+    \**********************/
+    size_t m_thenCnt;
+    size_t m_elseCnt;
+    size_t m_condCnt;
+    size_t m_bodyCnt;
+    size_t m_exitCnt;
+
+    /**********************\
     |     Helper Fields    |
     \**********************/
     IRInstruction* m_lastSavedInstruction;
     const VarMetaData& m_currVarMetaData;
 
     bool m_expectedReturnValue;
-    
-    size_t m_funcCnt;
-    size_t m_ifCnt;
-    size_t m_elseCnt;
-    size_t m_elifCnt;
-    size_t m_whileCnt;
-    size_t m_forCnt;
 
     std::stack<BlockKind> m_blockHistory;
+    std::stack<std::unique_ptr<BasicBlock>> m_afterLoopBlocks;
 
     /**********************\
     |    Helper Methods    |
@@ -131,4 +148,5 @@ private:
     /// @return The value of the variable
     IRBaseValue* HandleSizeof(Command command);
     IRBaseValue* HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
+    std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);
 }
