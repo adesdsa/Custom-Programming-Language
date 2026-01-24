@@ -39,6 +39,7 @@ enum class EntranceKind
 
 /// @todo check that code after Br isnt added
 
+/// @note params of expression func call or sizeof must not be checked the second time through nextChild on the ast
 class IRVisitor : public IASTVisitor
 {
     public:
@@ -118,13 +119,15 @@ private:
     /**********************\
     |     Helper Fields    |
     \**********************/
-    IRInstruction* m_lastSavedInstruction;
+    IRBaseValue* m_lastSavedValue;
     const VarMetaData& m_currVarMetaData;
 
     bool m_expectedReturnValue;
+    bool m_expectedAssignment;
 
     std::stack<BlockKind> m_blockHistory;
     std::stack<std::unique_ptr<BasicBlock>> m_afterLoopBlocks;
+    std::stack<std::vector<IRBaseValue*>> m_funcArgs;
 
     /**********************\
     |    Helper Methods    |
@@ -147,6 +150,11 @@ private:
     /// @param command 
     /// @return The value of the variable
     IRBaseValue* HandleSizeof(Command command);
+    /// @brief Parses an expression into the last value it is worth and adds the corresponding instruction
+    /// @param command 
+    /// @return The value the expression creates
+    IRBaseValue* HandleExpression(Command command);
     IRBaseValue* HandleExpressionAdding(IRInstruction* oldInstruction, IRInstruction* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
     std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);
+    void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
 }

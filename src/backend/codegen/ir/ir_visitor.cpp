@@ -31,74 +31,9 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
 
 void IRVisitor::VisitExpression(ASTNode* node)
 {
-    size_t paramIndex = 0;
-    size_t notCnt = 0;
-    IRInstruction* lastValue = nullptr;
-    Operators lastOperator = Operators::None;
-    bool signage = false;
-    bool floatness = false;
+    IRBaseValue* expressionValue = HandleExpression(node->command);
 
-    for (auto token : node->command.GetTokens())
-    {
-        if (token.GetType() == TokenTypes::HAS_PARAM)
-        {
-            Command innerCommand = node->command[paramIndex];
-            IRBaseValue* rhs = nullptr;
-            if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
-            {
-                const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(innerCommand[0]);
-                if (!varMetaData) return;
-                if (varMetaData.type == Type::UNSIGNED_INT_TYPE) signage = true;
-                else if (varMetaData.type == Type::DOUBLE_TYPE) floatness = true;
-                rhs = HandleVariableValue(innerCommand);
-            }
-            else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
-            {
-                const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
-                if (!funcMetaData) return;
-                if (funcMetaData.GetRType() == Type::UNSIGNED_INT_TYPE) signage = true;
-                else if (funcMetaData.GetRType() == Type::DOUBLE_TYPE) floatness = true;
-                rhs = HandleFuncCall(innerCommand);
-            }
-            else if (innerCommand.GetType() == CommandTypes::SIZEOF)
-            {
-                rhs = HandleSizeof(innerCommand);
-            }
-
-            HandleExpressionAdding(lastValue, rhs, notCnt, lastOperator, signage, floatness);
-            notCnt = 0; // reset
-            paramIndex++;
-        }
-        else if (token.GetType() == TokenTypes::VALUE)
-        {
-            if (CheckSignage(token)) signage = true;
-            if (CheckFloatness(token)) floatness = true;
-
-            IRBaseValue* value = ValueToConstIR(token);
-            IRInstruction* defaultInstruction = this->m_irbuilder.CreateAdd(
-                this->m_irbuilder.GetInt32(0),
-                value
-            );
-            HandleExpressionAdding(lastValue, defaultInstruction, notCnt, lastOperator, signage, floatness);
-            notCnt = 0; // reset
-        }
-        else if (token.GetValue() == "not")
-        {
-            notCnt++;
-        }
-        else if (token.GetType() == TokenTypes::OPERATOR ||
-            token.GetType() == TokenTypes::KEYWORD)
-        {
-            lastOperator = TokenizerOperatorToIROperator(token);
-        }
-        /// @todo add parantheses handling
-    }
-
-    if (this->m_expectedReturnValue)
-    {
-        this->m_lastSavedInstruction = lastValue;
-        this->VisitReturn(node);
-    }
+    CheckValueNeededSomewhere(expressionValue, node);
 
     this->m_irbuilder.ClearConstants(); /// @todo handle this
 }
@@ -113,24 +48,29 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
 
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
 {
-    std::string varName = ASTExtractor::ExtractVarName(node);
-    const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(varName);
-    if (!varMetaData) return;
-    m_currVarMetaData = varMetaData;
-
-    m_irbuilder.CreateLoad(
-        IRBaseValue(
-            varMetaData.sName,
-            TypeToIRType(
-                varMetaData.type
-            )
-        )
-    );
+    (void)HandleVariableValue(node->command);
 }
 
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
-    (void)HandleVariableValue(node->command);
+    /// @todo implement
+    if (this->m_expectedAssignment)
+    {
+        this->m_irbuilder.CreateStore(
+            this->m_lastSavedValue,
+            IRBaseValue(
+                varMetaData.sName,
+                TypeToIRType(
+                    varMetaData.type
+                )
+            )
+        );
+        this->m_expectedAssignment = false;
+    }
+    else
+    {
+        this->m_expectedAssignment = true;
+    }
 }
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
@@ -147,7 +87,8 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
 {
-    HandleFuncCall(node->command);
+    /// @todo check if the function is already declared if not first call visitdeclaration
+    (void)HandleFuncCall(node->command);
 }
 
 void IRVisitor::VisitIf(ASTNode* node)
@@ -185,7 +126,7 @@ void IRVisitor::VisitReturn(ASTNode* node)
     if (m_expectedReturnValue)
     {
         m_expectedReturnValue = false;
-        m_irbuilder.CreateRet(m_lastSavedInstruction->GetName());
+        m_irbuilder.CreateRet(m_lastSavedValue->GetName());
     }
     else if (m_currFunc.GetReturnType() == IRType::GetVoid())
     {
@@ -228,17 +169,17 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
 
 void IRVisitor::VisitSizeof(ASTNode* node)
 {
-    HandleSizeof(node->command);
-}
-
-void IRVisitor::VisitEndOfCommand(ASTNode* node)
-{
-    return;
+    (void)HandleSizeof(node->command);
 }
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
-    return;
+    /// @todo create the func inside the module
+}
+
+void IRVisitor::VisitEndOfCommand(ASTNode* node)
+{
+    /// @todo some of the values need to be reset
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
@@ -571,10 +512,27 @@ IRBaseValue* IRVisitor::HandleVariableValue(Command command)
     );
 }
 
-IRBaseValue* IRVisitor::HandleFuncCall(Command command);
+IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 {
-    /// @todo Create this func.
-    /// It should get an IdentifierValue using IRBuilder::CreateCall and filling up the args
+    std::vector<IRBaseValue*> args;
+    const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
+    if (!funcMetaData) return;
+    const std::vector<VarMetaData>& params = funcMetaData.GetFuncParams();
+    // Only if the func has arguements we add them
+    if (params.size() != 0 && params[0].type != Type::VOID_TYPE)
+    {
+        for (auto expression : command.GetParams())
+        {
+            this->m_funcArgs.top().push_back(HandleExpression(expression));
+        }
+    }
+    IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
+        this->m_currModule.GetFunction(funcMetaData.GetName()),
+        this->m_funcArgs.top()
+    );
+
+    this->m_funcArgs.pop();
+    return funcCallValue;
 }
 
 IRBaseValue* IRVisitor::HandleSizeof(Command command)
@@ -753,5 +711,88 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
     
     default:
         break;
+    }
+}
+
+IRBaseValue* IRVisitor::HandleExpression(Command command)
+{
+    size_t paramIndex = 0;
+    size_t notCnt = 0;
+    IRInstruction* lastValue = nullptr;
+    Operators lastOperator = Operators::None;
+    bool signage = false;
+    bool floatness = false;
+
+    for (auto token : command.GetTokens())
+    {
+        if (token.GetType() == TokenTypes::HAS_PARAM)
+        {
+            Command innerCommand = command.GetParams()[paramIndex];
+            IRBaseValue* rhs = nullptr;
+            if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
+            {
+                const VarMetaData& varMetaData = m_decoratedAst.varTable.FindVar(innerCommand[0]);
+                if (!varMetaData) return;
+                if (varMetaData.type == Type::UNSIGNED_INT_TYPE) signage = true;
+                else if (varMetaData.type == Type::DOUBLE_TYPE) floatness = true;
+                rhs = HandleVariableValue(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+            {
+                const FuncMetaData& funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0]);
+                if (!funcMetaData) return;
+                if (funcMetaData.GetRType() == Type::UNSIGNED_INT_TYPE) signage = true;
+                else if (funcMetaData.GetRType() == Type::DOUBLE_TYPE) floatness = true;
+                rhs = HandleFuncCall(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::SIZEOF)
+            {
+                rhs = HandleSizeof(innerCommand);
+            }
+
+            HandleExpressionAdding(lastValue, rhs, notCnt, lastOperator, signage, floatness);
+            notCnt = 0; // reset
+            paramIndex++;
+        }
+        else if (token.GetType() == TokenTypes::VALUE)
+        {
+            if (CheckSignage(token)) signage = true;
+            if (CheckFloatness(token)) floatness = true;
+
+            IRBaseValue* value = ValueToConstIR(token);
+            IRInstruction* defaultInstruction = this->m_irbuilder.CreateAdd(
+                this->m_irbuilder.GetInt32(0),
+                value
+            );
+            HandleExpressionAdding(lastValue, defaultInstruction, notCnt, lastOperator, signage, floatness);
+            notCnt = 0; // reset
+        }
+        else if (token.GetValue() == "not")
+        {
+            notCnt++;
+        }
+        else if (token.GetType() == TokenTypes::OPERATOR ||
+            token.GetType() == TokenTypes::KEYWORD)
+        {
+            lastOperator = TokenizerOperatorToIROperator(token);
+        }
+        /// @todo add parantheses handling
+    }
+
+    return lastValue;
+}
+
+void IRVisitor::CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node)
+{
+    /// @todo add more places where the returned value is needed e.g. assigmnet
+    if (this->m_expectedReturnValue)
+    {
+        this->m_lastSavedValue = value;
+        this->VisitReturn(node);
+    }
+    else if (this->m_expectedAssignment)
+    {
+        this->m_lastSavedValue = value;
+        this->VisitAssignment(node);
     }
 }
