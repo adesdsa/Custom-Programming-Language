@@ -159,7 +159,7 @@ private:
     /// @param command 
     /// @return The value the expression creates
     IRBaseValue* HandleExpression(Command command);
-    IRBaseValue* HandleExpressionAdding(IRBaseValue* oldInstruction, IRBaseValue* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
+    IRBaseValue* HandleExpressionToInstruction(IRBaseValue* oldInstruction, IRBaseValue* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
     std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
 };
