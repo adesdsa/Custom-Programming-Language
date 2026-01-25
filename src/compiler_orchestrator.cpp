@@ -16,10 +16,8 @@ void CompilerOrchestrator::MainFlow()
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
 
-    IRGenerator irGenerator(decoratedAST);
-    (void)irGenerator.MainFlow();
-
-    OptimizationManager optimizationManager;
+    CodeGenManager codeGenManager(decoratedAST);
+    (void)codeGenManager.MainFlow();
 }
 
 std::wstring CompilerOrchestrator::DesriralizeCLI(int argc, const char *argv[])

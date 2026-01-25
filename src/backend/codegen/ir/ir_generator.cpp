@@ -5,7 +5,9 @@ IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
     m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(decoratedAST.ast),
     m_irMoudle("program") // TODO: put the output file name instead
-{}
+{
+    this->m_IRLogger.Info("Finished initializing IR Generator component successfully");
+}
 
 const IRModule& IRGenerator::MainFlow()
 {
@@ -21,7 +23,6 @@ const IRModule& IRGenerator::MainFlow()
         this->m_errorManager.HandleErrors();
     }
 
-    this->m_IRLogger.Info("Finished generating IR code");
-
+    this->m_IRLogger.Info("Finished generating IR");
     return this->m_irMoudle;
 }
