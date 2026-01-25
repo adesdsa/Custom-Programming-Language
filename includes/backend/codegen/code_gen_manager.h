@@ -4,6 +4,7 @@
 
 // Sub-Managers
 #include "includes/backend/codegen/ir/ir_generator.h"
+#include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
 
 /**
     * Responsible for converting each source code into .o bin file.
@@ -17,7 +18,6 @@ class CodeGenManager
 public:
     CodeGenManager(const DecoratedAST& decoratedAST);
     ~CodeGenManager() = default;
-
 
     void MainFlow();  // TODO: Change return value based on .o files implomention
 
