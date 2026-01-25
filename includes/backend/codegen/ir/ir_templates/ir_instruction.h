@@ -41,6 +41,7 @@ public:
     void SetCalledFunction(IRFunction* func) noexcept;
     void SetParent(BasicBlock* block) noexcept;
     void AddOperand(IRBaseValue* operand) noexcept;
+    void SetOperand(size_t index, IRBaseValue* newValue);
 
     // ===== Phi-specific API =====
     bool IsPhi() const noexcept;
@@ -48,6 +49,7 @@ public:
     size_t GetNumIncoming() const noexcept;
     const PhiIncoming& GetIncoming(size_t index) const;
     const std::vector<PhiIncoming>& GetIncomingList() const noexcept;
+    void SetIncomingValue(size_t index, IRBaseValue* newValue);
 
     std::string ToString() const override;
 

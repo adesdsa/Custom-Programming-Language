@@ -63,7 +63,7 @@ bool DCEPass::OptimizeFunction(IRFunction& function)
         {
             basicBlocksToRemove.push_back(basicBlock.get());
             this->m_deadBlocks.insert(basicBlock.get());
-            continue;  // no need to keep checking the instruction of the block irrelvant
+            continue;  // no need to keep checking the instruction of the block irrelevant
         }
 
         for (const auto& instruction : basicBlock->GetInstructions())
@@ -80,7 +80,7 @@ bool DCEPass::OptimizeFunction(IRFunction& function)
     {
         if (this->m_deadBlocks.count(basicBlock.get()) > 0)
         {
-            continue;  // no need to keep checking the instruction of the block irrelvant
+            continue;  // no need to keep checking the instruction of the block irrelevant
         }
 
         for (const auto& instruction : basicBlock->GetInstructions())
