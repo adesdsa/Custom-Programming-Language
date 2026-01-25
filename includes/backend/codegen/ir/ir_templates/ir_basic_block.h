@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
