@@ -27,19 +27,21 @@ void Console::Log(const LogMessage& logMessage) const noexcept
 {
     const std::string k_sEntityColor = this->m_supportsColor ? logMessage.entity.sColor : "";
     const std::string k_sLevelColor = this->m_supportsColor ? logMessage.debugLevel.sColor : "";
-    const int k_nEntityWidth = 12;
-    const int k_nLevelWidth  = 8;
+    const size_t k_nEntityWidth = 22;
+    const size_t k_nLevelWidth  = 10;
+
+    // Build bracketed strings
+    std::string entityBracketed = "[" + logMessage.entity.sName + "]";
+    std::string levelBracketed = "[" + logMessage.debugLevel.sName + "]";
 
     std::cout
         << k_sEntityColor
         << logMessage.sTimeStamp << "\t"
-        << "[" << logMessage.entity.sName << "]"
-        << std::setw(k_nEntityWidth - logMessage.entity.sName.size()) << ""
+        << std::left << std::setw(k_nEntityWidth) << entityBracketed
         << k_sReset
         << k_sLevelColor
-        << "[" << logMessage.debugLevel.sName << "]"
-        << std::setw(k_nLevelWidth - logMessage.debugLevel.sName.size()) << ""
-        << k_sReset << "\t"
+        << std::left << std::setw(k_nLevelWidth) << levelBracketed
+        << k_sReset
         << k_sEntityColor
         << logMessage.sContent
         << k_sReset << std::endl;

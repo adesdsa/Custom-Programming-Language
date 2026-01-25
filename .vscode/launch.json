@@ -6,7 +6,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/Custom-Programming-Language.exe",
-            "args": ["tests\\inputs\\test4.txt"],
+            "args": ["tests\\inputs\\full_program_example_file.txt"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

@@ -1,5 +1,4 @@
 #include "includes/compiler_orchestrator.h"
-#include "includes/backend/codegen/ir/ir_generator.h"
 
 CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
     m_filePath(DesriralizeCLI(argc, argv))
@@ -17,8 +16,10 @@ void CompilerOrchestrator::MainFlow()
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
 
-    IRGenerator ir(decoratedAST);
-    (void)ir.MainFlow();
+    IRGenerator irGenerator(decoratedAST);
+    (void)irGenerator.MainFlow();
+
+    OptimizationManager optimizationManager;
 }
 
 std::wstring CompilerOrchestrator::DesriralizeCLI(int argc, const char *argv[])
