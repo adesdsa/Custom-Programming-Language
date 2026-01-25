@@ -162,7 +162,7 @@ void ConstantFoldingPass::ReplaceAllUses(
             // replace in Phi incoming values
             if (instruction->IsPhi())
             {
-                for (size_t i = 0; i < instruction->GetNumIncoming(); ++i)
+                for (size_t i = 0; i < instruction->GetNumIncoming(); i++)
                 {
                     const auto& incoming = instruction->GetIncoming(i);
                     if (incoming.value == oldValue)
