@@ -6,7 +6,7 @@ OptimizationManager::OptimizationManager() :
     this->m_optimizerLogger.Info("Optimizer component initalized successfully");
 }
 
-// TODO: For better complexity, try BFS/DFS
+// TODO: For better complexity, try BFS/DFS or use-def chain
 void OptimizationManager::MainFlow(IRModule& program)
 {
     DCEPass dcePass(this->m_optimizerLogger);
