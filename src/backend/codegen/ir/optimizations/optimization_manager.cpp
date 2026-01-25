@@ -6,15 +6,26 @@ OptimizationManager::OptimizationManager() :
     this->m_optimizerLogger.Info("Optimizer component initalized successfully");
 }
 
-void OptimizationManager::MainFlow(IRModule &program)
+// TODO: For better complexity, try BFS/DFS
+void OptimizationManager::MainFlow(IRModule& program)
 {
-    {
-        DCEPass dcePass(this->m_optimizerLogger);
-        dcePass.Run(program);
-    }
+    DCEPass dcePass(this->m_optimizerLogger);
+    ConstantFoldingPass constantFoldingPass(this->m_optimizerLogger);
+    
+    bool changed = true;
 
+    while (changed)
     {
-        ConstantFoldingPass constantFoldingPass(this->m_optimizerLogger);
-        constantFoldingPass.Run(program);
+        changed = false;
+        
+        if (dcePass.Run(program))
+        {
+            changed = true;
+        }
+        
+        if (constantFoldingPass.Run(program))
+        {
+            changed = true;
+        }
     }
 }
