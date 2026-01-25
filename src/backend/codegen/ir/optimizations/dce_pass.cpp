@@ -32,7 +32,7 @@ bool DCEPass::Run(IRModule& program)
     // remove all unused global variables
     for (IRGlobalVariable* global : globalsToRemove)
     {
-        m_optimizerLogger.Warnning("Removing unused global: " + global->GetName());
+        m_optimizerLogger.Warn("Removing unused global: " + global->GetName());
         program.RemoveVariable(global);
         hasChanged = true;
     }
@@ -94,7 +94,7 @@ bool DCEPass::OptimizeFunction(IRFunction& function)
 
     for (BasicBlock* basicBlock : basicBlocksToRemove)
     {
-        this->m_optimizerLogger.Warnning(
+        this->m_optimizerLogger.Warn(
             "Removing unreachable block: " + basicBlock->GetLabel()
         );
         function.RemoveBasicBlock(basicBlock);
@@ -103,7 +103,7 @@ bool DCEPass::OptimizeFunction(IRFunction& function)
 
     for (IRInstruction* instruction : instructionsToRemove)
     {
-        this->m_optimizerLogger.Warnning(
+        this->m_optimizerLogger.Warn(
             "Removing dead instruction: " + instruction->ToString()
         );
         instruction->GetParent()->RemoveInstruction(instruction);
