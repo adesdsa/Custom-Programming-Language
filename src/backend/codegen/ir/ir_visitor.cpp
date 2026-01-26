@@ -90,13 +90,21 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
-    // Defining the func incase it is def+dec (there is no double definition)
-    VisitFuncDefinition(node);
-    // Changing the m_currFunc to the new one. 
-    IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[0].GetValue());
-    if (!foundFunc) return;
-    this->m_currFunc = foundFunc;
     this->m_blockHistory.push(BlockKind::functionBlock);
+    // Chking if the func is already defined.
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
+    if (!funcMetaData) return;
+    // Creating the func in the module
+    IRFunction* createdFunc = this->m_currModule.AddFunction(
+        funcMetaData->GetName(),
+        TypeToIRType(funcMetaData->GetRType())
+    );
+
+    // Adding the args to the func
+    for (auto argMetaData : funcMetaData->GetFuncParams())
+    {
+        createdFunc->AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
+    }
 }
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
@@ -340,21 +348,13 @@ void IRVisitor::VisitSizeof(ASTNode* node)
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
+    // Declaring the func incase it is def+dec (double definition cant happen)
+    VisitFuncDeclaration(node);
+    // Changing the m_currFunc to the new one. 
+    IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[0].GetValue());
+    if (!foundFunc) return;
+    this->m_currFunc = foundFunc;
     this->m_blockHistory.push(BlockKind::functionBlock);
-    // Chking if the func is already defined.
-    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
-    if (!funcMetaData) return;
-    // Creating the func in the module
-    IRFunction* createdFunc = this->m_currModule.AddFunction(
-        funcMetaData->GetName(),
-        TypeToIRType(funcMetaData->GetRType())
-    );
-
-    // Adding the args to the func
-    for (auto argMetaData : funcMetaData->GetFuncParams())
-    {
-        createdFunc->AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
-    }
 }
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
