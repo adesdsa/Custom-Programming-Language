@@ -3,7 +3,7 @@
 IRVisitor::IRVisitor(
     const EntityLogger& entityLogger,
     ErrorManager& errorManager,
-    const DecoratedAST& decoratedAst,
+    DecoratedAST& decoratedAst,
     IRModule& module) : 
     m_entityLogger(entityLogger),
     m_errorManager(errorManager),
@@ -12,12 +12,13 @@ IRVisitor::IRVisitor(
     m_irbuilder(m_entityLogger)
 {
     this->m_varTableIndex.push(0);
+    this->m_currVarTableNode = &this->m_decoratedAst.varTable;
 }
 
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
     /// Getting the varMetaData
-    auto varMetaData = m_decoratedAst.varTable.FindVar(ASTExtractor::ExtractVarName(node));
+    auto varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData) return;
     m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
 
@@ -63,7 +64,7 @@ void IRVisitor::VisitExpression(ASTNode* node)
 void IRVisitor::VisitIdentifier(ASTNode* node)
 {
     // Getting the varMetaData and saving it for later use incase of assignment.
-    std::optional<VarMetaData> varMetaData = m_decoratedAst.varTable.FindVar(ASTExtractor::ExtractVarName(node));
+    std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData) return;
     m_currVarMetaData = varMetaData;
 }
@@ -119,7 +120,7 @@ void IRVisitor::VisitIf(ASTNode* node)
     this->m_conditionMergeBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elseBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::entry));
 
-    IRInstruction* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
 
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -137,7 +138,7 @@ void IRVisitor::VisitElif(ASTNode* node)
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::entry));
 
-    IRInstruction* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
 
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -167,7 +168,7 @@ void IRVisitor::VisitWhile(ASTNode* node)
     this->m_irbuilder.SetInsertPoint(condBlock);
 
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::entry));
-    IRInstruction* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
             expressionResult,
@@ -185,21 +186,21 @@ void IRVisitor::VisitFor(ASTNode* node)
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
     if (node->command.GetParams()[0].GetType() == CommandTypes::VAR_DECLARATION)
     {
-        VisitVarDeclaration(ASTNode(node->command.GetParams()[0]));
+        VisitVarDeclaration(new ASTNode(node->command.GetParams()[0]));
     }
     else
     {
-        VisitIdentifier(ASTNode(node->command.GetParams()[0]));
+        VisitIdentifier(new ASTNode(node->command.GetParams()[0]));
     }
-    VisitAssignment(ASTNode(node->command.GetParams()[1]));
-    VisitExpression(ASTNode(node->command.GetParams()[2]));
+    VisitAssignment(new ASTNode(node->command.GetParams()[1]));
+    VisitExpression(new ASTNode(node->command.GetParams()[2]));
 
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
     this->m_conditionBlocks.push(condBlock);
     this->m_irbuilder.CreateBr(condBlock);
     this->m_irbuilder.SetInsertPoint(condBlock);
 
-    VisitExpression(ASTNode(node->command.GetParams()[3]));
+    VisitExpression(new ASTNode(node->command.GetParams()[3]));
     auto forCondResult = GetLastIsntruction();
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
     this->m_irbuilder.CreateCondBr(
@@ -239,12 +240,12 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
     if (statement.GetValue() == "continue")
     {
         /// Jumping to the condition block of the loop.
-        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top().get());
+        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
     }
     else if (statement.GetValue() == "break")
     {
         // Jumping to the exit block
-        this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top().get());
+        this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top());
     }
 }
 
@@ -253,7 +254,7 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     size_t currVarTableIndex = this->m_varTableIndex.top();
     this->m_varTableIndex.pop();
     this->m_varTableIndex.push(currVarTableIndex + 1);
-    this->m_decoratedAst.varTable = this->m_decoratedAst.varTable.GetChildren()[currVarTableIndex];
+    this->m_currVarTableNode = this->m_currVarTableNode->GetBlock(currVarTableIndex);
     this->m_varTableIndex.push(0);
 
     switch (this->m_blockHistory.top())
@@ -270,7 +271,7 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     case BlockKind::elifBlock:
     case BlockKind::ifBlock:
         this->m_currFunc->AddBasicBlock(std::move(this->m_nextControlEntryBlock));
-        this->m_irbuilder.SetInsertPoint(this->m_nextControlEntryBlock);
+        this->m_irbuilder.SetInsertPoint(this->m_nextControlEntryBlock.get());
         this->m_nextControlEntryBlock = nullptr;
         break;
     
@@ -281,7 +282,11 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
 {
+    Command forCommand;
+    ASTNode* forNode;
+    BasicBlock* tempExitBlockHolder;
     this->m_varTableIndex.pop();
+    this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
 
     switch (this->m_blockHistory.top())
     {
@@ -293,25 +298,25 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         break;
 
     case BlockKind::forBlock:
-        ASTNode* forNode = this->m_forIncrements.top();
+        forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
-        const Command& forCommand = forNode->command;
-        VisitIdentifier(ASTNode(forCommand[4]));
-        VisitAssignment(ASTNode(forCommand[5]));
-        VisitExpression(ASTNode(forCommand[6]));
+        forCommand = forNode->command;
+        VisitIdentifier(new ASTNode(forCommand.GetParams()[4]));
+        VisitAssignment(new ASTNode(forCommand.GetParams()[5]));
+        VisitExpression(new ASTNode(forCommand.GetParams()[6]));
     case BlockKind::whileBlock:
         this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
         this->m_conditionBlocks.pop();
         this->m_afterLoopBlocks.pop();
-        auto tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
         break;
 
     case BlockKind::ifBlock:
     case BlockKind::elifBlock:
-        this->m_irbuilder.CreateBr(this->m_conditionMergeBlocks.top());
-        auto tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_irbuilder.CreateBr(this->m_conditionMergeBlocks.top().get());
+        tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
         if (node->nodeNextSibling->command.GetType() != CommandTypes::IF ||
@@ -325,8 +330,8 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         break;
 
     case BlockKind::elseBlock:
-        this->m_irbuilder.CreateBr(this->m_nextExitBlocks.top());
-        auto tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_irbuilder.CreateBr(this->m_nextExitBlocks.top().get());
+        tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_conditionMergeBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
@@ -685,7 +690,7 @@ bool IRVisitor::CheckFloatness(Token token)
 
 IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
 {
-    const std::optional<VarMetaData>& varMetaData = m_decoratedAst.varTable.FindVar(ASTExtractor::ExtractVarName(node));
+    const std::optional<VarMetaData>& varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData) return nullptr;
     m_currVarMetaData = varMetaData;
 
@@ -941,7 +946,7 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
 
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
-                const std::optional<VarMetaData> varMetaData = m_decoratedAst.varTable.FindVar(innerCommand[0].GetValue());
+                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(innerCommand[0].GetValue());
                 if (!varMetaData) return nullptr;
 
                 // Checking if unsigned or float

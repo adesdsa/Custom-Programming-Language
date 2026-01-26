@@ -47,7 +47,7 @@ class IRVisitor : public IASTVisitor
     IRVisitor(
         const EntityLogger& entityLogger,
         ErrorManager& errorManager,
-        const DecoratedAST& decoratedAst,
+        DecoratedAST& decoratedAst,
         IRModule& module
     );
     virtual ~IRVisitor() = default;
@@ -100,7 +100,8 @@ private:
     /**********************\
     |     Decorated AST    |
     \**********************/
-    const DecoratedAST& m_decoratedAst;
+    DecoratedAST& m_decoratedAst;
+    VarTableNode* m_currVarTableNode;
 
     /**********************\
     |   Curr IRTemplates   |
