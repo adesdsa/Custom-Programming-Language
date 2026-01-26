@@ -10,7 +10,9 @@ IRVisitor::IRVisitor(
     m_decoratedAst(decoratedAst),
     m_currModule(module),
     m_irbuilder(m_entityLogger)
-{}
+{
+    this->m_varTableIndex.push(0);
+}
 
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
@@ -175,7 +177,13 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
 {
-    /// @todo phi handling + control statement related + move in the varTable
+    /// @todo phi handling + control statement related
+
+    size_t currVarTableIndex = this->m_varTableIndex.top();
+    this->m_varTableIndex.pop();
+    this->m_varTableIndex.push(currVarTableIndex + 1);
+    this->m_decoratedAst.varTable = this->m_decoratedAst.varTable.GetChildren()[currVarTableIndex];
+    this->m_varTableIndex.push(0);
 
     // whenever entering a loop this command shall be ran
     //this->m_afterLoopBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(this->m_blockHistory.top(), EntranceKind::exit)));
@@ -183,7 +191,9 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
 {
-    /// @todo phi handling + control statement related + move in the varTable
+    /// @todo phi handling + control statement related
+
+    this->m_varTableIndex.pop();
 
     // whenever exiting a loop we need to make the top of m_afterLoopBlocks the exit block because all the break commands point to it (ownership should be switched to func)
 }
@@ -673,10 +683,12 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         {
         case EntranceKind::entry:
             return "then" + std::to_string(this->m_thenCnt);
+            this->m_thenCnt++;
             break;
 
         case EntranceKind::exit:
             return "else" + std::to_string(this->m_elseCnt);
+            this->m_elseCnt++;
             break;
 
         default:
@@ -688,7 +700,8 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         switch (entryKind)
         {
         case EntranceKind::entry:
-            return "then" + std::to_string(this->m_thenCnt);
+            return "merge" + std::to_string(this->m_mergeCnt);
+            this->m_mergeCnt++;
             break;
 
         default:
@@ -701,14 +714,17 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         {
         case EntranceKind::entry:
             return "for.body" + std::to_string(this->m_bodyCnt);
+            this->m_bodyCnt++;
             break;
 
         case EntranceKind::exit:
             return "for.exit" + std::to_string(this->m_exitCnt);
+            this->m_exitCnt++;
             break;
 
         case EntranceKind::condition:
             return "for.cond" + std::to_string(this->m_condCnt);
+            this->m_condCnt++;
             break;
         
         default:
@@ -725,10 +741,12 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         {
         case EntranceKind::entry:
             return "then" + std::to_string(this->m_thenCnt);
+            this->m_thenCnt++;
             break;
 
         case EntranceKind::exit:
             return "else" + std::to_string(this->m_elseCnt);
+            this->m_elseCnt++;
             break;
 
         default:
@@ -741,14 +759,17 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         {
         case EntranceKind::entry:
             return "while.body" + std::to_string(this->m_bodyCnt);
+            this->m_bodyCnt++;
             break;
 
         case EntranceKind::exit:
             return "while.exit" + std::to_string(this->m_exitCnt);
+            this->m_exitCnt++;
             break;
 
         case EntranceKind::condition:
             return "while.cond" + std::to_string(this->m_condCnt);
+            this->m_condCnt++;
             break;
 
         default:

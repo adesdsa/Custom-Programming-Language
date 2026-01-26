@@ -26,7 +26,7 @@ enum class BlockKind
 /// @brief This enum represents the type of entry a control block has done.
 /// ifBlock - will create a %then label if it is entered and will create a %else label if not entered.
 /// elifBlock - will create a %then label if it is entered and will create a %else label if not entered.
-/// elseBlock - will only create a %then label (EntranceKind::entry) this is the block that will be entered after the else.
+/// elseBlock - will only create a %merge label (EntranceKind::exit) this is the block that will be entered after the else.
 /// functionBlock - will only create an entry with the label entry.
 /// whileBlock - will create an entry called while.cond (EntranceKind::condition), a while.body for the code inside (EntranceKind::entry), and a while.exit after the block (EntranceKind::exit)
 /// forBlock - will create an entry called for.cond (EntranceKind::condition), a for.body for the code inside (EntranceKind::entry), and a for.exit after the block (EntranceKind::exit)
@@ -120,6 +120,7 @@ private:
     size_t m_condCnt;
     size_t m_bodyCnt;
     size_t m_exitCnt;
+    size_t m_mergeCnt;
 
     /**********************\
     |     Helper Fields    |
@@ -139,6 +140,7 @@ private:
     // goes to so we use stack to save it, top of the stack will be most inner loop.
     std::stack<std::unique_ptr<BasicBlock>> m_afterLoopBlocks;
     std::stack<std::vector<IRBaseValue*>> m_funcArgs; // temporary holder to save func arguements
+    std::stack<size_t> m_varTableIndex;
 
     /**********************\
     |    Helper Methods    |
