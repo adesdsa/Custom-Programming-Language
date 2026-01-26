@@ -39,6 +39,7 @@ enum class EntranceKind
 
 /// @todo check that code after Br isnt added
 /// @todo rethink phi
+/// @todo check why is it that i dont use IRType::GetFunc()
 
 /// @note params of expression func call or sizeof must not be checked the second time through nextChild on the ast
 class IRVisitor : public IASTVisitor
@@ -151,6 +152,7 @@ private:
     \**********************/
     /// @brief The func transforms a normal Type into an IRType object.
     std::shared_ptr<const IRType> TypeToIRType(Type type);
+    std::shared_ptr<const IRType> TypeToIRType(const std::string& type);
     /// @brief The func transforms a const value (e.g. 1, -3.4 true) into an IRConstValue
     /// @param token the const value that is tranformed
     /// @return pointer to the IRConstValue
@@ -205,4 +207,5 @@ private:
     /// e.g. return of assignment.
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
     inline IRInstruction* GetLastIsntruction();
+    IRBaseValue* FindPointer(const std::string& name);
 };

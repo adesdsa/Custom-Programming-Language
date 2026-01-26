@@ -49,7 +49,6 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     }
 }
 
-/// @todo add support for func args and global vars
 void IRVisitor::VisitExpression(ASTNode* node)
 {
     IRBaseValue* expressionValue = HandleExpression(node->command);
@@ -59,8 +58,6 @@ void IRVisitor::VisitExpression(ASTNode* node)
     this->m_irbuilder.ClearConstants(); /// @todo handle this
 }
 
-/// @todo add support for func args and global vars
-/// @todo add option to find func args and global vars
 void IRVisitor::VisitIdentifier(ASTNode* node)
 {
     // Getting the varMetaData and saving it for later use incase of assignment.
@@ -69,7 +66,6 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
     m_currVarMetaData = varMetaData;
 }
 
-/// @todo add support for func args and global vars
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
 {
     (void)HandleIdentifierValue(node);
@@ -77,16 +73,12 @@ void IRVisitor::VisitIdentifierValue(ASTNode* node)
 
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
-    /// @todo check that funcCall and indetifierValue realy do return the value as m_lastSavedValue
-
     // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
         this->m_irbuilder.CreateStore(
             this->m_lastSavedValue,
-            this->m_currFunc->FindAllocatedVar(
-                this->m_currVarMetaData.value().sName
-            )
+            FindPointer(this->m_currVarMetaData.value().sName)
         );
         this->m_expectedAssignment = false;
     }
@@ -107,7 +99,6 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     this->m_blockHistory.push(BlockKind::functionBlock);
 }
 
-/// @todo add option to find func args and global vars
 void IRVisitor::VisitFuncCall(ASTNode* node)
 {
     (void)HandleFuncCall(node->command);
@@ -416,6 +407,29 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
     }
 }
 
+std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
+{
+    if (type == "bool")
+    {
+        return IRType::GetInt1();
+    }
+
+    if (type == "double")
+    {
+        return IRType::GetFloat32();
+    }
+
+    if (type == "int" || type == "unsigned int")
+    {
+        return IRType::GetInt32();
+    }
+
+    if (type == "void")
+    {
+        return IRType::GetVoid();
+    }
+}
+
 /// @todo Add handling of OS
 /// @todo handle ownership of consts
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
@@ -646,7 +660,6 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
     }
     else if (value == "//")
     {
-        /// @todo rethink this VERY USELESS
     }
     else if (value == "+")
     {
@@ -695,7 +708,7 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
     m_currVarMetaData = varMetaData;
 
     return m_irbuilder.CreateLoad(
-        this->m_currFunc->FindAllocatedVar(varMetaData.value().sName)
+        FindPointer(this->m_currVarMetaData.value().sName)
     );
 }
 
@@ -728,21 +741,44 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     return funcCallValue;
 }
 
+/// @todo add os support
 IRBaseValue* IRVisitor::HandleSizeof(Command command)
 {
-    /// @todo Create this func.
-    /// It should find out the type of the expression in it and return the corresponding size.
+    std::shared_ptr<const IRType> sizeofType = nullptr;
+
     const Command& SizeofArg = command.GetParams()[0];
     if (SizeofArg.GetType() == CommandTypes::EXPRESSION ||
         SizeofArg.GetType() == CommandTypes::FINISHED_FUNC_CALL ||
         SizeofArg.GetType() == CommandTypes::IDENTIFIER_VALUE
     )
     {
-        
+        IRBaseValue* value = HandleExpression(command.GetParams()[0]);
+        sizeofType = value->GetType();
     }
     else // Sizeof with type
     {
-        /// @todo here save a constant value
+        sizeofType = TypeToIRType(command.GetParams()[0][0].GetValue());
+    }
+
+    if (sizeofType == IRType::GetInt32())
+    {
+        return this->m_irbuilder.GetInt32(4);
+    }
+    else if (sizeofType == IRType::GetFloat32())
+    {
+        return this->m_irbuilder.GetInt32(4);
+    }
+    else if (sizeofType == IRType::GetInt1())
+    {
+        return this->m_irbuilder.GetInt32(1);
+    }
+    else if (sizeofType == IRType::GetVoid())
+    {
+        return this->m_irbuilder.GetInt32(0);
+    }
+    else
+    {
+        /// @todo GetFunc handling
     }
 }
 
@@ -936,6 +972,15 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     bool signage = false;
     bool floatness = false;
 
+    if (command.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+    {
+        return HandleIdentifierValue(new ASTNode(command));
+    }
+    else if (command.GetType() == CommandTypes::IDENTIFIER_VALUE)
+    {
+        return HandleFuncCall(command);
+    }
+
     for (auto token : command.GetTokens())
     {
         // IDENTIFIER_VALUE FINISHED_FUNC_CALL or SIZEOF
@@ -954,7 +999,7 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
                 else if (varMetaData.value().type == Type::DOUBLE_TYPE) floatness = true;
 
                 ASTNode tempNode = ASTNode(innerCommand); // Temp holder
-                rhs = HandleIdentifierValue(&tempNode);
+                rhs = HandleIdentifierValue(new ASTNode(innerCommand));
             }
             else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
             {
@@ -1036,4 +1081,24 @@ void IRVisitor::CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node)
 inline IRInstruction* IRVisitor::GetLastIsntruction()
 {
     return this->m_currFunc->GetBasicBlocks().back().get()->GetInstructions().back().get();
+}
+
+IRBaseValue* IRVisitor::FindPointer(const std::string& name)
+{
+    if (this->m_currFunc->FindAllocatedVar(name))
+    {
+        return this->m_currFunc->FindAllocatedVar(name);
+    }
+    else if (this->m_currModule.GetVariable(name))
+    {
+        return this->m_currModule.GetVariable(name);
+    }
+    else if (this->m_currFunc->GetArgument(name))
+    {
+        return this->m_currFunc->GetArgument(name);
+    }
+    else
+    {
+        /// @todo error here
+    }
 }
