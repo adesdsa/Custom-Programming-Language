@@ -95,6 +95,7 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
     if (!funcMetaData) return;
     // Creating the func in the module
+    /// @todo change the type to be function not return type
     IRFunction* createdFunc = this->m_currModule.AddFunction(
         funcMetaData->GetName(),
         TypeToIRType(funcMetaData->GetRType())
