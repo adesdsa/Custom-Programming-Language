@@ -114,32 +114,104 @@ void IRVisitor::VisitFuncCall(ASTNode* node)
 
 void IRVisitor::VisitIf(ASTNode* node)
 {
-    /// @todo phi handling + create IRBlock
     m_blockHistory.push(BlockKind::ifBlock);
+    this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::exit)));
+    this->m_conditionMergeBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elseBlock, EntranceKind::exit)));
+    this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::entry));
+
+    IRInstruction* expressionResult = HandleExpression(node->command.GetParams()[0]);
+
+    this->m_irbuilder.CreateCondBr(
+        this->m_irbuilder.CreateAnd(
+            expressionResult,
+            this->m_irbuilder.GetBool(true)
+        ),
+        this->m_nextControlEntryBlock.get(),
+        this->m_nextExitBlocks.top().get()
+    );
 }
 
 void IRVisitor::VisitElif(ASTNode* node)
 {
-    /// @todo phi handling + create IRBlock
     m_blockHistory.push(BlockKind::elifBlock);
+    this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::exit)));
+    this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::entry));
+
+    IRInstruction* expressionResult = HandleExpression(node->command.GetParams()[0]);
+
+    this->m_irbuilder.CreateCondBr(
+        this->m_irbuilder.CreateAnd(
+            expressionResult,
+            this->m_irbuilder.GetBool(true)
+        ),
+        this->m_nextControlEntryBlock.get(),
+        this->m_nextExitBlocks.top().get()
+    );
 }
 
 void IRVisitor::VisitElse(ASTNode* node)
 {
-    /// @todo phi handling + create IRBlock
     m_blockHistory.push(BlockKind::elseBlock);
+    this->m_nextExitBlocks.push(this->m_conditionMergeBlocks.top());
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
 {
-    /// @todo search how to handle then implement + create IRBlock
     m_blockHistory.push(BlockKind::whileBlock);
+    this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::exit)));
+    this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
+
+    auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::condition));
+    this->m_conditionBlocks.push(condBlock);
+    this->m_irbuilder.CreateBr(condBlock);
+    this->m_irbuilder.SetInsertPoint(condBlock);
+
+    this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::entry));
+    IRInstruction* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    this->m_irbuilder.CreateCondBr(
+        this->m_irbuilder.CreateAnd(
+            expressionResult,
+            this->m_irbuilder.GetBool(true)
+        ),
+        this->m_nextControlEntryBlock.get(),
+        this->m_nextExitBlocks.top().get()
+    );
 }
 
 void IRVisitor::VisitFor(ASTNode* node)
 {
-    /// @todo search how to handle then implement + create IRBlock
     m_blockHistory.push(BlockKind::forBlock);
+    this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::exit)));
+    this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
+    if (node->command.GetParams()[0].GetType() == CommandTypes::VAR_DECLARATION)
+    {
+        VisitVarDeclaration(ASTNode(node->command.GetParams()[0]));
+    }
+    else
+    {
+        VisitIdentifier(ASTNode(node->command.GetParams()[0]));
+    }
+    VisitAssignment(ASTNode(node->command.GetParams()[1]));
+    VisitExpression(ASTNode(node->command.GetParams()[2]));
+
+    auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
+    this->m_conditionBlocks.push(condBlock);
+    this->m_irbuilder.CreateBr(condBlock);
+    this->m_irbuilder.SetInsertPoint(condBlock);
+
+    VisitExpression(ASTNode(node->command.GetParams()[3]));
+    auto forCondResult = GetLastIsntruction();
+    this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
+    this->m_irbuilder.CreateCondBr(
+        this->m_irbuilder.CreateAnd(
+            forCondResult,
+            this->m_irbuilder.GetBool(true)
+        ),
+        this->m_nextControlEntryBlock.get(),
+        this->m_nextExitBlocks.top().get()
+    );
+
+    this->m_forIncrements.push(node);
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
@@ -166,7 +238,8 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
     if (statement.GetValue() == "continue")
     {
-        /// @todo jump to the condition block of the loop.
+        /// Jumping to the condition block of the loop.
+        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top().get());
     }
     else if (statement.GetValue() == "break")
     {
@@ -177,25 +250,91 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
 {
-    /// @todo phi handling + control statement related
-
     size_t currVarTableIndex = this->m_varTableIndex.top();
     this->m_varTableIndex.pop();
     this->m_varTableIndex.push(currVarTableIndex + 1);
     this->m_decoratedAst.varTable = this->m_decoratedAst.varTable.GetChildren()[currVarTableIndex];
     this->m_varTableIndex.push(0);
 
-    // whenever entering a loop this command shall be ran
-    //this->m_afterLoopBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(this->m_blockHistory.top(), EntranceKind::exit)));
+    switch (this->m_blockHistory.top())
+    {
+    case BlockKind::functionBlock:
+        this->m_irbuilder.SetInsertPoint(this->m_currFunc->AddBasicBlock("entry"));
+        break;
+
+    case BlockKind::elseBlock:
+        break;
+
+    case BlockKind::forBlock:
+    case BlockKind::whileBlock:
+    case BlockKind::elifBlock:
+    case BlockKind::ifBlock:
+        this->m_currFunc->AddBasicBlock(std::move(this->m_nextControlEntryBlock));
+        this->m_irbuilder.SetInsertPoint(this->m_nextControlEntryBlock);
+        this->m_nextControlEntryBlock = nullptr;
+        break;
+    
+    default:
+        break;
+    }
 }
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
 {
-    /// @todo phi handling + control statement related
-
     this->m_varTableIndex.pop();
 
-    // whenever exiting a loop we need to make the top of m_afterLoopBlocks the exit block because all the break commands point to it (ownership should be switched to func)
+    switch (this->m_blockHistory.top())
+    {
+    case BlockKind::functionBlock:
+        this->m_currFunc = nullptr;
+        /// @todo check if resets needed
+        m_nextExitBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(nullptr);
+        break;
+
+    case BlockKind::forBlock:
+        ASTNode* forNode = this->m_forIncrements.top();
+        this->m_forIncrements.pop();
+        const Command& forCommand = forNode->command;
+        VisitIdentifier(ASTNode(forCommand[4]));
+        VisitAssignment(ASTNode(forCommand[5]));
+        VisitExpression(ASTNode(forCommand[6]));
+    case BlockKind::whileBlock:
+        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+        this->m_conditionBlocks.pop();
+        this->m_afterLoopBlocks.pop();
+        auto tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_nextExitBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+        break;
+
+    case BlockKind::ifBlock:
+    case BlockKind::elifBlock:
+        this->m_irbuilder.CreateBr(this->m_conditionMergeBlocks.top());
+        auto tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_nextExitBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+        if (node->nodeNextSibling->command.GetType() != CommandTypes::IF ||
+            node->nodeNextSibling->command.GetType() != CommandTypes::ELIF ||
+            node->nodeNextSibling->command.GetType() != CommandTypes::ELSE)
+        {
+            tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_conditionMergeBlocks.top()));
+            this->m_conditionMergeBlocks.pop();
+            this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+        }
+        break;
+
+    case BlockKind::elseBlock:
+        this->m_irbuilder.CreateBr(this->m_nextExitBlocks.top());
+        auto tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_nextExitBlocks.pop();
+        this->m_conditionMergeBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+        break;
+    
+    default:
+        break;
+    }
 }
 
 void IRVisitor::VisitSizeof(ASTNode* node)
@@ -205,6 +344,7 @@ void IRVisitor::VisitSizeof(ASTNode* node)
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
+    this->m_blockHistory.push(BlockKind::functionBlock);
     // Chking if the func is already defined.
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
     if (!funcMetaData) return;
@@ -699,7 +839,7 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
     case BlockKind::elseBlock:
         switch (entryKind)
         {
-        case EntranceKind::entry:
+        case EntranceKind::exit:
             return "merge" + std::to_string(this->m_mergeCnt);
             this->m_mergeCnt++;
             break;
@@ -733,7 +873,7 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         break;
 
     case BlockKind::functionBlock:
-        
+        return "entry";
         break;
 
     case BlockKind::ifBlock:
@@ -886,4 +1026,9 @@ void IRVisitor::CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node)
         this->m_lastSavedValue = value;
         this->VisitAssignment(node);
     }
+}
+
+inline IRInstruction* IRVisitor::GetLastIsntruction()
+{
+    return this->m_currFunc->GetBasicBlocks().back().get()->GetInstructions().back().get();
 }

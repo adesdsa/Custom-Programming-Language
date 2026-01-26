@@ -28,8 +28,8 @@ enum class BlockKind
 /// elifBlock - will create a %then label if it is entered and will create a %else label if not entered.
 /// elseBlock - will only create a %merge label (EntranceKind::exit) this is the block that will be entered after the else.
 /// functionBlock - will only create an entry with the label entry.
-/// whileBlock - will create an entry called while.cond (EntranceKind::condition), a while.body for the code inside (EntranceKind::entry), and a while.exit after the block (EntranceKind::exit)
-/// forBlock - will create an entry called for.cond (EntranceKind::condition), a for.body for the code inside (EntranceKind::entry), and a for.exit after the block (EntranceKind::exit)
+/// whileBlock - will first create a condition called while.cond (EntranceKind::condition), a while.body for the code inside (EntranceKind::entry), and a while.exit after the block (EntranceKind::exit)
+/// forBlock - will create a condition called for.cond (EntranceKind::condition), a for.body for the code inside (EntranceKind::entry), and a for.exit after the block (EntranceKind::exit)
 enum class EntranceKind
 {
     entry,
@@ -38,6 +38,7 @@ enum class EntranceKind
 };
 
 /// @todo check that code after Br isnt added
+/// @todo rethink phi
 
 /// @note params of expression func call or sizeof must not be checked the second time through nextChild on the ast
 class IRVisitor : public IASTVisitor
@@ -135,10 +136,12 @@ private:
     bool m_expectedAssignment;
 
     std::stack<BlockKind> m_blockHistory;
-    // lets say we have two for loops in each other, we need to save where the
-    // break of the inner loop goes to and where the break of the outer loop
-    // goes to so we use stack to save it, top of the stack will be most inner loop.
-    std::stack<std::unique_ptr<BasicBlock>> m_afterLoopBlocks;
+    std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
+    std::unique_ptr<BasicBlock> m_nextControlEntryBlock;
+    std::stack<BasicBlock*> m_afterLoopBlocks;
+    std::stack<ASTNode*> m_forIncrements;
+    std::stack<BasicBlock*> m_conditionBlocks;
+    std::stack<std::unique_ptr<BasicBlock>> m_conditionMergeBlocks;
     std::stack<std::vector<IRBaseValue*>> m_funcArgs; // temporary holder to save func arguements
     std::stack<size_t> m_varTableIndex;
 
@@ -200,4 +203,5 @@ private:
     /// @brief A function that is used to check if after we got the value from here we need to give it to somewhoere.
     /// e.g. return of assignment.
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
+    inline IRInstruction* GetLastIsntruction();
 };
