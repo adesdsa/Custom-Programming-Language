@@ -269,14 +269,18 @@ void IRVisitor::VisitFor(ASTNode* node)
     // That runs before the loop.
     if (node->command.GetParams()[FOR_PRE_COND_VAR_INDEX].GetType() == CommandTypes::VAR_DECLARATION)
     {
-        VisitVarDeclaration(new ASTNode(node->command.GetParams()[FOR_PRE_COND_VAR_INDEX]));
+        ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_VAR_INDEX]);
+        VisitVarDeclaration(&tempNode);
     }
     else
     {
-        VisitIdentifier(new ASTNode(node->command.GetParams()[FOR_PRE_COND_VAR_INDEX]));
+        ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_VAR_INDEX]);
+        VisitIdentifier(&tempNode);
     }
-    VisitAssignment(new ASTNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]));
-    VisitExpression(new ASTNode(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]));
+    ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]);
+    VisitAssignment(&tempNode);
+    tempNode = ASTNode(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
+    VisitExpression(&tempNode);
 
     // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
@@ -287,8 +291,9 @@ void IRVisitor::VisitFor(ASTNode* node)
     /// @see Control Flow Fields docs for more info
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
 
+    tempNode = ASTNode(node->command.GetParams()[FOR_COND_INDEX]);
     // Creating the condition expression inside the for.cond block
-    VisitExpression(new ASTNode(node->command.GetParams()[FOR_COND_INDEX]));
+    VisitExpression(&tempNode);
     auto forCondResult = GetLastIsntruction();
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -388,6 +393,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     Command forCommand;
     ASTNode* forNode;
     BasicBlock* tempExitBlockHolder;
+    ASTNode tempNode(node->command);
 
     // Moving the VarTable to the correct node.
     this->m_varTableIndex.pop();
@@ -444,9 +450,12 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
         forCommand = forNode->command;
-        VisitIdentifier(new ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]));
-        VisitAssignment(new ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]));
-        VisitExpression(new ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]));
+        tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
+        VisitIdentifier(&tempNode);
+        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
+        VisitAssignment(&tempNode);
+        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+        VisitExpression(&tempNode);
 
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
@@ -469,8 +478,8 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
 
         // If this is last if or elif merge block is supposed to be here.
-        if (node->nodeNextSibling->command.GetType() != CommandTypes::IF ||
-            node->nodeNextSibling->command.GetType() != CommandTypes::ELIF ||
+        if (node->nodeNextSibling->command.GetType() != CommandTypes::IF &&
+            node->nodeNextSibling->command.GetType() != CommandTypes::ELIF &&
             node->nodeNextSibling->command.GetType() != CommandTypes::ELSE)
         {
             tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_conditionMergeBlocks.top()));
@@ -577,6 +586,8 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         break;
     
     default:
+        StoreInternalError("IRVisitor::TypeToIRType got an illegal type");
+        return IRType::GetVoid();
         break;
     }
 }
@@ -864,6 +875,7 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
     {
         return Operators::Lt;
     }
+    else return Operators::None;
 }
 
 bool IRVisitor::CheckSignage(Token token)
@@ -950,11 +962,11 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     }
     else if (sizeofType == IRType::GetFloat32())
     {
-        return this->m_irbuilder.GetInt32(8);
+        return this->m_irbuilder.GetInt32(4);
     }
     if (sizeofType == IRType::GetInt64())
     {
-        return this->m_irbuilder.GetInt32(4);
+        return this->m_irbuilder.GetInt32(8);
     }
     else if (sizeofType == IRType::GetFloat64())
     {
@@ -983,13 +995,13 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         switch (entryKind)
         {
         case EntranceKind::entry:
-            return "then" + std::to_string(this->m_thenCnt);
             this->m_thenCnt++;
+            return "then" + std::to_string(this->m_thenCnt - 1);
             break;
 
         case EntranceKind::exit:
-            return "else" + std::to_string(this->m_elseCnt);
             this->m_elseCnt++;
+            return "else" + std::to_string(this->m_elseCnt - 1);
             break;
 
         default:
@@ -1001,8 +1013,8 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         switch (entryKind)
         {
         case EntranceKind::exit:
-            return "merge" + std::to_string(this->m_mergeCnt);
             this->m_mergeCnt++;
+            return "merge" + std::to_string(this->m_mergeCnt - 1);
             break;
 
         default:
@@ -1014,18 +1026,18 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         switch (entryKind)
         {
         case EntranceKind::entry:
-            return "for.body" + std::to_string(this->m_bodyCnt);
             this->m_bodyCnt++;
+            return "for.body" + std::to_string(this->m_bodyCnt - 1);
             break;
 
         case EntranceKind::exit:
-            return "for.exit" + std::to_string(this->m_exitCnt);
             this->m_exitCnt++;
+            return "for.exit" + std::to_string(this->m_exitCnt - 1);
             break;
 
         case EntranceKind::condition:
-            return "for.cond" + std::to_string(this->m_condCnt);
             this->m_condCnt++;
+            return "for.cond" + std::to_string(this->m_condCnt - 1);
             break;
         
         default:
@@ -1041,13 +1053,13 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         switch (entryKind)
         {
         case EntranceKind::entry:
-            return "then" + std::to_string(this->m_thenCnt);
             this->m_thenCnt++;
+            return "then" + std::to_string(this->m_thenCnt - 1);
             break;
 
         case EntranceKind::exit:
-            return "else" + std::to_string(this->m_elseCnt);
             this->m_elseCnt++;
+            return "else" + std::to_string(this->m_elseCnt - 1);
             break;
 
         default:
@@ -1059,18 +1071,18 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         switch (entryKind)
         {
         case EntranceKind::entry:
-            return "while.body" + std::to_string(this->m_bodyCnt);
             this->m_bodyCnt++;
+            return "while.body" + std::to_string(this->m_bodyCnt - 1);
             break;
 
         case EntranceKind::exit:
-            return "while.exit" + std::to_string(this->m_exitCnt);
             this->m_exitCnt++;
+            return "while.exit" + std::to_string(this->m_exitCnt - 1);
             break;
 
         case EntranceKind::condition:
-            return "while.cond" + std::to_string(this->m_condCnt);
             this->m_condCnt++;
+            return "while.cond" + std::to_string(this->m_condCnt - 1);
             break;
 
         default:
@@ -1223,12 +1235,13 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
 
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
-                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(new ASTNode(innerCommand)));
+                ASTNode tempNode(innerCommand);
+                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(&tempNode));
                 if (!varMetaData) return {};
                 if (varMetaData->type == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (varMetaData->type == Type::DOUBLE_TYPE) localFloatness = true;
 
-                currExpressionValue = HandleIdentifierValue(new ASTNode(innerCommand));
+                currExpressionValue = HandleIdentifierValue(&tempNode);
             }
             else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
             {
@@ -1313,11 +1326,12 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     // quick-cases
     if (command.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
-        return HandleIdentifierValue(new ASTNode(command));
+        return HandleFuncCall(command);
     }
     else if (command.GetType() == CommandTypes::IDENTIFIER_VALUE)
     {
-        return HandleFuncCall(command);
+        ASTNode tempNode(command);
+        return HandleIdentifierValue(&tempNode);
     }
 
     const std::vector<Token> tokens = command.GetTokens();
@@ -1357,6 +1371,7 @@ void IRVisitor::CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node)
 
 inline IRInstruction* IRVisitor::GetLastIsntruction()
 {
+    if (this->m_currFunc->GetBasicBlocks().back().get()->GetInstructions().size() == 0) return nullptr;
     return this->m_currFunc->GetBasicBlocks().back().get()->GetInstructions().back().get();
 }
 
@@ -1377,6 +1392,7 @@ IRBaseValue* IRVisitor::FindPointer(const std::string& name)
     else
     {
         StoreInternalError("IRVisitor::FindPointer Couldn't find stored var: " + name);
+        return nullptr;
     }
 }
 
