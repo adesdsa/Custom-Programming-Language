@@ -153,14 +153,21 @@ private:
     |  Control Flow Fields |
     \**********************/
 
-    /// @todo add docs
-    std::stack<BlockKind> m_blockHistory;
-    std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
+    /// @brief Saves the about to be entry block that is initialized on the next node '{' node.
     std::unique_ptr<BasicBlock> m_nextControlEntryBlock;
-    std::stack<BasicBlock*> m_afterLoopBlocks;
+    /// @brief Saves the for node for all concurrent loops so that we will be able to add the increment before looop.body close.
     std::stack<ASTNode*> m_forIncrements;
+    /// @brief Saves the history of what BlockKind we are in right now.
+    std::stack<BlockKind> m_blockHistory;
+    /// @brief Saves the loop.exit block so that we will be able to jump to them with 'break'.
+    std::stack<BasicBlock*> m_afterLoopBlocks;
+    /// @brief Saves the loop.cond blocks so that continue and end of loop.body will jump to them.
     std::stack<BasicBlock*> m_conditionBlocks;
+    /// @brief Saves the merge block of a control statement row e.g. if elif elif will all jump to merge after completion.
     std::stack<std::unique_ptr<BasicBlock>> m_conditionMergeBlocks;
+    /// @brief Saves the next exit block that is initialized at next '}' node.
+    std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
+    /// @brief The current index of the varTable.
     std::stack<size_t> m_varTableIndex;
 
     /**********************\
