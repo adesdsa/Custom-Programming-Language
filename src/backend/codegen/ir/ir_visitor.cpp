@@ -1223,7 +1223,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
 
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
-                const std::optional<VarMetaData> varMetaData = ASTExtractor::ExtractVarName(new ASTNode(innerCommand));
+                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(new ASTNode(innerCommand)));
                 if (!varMetaData) return {};
                 if (varMetaData->type == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (varMetaData->type == Type::DOUBLE_TYPE) localFloatness = true;
