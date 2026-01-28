@@ -15,6 +15,13 @@ IRVisitor::IRVisitor(
     this->m_currVarTableNode = &this->m_decoratedAst.varTable;
 }
 
+std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
+{
+    auto tempConstHolder = this->m_irbuilder.DumpConstants();
+    this->m_irbuilder.ClearConstants();
+    return std::move(tempConstHolder);
+}
+
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
     /// Getting the varMetaData
@@ -319,7 +326,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_blockHistory.pop();
         }
-        while (!this->m_nextExitBlocks.emppty())
+        while (!this->m_nextExitBlocks.empty())
         {
             this->m_nextExitBlocks.pop();
         }
@@ -327,7 +334,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_afterLoopBlocks.pop();
         }
-        while (!this->m_forIncrements.emppty())
+        while (!this->m_forIncrements.empty())
         {
             this->m_forIncrements.pop();
         }
@@ -335,11 +342,11 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_conditionBlocks.pop();
         }
-        while (!this->m_conditionMergeBlocks.emppty())
+        while (!this->m_conditionMergeBlocks.empty())
         {
             this->m_conditionMergeBlocks.pop();
         }
-        while (!this->m_varTableIndex.emppty())
+        while (!this->m_varTableIndex.empty())
         {
             this->m_varTableIndex.pop();
         }
@@ -414,7 +421,10 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
-    this->m_funcArgs = false;
+    while (!this->m_funcArgs.empty())
+    {
+        this->m_funcArgs.pop();
+    }
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
@@ -486,7 +496,6 @@ std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
 }
 
 /// @todo Add handling of OS
-/// handle ownership of consts
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
 {
     std::string value = token.GetValue();

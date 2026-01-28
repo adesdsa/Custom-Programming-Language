@@ -104,7 +104,7 @@ public:
 
     // ===== CONSTANTS =====
     /// @note After calling this function and moving all of the values using std::move call ClearConstants().
-    const std::vector<std::unique_ptr<IRBaseValue>>& DumpConstants() const noexcept;
+    std::vector<std::unique_ptr<IRBaseValue>> DumpConstants() noexcept;
     /// @note Must be called after all values are moved from m_constants.
     void ClearConstants() noexcept;
 

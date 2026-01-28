@@ -54,6 +54,7 @@ struct ExprItem
 /// @todo check why is it that i dont use IRType::GetFunc()
 
 /// @note params of expression func call or sizeof must not be checked the second time through nextChild on the ast
+/// @note After usage call DumpConstants()
 class IRVisitor : public IASTVisitor
 {
     public:
@@ -70,6 +71,8 @@ class IRVisitor : public IASTVisitor
     IRVisitor& operator=(const IASTVisitor&) = delete;
     IRVisitor(IASTVisitor&&) = delete;
     IRVisitor& operator=(IASTVisitor&&) = delete;
+
+    std::vector<std::unique_ptr<IRBaseValue>> DumpConstants() noexcept;
 
 protected:
     /**

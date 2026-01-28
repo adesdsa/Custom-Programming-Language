@@ -1242,9 +1242,9 @@ IRInstruction* IRBuilder::CreatePhi(
     return InsertPhi(std::move(inst));
 }
 
-const std::vector<std::unique_ptr<IRBaseValue>>& IRBuilder::DumpConstants() const noexcept
+std::vector<std::unique_ptr<IRBaseValue>> IRBuilder::DumpConstants() noexcept
 {
-    return this->m_constants;
+    return std::move(this->m_constants);
 }
 
 void IRBuilder::ClearConstants() noexcept
