@@ -16,7 +16,7 @@
 #include "includes/backend/codegen/ir/ir_common_types.h"
 #include "includes/backend/codegen/target_architecture.h"
 
-/// @todo docs+contstexpr
+/// @todo contstexpr
 /// @todo add this->
 
 /// @brief This enum represents the type of entry a control block has done.
@@ -217,7 +217,12 @@ private:
     /// @brief A function that is used to check if after we got the value from here we need to give it to somewhoere.
     /// e.g. return of assignment.
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
+    /// @brief The func is used to get the last instruction added to the current block.
+    /// @return The last instruction in the current block.
     inline IRInstruction* GetLastIsntruction();
+    /// @brief The func finds the pointer to a local var.
+    /// @param name The name of the var.
+    /// @return The StoreInstruction that holds the pointer.
     IRBaseValue* FindPointer(const std::string& name);
 
     /**********************\
