@@ -44,12 +44,12 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
         StoreInternalError("IRVisitor::VisitVarDeclaration unknown var");
         return;
     }
-    m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
+    this->m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
 
     // The var is saved differently if it is global or local.
     if (varMetaData.value().scope == Scope::GLOBAL)
     {
-        m_currModule.AddVariable(
+        this->m_currModule.AddVariable(
             varMetaData.value().sName,
             TypeToIRType(
                 varMetaData.value().type
@@ -62,7 +62,7 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
         auto tempSave = this->m_irbuilder.GetInsertBlock();
         this->m_irbuilder.SetInsertPoint(this->m_currFunc->GetEntryBlock());
 
-        m_irbuilder.CreateAlloca(
+        this->m_irbuilder.CreateAlloca(
             TypeToIRType(
                 varMetaData.value().type
             ),
@@ -71,6 +71,7 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
 
         this->m_irbuilder.SetInsertPoint(tempSave); //reset
     }
+    this->m_entityLogger.Info("Added VarDeclaration IR handling");
 }
 
 void IRVisitor::VisitExpression(ASTNode* node)
@@ -78,6 +79,7 @@ void IRVisitor::VisitExpression(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     IRBaseValue* expressionValue = HandleExpression(node->command);
     CheckValueNeededSomewhere(expressionValue, node);
+    this->m_entityLogger.Info("Added Expression IR handling");
 }
 
 void IRVisitor::VisitIdentifier(ASTNode* node)
@@ -90,7 +92,8 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
         StoreInternalError("IRVisitor::VisitIdentifier unknown var");
         return;
     }
-    m_currVarMetaData = varMetaData;
+    this->m_currVarMetaData = varMetaData;
+    this->m_entityLogger.Info("Added Identifier IR handling");
 }
 
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
@@ -98,6 +101,7 @@ void IRVisitor::VisitIdentifierValue(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     auto loadInstruction = HandleIdentifierValue(node);
     CheckValueNeededSomewhere(loadInstruction, node);
+    this->m_entityLogger.Info("Added IdentifierValue IR handling");
 }
 
 void IRVisitor::VisitAssignment(ASTNode* node)
@@ -116,6 +120,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
     {
         this->m_expectedAssignment = true;
     }
+    this->m_entityLogger.Info("Added Assignment IR handling");
 }
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
@@ -153,6 +158,7 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
             TypeToIRType(argMetaData.type)
         );
     }
+    this->m_entityLogger.Info("Added FuncDeclaration IR handling");
 }
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
@@ -160,12 +166,13 @@ void IRVisitor::VisitFuncCall(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     auto funcCallInstruction = HandleFuncCall(node->command);
     CheckValueNeededSomewhere(funcCallInstruction, node);
+    this->m_entityLogger.Info("Added FuncCall IR handling");
 }
 
 void IRVisitor::VisitIf(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
-    m_blockHistory.push(BlockKind::ifBlock);
+    this->m_blockHistory.push(BlockKind::ifBlock);
     /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::exit)));
     this->m_conditionMergeBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elseBlock, EntranceKind::exit)));
@@ -182,12 +189,13 @@ void IRVisitor::VisitIf(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
+    this->m_entityLogger.Info("Added If IR handling");
 }
 
 void IRVisitor::VisitElif(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
-    m_blockHistory.push(BlockKind::elifBlock);
+    this->m_blockHistory.push(BlockKind::elifBlock);
     /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::entry));
@@ -203,19 +211,21 @@ void IRVisitor::VisitElif(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
+    this->m_entityLogger.Info("Added Elif IR handling");
 }
 
 void IRVisitor::VisitElse(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
-    m_blockHistory.push(BlockKind::elseBlock);
+    this->m_blockHistory.push(BlockKind::elseBlock);
     this->m_nextExitBlocks.push(std::move(this->m_conditionMergeBlocks.top()));
+    this->m_entityLogger.Info("Added Else IR handling");
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
-    m_blockHistory.push(BlockKind::whileBlock);
+    this->m_blockHistory.push(BlockKind::whileBlock);
     /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
@@ -239,6 +249,7 @@ void IRVisitor::VisitWhile(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
+    this->m_entityLogger.Info("Added While IR handling");
 }
 
 void IRVisitor::VisitFor(ASTNode* node)
@@ -249,7 +260,7 @@ void IRVisitor::VisitFor(ASTNode* node)
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     if (this->m_returnedAlready) return; // Incase already returned
-    m_blockHistory.push(BlockKind::forBlock);
+    this->m_blockHistory.push(BlockKind::forBlock);
     /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
@@ -289,25 +300,27 @@ void IRVisitor::VisitFor(ASTNode* node)
     );
     // The for loop increments is handled elsewhere (the i++ part)
     this->m_forIncrements.push(node);
+    this->m_entityLogger.Info("Added For IR handling");
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
 {
     this->m_returnedAlready = true;
     // If we got the Instruction of the return expression
-    if (m_expectedReturnValue)
+    if (this->m_expectedReturnValue)
     {
-        m_expectedReturnValue = false;
-        m_irbuilder.CreateRet(this->m_lastSavedValue);
+        this->m_expectedReturnValue = false;
+        this->m_irbuilder.CreateRet(this->m_lastSavedValue);
     }
     else if (m_currFunc->GetReturnType() == IRType::GetVoid())
     {
-        m_irbuilder.CreateRetVoid();
+        this->m_irbuilder.CreateRetVoid();
     }
     else
     {
-        m_expectedReturnValue = true;
+        this->m_expectedReturnValue = true;
     }
+    this->m_entityLogger.Info("Added Return IR handling");
 }
 
 void IRVisitor::VisitControlStatement(ASTNode* node)
@@ -325,6 +338,7 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
         // Jumping to the exit block
         this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top());
     }
+    this->m_entityLogger.Info("Added ControlStatement IR handling");
 }
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
@@ -361,6 +375,7 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     default:
         break;
     }
+    this->m_entityLogger.Info("Added BlockStart IR handling");
 }
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
@@ -477,6 +492,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         break;
     }
     this->m_blockHistory.pop(); // Reset
+    this->m_entityLogger.Info("Added BlockEnd IR handling");
 }
 
 void IRVisitor::VisitSizeof(ASTNode* node)
@@ -484,6 +500,7 @@ void IRVisitor::VisitSizeof(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     auto tempSizeofInstruction = HandleSizeof(node->command);
     CheckValueNeededSomewhere(tempSizeofInstruction, node);
+    this->m_entityLogger.Info("Added Sizeof IR handling");
 }
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
@@ -500,6 +517,7 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     }
     this->m_currFunc = foundFunc;
     this->m_blockHistory.push(BlockKind::functionBlock);
+    this->m_entityLogger.Info("Added FuncDefinition IR handling");
 }
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
@@ -510,20 +528,24 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
+    this->m_entityLogger.Info("Added EndOfCommand IR handling");
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
 {
+    this->m_entityLogger.Info("Added VoidCommand IR handling");
     return;
 }
 
 void IRVisitor::VisitPass(ASTNode* node)
 {
+    this->m_entityLogger.Info("Added Pass IR handling");
     return;
 }
 
 void IRVisitor::VisitEof(ASTNode* node)
 {
+    this->m_entityLogger.Info("Added Eof IR handling");
     return;
 }
 
@@ -864,7 +886,7 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
         return nullptr;
     }
 
-    return m_irbuilder.CreateLoad(
+    return this->m_irbuilder.CreateLoad(
         FindPointer(varMetaData.value().sName)
     );
 }

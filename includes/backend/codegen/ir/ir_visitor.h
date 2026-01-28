@@ -17,7 +17,6 @@
 #include "includes/backend/codegen/target_architecture.h"
 
 /// @todo contstexpr
-/// @todo add this->
 
 /// @brief This enum represents the type of entry a control block has done.
 /// ifBlock - will create a %then label if it is entered and will create a %else label if not entered.
