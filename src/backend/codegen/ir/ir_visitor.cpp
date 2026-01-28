@@ -94,17 +94,29 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     // Chking if the func is already defined.
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
     if (!funcMetaData) return;
-    // Creating the func in the module
-    /// @todo change the type to be function not return type
+    
+    std::vector<std::shared_ptr<const IRType>> funcParams;
+
+    for (auto argMetaData : funcMetaData->GetFuncParams())
+    {
+        funcParams.push_back(TypeToIRType(argMetaData.type));
+    }
+
     IRFunction* createdFunc = this->m_currModule.AddFunction(
         funcMetaData->GetName(),
-        TypeToIRType(funcMetaData->GetRType())
+        IRType::GetFunction(
+            TypeToIRType(funcMetaData->GetRType()),
+            funcParams
+        )
     );
 
     // Adding the args to the func
     for (auto argMetaData : funcMetaData->GetFuncParams())
     {
-        createdFunc->AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
+        createdFunc->AddArgument(
+            argMetaData.sName,
+            TypeToIRType(argMetaData.type)
+        );
     }
 }
 
@@ -153,7 +165,7 @@ void IRVisitor::VisitElif(ASTNode* node)
 void IRVisitor::VisitElse(ASTNode* node)
 {
     m_blockHistory.push(BlockKind::elseBlock);
-    this->m_nextExitBlocks.push(this->m_conditionMergeBlocks.top());
+    this->m_nextExitBlocks.push(std::move(this->m_conditionMergeBlocks.top()));
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
@@ -432,7 +444,7 @@ std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
 }
 
 /// @todo Add handling of OS
-/// @todo handle ownership of consts
+/// handle ownership of consts
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
 {
     std::string value = token.GetValue();
@@ -520,7 +532,6 @@ IRInstruction* IRVisitor::ChooseOperation(
         }
         else if (floatness)
         {
-            /// @todo Create this func in irbuilder
             return this->m_irbuilder.CreateFRem(lsh, rsh);
         }
         else
@@ -734,7 +745,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 
     // Creating the Call Instruction
     IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction(funcMetaData.GetName()),
+        this->m_currModule.GetFunction(funcMetaData->GetName()),
         this->m_funcArgs.top()
     );
 
@@ -964,15 +975,230 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
     }
 }
 
+static bool IsOneOf(Operators op, std::initializer_list<Operators> set)
+{
+    for (Operators currCheck : set) if (op == currCheck) return true;
+    return false;
+}
+
+IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
+{
+    if (!value) return nullptr;
+    if (notCnt % 2 == 0) return value;
+    return this->m_irbuilder.CreateAnd(this->m_irbuilder.GetBool(false), value);
+}
+
+void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initializer_list<Operators> ops)
+{
+    if (expr.size() < 2) return;
+
+    for (size_t i = 0; i + 1 < expr.size(); /*advance inside*/)
+    {
+        Operators currOp = expr[i].op;
+        if (!IsOneOf(currOp, ops))
+        {
+            ++i;
+            continue;
+        }
+
+        // Apply 'not' individually to lhs/rhs before calling ChooseOperation
+        IRBaseValue* lhs = ApplyNotIfNeeded(expr[i].value, expr[i].notCnt);
+        IRBaseValue* rhs = ApplyNotIfNeeded(expr[i + 1].value, expr[i + 1].notCnt);
+
+        bool combinedSignage = expr[i].signage || expr[i + 1].signage;
+        bool combinedFloatness = expr[i].floatness || expr[i + 1].floatness;
+
+        IRBaseValue* result = ChooseOperation(
+            currOp,
+            lhs,
+            rhs,
+            combinedSignage,
+            combinedFloatness
+        );
+
+        // replace item i with result and inherit operator from i+1
+        expr[i].value = result;
+        expr[i].signage = combinedSignage;
+        expr[i].floatness = combinedFloatness;
+        expr[i].notCnt = 0;
+        expr[i].op = expr[i + 1].op;
+
+        // erase the consumed item
+        expr.erase(expr.begin() + (i + 1));
+        // do not advance i — the new expr[i].op might also be in ops
+    }
+}
+
+/// Full precedence reduction order for Operators enum:
+/// 1) Mul/Div/Rem
+/// 2) Add/Sub
+/// 3) Lt/Gt/Ge/Le
+/// 4) Eq/Ne
+/// 5) And
+/// 6) Xor
+/// 7) Or
+void IRVisitor::ReduceExprByPrecedence(std::vector<ExprItem>& expr)
+{
+    ReduceExprByOperators(expr, { Operators::Mul, Operators::Div, Operators::Rem });
+    ReduceExprByOperators(expr, { Operators::Add, Operators::Sub });
+    ReduceExprByOperators(expr, { Operators::Lt, Operators::Gt , Operators::Ge, Operators::Le});
+    ReduceExprByOperators(expr, { Operators::Eq, Operators::Ne });
+    ReduceExprByOperators(expr, { Operators::And });
+    ReduceExprByOperators(expr, { Operators::Xor });
+    ReduceExprByOperators(expr, { Operators::Or });
+}
+
+/// Parse a token vector into a flat vector<ExprItem>, handling parentheses recursively.
+/// Advances index 'i' as it consumes tokens. paramIndex advances on HAS_PARAM tokens.
+std::vector<ExprItem> IRVisitor::CollectExprItems(
+    const Command& command,
+    const std::vector<Token>& tokens,
+    size_t& tokenIndex,
+    size_t& paramIndex)
+{
+    std::vector<ExprItem> expr;
+    size_t pendingNotCnt = 0;
+
+    while (tokenIndex < tokens.size())
+    {
+        const Token& token = tokens[tokenIndex++];
+
+        // Open parenthesis -> recursively parse until matching ')'
+        if (token.GetValue() == "(")
+        {
+            std::vector<ExprItem> inner = CollectExprItems(command, tokens, tokenIndex, paramIndex);
+            if (inner.empty())
+            {
+                // empty parantheses
+                return {};
+            }
+            // reduce the inner expression so it becomes a single value
+            ReduceExprByPrecedence(inner);
+
+            /// Parantheses result is saved in the front of the inner vector.
+            ExprItem it;
+            it.value = inner.front().value;
+            it.signage = inner.front().signage;
+            it.floatness = inner.front().floatness;
+            it.notCnt = pendingNotCnt;
+            pendingNotCnt = 0;
+            expr.push_back(it);
+            continue;
+        }
+        // Closing parenthesis -> end recursion
+        else if (token.GetValue() == ")")
+        {
+            break;
+        }
+        // Count 'not' for the next value
+        else if (token.GetValue() == "not")
+        {
+            pendingNotCnt++;
+            continue;
+        }
+        // HAS_PARAM -> function call or nested command (treated as single value)
+        else if (token.GetType() == TokenTypes::HAS_PARAM)
+        {
+            if (paramIndex >= command.GetParams().size())
+            {
+                /// @todo handle error
+            }
+            Command innerCommand = command.GetParams()[paramIndex++];
+
+            IRBaseValue* currExpressionValue = nullptr;
+            bool localSignage = false;
+            bool localFloatness = false;
+
+            if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
+            {
+                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(innerCommand[0].GetValue());
+                if (!varMetaData) return {};
+                if (varMetaData->type == Type::UNSIGNED_INT_TYPE) localSignage = true;
+                else if (varMetaData->type == Type::DOUBLE_TYPE) localFloatness = true;
+
+                currExpressionValue = HandleIdentifierValue(new ASTNode(innerCommand));
+            }
+            else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+            {
+                FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0].GetValue());
+                if (!funcMetaData) return {};
+                if (funcMetaData->GetRType() == Type::UNSIGNED_INT_TYPE) localSignage = true;
+                else if (funcMetaData->GetRType() == Type::DOUBLE_TYPE) localFloatness = true;
+
+                currExpressionValue = HandleFuncCall(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::SIZEOF)
+            {
+                currExpressionValue = HandleSizeof(innerCommand);
+            }
+            else
+            {
+                /// @todo raise error
+            }
+
+            ExprItem it;
+            it.value = currExpressionValue;
+            it.signage = localSignage;
+            it.floatness = localFloatness;
+            it.notCnt = pendingNotCnt;
+            pendingNotCnt = 0;
+            expr.push_back(it);
+            continue;
+        }
+        // VALUE token 
+        else if (token.GetType() == TokenTypes::VALUE)
+        {
+            bool localSignage = false;
+            bool localFloatness = false;
+            if (CheckSignage(token)) localSignage = true;
+            if (CheckFloatness(token)) localFloatness = true;
+
+            IRBaseValue* currExpressionValue = ValueToConstIR(token);
+
+            ExprItem it;
+            it.value = currExpressionValue;
+            it.signage = localSignage;
+            it.floatness = localFloatness;
+            it.notCnt = pendingNotCnt;
+            pendingNotCnt = 0;
+            expr.push_back(it);
+            continue;
+        }
+        // Operator token: attach operator to previous item as right operator
+        else if (token.GetType() == TokenTypes::OPERATOR || token.GetType() == TokenTypes::KEYWORD)
+        {
+            Operators op = TokenizerOperatorToIROperator(token);
+
+            if (expr.empty())
+            {
+                // Unary operator at expression start -> treat as (0 <op> x) for now.
+                ExprItem zero;
+                zero.value = this->m_irbuilder.GetInt32(0);
+                zero.signage = false;
+                zero.floatness = false;
+                zero.notCnt = 0;
+                zero.op = op;
+                expr.push_back(zero);
+            }
+            else
+            {
+                // normal binary operator -> attach to previous item
+                expr.back().op = op;
+            }
+            continue;
+        }
+        else
+        {
+            /// @todo raise error
+        }
+    }
+
+    return expr;
+}
+
 IRBaseValue* IRVisitor::HandleExpression(Command command)
 {
-    size_t paramIndex = 0;
-    size_t notCnt = 0;
-    IRInstruction* lastValue = nullptr;
-    Operators lastOperator = Operators::None;
-    bool signage = false;
-    bool floatness = false;
-
+    // quick-cases
     if (command.GetType() == CommandTypes::FINISHED_FUNC_CALL)
     {
         return HandleIdentifierValue(new ASTNode(command));
@@ -982,91 +1208,25 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
         return HandleFuncCall(command);
     }
 
-    for (auto token : command.GetTokens())
-    {
-        // IDENTIFIER_VALUE FINISHED_FUNC_CALL or SIZEOF
-        if (token.GetType() == TokenTypes::HAS_PARAM)
-        {
-            Command innerCommand = command.GetParams()[paramIndex];
-            IRBaseValue* rhs = nullptr;
+    const std::vector<Token> tokens = command.GetTokens();
+    size_t tokenIndex = 0;
+    size_t paramIndex = 0;
 
-            if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
-            {
-                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(innerCommand[0].GetValue());
-                if (!varMetaData) return nullptr;
+    // Collapses all of the parantheses
+    std::vector<ExprItem> expr = CollectExprItems(command, tokens, tokenIndex, paramIndex);
+    if (expr.empty()) return nullptr;
 
-                // Checking if unsigned or float
-                if (varMetaData.value().type == Type::UNSIGNED_INT_TYPE) signage = true;
-                else if (varMetaData.value().type == Type::DOUBLE_TYPE) floatness = true;
+    // Collapses by precedence (mul/div/rem before add/sub etc)
+    ReduceExprByPrecedence(expr);
 
-                ASTNode tempNode = ASTNode(innerCommand); // Temp holder
-                rhs = HandleIdentifierValue(new ASTNode(innerCommand));
-            }
-            else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
-            {
-                FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0].GetValue());
-                if (!funcMetaData) return nullptr;
-
-                // Checking if unsigned or float
-                if (funcMetaData.GetRType() == Type::UNSIGNED_INT_TYPE) signage = true;
-                else if (funcMetaData.GetRType() == Type::DOUBLE_TYPE) floatness = true;
-
-                rhs = HandleFuncCall(innerCommand);
-            }
-            else if (innerCommand.GetType() == CommandTypes::SIZEOF)
-            {
-                rhs = HandleSizeof(innerCommand);
-            }
-
-            HandleExpressionToInstruction(
-                lastValue,
-                rhs,
-                notCnt,
-                lastOperator,
-                signage,
-                floatness
-            );
-            notCnt = 0; // reset
-            paramIndex++;
-        }
-        else if (token.GetType() == TokenTypes::VALUE)
-        {
-            if (CheckSignage(token)) signage = true;
-            if (CheckFloatness(token)) floatness = true;
-
-            IRBaseValue* value = ValueToConstIR(token);
-            IRInstruction* defaultInstruction = this->m_irbuilder.CreateAdd(
-                this->m_irbuilder.GetInt32(0),
-                value
-            );
-            HandleExpressionToInstruction(
-                lastValue,
-                defaultInstruction,
-                notCnt,
-                lastOperator,
-                signage,
-                floatness
-            );
-            notCnt = 0; // reset
-        }
-        else if (token.GetValue() == "not")
-        {
-            notCnt++;
-        }
-        else if (token.GetType() == TokenTypes::OPERATOR ||
-            token.GetType() == TokenTypes::KEYWORD)
-        {
-            lastOperator = TokenizerOperatorToIROperator(token);
-        }
-        /// @todo add parantheses handling
-    }
-
-    return lastValue;
+    // Finaly apply any leftover 'not' and return
+    IRBaseValue* finalVal = ApplyNotIfNeeded(expr.front().value, expr.front().notCnt);
+    return finalVal;
 }
+
 
 void IRVisitor::CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node)
 {
-    /// @todo add more places where the returned value is needed e.g. assigmnet
     if (this->m_expectedReturnValue)
     {
         this->m_lastSavedValue = value;

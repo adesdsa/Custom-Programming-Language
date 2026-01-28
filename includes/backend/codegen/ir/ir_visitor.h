@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stack>
+#include <vector>
+#include <initializer_list>
 
 #include "includes/shared/common/abstract_ast_visitor.h"
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
@@ -36,6 +38,16 @@ enum class EntranceKind
     exit,
     condition
 };
+
+struct ExprItem
+{
+    IRBaseValue* value;     // result SSA value
+    Operators op;           // operator AFTER this value
+    bool signage;
+    bool floatness;
+    size_t notCnt;          // how many `not` applied before this value
+};
+
 
 /// @todo check that code after Br isnt added
 /// @todo rethink phi
@@ -208,4 +220,53 @@ private:
     void CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node);
     inline IRInstruction* GetLastIsntruction();
     IRBaseValue* FindPointer(const std::string& name);
+
+    /**********************\
+    |   Expression Utils   |
+    \**********************/
+
+    /// @brief Helper that checks whether `op` is one of the operators in `set`.
+    /// @param op The operator to test.
+    /// @param set A small initializer_list of Operators to test membership against.
+    /// @return True if op is contained in set, otherwise false.
+    static bool IsOneOf(Operators op, std::initializer_list<Operators> set);
+
+    /// @brief Apply 'not' semantics to an IR value according to notCnt.
+    /// @param value The IR value to apply 'not' to.
+    /// @param notCnt Number of consecutive 'not' tokens seen immediately before value.
+    /// @return New IRBaseValue* after applying the nots, or nullptr on error.
+    IRBaseValue* ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt);
+
+    /// @brief Collect tokens from a command into a flat vector of ExprItem.
+    /// @details This routine handles parentheses recursively: when a '(' is
+    ///          encountered it will recurse and return a single ExprItem that
+    ///          represents the entire sub-expression. It also consumes HAS_PARAM
+    ///          tokens (function-call params / sizeof) by advancing paramIndex.
+    /// @param command The Command that owns tokens and params (used to resolve HAS_PARAM).
+    /// @param tokens The token vector (usually command.GetTokens()) to parse.
+    /// @param tokenIndex Index into `tokens` which this function advances as it consumes tokens.
+    /// @param paramIndex Index into command.GetParams(), advanced when a HAS_PARAM is consumed.
+    /// @return A vector of ExprItem representing the flattened expression for this call.
+    std::vector<ExprItem> CollectExprItems(
+        const Command& command,
+        const std::vector<Token>& tokens,
+        size_t& tokenIndex,
+        size_t& paramIndex
+    );
+
+    /// @brief Reduce a vector of ExprItem by a single operator precedence group.
+    /// @details Scans left-to-right and collapses occurrences of operators contained
+    ///          in `ops` using ChooseOperation. The function modifies `expr` in-place.
+    /// @param expr The expression item vector to reduce (modified in-place).
+    /// @param ops The operator group handled by this pass (e.g. {Mul,Div,Rem}).
+    void ReduceExprByOperators(
+        std::vector<ExprItem>& expr,
+        std::initializer_list<Operators> ops
+    );
+
+    /// @brief Reduce expression by full precedence order.
+    /// @details Calls ReduceExprByOperators for each precedence tier from highest
+    ///          to lowest (e.g. Mul/Div/Rem -> Add/Sub -> relational -> equality -> bitwise).
+    /// @param expr The expression item vector to reduce (modified in-place).
+    void ReduceExprByPrecedence(std::vector<ExprItem>& expr);
 };

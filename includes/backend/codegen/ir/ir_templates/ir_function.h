@@ -27,12 +27,14 @@ class IRFunction
 public:
     IRFunction(
         const std::string& name,
-        std::shared_ptr<const IRType> returnType
+        std::shared_ptr<const IRType> functionType
     );
 
     // <======= Getters =======>
     const std::string& GetName() const noexcept;
+    std::shared_ptr<const IRType> GetFunctionType() noexcept;
     std::shared_ptr<const IRType> GetReturnType() const noexcept;
+    const std::vector<std::shared_ptr<const IRType>>& GetArguemntsTypes() const noexcept;
     IRModule* GetParent() const noexcept;
 
     // <======= Arguement Getters =======>
@@ -60,7 +62,7 @@ public:
 
 private:
     const std::string m_name;                                      
-    const std::shared_ptr<const IRType> m_returnType;              
+    const std::shared_ptr<const IRType> m_functionType; // holds arguement Types and returnType              
     IRModule* m_parent;  // moudle that own the function                                      
 
     /// @note: Following contains both vector and map version 

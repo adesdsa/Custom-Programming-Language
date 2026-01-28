@@ -3,10 +3,10 @@
 
 IRFunction::IRFunction(
     const std::string& name,
-    std::shared_ptr<const IRType> returnType
+    std::shared_ptr<const IRType> functionType
 ) :
     m_name(name),
-    m_returnType(returnType),
+    m_functionType(functionType),
     m_parent(nullptr)
 {}
 
@@ -15,9 +15,19 @@ const std::string& IRFunction::GetName() const noexcept
     return this->m_name;
 }
 
+std::shared_ptr<const IRType> IRFunction::GetFunctionType() noexcept
+{
+    return this->m_functionType;
+}
+
 std::shared_ptr<const IRType> IRFunction::GetReturnType() const noexcept
 {
-    return this->m_returnType;
+    return this->m_functionType->GetReturnType();
+}
+
+const std::vector<std::shared_ptr<const IRType>>& IRFunction::GetArguemntsTypes() const noexcept
+{
+    return this->m_functionType->GetParameters();
 }
 
 IRModule* IRFunction::GetParent() const noexcept

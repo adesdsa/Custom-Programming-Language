@@ -55,6 +55,7 @@ public:
     IRInstruction* CreateFSub(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFMul(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateFRem(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
 
     // ===== INTEGER COMPARISON =====
     IRInstruction* CreateICmpEQ(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");

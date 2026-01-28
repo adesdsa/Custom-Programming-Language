@@ -379,6 +379,32 @@ IRInstruction* IRBuilder::CreateFDiv(
     );
 }
 
+IRInstruction* IRBuilder::CreateFRem(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFRem: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFRem: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new URem instruction");
+    return CreateBinaryOp(
+        IROpcode::FRem,
+        lhs,
+        rhs,
+        lhs->GetType(),
+        name
+    );
+}
+
 IRInstruction* IRBuilder::CreateICmpEQ(
     IRBaseValue* lhs,
     IRBaseValue* rhs,
