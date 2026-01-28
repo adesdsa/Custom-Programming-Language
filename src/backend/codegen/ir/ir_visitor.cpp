@@ -304,9 +304,47 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     {
     case BlockKind::functionBlock:
         this->m_currFunc = nullptr;
-        /// @todo check if resets needed
         m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(nullptr);
+
+        /// ====== Resets ======
+        this->m_thenCnt = 0;
+        this->m_elseCnt = 0;
+        this->m_condCnt = 0;
+        this->m_bodyCnt = 0;
+        this->m_exitCnt = 0;
+        this->m_mergeCnt = 0;
+
+        while (!this->m_blockHistory.empty())
+        {
+            this->m_blockHistory.pop();
+        }
+        while (!this->m_nextExitBlocks.emppty())
+        {
+            this->m_nextExitBlocks.pop();
+        }
+        while (!this->m_afterLoopBlocks.empty())
+        {
+            this->m_afterLoopBlocks.pop();
+        }
+        while (!this->m_forIncrements.emppty())
+        {
+            this->m_forIncrements.pop();
+        }
+        while (!this->m_conditionBlocks.empty())
+        {
+            this->m_conditionBlocks.pop();
+        }
+        while (!this->m_conditionMergeBlocks.emppty())
+        {
+            this->m_conditionMergeBlocks.pop();
+        }
+        while (!this->m_varTableIndex.emppty())
+        {
+            this->m_varTableIndex.pop();
+        }
+        this->m_nextControlEntryBlock = nullptr;
+        VisitEndOfCommand(node);
         break;
 
     case BlockKind::forBlock:
@@ -372,7 +410,11 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
 {
-    /// @todo some of the values need to be reset
+    this->m_lastSavedValue = nullptr;
+    this->m_currVarMetaData = std::nullopt;
+    this->m_expectedReturnValue = false;
+    this->m_expectedAssignment = false;
+    this->m_funcArgs = false;
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
@@ -790,7 +832,7 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     }
     else
     {
-        /// @todo GetFunc handling
+        /// @todo error handling
     }
 }
 

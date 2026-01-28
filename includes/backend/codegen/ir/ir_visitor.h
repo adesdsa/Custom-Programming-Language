@@ -138,6 +138,19 @@ private:
     size_t m_mergeCnt;
 
     /**********************\
+    |  Control Flow Fields |
+    \**********************/
+
+    std::stack<BlockKind> m_blockHistory;
+    std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
+    std::unique_ptr<BasicBlock> m_nextControlEntryBlock;
+    std::stack<BasicBlock*> m_afterLoopBlocks;
+    std::stack<ASTNode*> m_forIncrements;
+    std::stack<BasicBlock*> m_conditionBlocks;
+    std::stack<std::unique_ptr<BasicBlock>> m_conditionMergeBlocks;
+    std::stack<size_t> m_varTableIndex;
+
+    /**********************\
     |     Helper Fields    |
     \**********************/
     // e.g. if we just finished an expression after return and need to return to
@@ -149,15 +162,7 @@ private:
     bool m_expectedReturnValue;
     bool m_expectedAssignment;
 
-    std::stack<BlockKind> m_blockHistory;
-    std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
-    std::unique_ptr<BasicBlock> m_nextControlEntryBlock;
-    std::stack<BasicBlock*> m_afterLoopBlocks;
-    std::stack<ASTNode*> m_forIncrements;
-    std::stack<BasicBlock*> m_conditionBlocks;
-    std::stack<std::unique_ptr<BasicBlock>> m_conditionMergeBlocks;
     std::stack<std::vector<IRBaseValue*>> m_funcArgs; // temporary holder to save func arguements
-    std::stack<size_t> m_varTableIndex;
 
     /**********************\
     |    Helper Methods    |
