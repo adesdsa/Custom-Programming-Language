@@ -128,7 +128,7 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     this->m_blockHistory.push(BlockKind::functionBlock);
     // Chking if the func is already defined.
-    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!funcMetaData)
     {
         StoreInternalError("IRVisitor::VisitFuncDeclaration unknown func");
@@ -178,7 +178,7 @@ void IRVisitor::VisitIf(ASTNode* node)
     this->m_conditionMergeBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elseBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::entry));
 
-    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[CONDITION_INDEX]);
 
     // If expression is true go to the 'then' block else go to the 'else' block
     this->m_irbuilder.CreateCondBr(
@@ -200,7 +200,7 @@ void IRVisitor::VisitElif(ASTNode* node)
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::entry));
 
-    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[CONDITION_INDEX]);
 
     // If expression is true go to the 'then' block else go to the 'else' block
     this->m_irbuilder.CreateCondBr(
@@ -240,7 +240,7 @@ void IRVisitor::VisitWhile(ASTNode* node)
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::entry));
 
     // Creating the condition expression and jumping to the while.body if true to while.exit if false.
-    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
+    IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[CONDITION_INDEX]);
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
             expressionResult,
@@ -267,16 +267,16 @@ void IRVisitor::VisitFor(ASTNode* node)
 
     // Building the first Command in the for loop which is Identifier/VarDeclaration + Assigment + Expression
     // That runs before the loop.
-    if (node->command.GetParams()[0].GetType() == CommandTypes::VAR_DECLARATION)
+    if (node->command.GetParams()[FOR_PRE_COND_VAR_INDEX].GetType() == CommandTypes::VAR_DECLARATION)
     {
-        VisitVarDeclaration(new ASTNode(node->command.GetParams()[0]));
+        VisitVarDeclaration(new ASTNode(node->command.GetParams()[FOR_PRE_COND_VAR_INDEX]));
     }
     else
     {
-        VisitIdentifier(new ASTNode(node->command.GetParams()[0]));
+        VisitIdentifier(new ASTNode(node->command.GetParams()[FOR_PRE_COND_VAR_INDEX]));
     }
-    VisitAssignment(new ASTNode(node->command.GetParams()[1]));
-    VisitExpression(new ASTNode(node->command.GetParams()[2]));
+    VisitAssignment(new ASTNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]));
+    VisitExpression(new ASTNode(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]));
 
     // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
@@ -288,7 +288,7 @@ void IRVisitor::VisitFor(ASTNode* node)
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
 
     // Creating the condition expression inside the for.cond block
-    VisitExpression(new ASTNode(node->command.GetParams()[3]));
+    VisitExpression(new ASTNode(node->command.GetParams()[FOR_COND_INDEX]));
     auto forCondResult = GetLastIsntruction();
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -326,7 +326,7 @@ void IRVisitor::VisitReturn(ASTNode* node)
 void IRVisitor::VisitControlStatement(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
-    Token statement = node->command[0];
+    Token statement = node->command[STATEMENT_INDEX];
 
     if (statement.GetValue() == "continue")
     {
@@ -444,9 +444,9 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
         forCommand = forNode->command;
-        VisitIdentifier(new ASTNode(forCommand.GetParams()[4]));
-        VisitAssignment(new ASTNode(forCommand.GetParams()[5]));
-        VisitExpression(new ASTNode(forCommand.GetParams()[6]));
+        VisitIdentifier(new ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]));
+        VisitAssignment(new ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]));
+        VisitExpression(new ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]));
 
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
@@ -509,7 +509,7 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     // Declaring the func incase it is def+dec (double definition cant happen)
     VisitFuncDeclaration(node);
     // Changing the m_currFunc to the new one. 
-    IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[0].GetValue());
+    IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!foundFunc)
     {
         StoreInternalError("IRVisitor::VisitFuncDefinition unknown func");
@@ -894,7 +894,7 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
 IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 {
     // Getting the expected func parameters
-    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[0].GetValue());
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!funcMetaData)
     {
         StoreInternalError("IRVisitor::HandleFuncCall unknown func");
@@ -929,18 +929,18 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     std::shared_ptr<const IRType> sizeofType = nullptr;
 
     // Incase of expression in sizeof
-    const Command& SizeofArg = command.GetParams()[0];
+    const Command& SizeofArg = command.GetParams()[STATEMENT_INDEX];
     if (SizeofArg.GetType() == CommandTypes::EXPRESSION ||
         SizeofArg.GetType() == CommandTypes::FINISHED_FUNC_CALL ||
         SizeofArg.GetType() == CommandTypes::IDENTIFIER_VALUE
     )
     {
-        IRBaseValue* value = HandleExpression(command.GetParams()[0]);
+        IRBaseValue* value = HandleExpression(command.GetParams()[STATEMENT_INDEX]);
         sizeofType = value->GetType();
     }
     else // Sizeof with type
     {
-        sizeofType = TypeToIRType(command.GetParams()[0][0].GetValue());
+        sizeofType = TypeToIRType(command.GetParams()[STATEMENT_INDEX][TOKEN_TYPE_INDEX].GetValue());
     }
 
     // Giving the correct sizeof Value (Those are constants)
@@ -1223,7 +1223,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
 
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
-                const std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(innerCommand[0].GetValue());
+                const std::optional<VarMetaData> varMetaData = ASTExtractor::ExtractVarName(new ASTNode(innerCommand));
                 if (!varMetaData) return {};
                 if (varMetaData->type == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (varMetaData->type == Type::DOUBLE_TYPE) localFloatness = true;
@@ -1232,7 +1232,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             }
             else if (innerCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
             {
-                FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[0].GetValue());
+                FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(innerCommand[FUNC_IDENTIFIER_INDEX].GetValue());
                 if (!funcMetaData) return {};
                 if (funcMetaData->GetRType() == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (funcMetaData->GetRType() == Type::DOUBLE_TYPE) localFloatness = true;

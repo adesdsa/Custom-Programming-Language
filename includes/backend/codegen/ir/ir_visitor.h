@@ -16,7 +16,17 @@
 #include "includes/backend/codegen/ir/ir_common_types.h"
 #include "includes/backend/codegen/target_architecture.h"
 
-/// @todo contstexpr
+constexpr int FUNC_IDENTIFIER_INDEX = 0;
+constexpr int CONDITION_INDEX = 0;
+constexpr int STATEMENT_INDEX = 0;
+constexpr int TOKEN_TYPE_INDEX = 0;
+constexpr int FOR_PRE_COND_VAR_INDEX = 0;
+constexpr int FOR_PRE_COND_ASSIGNMENT_INDEX = 1;
+constexpr int FOR_PRE_COND_EXPRESSION_INDEX = 2;
+constexpr int FOR_COND_INDEX = 3;
+constexpr int FOR_PRE_AFTER_COND_VAR_INDEX = 4;
+constexpr int FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX = 5;
+constexpr int FOR_PRE_AFTER_COND_EXPRESSION_INDEX = 6;
 
 /// @brief This enum represents the type of entry a control block has done.
 /// ifBlock - will create a %then label if it is entered and will create a %else label if not entered.
@@ -143,6 +153,7 @@ private:
     |  Control Flow Fields |
     \**********************/
 
+    /// @todo add docs
     std::stack<BlockKind> m_blockHistory;
     std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
     std::unique_ptr<BasicBlock> m_nextControlEntryBlock;
