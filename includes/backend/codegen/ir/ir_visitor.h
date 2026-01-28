@@ -224,6 +224,7 @@ private:
     /// @param name The name of the var.
     /// @return The StoreInstruction that holds the pointer.
     IRBaseValue* FindPointer(const std::string& name);
+    void StoreInternalError(const std::string& msg);
 
     /**********************\
     |   Expression Utils   |

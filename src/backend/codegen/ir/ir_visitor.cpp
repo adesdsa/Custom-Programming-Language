@@ -39,7 +39,11 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     /// Getting the varMetaData
     auto varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
-    if (!varMetaData) return;
+    if (!varMetaData) 
+    {
+        StoreInternalError("IRVisitor::VisitVarDeclaration unknown var");
+        return;
+    }
     m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
 
     // The var is saved differently if it is global or local.
@@ -81,7 +85,11 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     // Getting the varMetaData and saving it for later use incase of assignment.
     std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
-    if (!varMetaData) return;
+    if (!varMetaData)
+    {
+        StoreInternalError("IRVisitor::VisitIdentifier unknown var");
+        return;
+    }
     m_currVarMetaData = varMetaData;
 }
 
@@ -116,7 +124,11 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     this->m_blockHistory.push(BlockKind::functionBlock);
     // Chking if the func is already defined.
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
-    if (!funcMetaData) return;
+    if (!funcMetaData)
+    {
+        StoreInternalError("IRVisitor::VisitFuncDeclaration unknown func");
+        return;
+    }
 
     // Getting the arguements' types.
     std::vector<std::shared_ptr<const IRType>> funcParams;
@@ -481,7 +493,11 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     VisitFuncDeclaration(node);
     // Changing the m_currFunc to the new one. 
     IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[0].GetValue());
-    if (!foundFunc) return;
+    if (!foundFunc)
+    {
+        StoreInternalError("IRVisitor::VisitFuncDefinition unknown func");
+        return;
+    }
     this->m_currFunc = foundFunc;
     this->m_blockHistory.push(BlockKind::functionBlock);
 }
@@ -842,7 +858,11 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
 {
     // Finding the variable's name.
     const std::optional<VarMetaData>& varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
-    if (!varMetaData) return nullptr;
+    if (!varMetaData)
+    {
+        StoreInternalError("IRVisitor::HandleIdentifierValue unknown var");
+        return nullptr;
+    }
 
     return m_irbuilder.CreateLoad(
         FindPointer(varMetaData.value().sName)
@@ -853,7 +873,11 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 {
     // Getting the expected func parameters
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[0].GetValue());
-    if (!funcMetaData) return nullptr;
+    if (!funcMetaData)
+    {
+        StoreInternalError("IRVisitor::HandleFuncCall unknown func");
+        return nullptr;
+    }
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
 
     // Setting up the temporary holder
@@ -924,7 +948,8 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     }
     else
     {
-        /// @todo error handling
+        StoreInternalError("IRVisitor::HandleSizeof Couldn't find valid type");
+        return(nullptr);
     }
 }
 
@@ -1044,7 +1069,11 @@ static bool IsOneOf(Operators op, std::initializer_list<Operators> set)
 
 IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
 {
-    if (!value) return nullptr;
+    if (!value)
+    {
+        StoreInternalError("IRVisitor::ApplyNotIfNeeded value somehow is null");
+        return nullptr;
+    }
     if (notCnt % 2 == 0) return value;
     return this->m_irbuilder.CreateAnd(this->m_irbuilder.GetBool(false), value);
 }
@@ -1162,7 +1191,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
         {
             if (paramIndex >= command.GetParams().size())
             {
-                /// @todo handle error
+                StoreInternalError("IRVisitor::CollectExprItems paramIndex overflow");
             }
             Command innerCommand = command.GetParams()[paramIndex++];
 
@@ -1194,7 +1223,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             }
             else
             {
-                /// @todo raise error
+                StoreInternalError("IRVisitor::CollectExprItems unknown param");
             }
 
             ExprItem it;
@@ -1250,7 +1279,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
         }
         else
         {
-            /// @todo raise error
+            StoreInternalError("IRVisitor::CollectExprItems unknown expression token");
         }
     }
 
@@ -1275,7 +1304,11 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
 
     // Collapses all of the parantheses
     std::vector<ExprItem> expr = CollectExprItems(command, tokens, tokenIndex, paramIndex);
-    if (expr.empty()) return nullptr;
+    if (expr.empty())
+    {
+        StoreInternalError("IRVisitor::HandleExpression somehow expression is null after flattening");
+        return nullptr;
+    }
 
     // Collapses by precedence (mul/div/rem before add/sub etc)
     ReduceExprByPrecedence(expr);
@@ -1321,6 +1354,11 @@ IRBaseValue* IRVisitor::FindPointer(const std::string& name)
     }
     else
     {
-        /// @todo error here
+        StoreInternalError("IRVisitor::FindPointer Couldn't find stored var: " + name);
     }
+}
+
+void IRVisitor::StoreInternalError(const std::string& msg)
+{
+    this->m_errorManager.StoreError(CompileTimeError(ErrorTypes::INTERNAL_ERROR, msg, 0, 0, ""));
 }
