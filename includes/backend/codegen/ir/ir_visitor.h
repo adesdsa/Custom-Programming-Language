@@ -14,16 +14,10 @@
 #include "includes/backend/codegen/ir/ir_builder.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 #include "includes/backend/codegen/ir/ir_common_types.h"
+#include "includes/backend/codegen/target_architecture.h"
 
-enum class BlockKind
-{
-    functionBlock,
-    ifBlock,
-    elseBlock,
-    elifBlock,
-    whileBlock,
-    forBlock
-};
+/// @todo docs+contstexpr
+/// @todo add this->
 
 /// @brief This enum represents the type of entry a control block has done.
 /// ifBlock - will create a %then label if it is entered and will create a %else label if not entered.
@@ -38,23 +32,27 @@ enum class EntranceKind
     exit,
     condition
 };
+enum class BlockKind
+{
+    functionBlock,
+    ifBlock,
+    elseBlock,
+    elifBlock,
+    whileBlock,
+    forBlock
+};
 
 struct ExprItem
 {
     IRBaseValue* value;     // result SSA value
-    Operators op;           // operator AFTER this value
+    Operators op;           // operator after this value
     bool signage;
     bool floatness;
     size_t notCnt;          // how many `not` applied before this value
 };
 
-
-/// @todo check that code after Br isnt added
-/// @todo rethink phi
-/// @todo check why is it that i dont use IRType::GetFunc()
-
 /// @note params of expression func call or sizeof must not be checked the second time through nextChild on the ast
-/// @note After usage call DumpConstants()
+/// @note After usage call DumpConstants() and store somewhere so they wont turn to dangling pointers.
 class IRVisitor : public IASTVisitor
 {
     public:
@@ -72,6 +70,8 @@ class IRVisitor : public IASTVisitor
     IRVisitor(IASTVisitor&&) = delete;
     IRVisitor& operator=(IASTVisitor&&) = delete;
 
+    /// @brief The func dumps all the constants
+    /// @note Must be called after finishing IR building!
     std::vector<std::unique_ptr<IRBaseValue>> DumpConstants() noexcept;
 
 protected:
@@ -165,7 +165,7 @@ private:
     bool m_expectedReturnValue;
     bool m_expectedAssignment;
 
-    std::stack<std::vector<IRBaseValue*>> m_funcArgs; // temporary holder to save func arguements
+    bool m_returnedAlready;
 
     /**********************\
     |    Helper Methods    |
@@ -211,15 +211,6 @@ private:
     /// @param command The Command that holds the PicoC EXPRESSION.
     /// @return The IRBaseValue that holds the last value of the expression.
     IRBaseValue* HandleExpression(Command command);
-    /// @brief The func does all the related checks to adding a single SSA expression to the block.
-    /// @param oldInstruction The last SSA expression Instruction.
-    /// @param newInstruction The Instruction we try adding to it.
-    /// @param notCnt The counter of how many times there was not before the newInstruction
-    /// @param lastOperator The operation that will happen between them.
-    /// @param signage Is the operation unsigned.
-    /// @param floatness Is the operation a float.
-    /// @return An IRInstruction that holds the value of the operation between the two Instructions.
-    IRBaseValue* HandleExpressionToInstruction(IRBaseValue* oldInstruction, IRBaseValue* newInstruction, size_t notCnt, Operators lastOperator, bool signage, bool floatness);
     /// @brief The func creates a corresponding labelName for each nameless block.
     /// @see EntranceKind for more info
     std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);

@@ -9,7 +9,19 @@ IRVisitor::IRVisitor(
     m_errorManager(errorManager),
     m_decoratedAst(decoratedAst),
     m_currModule(module),
-    m_irbuilder(m_entityLogger)
+    m_irbuilder(m_entityLogger),
+    m_thenCnt(0),
+    m_elseCnt(0),
+    m_condCnt(0),
+    m_bodyCnt(0),
+    m_exitCnt(0),
+    m_mergeCnt(0),
+    m_nextControlEntryBlock(nullptr),
+    m_lastSavedValue(nullptr),
+    m_currVarMetaData(std::nullopt),
+    m_expectedReturnValue(false),
+    m_expectedAssignment(false),
+    m_returnedAlready(false)
 {
     this->m_varTableIndex.push(0);
     this->m_currVarTableNode = &this->m_decoratedAst.varTable;
@@ -24,6 +36,7 @@ std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
 
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     /// Getting the varMetaData
     auto varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData) return;
@@ -58,15 +71,14 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
 
 void IRVisitor::VisitExpression(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     IRBaseValue* expressionValue = HandleExpression(node->command);
-
     CheckValueNeededSomewhere(expressionValue, node);
-
-    this->m_irbuilder.ClearConstants(); /// @todo handle this
 }
 
 void IRVisitor::VisitIdentifier(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     // Getting the varMetaData and saving it for later use incase of assignment.
     std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData) return;
@@ -75,11 +87,14 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
 
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
 {
-    (void)HandleIdentifierValue(node);
+    if (this->m_returnedAlready) return; // Incase already returned
+    auto loadInstruction = HandleIdentifierValue(node);
+    CheckValueNeededSomewhere(loadInstruction, node);
 }
 
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
@@ -97,13 +112,14 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     this->m_blockHistory.push(BlockKind::functionBlock);
     // Chking if the func is already defined.
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[0].GetValue());
     if (!funcMetaData) return;
-    
-    std::vector<std::shared_ptr<const IRType>> funcParams;
 
+    // Getting the arguements' types.
+    std::vector<std::shared_ptr<const IRType>> funcParams;
     for (auto argMetaData : funcMetaData->GetFuncParams())
     {
         funcParams.push_back(TypeToIRType(argMetaData.type));
@@ -129,18 +145,23 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
 {
-    (void)HandleFuncCall(node->command);
+    if (this->m_returnedAlready) return; // Incase already returned
+    auto funcCallInstruction = HandleFuncCall(node->command);
+    CheckValueNeededSomewhere(funcCallInstruction, node);
 }
 
 void IRVisitor::VisitIf(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     m_blockHistory.push(BlockKind::ifBlock);
+    /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::exit)));
     this->m_conditionMergeBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elseBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::ifBlock, EntranceKind::entry));
 
     IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
 
+    // If expression is true go to the 'then' block else go to the 'else' block
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
             expressionResult,
@@ -153,12 +174,15 @@ void IRVisitor::VisitIf(ASTNode* node)
 
 void IRVisitor::VisitElif(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     m_blockHistory.push(BlockKind::elifBlock);
+    /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::exit)));
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::elifBlock, EntranceKind::entry));
 
     IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
 
+    // If expression is true go to the 'then' block else go to the 'else' block
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
             expressionResult,
@@ -171,22 +195,29 @@ void IRVisitor::VisitElif(ASTNode* node)
 
 void IRVisitor::VisitElse(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     m_blockHistory.push(BlockKind::elseBlock);
     this->m_nextExitBlocks.push(std::move(this->m_conditionMergeBlocks.top()));
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     m_blockHistory.push(BlockKind::whileBlock);
+    /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
 
+    // First we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::condition));
     this->m_conditionBlocks.push(condBlock);
     this->m_irbuilder.CreateBr(condBlock);
     this->m_irbuilder.SetInsertPoint(condBlock);
 
+    /// @see Control Flow Fields docs for more info
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::entry));
+
+    // Creating the condition expression and jumping to the while.body if true to while.exit if false.
     IRBaseValue* expressionResult = HandleExpression(node->command.GetParams()[0]);
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -200,9 +231,19 @@ void IRVisitor::VisitWhile(ASTNode* node)
 
 void IRVisitor::VisitFor(ASTNode* node)
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // For Command is build like this:                                                                                  |
+    // for ( Identifier/VarDeclaration + Assigment + Expression + Expression + Identifier + Assignment + Expression )   |
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (this->m_returnedAlready) return; // Incase already returned
     m_blockHistory.push(BlockKind::forBlock);
+    /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
+
+    // Building the first Command in the for loop which is Identifier/VarDeclaration + Assigment + Expression
+    // That runs before the loop.
     if (node->command.GetParams()[0].GetType() == CommandTypes::VAR_DECLARATION)
     {
         VisitVarDeclaration(new ASTNode(node->command.GetParams()[0]));
@@ -214,14 +255,18 @@ void IRVisitor::VisitFor(ASTNode* node)
     VisitAssignment(new ASTNode(node->command.GetParams()[1]));
     VisitExpression(new ASTNode(node->command.GetParams()[2]));
 
+    // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
     this->m_conditionBlocks.push(condBlock);
     this->m_irbuilder.CreateBr(condBlock);
     this->m_irbuilder.SetInsertPoint(condBlock);
 
+    /// @see Control Flow Fields docs for more info
+    this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
+
+    // Creating the condition expression inside the for.cond block
     VisitExpression(new ASTNode(node->command.GetParams()[3]));
     auto forCondResult = GetLastIsntruction();
-    this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
             forCondResult,
@@ -230,12 +275,13 @@ void IRVisitor::VisitFor(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
-
+    // The for loop increments is handled elsewhere (the i++ part)
     this->m_forIncrements.push(node);
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
 {
+    this->m_returnedAlready = true;
     // If we got the Instruction of the return expression
     if (m_expectedReturnValue)
     {
@@ -254,6 +300,7 @@ void IRVisitor::VisitReturn(ASTNode* node)
 
 void IRVisitor::VisitControlStatement(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     Token statement = node->command[0];
 
     if (statement.GetValue() == "continue")
@@ -270,11 +317,15 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
+
+    // Moving the VarTable to the correct node.
     size_t currVarTableIndex = this->m_varTableIndex.top();
     this->m_varTableIndex.pop();
     this->m_varTableIndex.push(currVarTableIndex + 1);
     this->m_currVarTableNode = this->m_currVarTableNode->GetBlock(currVarTableIndex);
     this->m_varTableIndex.push(0);
+
 
     switch (this->m_blockHistory.top())
     {
@@ -289,6 +340,7 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     case BlockKind::whileBlock:
     case BlockKind::elifBlock:
     case BlockKind::ifBlock:
+        // Setting the exit block as the current one.
         this->m_currFunc->AddBasicBlock(std::move(this->m_nextControlEntryBlock));
         this->m_irbuilder.SetInsertPoint(this->m_nextControlEntryBlock.get());
         this->m_nextControlEntryBlock = nullptr;
@@ -301,20 +353,26 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
 {
+    if (this->m_returnedAlready)
+    {
+        this->m_returnedAlready = false;
+    }
+
     Command forCommand;
     ASTNode* forNode;
     BasicBlock* tempExitBlockHolder;
+
+    // Moving the VarTable to the correct node.
     this->m_varTableIndex.pop();
     this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
 
     switch (this->m_blockHistory.top())
     {
     case BlockKind::functionBlock:
+        /// ====== Resets ======
         this->m_currFunc = nullptr;
-        m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(nullptr);
 
-        /// ====== Resets ======
         this->m_thenCnt = 0;
         this->m_elseCnt = 0;
         this->m_condCnt = 0;
@@ -351,20 +409,25 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
             this->m_varTableIndex.pop();
         }
         this->m_nextControlEntryBlock = nullptr;
-        VisitEndOfCommand(node);
+        VisitEndOfCommand(node); // More resets here
         break;
 
     case BlockKind::forBlock:
+        // First we create the increment part of the for loop.
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
         forCommand = forNode->command;
         VisitIdentifier(new ASTNode(forCommand.GetParams()[4]));
         VisitAssignment(new ASTNode(forCommand.GetParams()[5]));
         VisitExpression(new ASTNode(forCommand.GetParams()[6]));
+
     case BlockKind::whileBlock:
+        // Jumping back to the loop.cond block.
         this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
         this->m_conditionBlocks.pop();
-        this->m_afterLoopBlocks.pop();
+        this->m_afterLoopBlocks.pop(); // reset; no longer needed for break
+
+        // Creating the loop exit block
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
@@ -372,10 +435,13 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
 
     case BlockKind::ifBlock:
     case BlockKind::elifBlock:
+        // Creating a jump to the merge block.
         this->m_irbuilder.CreateBr(this->m_conditionMergeBlocks.top().get());
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+
+        // If this is last if or elif merge block is supposed to be here.
         if (node->nodeNextSibling->command.GetType() != CommandTypes::IF ||
             node->nodeNextSibling->command.GetType() != CommandTypes::ELIF ||
             node->nodeNextSibling->command.GetType() != CommandTypes::ELSE)
@@ -387,6 +453,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         break;
 
     case BlockKind::elseBlock:
+        // Creating the jump to the exit block
         this->m_irbuilder.CreateBr(this->m_nextExitBlocks.top().get());
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
@@ -397,15 +464,19 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     default:
         break;
     }
+    this->m_blockHistory.pop(); // Reset
 }
 
 void IRVisitor::VisitSizeof(ASTNode* node)
 {
-    (void)HandleSizeof(node->command);
+    if (this->m_returnedAlready) return; // Incase already returned
+    auto tempSizeofInstruction = HandleSizeof(node->command);
+    CheckValueNeededSomewhere(tempSizeofInstruction, node);
 }
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
     // Declaring the func incase it is def+dec (double definition cant happen)
     VisitFuncDeclaration(node);
     // Changing the m_currFunc to the new one. 
@@ -417,14 +488,12 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
 {
+    if (this->m_returnedAlready) return; // Incase already returned
+    // Only resetting.
     this->m_lastSavedValue = nullptr;
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
-    while (!this->m_funcArgs.empty())
-    {
-        this->m_funcArgs.pop();
-    }
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
@@ -442,7 +511,6 @@ void IRVisitor::VisitEof(ASTNode* node)
     return;
 }
 
-/// @todo Add handling of OS
 std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
 {
     switch (type)
@@ -452,15 +520,18 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         break;
 
     case Type::DOUBLE_TYPE:
-        return IRType::GetFloat32();
+        if (TargetArchitecture::Is32Bit()) return IRType::GetFloat32();
+        else return IRType::GetFloat64();
         break;
         
     case Type::INT_TYPE:
-        return IRType::GetInt32();
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
         break;
 
     case Type::UNSIGNED_INT_TYPE:
-        return IRType::GetInt32();
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
         break;
 
     case Type::VOID_TYPE:
@@ -481,12 +552,14 @@ std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
 
     if (type == "double")
     {
-        return IRType::GetFloat32();
+        if (TargetArchitecture::Is32Bit()) return IRType::GetFloat32();
+        else return IRType::GetFloat64();
     }
 
     if (type == "int" || type == "unsigned int")
     {
-        return IRType::GetInt32();
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
     }
 
     if (type == "void")
@@ -495,7 +568,6 @@ std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
     }
 }
 
-/// @todo Add handling of OS
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
 {
     std::string value = token.GetValue();
@@ -510,11 +582,13 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
     }
     else if (value.find('.') != std::string::npos)
     {
-        return this->m_irbuilder.GetFloat(std::stod(value));
+        if (TargetArchitecture::Is32Bit()) return this->m_irbuilder.GetFloat(std::stod(value));
+        else return this->m_irbuilder.GetDouble(std::stod(value));
     }
     else
     {
-        return this->m_irbuilder.GetInt32(std::stoll(value));
+        if (TargetArchitecture::Is32Bit()) return this->m_irbuilder.GetInt32(std::stoll(value));
+        else return this->m_irbuilder.GetInt64(std::stoll(value));
     }
 }
 
@@ -766,49 +840,49 @@ bool IRVisitor::CheckFloatness(Token token)
 
 IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
 {
+    // Finding the variable's name.
     const std::optional<VarMetaData>& varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData) return nullptr;
-    m_currVarMetaData = varMetaData;
 
     return m_irbuilder.CreateLoad(
-        FindPointer(this->m_currVarMetaData.value().sName)
+        FindPointer(varMetaData.value().sName)
     );
 }
 
 IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 {
-    // Getting the func parameters
+    // Getting the expected func parameters
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[0].GetValue());
     if (!funcMetaData) return nullptr;
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
 
     // Setting up the temporary holder
-    this->m_funcArgs.push(std::vector<IRBaseValue*>());
+    std::vector<IRBaseValue*> tempInstructionHolder;
 
     // Only if the func has arguements we add them
     if (params.size() != 0 && params[0].type != Type::VOID_TYPE)
     {
+        // Going through all the given func call arguements turning them into Isntructions and saving them.
         for (auto expression : command.GetParams())
         {
-            this->m_funcArgs.top().push_back(HandleExpression(expression));
+            tempInstructionHolder.push_back(HandleExpression(expression));
         }
     }
 
     // Creating the Call Instruction
     IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
         this->m_currModule.GetFunction(funcMetaData->GetName()),
-        this->m_funcArgs.top()
+        tempInstructionHolder
     );
 
-    this->m_funcArgs.pop(); // Removing the temporary holder
     return funcCallValue;
 }
 
-/// @todo add os support
 IRBaseValue* IRVisitor::HandleSizeof(Command command)
 {
     std::shared_ptr<const IRType> sizeofType = nullptr;
 
+    // Incase of expression in sizeof
     const Command& SizeofArg = command.GetParams()[0];
     if (SizeofArg.GetType() == CommandTypes::EXPRESSION ||
         SizeofArg.GetType() == CommandTypes::FINISHED_FUNC_CALL ||
@@ -823,13 +897,22 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
         sizeofType = TypeToIRType(command.GetParams()[0][0].GetValue());
     }
 
+    // Giving the correct sizeof Value (Those are constants)
     if (sizeofType == IRType::GetInt32())
     {
         return this->m_irbuilder.GetInt32(4);
     }
     else if (sizeofType == IRType::GetFloat32())
     {
+        return this->m_irbuilder.GetInt32(8);
+    }
+    if (sizeofType == IRType::GetInt64())
+    {
         return this->m_irbuilder.GetInt32(4);
+    }
+    else if (sizeofType == IRType::GetFloat64())
+    {
+        return this->m_irbuilder.GetInt32(8);
     }
     else if (sizeofType == IRType::GetInt1())
     {
@@ -842,79 +925,6 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     else
     {
         /// @todo error handling
-    }
-}
-
-IRBaseValue* IRVisitor::HandleExpressionToInstruction(
-    IRBaseValue* oldInstruction,
-    IRBaseValue* newInstruction,
-    size_t notCnt,
-    Operators lastOperator,
-    bool signage,
-    bool floatness)
-{
-    if (!oldInstruction) // Incase it's epxression start
-    {
-        if (notCnt != 0) // This means the epxression started with nots
-        {
-            if (notCnt % 2 == 0) // The nots disabled themselves
-            {
-                return newInstruction;
-            }
-            else
-            {
-                return this->m_irbuilder.CreateAnd(
-                    this->m_irbuilder.GetBool(false),
-                    newInstruction
-                );
-            }
-        }
-        else if (lastOperator != Operators::None) // The expression started with a minus '-'
-        {
-            return this->m_irbuilder.CreateMul(
-                ValueToConstIR(
-                    Token(
-                        "-",
-                        TokenTypes::VALUE,
-                        0,
-                        0
-                    )
-                ),
-                newInstruction
-            );
-        }
-        else // Expression starter
-        {
-            return newInstruction;
-        }
-    }
-    else if (notCnt != 0)
-    {
-        if (notCnt % 2 != 0) // The nots didnt disable themselves
-        {
-            return this->m_irbuilder.CreateAnd(
-                this->m_irbuilder.GetBool(false),
-                newInstruction
-            );
-        }
-
-        return ChooseOperation(
-            lastOperator,
-            oldInstruction,
-            newInstruction,
-            signage,
-            floatness
-        );
-    }
-    else
-    {
-        return ChooseOperation(
-            lastOperator,
-            oldInstruction,
-            newInstruction,
-            signage,
-            floatness
-        );
     }
 }
 
