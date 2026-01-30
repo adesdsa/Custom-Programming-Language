@@ -4,7 +4,8 @@ IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
     m_IRLogger("IR GENERATOR"),
     m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(decoratedAST.ast),
-    m_irMoudle("program") // TODO: put the output file name instead
+    m_irMoudle("program"), // TODO: put the output file name instead
+    m_irVisitor(m_IRLogger, m_errorManager, decoratedAST, m_irMoudle)
 {
     this->m_IRLogger.Info("Finished initializing IR Generator component successfully");
 }

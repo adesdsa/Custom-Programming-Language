@@ -3,7 +3,7 @@
 IRVisitor::IRVisitor(
     const EntityLogger& entityLogger,
     ErrorManager& errorManager,
-    DecoratedAST& decoratedAst,
+    const DecoratedAST& decoratedAst,
     IRModule& module) : 
     m_entityLogger(entityLogger),
     m_errorManager(errorManager),
@@ -1113,7 +1113,7 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
     return tempLabelHolder;
 }
 
-static bool IsOneOf(Operators op, std::initializer_list<Operators> set)
+bool IRVisitor::IsOneOf(Operators op, std::initializer_list<Operators> set)
 {
     for (Operators currCheck : set) if (op == currCheck) return true;
     return false;
