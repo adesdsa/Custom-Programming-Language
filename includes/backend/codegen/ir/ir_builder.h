@@ -15,6 +15,7 @@
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/backend/codegen/ir/ir_common_types.h"
 #include "includes/shared/errors/error_manager.h"
+#include "includes/backend/codegen/target_architecture.h"
 
 /// @brief Helper class that simplifies IR construction.
 ///
@@ -46,8 +47,10 @@ public:
     IRInstruction* CreateSub(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateMul(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateSDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateSFloorDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateSRem(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateUDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateUFloorDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateURem(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
 
     // ===== FLOAT ARITHMETIC =====
@@ -55,6 +58,7 @@ public:
     IRInstruction* CreateFSub(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFMul(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
+    IRInstruction* CreateFFloorDiv(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
     IRInstruction* CreateFRem(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
 
     // ===== INTEGER COMPARISON =====
@@ -101,6 +105,7 @@ public:
 
     // ===== OTHERS =====
     IRInstruction* CreatePhi(std::shared_ptr<const IRType> type, const std::string& name);
+    IRInstruction* CreateSelect(IRBaseValue* cond, IRBaseValue* trueVal, IRBaseValue* falseVal, const std::string& name = "");
 
     // ===== CONSTANTS =====
     /// @note After calling this function and moving all of the values using std::move call ClearConstants().
