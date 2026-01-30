@@ -8,4 +8,6 @@ void CodeGenManager::MainFlow()
 {
     IRGenerator irGenerator(this->m_decoratedAST);
     (void)irGenerator.MainFlow();
+
+    OptimizationManager optimizationManager;
 }

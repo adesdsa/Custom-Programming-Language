@@ -60,6 +60,8 @@ public:
     // <======= Alloca Methods =======>
     IRInstruction* FindAllocatedVar(const std::string& name);
 
+    void RemoveBasicBlock(BasicBlock* basicBlock);
+
 private:
     const std::string m_name;                                      
     const std::shared_ptr<const IRType> m_functionType; // holds arguement Types and returnType              

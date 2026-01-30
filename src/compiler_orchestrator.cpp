@@ -1,5 +1,4 @@
 #include "includes/compiler_orchestrator.h"
-#include "includes/backend/codegen/ir/ir_generator.h"
 
 CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
     m_filePath(DesriralizeCLI(argc, argv))

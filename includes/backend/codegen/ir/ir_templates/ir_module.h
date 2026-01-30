@@ -43,6 +43,8 @@ public:
     IRGlobalVariable* AddVariable(const std::string& name, std::shared_ptr<const IRType> type);
     bool IsVarExistByName(const std::string& name) const;
 
+    void RemoveVariable(IRGlobalVariable* globalVar);
+
 private:
     const std::string m_name;
     

@@ -14,7 +14,7 @@ public:
 
     void Info(const std::string& msg) const;
 
-    void Warnning(const std::string& msg) const;
+    void Warn(const std::string& msg) const;
 
     void Error(const std::string& msg) const;
 

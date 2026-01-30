@@ -1,5 +1,4 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_function.h"
-#include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
 
 IRFunction::IRFunction(
     const std::string& name,
@@ -110,6 +109,7 @@ BasicBlock* IRFunction::AddBasicBlock(const std::string& label)
     return this->m_blockMap[label];
 }
 
+<<<<<<< HEAD
 BasicBlock* IRFunction::AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock)
 {
     // save label before moving the unique_ptr
@@ -132,4 +132,26 @@ IRInstruction* IRFunction::FindAllocatedVar(const std::string& name)
         if (instruction.get()->GetName() == name) return instruction.get();
     }
     return nullptr;
+=======
+void IRFunction::RemoveBasicBlock(BasicBlock *basicBlock)
+{
+    if (!basicBlock) return;
+
+    this->m_blockMap.erase(basicBlock->GetLabel());
+
+    // find basic block in vector
+    auto basicBlockIterator = std::find_if(
+        this->m_basicBlocks.begin(),
+        this->m_basicBlocks.end(),
+        [basicBlock](const std::unique_ptr<BasicBlock>& ptr) 
+        {
+            return ptr.get() == basicBlock;
+        }
+    );
+
+    if (basicBlockIterator != this->m_basicBlocks.end())
+    {
+        this->m_basicBlocks.erase(basicBlockIterator);
+    }
+>>>>>>> origin/Feature/Optimizer
 }
