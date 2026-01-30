@@ -105,7 +105,6 @@ public:
 
     // ===== OTHERS =====
     IRInstruction* CreatePhi(std::shared_ptr<const IRType> type, const std::string& name);
-    IRInstruction* CreateFloor(IRBaseValue* val, const std::string& name = "");
     IRInstruction* CreateSelect(IRBaseValue* cond, IRBaseValue* trueVal, IRBaseValue* falseVal, const std::string& name = "");
 
     // ===== CONSTANTS =====
