@@ -56,6 +56,7 @@ enum class IROpcode
     CondBr,     // br i1 %cond, label %t, label %f  (conditional jump)
     Ret,        // ret i32 %val              (return from function)
     Call,       // %r = call i32 @func(...)  (function call)
+    Select,     // %result = select i1 %cond, i32 %trueVal, i32 %falseVal (ternary select)
 
     // SSA
     Phi         // %r = phi i32 [%a, %bb1], [%b, %bb2]

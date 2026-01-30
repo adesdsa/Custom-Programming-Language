@@ -706,7 +706,18 @@ IRInstruction* IRVisitor::ChooseOperation(
         break;
 
     case Operators::FloorDiv:
-        return this->m_irbuilder.CreateSDiv(lsh, rsh);
+        if (signage)
+        {
+            return this->m_irbuilder.CreateSFloorDiv(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFFloorDiv(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateUFloorDiv(lsh, rsh);
+        }
         break;
     
     case Operators::Rem:
