@@ -109,7 +109,6 @@ BasicBlock* IRFunction::AddBasicBlock(const std::string& label)
     return this->m_blockMap[label];
 }
 
-<<<<<<< HEAD
 BasicBlock* IRFunction::AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock)
 {
     // save label before moving the unique_ptr
@@ -132,7 +131,8 @@ IRInstruction* IRFunction::FindAllocatedVar(const std::string& name)
         if (instruction.get()->GetName() == name) return instruction.get();
     }
     return nullptr;
-=======
+}
+
 void IRFunction::RemoveBasicBlock(BasicBlock *basicBlock)
 {
     if (!basicBlock) return;
@@ -153,5 +153,4 @@ void IRFunction::RemoveBasicBlock(BasicBlock *basicBlock)
     {
         this->m_basicBlocks.erase(basicBlockIterator);
     }
->>>>>>> origin/Feature/Optimizer
 }

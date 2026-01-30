@@ -7,7 +7,7 @@ CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
 void CompilerOrchestrator::MainFlow()
 {
     ParserLogic parserComponent(
-        SystemUtils::BuildRelativePath(this->m_filePath)
+        SystemUtils::BuildRelativePath(L"tests\\inputs\\full_program_example_file.txt")
     );
 
     const AST& ast = parserComponent.MainFlow();
