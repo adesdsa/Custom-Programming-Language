@@ -126,7 +126,6 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
-    this->m_blockHistory.push(BlockKind::functionBlock);
     // Chking if the func is already defined.
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!funcMetaData)
@@ -372,8 +371,11 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     case BlockKind::elifBlock:
     case BlockKind::ifBlock:
         // Setting the exit block as the current one.
-        this->m_currFunc->AddBasicBlock(std::move(this->m_nextControlEntryBlock));
-        this->m_irbuilder.SetInsertPoint(this->m_nextControlEntryBlock.get());
+        this->m_irbuilder.SetInsertPoint(
+            this->m_currFunc->AddBasicBlock(
+                std::move(this->m_nextControlEntryBlock)
+            )
+        );
         this->m_nextControlEntryBlock = nullptr;
         break;
     
@@ -456,7 +458,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         VisitAssignment(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
         VisitExpression(&tempNode);
-
+        /// @note not having break is intended
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
         this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
@@ -478,9 +480,10 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
 
         // If this is last if or elif merge block is supposed to be here.
-        if (node->nodeNextSibling->command.GetType() != CommandTypes::IF &&
+        if (node->nodeNextSibling == nullptr ||
+            (node->nodeNextSibling->command.GetType() != CommandTypes::IF &&
             node->nodeNextSibling->command.GetType() != CommandTypes::ELIF &&
-            node->nodeNextSibling->command.GetType() != CommandTypes::ELSE)
+            node->nodeNextSibling->command.GetType() != CommandTypes::ELSE))
         {
             tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_conditionMergeBlocks.top()));
             this->m_conditionMergeBlocks.pop();
@@ -592,7 +595,7 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
     }
 }
 
-std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
+std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
 {
     if (type == "bool")
     {
@@ -615,6 +618,9 @@ std::shared_ptr<const IRType> TypeToIRType(const std::string& type)
     {
         return IRType::GetVoid();
     }
+
+    StoreInternalError("IRVisitor::TypeToIRType got an illegal type");
+    return IRType::GetVoid();
 }
 
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
@@ -697,6 +703,10 @@ IRInstruction* IRVisitor::ChooseOperation(
         {
             return this->m_irbuilder.CreateSDiv(lsh, rsh);
         }
+        break;
+
+    case Operators::FloorDiv:
+        return this->m_irbuilder.CreateSDiv(lsh, rsh);
         break;
     
     case Operators::Rem:
@@ -821,6 +831,8 @@ IRInstruction* IRVisitor::ChooseOperation(
         break;
     
     default:
+        StoreInternalError("IRVisitor::ChooseOperation got an illegal Operator");
+        return nullptr;
         break;
     }
 }
@@ -846,6 +858,7 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
     }
     else if (value == "//")
     {
+        return Operators::FloorDiv;
     }
     else if (value == "+")
     {
@@ -1093,6 +1106,11 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
     default:
         break;
     }
+
+    this->m_mergeCnt++;
+    std::string tempLabelHolder = "merge" + std::to_string(this->m_mergeCnt - 1);
+    StoreInternalError("IRVisitor::GetCorrespondingLabel couldn't create a label created a default: " + tempLabelHolder);
+    return tempLabelHolder;
 }
 
 static bool IsOneOf(Operators op, std::initializer_list<Operators> set)
@@ -1163,7 +1181,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
 /// 7) Or
 void IRVisitor::ReduceExprByPrecedence(std::vector<ExprItem>& expr)
 {
-    ReduceExprByOperators(expr, { Operators::Mul, Operators::Div, Operators::Rem });
+    ReduceExprByOperators(expr, { Operators::Mul, Operators::Div, Operators::Rem, Operators::FloorDiv });
     ReduceExprByOperators(expr, { Operators::Add, Operators::Sub });
     ReduceExprByOperators(expr, { Operators::Lt, Operators::Gt , Operators::Ge, Operators::Le});
     ReduceExprByOperators(expr, { Operators::Eq, Operators::Ne });
@@ -1377,17 +1395,20 @@ inline IRInstruction* IRVisitor::GetLastIsntruction()
 
 IRBaseValue* IRVisitor::FindPointer(const std::string& name)
 {
-    if (this->m_currFunc->FindAllocatedVar(name))
+    auto searchVar = this->m_currFunc->FindAllocatedVar(name);
+    auto searchGlobal = this->m_currModule.GetVariable(name);
+    auto searchArg = this->m_currFunc->GetArgument(name);
+    if (searchVar)
     {
-        return this->m_currFunc->FindAllocatedVar(name);
+        return searchVar;
     }
-    else if (this->m_currModule.GetVariable(name))
+    else if (searchGlobal)
     {
-        return this->m_currModule.GetVariable(name);
+        return searchGlobal;
     }
-    else if (this->m_currFunc->GetArgument(name))
+    else if (searchArg)
     {
-        return this->m_currFunc->GetArgument(name);
+        return searchArg;
     }
     else
     {

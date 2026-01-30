@@ -67,6 +67,7 @@ enum class Operators
     Sub,
     Mul,
     Div,
+    FloorDiv,
     Rem,
     And,
     Or,
