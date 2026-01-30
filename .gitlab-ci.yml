@@ -115,6 +115,31 @@ test-semantic_analysis:
       - build/test_results/
     expire_in: 1h
 
+# =====================
+# IR Tests
+# =====================
+test-ir:
+  stage: test
+  image: ubuntu:22.04
+  needs:
+    - job: build
+      artifacts: true 
+  script:
+    - apt-get update && apt-get install -y valgrind
+    - ln -s $CI_PROJECT_DIR/tests /tests
+    - chmod +x build/unit_tests
+    # Run tests
+    - mkdir -p build/test_results
+    - ./build/unit_tests --gtest_filter=IRTest.* --gtest_output=xml:build/test_results/ir.xml
+    # Memory check
+    - valgrind --leak-check=full ./build/unit_tests --gtest_filter=IRTest.*
+  artifacts:
+    reports:
+      junit: build/test_results/ir.xml
+    paths:
+      - build/test_results/
+    expire_in: 1h
+
 
 # =============================
 # Coding Conventions Checker

@@ -11,14 +11,13 @@ IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
 }
 
 const IRModule& IRGenerator::MainFlow()
-{
+{    
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();
-        // this->m_irVisitor.Visit(curr);
+        this->m_irVisitor.Visit(curr);
         (void)this->m_astIterator.Next();
     }
-
     if (this->m_errorManager.HasErrorsOccured())
     {
         this->m_errorManager.HandleErrors();

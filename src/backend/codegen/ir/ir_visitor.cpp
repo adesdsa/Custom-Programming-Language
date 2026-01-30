@@ -23,6 +23,7 @@ IRVisitor::IRVisitor(
     m_expectedAssignment(false),
     m_returnedAlready(false)
 {
+    this->InitializeHandlers();  // Initialize the visitor dispatch map
     this->m_varTableIndex.push(0);
     this->m_currVarTableNode = &this->m_decoratedAst.varTable;
 }
@@ -37,11 +38,19 @@ std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    
+    if (!this->m_currVarTableNode)
+    {
+        StoreInternalError("IRVisitor::VisitVarDeclaration m_currVarTableNode is null");
+        return;
+    }
+    
     /// Getting the varMetaData
-    auto varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
+    std::string varName = ASTExtractor::ExtractVarName(node);
+    auto varMetaData = this->m_currVarTableNode->FindVar(varName);
     if (!varMetaData) 
     {
-        StoreInternalError("IRVisitor::VisitVarDeclaration unknown var");
+        // Not finding the var is expected for forward declaration parameters
         return;
     }
     this->m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
@@ -58,6 +67,14 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     }
     else
     {
+        // If entry block doesn't exist yet, this is a function parameter
+        // Parameters are already handled as IRArguments, no alloca needed
+        if (this->m_currFunc && this->m_currFunc->GetEntryBlock() == nullptr)
+        {
+            this->m_entityLogger.Info("Added VarDeclaration IR handling");
+            return;  // Skip alloca for function parameters
+        }
+        
         // Any allocated var is saved in the entry block
         auto tempSave = this->m_irbuilder.GetInsertBlock();
         this->m_irbuilder.SetInsertPoint(this->m_currFunc->GetEntryBlock());
@@ -126,8 +143,17 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    
+    // Check if function already exists in IR module (already declared)
+    std::string funcName = node->command[FUNC_IDENTIFIER_INDEX].GetValue();
+    if (this->m_currModule.IsFuncExistByName(funcName))
+    {
+        this->m_entityLogger.Info("Added FuncDeclaration IR handling");
+        return;  // Function already declared, skip
+    }
+    
     // Chking if the func is already defined.
-    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(node->command[FUNC_IDENTIFIER_INDEX].GetValue());
+    FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(funcName);
     if (!funcMetaData)
     {
         StoreInternalError("IRVisitor::VisitFuncDeclaration unknown func");
@@ -309,19 +335,21 @@ void IRVisitor::VisitFor(ASTNode* node)
 
 void IRVisitor::VisitReturn(ASTNode* node)
 {
-    this->m_returnedAlready = true;
     // If we got the Instruction of the return expression
     if (this->m_expectedReturnValue)
     {
         this->m_expectedReturnValue = false;
         this->m_irbuilder.CreateRet(this->m_lastSavedValue);
+        this->m_returnedAlready = true;  // Set AFTER return is complete
     }
     else if (m_currFunc->GetReturnType() == IRType::GetVoid())
     {
         this->m_irbuilder.CreateRetVoid();
+        this->m_returnedAlready = true;  // Set AFTER return is complete
     }
     else
     {
+        // Waiting for expression - don't set m_returnedAlready yet
         this->m_expectedReturnValue = true;
     }
     this->m_entityLogger.Info("Added Return IR handling");
@@ -349,13 +377,54 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
 
-    // Moving the VarTable to the correct node.
-    size_t currVarTableIndex = this->m_varTableIndex.top();
-    this->m_varTableIndex.pop();
-    this->m_varTableIndex.push(currVarTableIndex + 1);
-    this->m_currVarTableNode = this->m_currVarTableNode->GetBlock(currVarTableIndex);
-    this->m_varTableIndex.push(0);
-
+    if (this->m_blockHistory.empty())
+    {
+        this->m_entityLogger.Error("VisitBlockStart: m_blockHistory is empty!");
+        return;
+    }
+    
+    BlockKind currentBlock = this->m_blockHistory.top();
+    
+    // For functionBlock, varTable navigation already done in VisitFuncDefinition
+    // (because params come before BLOCK_START but need function's scope)
+    if (currentBlock != BlockKind::functionBlock)
+    {
+        // Moving the VarTable to the correct node.
+        if (this->m_varTableIndex.empty())
+        {
+            this->m_entityLogger.Error("VisitBlockStart: m_varTableIndex is empty!");
+            return;
+        }
+        size_t currVarTableIndex = this->m_varTableIndex.top();
+        this->m_varTableIndex.pop();
+        this->m_varTableIndex.push(currVarTableIndex + 1);
+        
+        if (this->m_currVarTableNode == nullptr)
+        {
+            this->m_entityLogger.Error("VisitBlockStart: m_currVarTableNode is null!");
+            this->m_varTableIndex.push(0);
+        }
+        else
+        {
+            const auto& children = this->m_currVarTableNode->GetChildren();
+            
+            // Bounds check - some blocks may not have their own scope
+            if (currVarTableIndex >= children.size())
+            {
+                // This block has no local var scope - that's ok for blocks without local vars
+                this->m_varTableIndex.push(0);
+            }
+            else
+            {
+                VarTableNode* nextNode = this->m_currVarTableNode->GetBlock(static_cast<int>(currVarTableIndex));
+                if (nextNode != nullptr)
+                {
+                    this->m_currVarTableNode = nextNode;
+                }
+                this->m_varTableIndex.push(0);
+            }
+        }
+    }
 
     switch (this->m_blockHistory.top())
     {
@@ -370,7 +439,13 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     case BlockKind::whileBlock:
     case BlockKind::elifBlock:
     case BlockKind::ifBlock:
-        // Setting the exit block as the current one.
+        if (!this->m_currFunc || !this->m_nextControlEntryBlock)
+        {
+            this->m_entityLogger.Error("VisitBlockStart: m_currFunc or m_nextControlEntryBlock is null!");
+            break;
+        }
+        
+        // Setting the entry block as the current one.
         this->m_irbuilder.SetInsertPoint(
             this->m_currFunc->AddBasicBlock(
                 std::move(this->m_nextControlEntryBlock)
@@ -404,6 +479,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     switch (this->m_blockHistory.top())
     {
     case BlockKind::functionBlock:
+    {
         /// ====== Resets ======
         this->m_currFunc = nullptr;
         this->m_irbuilder.SetInsertPoint(nullptr);
@@ -439,13 +515,23 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_conditionMergeBlocks.pop();
         }
+        
+        // Save the top-level function index before clearing (tells us which function we're at)
+        size_t nextFuncIndex = this->m_varTableIndex.top();  // This is already incremented
         while (!this->m_varTableIndex.empty())
         {
             this->m_varTableIndex.pop();
         }
         this->m_nextControlEntryBlock = nullptr;
+        
+        // Re-initialize state for next function
+        this->m_currVarTableNode = &this->m_decoratedAst.varTable;  // Reset to root
+        this->m_varTableIndex.push(nextFuncIndex);  // Preserve index for next function
+        
         VisitEndOfCommand(node); // More resets here
-        break;
+        this->m_entityLogger.Info("Added BlockEnd IR handling");
+        return;  // Early return - blockHistory already emptied
+    }
 
     case BlockKind::forBlock:
         // First we create the increment part of the for loop.
@@ -529,6 +615,20 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     }
     this->m_currFunc = foundFunc;
     this->m_blockHistory.push(BlockKind::functionBlock);
+    
+    // Navigate to function's scope in varTable BEFORE params are visited
+    // (params come before BLOCK_START in AST but belong to function's scope)
+    size_t currVarTableIndex = this->m_varTableIndex.top();
+    this->m_varTableIndex.pop();
+    this->m_varTableIndex.push(currVarTableIndex + 1);
+    
+    VarTableNode* nextNode = this->m_currVarTableNode->GetBlock(static_cast<int>(currVarTableIndex));
+    if (nextNode != nullptr)
+    {
+        this->m_currVarTableNode = nextNode;
+    }
+    this->m_varTableIndex.push(0);
+    
     this->m_entityLogger.Info("Added FuncDefinition IR handling");
 }
 
@@ -1157,6 +1257,14 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
             combinedSignage,
             combinedFloatness
         );
+
+        if (!result)
+        {
+            this->m_entityLogger.Error("ReduceExprByOperators: ChooseOperation returned nullptr for op " + 
+                                       std::to_string(static_cast<int>(currOp)));
+            ++i;
+            continue;
+        }
 
         // replace item i with result and inherit operator from i+1
         expr[i].value = result;
