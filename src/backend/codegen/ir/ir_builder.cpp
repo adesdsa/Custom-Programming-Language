@@ -1134,7 +1134,6 @@ IRInstruction* IRBuilder::CreateAlloca(
         this->m_insertBlock
     );
 
-    m_entitylogger.Info("Created a new Alloca instruction");
     if (!inst.get())
     {
         StoreInternalError("IRBuilder::Insert: inst is nullptr");
@@ -1148,6 +1147,7 @@ IRInstruction* IRBuilder::CreateAlloca(
 
     IRInstruction* ptr = inst.get();
     this->m_insertBlock->AddFirstInstruction(std::move(inst));
+    m_entitylogger.Info("Created a new Alloca instruction");
     return ptr;
 }
 

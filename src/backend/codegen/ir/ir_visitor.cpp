@@ -138,13 +138,13 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             FindPointer(this->m_currVarMetaData.value().sName)
         );
         this->m_expectedAssignment = false;
+        this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
     }
     else
     {
         this->m_expectedAssignment = true;
     }
-    this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
-        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
