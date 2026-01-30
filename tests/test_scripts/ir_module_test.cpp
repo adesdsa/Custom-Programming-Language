@@ -3,6 +3,10 @@
 #include "includes/frontend/parser/parser_logic.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
 #include "includes/backend/codegen/ir/ir_generator.h"
+#include "includes/backend/codegen/ir/ir_builder.h"
+#include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
+#include "includes/backend/codegen/ir/optimizations/constant_folding_pass.h"
+#include "includes/backend/codegen/ir/optimizations/dce_pass.h"
 #include "includes/backend/codegen/target_architecture.h"
 #include "includes/shared/utils/tests_utils.h"
 #include "includes/shared/utils/system_utils.h"
@@ -327,4 +331,331 @@ TEST(IRTest, HappyFlowFullProgram)
     EXPECT_TRUE(foundModulo) << "Expected modulo instruction (low % i)";
 
     testLogger.Info("HappyFlowFullProgram PASSED");
+}
+
+/////////////////////////////////////////////////////////////////
+// OPTIMIZATION TESTS                                           |
+/////////////////////////////////////////////////////////////////
+
+// Helper to get integer type based on architecture
+std::shared_ptr<const IRType> GetArchIntType()
+{
+    return TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+}
+
+// TEST: Constant Folding - Happy Flow - Constant expressions should be folded
+TEST(OptimizationTest, ConstantFoldingHappyFlow) 
+{
+    EntityLogger testLogger("OPTIMIZATION_TEST");
+    testLogger.Info("Testing Constant Folding - Happy Flow");
+
+    // Create an IRModule with a function that has foldable constant expressions
+    IRModule module("ConstantFoldingTest");
+    
+    auto intType = GetArchIntType();
+    
+    // Create function: int testFunc() { return 3 + 5; }
+    std::vector<std::shared_ptr<const IRType>> noParams;
+    IRFunction* testFunc = module.AddFunction(
+        "testFunc",
+        IRType::GetFunction(intType, noParams)
+    );
+    ASSERT_NE(testFunc, nullptr);
+
+    BasicBlock* entryBlock = testFunc->AddBasicBlock("entry");
+    ASSERT_NE(entryBlock, nullptr);
+
+    IRBuilder builder(testLogger);
+    builder.SetInsertPoint(entryBlock);
+
+    // Create: t0 = add int 3, 5  (this should be folded to 8)
+    IRConstantInt* const3 = TargetArchitecture::Is32Bit() ? builder.GetInt32(3) : builder.GetInt64(3);
+    IRConstantInt* const5 = TargetArchitecture::Is32Bit() ? builder.GetInt32(5) : builder.GetInt64(5);
+    IRInstruction* addInst = builder.CreateAdd(const3, const5, "t0");
+    ASSERT_NE(addInst, nullptr);
+
+    // Create: ret i32 t0
+    builder.CreateRet(addInst);
+
+    // Move constants to module
+    auto constants = builder.DumpConstants();
+    for (auto& c : constants)
+    {
+        module.AddConstant(std::move(c));
+    }
+    builder.ClearConstants();
+
+    // Verify before optimization: should have Add instruction
+    size_t instructionCountBefore = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountBefore, 2); // add + ret
+
+    bool foundAddBefore = false;
+    for (const auto& inst : entryBlock->GetInstructions())
+    {
+        if (inst->GetOpcode() == IROpcode::Add)
+        {
+            foundAddBefore = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(foundAddBefore) << "Add instruction should exist before optimization";
+
+    // Run Constant Folding pass
+    ConstantFoldingPass constantFoldingPass(testLogger);
+    bool changed = constantFoldingPass.Run(module);
+
+    // Verify: optimization should have made changes
+    EXPECT_TRUE(changed) << "Constant folding should report changes made";
+
+    // Verify: Add instruction should be removed (folded to constant 8)
+    bool foundAddAfter = false;
+    for (const auto& inst : entryBlock->GetInstructions())
+    {
+        if (inst->GetOpcode() == IROpcode::Add)
+        {
+            foundAddAfter = true;
+            break;
+        }
+    }
+    EXPECT_FALSE(foundAddAfter) << "Add instruction should be folded away";
+
+    // Verify: ret instruction should now use constant 8 directly
+    IRInstruction* retInst = entryBlock->GetTerminator();
+    ASSERT_NE(retInst, nullptr);
+    EXPECT_EQ(retInst->GetOpcode(), IROpcode::Ret);
+    
+    if (retInst->GetNumOperands() > 0)
+    {
+        IRBaseValue* retOperand = retInst->GetOperand(0);
+        auto* constInt = dynamic_cast<IRConstantInt*>(retOperand);
+        if (constInt)
+        {
+            EXPECT_EQ(constInt->GetValue(), 8) << "Return value should be folded constant 8";
+        }
+    }
+
+    testLogger.Info("ConstantFoldingHappyFlow PASSED");
+}
+
+// TEST: Constant Folding - Negative Flow - No constants to fold
+TEST(OptimizationTest, ConstantFoldingNegativeFlow) 
+{
+    EntityLogger testLogger("OPTIMIZATION_TEST");
+    testLogger.Info("Testing Constant Folding - Negative Flow");
+
+    // Create an IRModule with a function that has NO foldable expressions
+    IRModule module("ConstantFoldingNegTest");
+    
+    auto intType = GetArchIntType();
+    
+    // Create function: int add(int a, int b) { return a + b; }
+    std::vector<std::shared_ptr<const IRType>> params = { intType, intType };
+    IRFunction* addFunc = module.AddFunction(
+        "add",
+        IRType::GetFunction(intType, params)
+    );
+    ASSERT_NE(addFunc, nullptr);
+
+    IRArgument* argA = addFunc->AddArgument("a", intType);
+    IRArgument* argB = addFunc->AddArgument("b", intType);
+    ASSERT_NE(argA, nullptr);
+    ASSERT_NE(argB, nullptr);
+
+    BasicBlock* entryBlock = addFunc->AddBasicBlock("entry");
+    ASSERT_NE(entryBlock, nullptr);
+
+    IRBuilder builder(testLogger);
+    builder.SetInsertPoint(entryBlock);
+
+    // Create: t0 = add i32 %a, %b (cannot be folded - variables not constants)
+    IRInstruction* addInst = builder.CreateAdd(argA, argB, "t0");
+    ASSERT_NE(addInst, nullptr);
+
+    // Create: ret i32 t0
+    builder.CreateRet(addInst);
+
+    // Verify before optimization
+    size_t instructionCountBefore = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountBefore, 2); // add + ret
+
+    // Run Constant Folding pass
+    ConstantFoldingPass constantFoldingPass(testLogger);
+    bool changed = constantFoldingPass.Run(module);
+
+    // Verify: optimization should NOT have made changes (nothing to fold)
+    EXPECT_FALSE(changed) << "Constant folding should not change code with only variables";
+
+    // Verify: instruction count unchanged
+    size_t instructionCountAfter = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountAfter, instructionCountBefore);
+
+    // Verify: Add instruction still exists
+    bool foundAdd = false;
+    for (const auto& inst : entryBlock->GetInstructions())
+    {
+        if (inst->GetOpcode() == IROpcode::Add)
+        {
+            foundAdd = true;
+            // Operands should still be the arguments
+            EXPECT_EQ(inst->GetOperand(0), argA);
+            EXPECT_EQ(inst->GetOperand(1), argB);
+            break;
+        }
+    }
+    EXPECT_TRUE(foundAdd) << "Add instruction should remain unchanged";
+
+    testLogger.Info("ConstantFoldingNegativeFlow PASSED");
+}
+
+// TEST: DCE - Happy Flow - Dead code should be removed
+TEST(OptimizationTest, DCEHappyFlow) 
+{
+    EntityLogger testLogger("OPTIMIZATION_TEST");
+    testLogger.Info("Testing DCE - Happy Flow");
+
+    // Create an IRModule with dead code
+    IRModule module("DCETest");
+    
+    auto intType = GetArchIntType();
+    bool is32Bit = TargetArchitecture::Is32Bit();
+    
+    // Create function: int testFunc() { int unused = 3 + 5; return 42; }
+    std::vector<std::shared_ptr<const IRType>> noParams;
+    IRFunction* testFunc = module.AddFunction(
+        "testFunc",
+        IRType::GetFunction(intType, noParams)
+    );
+    ASSERT_NE(testFunc, nullptr);
+
+    BasicBlock* entryBlock = testFunc->AddBasicBlock("entry");
+    ASSERT_NE(entryBlock, nullptr);
+
+    IRBuilder builder(testLogger);
+    builder.SetInsertPoint(entryBlock);
+
+    // Create: t0 = add int 3, 5 (DEAD - result is never used)
+    IRConstantInt* const3 = is32Bit ? builder.GetInt32(3) : builder.GetInt64(3);
+    IRConstantInt* const5 = is32Bit ? builder.GetInt32(5) : builder.GetInt64(5);
+    IRInstruction* deadAddInst = builder.CreateAdd(const3, const5, "dead_add");
+    ASSERT_NE(deadAddInst, nullptr);
+
+    // Create: t1 = mul int 2, 3 (DEAD - result is never used)
+    IRConstantInt* const2 = is32Bit ? builder.GetInt32(2) : builder.GetInt64(2);
+    IRConstantInt* const3b = is32Bit ? builder.GetInt32(3) : builder.GetInt64(3);
+    IRInstruction* deadMulInst = builder.CreateMul(const2, const3b, "dead_mul");
+    ASSERT_NE(deadMulInst, nullptr);
+
+    // Create: ret int 42 (LIVE - has side effect)
+    IRConstantInt* const42 = is32Bit ? builder.GetInt32(42) : builder.GetInt64(42);
+    builder.CreateRet(const42);
+
+    // Move constants to module
+    auto constants = builder.DumpConstants();
+    for (auto& c : constants)
+    {
+        module.AddConstant(std::move(c));
+    }
+    builder.ClearConstants();
+
+    // Verify before optimization: should have 3 instructions (add, mul, ret)
+    size_t instructionCountBefore = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountBefore, 3);
+
+    // Run DCE pass
+    DCEPass dcePass(testLogger);
+    bool changed = dcePass.Run(module);
+
+    // Verify: optimization should have made changes
+    EXPECT_TRUE(changed) << "DCE should report changes made";
+
+    // Verify: dead instructions should be removed
+    size_t instructionCountAfter = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountAfter, 1) << "Only ret instruction should remain";
+
+    // Verify: only ret instruction remains
+    IRInstruction* remainingInst = entryBlock->GetTerminator();
+    ASSERT_NE(remainingInst, nullptr);
+    EXPECT_EQ(remainingInst->GetOpcode(), IROpcode::Ret);
+
+    testLogger.Info("DCEHappyFlow PASSED");
+}
+
+// TEST: DCE - Negative Flow - All code is live (no dead code)
+TEST(OptimizationTest, DCENegativeFlow) 
+{
+    EntityLogger testLogger("OPTIMIZATION_TEST");
+    testLogger.Info("Testing DCE - Negative Flow");
+
+    // Create an IRModule with NO dead code - all instructions are used
+    IRModule module("DCENegTest");
+    
+    auto intType = GetArchIntType();
+    bool is32Bit = TargetArchitecture::Is32Bit();
+    
+    // Create function: int testFunc(int* ptr) { *ptr = 10; return *ptr; }
+    std::vector<std::shared_ptr<const IRType>> params = { IRType::GetPointerTo(intType) };
+    IRFunction* testFunc = module.AddFunction(
+        "testFunc",
+        IRType::GetFunction(intType, params)
+    );
+    ASSERT_NE(testFunc, nullptr);
+
+    IRArgument* ptrArg = testFunc->AddArgument("ptr", IRType::GetPointerTo(intType));
+    ASSERT_NE(ptrArg, nullptr);
+
+    BasicBlock* entryBlock = testFunc->AddBasicBlock("entry");
+    ASSERT_NE(entryBlock, nullptr);
+
+    IRBuilder builder(testLogger);
+    builder.SetInsertPoint(entryBlock);
+
+    // Create: store int 10, int* %ptr (LIVE - has side effect)
+    IRConstantInt* const10 = is32Bit ? builder.GetInt32(10) : builder.GetInt64(10);
+    builder.CreateStore(const10, ptrArg);
+
+    // Create: t0 = load i32, i32* %ptr (LIVE - used by ret)
+    IRInstruction* loadInst = builder.CreateLoad(ptrArg, "loaded_val");
+    ASSERT_NE(loadInst, nullptr);
+
+    // Create: ret i32 t0 (LIVE - terminates function)
+    builder.CreateRet(loadInst);
+
+    // Move constants to module
+    auto constants = builder.DumpConstants();
+    for (auto& c : constants)
+    {
+        module.AddConstant(std::move(c));
+    }
+    builder.ClearConstants();
+
+    // Verify before optimization
+    size_t instructionCountBefore = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountBefore, 3); // store + load + ret
+
+    // Run DCE pass
+    DCEPass dcePass(testLogger);
+    bool changed = dcePass.Run(module);
+
+    // Verify: optimization should NOT have made changes (all code is live)
+    EXPECT_FALSE(changed) << "DCE should not change code when all instructions are live";
+
+    // Verify: instruction count unchanged
+    size_t instructionCountAfter = entryBlock->GetInstructions().size();
+    EXPECT_EQ(instructionCountAfter, instructionCountBefore);
+
+    // Verify: all instructions still exist
+    bool foundStore = false;
+    bool foundLoad = false;
+    bool foundRet = false;
+    for (const auto& inst : entryBlock->GetInstructions())
+    {
+        if (inst->GetOpcode() == IROpcode::Store) foundStore = true;
+        if (inst->GetOpcode() == IROpcode::Load) foundLoad = true;
+        if (inst->GetOpcode() == IROpcode::Ret) foundRet = true;
+    }
+    EXPECT_TRUE(foundStore) << "Store instruction should remain";
+    EXPECT_TRUE(foundLoad) << "Load instruction should remain";
+    EXPECT_TRUE(foundRet) << "Ret instruction should remain";
+
+    testLogger.Info("DCENegativeFlow PASSED");
 }
