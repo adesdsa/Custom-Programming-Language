@@ -23,7 +23,7 @@ IRVisitor::IRVisitor(
     m_expectedAssignment(false),
     m_returnedAlready(false)
 {
-    this->InitializeHandlers();  // Initialize the visitor dispatch map
+    this->InitializeHandlers();
     this->m_varTableIndex.push(0);
     this->m_currVarTableNode = &this->m_decoratedAst.varTable;
 }
@@ -37,7 +37,7 @@ std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
 
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
-    if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_returnedAlready) return;
     
     if (!this->m_currVarTableNode)
     {
@@ -50,7 +50,6 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     auto varMetaData = this->m_currVarTableNode->FindVar(varName);
     if (!varMetaData) 
     {
-        // Not finding the var is expected for forward declaration parameters
         return;
     }
     this->m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
@@ -67,8 +66,8 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     }
     else
     {
-        // If entry block doesn't exist yet, this is a function parameter
-        // Parameters are already handled as IRArguments, no alloca needed
+        // If entry block doesnt exist yet, this is a function parameter
+        // parameters are already handled as IRArguments, no alloca needed
         if (this->m_currFunc && this->m_currFunc->GetEntryBlock() == nullptr)
         {
             this->m_entityLogger.Info("Added VarDeclaration IR handling");
