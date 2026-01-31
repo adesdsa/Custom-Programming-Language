@@ -23,6 +23,11 @@ const IRModule& IRGenerator::MainFlow()
         this->m_errorManager.HandleErrors();
     }
 
+    auto tempConstantSave = this->m_irVisitor.DumpConstants();
+    for (auto constatnt : tempConstantSave)
+    {
+        this->m_irMoudle.AddConstant(constatnt);
+    }
     this->m_IRLogger.Info("Finished generating IR");
     return this->m_irMoudle;
 }
