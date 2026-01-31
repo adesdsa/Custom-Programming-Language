@@ -46,28 +46,10 @@ build:
     # Install project dependencies
     - $VCPKG_ROOT/vcpkg install --triplet x64-linux
   script:
-    - set -o pipefail  # Ensure pipeline failures are caught
     - rm -rf build
     - mkdir -p build
-    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake 2>&1 | tee build/cmake_output.log
-    - cmake --build build 2>&1 | tee build/build_output.log
-    # Count and report warnings (informational only)
-    - |
-      echo ""
-      echo "========================================"
-      echo "         COMPILER WARNINGS REPORT       "
-      echo "========================================"
-      WARNING_COUNT=$(grep -c "warning:" build/build_output.log || echo "0")
-      echo "Total warnings found: $WARNING_COUNT"
-      echo "========================================"
-      if [ "$WARNING_COUNT" -gt "0" ]; then
-        echo "⚠️  Warnings found:"
-        grep "warning:" build/build_output.log | head -30
-        echo ""
-        echo "(showing first 30 warnings)"
-      else
-        echo "✅ No warnings! Great job!"
-      fi
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+    - cmake --build build
   cache:
     key: vcpkg-$CI_COMMIT_REF_SLUG
     paths:
