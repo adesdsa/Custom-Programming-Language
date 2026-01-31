@@ -24,9 +24,9 @@ const IRModule& IRGenerator::MainFlow()
     }
 
     auto tempConstantSave = this->m_irVisitor.DumpConstants();
-    for (auto constatnt : tempConstantSave)
+    for (auto&& constatnt : tempConstantSave)
     {
-        this->m_irMoudle.AddConstant(constatnt);
+        this->m_irMoudle.AddConstant(std::move(constatnt));
     }
     this->m_IRLogger.Info("Finished generating IR");
     return this->m_irMoudle;
