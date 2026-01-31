@@ -14,8 +14,9 @@ int main(int argc, const char* argv[])
 
     try
     {
-
-        CompilerOrchestrator compilerOrchestrator(argc, argv);
+        int fakeArgc = 2;
+        const char* fakeArgv[] = { "", "" };
+        CompilerOrchestrator compilerOrchestrator(fakeArgc, fakeArgv);
         compilerOrchestrator.MainFlow();
     }
     catch(const CompilationAbortException& abortError)

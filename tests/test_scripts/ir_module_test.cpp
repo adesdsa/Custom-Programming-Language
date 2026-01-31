@@ -593,14 +593,14 @@ TEST(OptimizationTest, DCENegativeFlow)
     bool is32Bit = TargetArchitecture::Is32Bit();
     
     // Create function: int testFunc(int* ptr) { *ptr = 10; return *ptr; }
-    std::vector<std::shared_ptr<const IRType>> params = { IRType::GetPointerTo(intType) };
+    std::vector<std::shared_ptr<const IRType>> params = { intType };
     IRFunction* testFunc = module.AddFunction(
         "testFunc",
         IRType::GetFunction(intType, params)
     );
     ASSERT_NE(testFunc, nullptr);
 
-    IRArgument* ptrArg = testFunc->AddArgument("ptr", IRType::GetPointerTo(intType));
+    IRArgument* ptrArg = testFunc->AddArgument("ptr", intType);
     ASSERT_NE(ptrArg, nullptr);
 
     BasicBlock* entryBlock = testFunc->AddBasicBlock("entry");

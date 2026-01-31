@@ -101,3 +101,8 @@ void IRModule::RemoveVariable(IRGlobalVariable* globalVar)
         this->m_globals.erase(globalVarIterator);
     }
 }
+
+void IRModule::AddConstant(std::unique_ptr<IRBaseValue> constant)
+{
+    this->m_constants.push_back(std::move(constant));
+}

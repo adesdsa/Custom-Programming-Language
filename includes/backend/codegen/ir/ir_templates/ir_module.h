@@ -44,9 +44,11 @@ public:
     bool IsVarExistByName(const std::string& name) const;
 
     void RemoveVariable(IRGlobalVariable* globalVar);
+    void AddConstant(std::unique_ptr<IRBaseValue> constant);
 
 private:
     const std::string m_name;
+    std::vector<std::unique_ptr<IRBaseValue>> m_constants;
     
     /// @note: Following code contains both vector and map for better time complexity
                             

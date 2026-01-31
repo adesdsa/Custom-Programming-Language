@@ -38,10 +38,11 @@ std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
     if (this->m_returnedAlready) return;
-    
+    if (this->m_handledInsides) return; // Incase already handled the insides.
+
     if (!this->m_currVarTableNode)
     {
-        StoreInternalError("IRVisitor::VisitVarDeclaration m_currVarTableNode is null");
+        StoreInternalError("IRVisitor::VisitVarDeclaration m_currVarTableNode is null", node->command);
         return;
     }
     
@@ -70,7 +71,8 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
         // parameters are already handled as IRArguments, no alloca needed
         if (this->m_currFunc && this->m_currFunc->GetEntryBlock() == nullptr)
         {
-            this->m_entityLogger.Info("Added VarDeclaration IR handling");
+            this->m_entityLogger.Info("Added VarDeclaration IR handling.\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
             return;  // Skip alloca for function parameters
         }
         
@@ -87,15 +89,18 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
 
         this->m_irbuilder.SetInsertPoint(tempSave); //reset
     }
-    this->m_entityLogger.Info("Added VarDeclaration IR handling");
+    this->m_entityLogger.Info("Added VarDeclaration IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitExpression(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_handledInsides) return; // Incase already handled the insides.
     IRBaseValue* expressionValue = HandleExpression(node->command);
     CheckValueNeededSomewhere(expressionValue, node);
-    this->m_entityLogger.Info("Added Expression IR handling");
+    this->m_entityLogger.Info("Added Expression IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitIdentifier(ASTNode* node)
@@ -105,24 +110,28 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
     std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData)
     {
-        StoreInternalError("IRVisitor::VisitIdentifier unknown var");
+        StoreInternalError("IRVisitor::VisitIdentifier unknown var", node->command);
         return;
     }
     this->m_currVarMetaData = varMetaData;
-    this->m_entityLogger.Info("Added Identifier IR handling");
+    this->m_entityLogger.Info("Added Identifier IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitIdentifierValue(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_handledInsides) return; // Incase already handled the insides.
     auto loadInstruction = HandleIdentifierValue(node);
     CheckValueNeededSomewhere(loadInstruction, node);
-    this->m_entityLogger.Info("Added IdentifierValue IR handling");
+    this->m_entityLogger.Info("Added IdentifierValue IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_insideFor) return; // Assignment inside for already handled.
     // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
@@ -131,12 +140,13 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             FindPointer(this->m_currVarMetaData.value().sName)
         );
         this->m_expectedAssignment = false;
+        this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
     }
     else
     {
         this->m_expectedAssignment = true;
     }
-    this->m_entityLogger.Info("Added Assignment IR handling");
 }
 
 void IRVisitor::VisitFuncDeclaration(ASTNode* node)
@@ -147,7 +157,8 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     std::string funcName = node->command[FUNC_IDENTIFIER_INDEX].GetValue();
     if (this->m_currModule.IsFuncExistByName(funcName))
     {
-        this->m_entityLogger.Info("Added FuncDeclaration IR handling");
+        this->m_entityLogger.Info("Added FuncDeclaration IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
         return;  // Function already declared, skip
     }
     
@@ -155,7 +166,7 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(funcName);
     if (!funcMetaData)
     {
-        StoreInternalError("IRVisitor::VisitFuncDeclaration unknown func");
+        StoreInternalError("IRVisitor::VisitFuncDeclaration unknown func", node->command);
         return;
     }
 
@@ -182,15 +193,19 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
             TypeToIRType(argMetaData.type)
         );
     }
-    this->m_entityLogger.Info("Added FuncDeclaration IR handling");
+    this->m_entityLogger.Info("Added FuncDeclaration IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitFuncCall(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_handledInsides) return; // Incase already handled the insides.
     auto funcCallInstruction = HandleFuncCall(node->command);
     CheckValueNeededSomewhere(funcCallInstruction, node);
-    this->m_entityLogger.Info("Added FuncCall IR handling");
+    this->m_entityLogger.Info("Added FuncCall IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+    this->m_handledInsides = true;
 }
 
 void IRVisitor::VisitIf(ASTNode* node)
@@ -213,7 +228,9 @@ void IRVisitor::VisitIf(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
-    this->m_entityLogger.Info("Added If IR handling");
+    this->m_entityLogger.Info("Added If IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+    this->m_handledInsides = true;
 }
 
 void IRVisitor::VisitElif(ASTNode* node)
@@ -235,7 +252,9 @@ void IRVisitor::VisitElif(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
-    this->m_entityLogger.Info("Added Elif IR handling");
+    this->m_entityLogger.Info("Added Elif IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+    this->m_handledInsides = true;
 }
 
 void IRVisitor::VisitElse(ASTNode* node)
@@ -243,7 +262,8 @@ void IRVisitor::VisitElse(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     this->m_blockHistory.push(BlockKind::elseBlock);
     this->m_nextExitBlocks.push(std::move(this->m_conditionMergeBlocks.top()));
-    this->m_entityLogger.Info("Added Else IR handling");
+    this->m_entityLogger.Info("Added Else IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitWhile(ASTNode* node)
@@ -273,7 +293,9 @@ void IRVisitor::VisitWhile(ASTNode* node)
         this->m_nextControlEntryBlock.get(),
         this->m_nextExitBlocks.top().get()
     );
-    this->m_entityLogger.Info("Added While IR handling");
+    this->m_entityLogger.Info("Added While IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+    this->m_handledInsides = true;
 }
 
 void IRVisitor::VisitFor(ASTNode* node)
@@ -303,8 +325,7 @@ void IRVisitor::VisitFor(ASTNode* node)
     }
     ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]);
     VisitAssignment(&tempNode);
-    tempNode = ASTNode(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
-    VisitExpression(&tempNode);
+    HandleExpression(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
 
     // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
@@ -315,9 +336,8 @@ void IRVisitor::VisitFor(ASTNode* node)
     /// @see Control Flow Fields docs for more info
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
 
-    tempNode = ASTNode(node->command.GetParams()[FOR_COND_INDEX]);
     // Creating the condition expression inside the for.cond block
-    VisitExpression(&tempNode);
+    HandleExpression(node->command.GetParams()[FOR_COND_INDEX]);
     auto forCondResult = GetLastIsntruction();
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -329,7 +349,10 @@ void IRVisitor::VisitFor(ASTNode* node)
     );
     // The for loop increments is handled elsewhere (the i++ part)
     this->m_forIncrements.push(node);
-    this->m_entityLogger.Info("Added For IR handling");
+    this->m_entityLogger.Info("Added For IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+    this->m_handledInsides = true;
+    this->m_insideFor = true;
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
@@ -351,7 +374,8 @@ void IRVisitor::VisitReturn(ASTNode* node)
         // Waiting for expression - don't set m_returnedAlready yet
         this->m_expectedReturnValue = true;
     }
-    this->m_entityLogger.Info("Added Return IR handling");
+    this->m_entityLogger.Info("Added Return IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitControlStatement(ASTNode* node)
@@ -369,16 +393,20 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
         // Jumping to the exit block
         this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top());
     }
-    this->m_entityLogger.Info("Added ControlStatement IR handling");
+    this->m_entityLogger.Info("Added ControlStatement IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitBlockStart(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    this->m_handledInsides = false; // Reset
+    this->m_insideFor = false; // Reset
 
     if (this->m_blockHistory.empty())
     {
-        this->m_entityLogger.Error("VisitBlockStart: m_blockHistory is empty!");
+        this->m_entityLogger.Error("VisitBlockStart: m_blockHistory is empty!.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
         return;
     }
     
@@ -391,7 +419,8 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
         // Moving the VarTable to the correct node.
         if (this->m_varTableIndex.empty())
         {
-            this->m_entityLogger.Error("VisitBlockStart: m_varTableIndex is empty!");
+            this->m_entityLogger.Error("VisitBlockStart: m_varTableIndex is empty!.\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
             return;
         }
         size_t currVarTableIndex = this->m_varTableIndex.top();
@@ -400,7 +429,8 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
         
         if (this->m_currVarTableNode == nullptr)
         {
-            this->m_entityLogger.Error("VisitBlockStart: m_currVarTableNode is null!");
+            this->m_entityLogger.Error("VisitBlockStart: m_currVarTableNode is null!.\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
             this->m_varTableIndex.push(0);
         }
         else
@@ -440,7 +470,8 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     case BlockKind::ifBlock:
         if (!this->m_currFunc || !this->m_nextControlEntryBlock)
         {
-            this->m_entityLogger.Error("VisitBlockStart: m_currFunc or m_nextControlEntryBlock is null!");
+            this->m_entityLogger.Error("VisitBlockStart: m_currFunc or m_nextControlEntryBlock is null!.\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
             break;
         }
         
@@ -456,7 +487,10 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     default:
         break;
     }
-    this->m_entityLogger.Info("Added BlockStart IR handling");
+
+    VisitEndOfCommand(nullptr); // Resets
+    this->m_entityLogger.Info("Added BlockStart IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitBlockEnd(ASTNode* node)
@@ -470,6 +504,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     ASTNode* forNode;
     BasicBlock* tempExitBlockHolder;
     ASTNode tempNode(node->command);
+    std::vector<Command> tempParams;
 
     // Moving the VarTable to the correct node.
     this->m_varTableIndex.pop();
@@ -526,9 +561,8 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         // Re-initialize state for next function
         this->m_currVarTableNode = &this->m_decoratedAst.varTable;  // Reset to root
         this->m_varTableIndex.push(nextFuncIndex);  // Preserve index for next function
-        
-        VisitEndOfCommand(node); // More resets here
-        this->m_entityLogger.Info("Added BlockEnd IR handling");
+        this->m_entityLogger.Info("Added BlockEnd IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
         return;  // Early return - blockHistory already emptied
     }
 
@@ -537,12 +571,12 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
         forCommand = forNode->command;
+        tempParams = forCommand.GetParams();
         tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
         VisitIdentifier(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
         VisitAssignment(&tempNode);
-        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
-        VisitExpression(&tempNode);
+        HandleExpression(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
         /// @note not having break is intended
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
@@ -588,16 +622,22 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     default:
         break;
     }
+
+    VisitEndOfCommand(nullptr); // Resets
     this->m_blockHistory.pop(); // Reset
-    this->m_entityLogger.Info("Added BlockEnd IR handling");
+    this->m_entityLogger.Info("Added BlockEnd IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitSizeof(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_handledInsides) return; // Incase already handled the insides.
     auto tempSizeofInstruction = HandleSizeof(node->command);
     CheckValueNeededSomewhere(tempSizeofInstruction, node);
-    this->m_entityLogger.Info("Added Sizeof IR handling");
+    this->m_entityLogger.Info("Added Sizeof IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+    this->m_handledInsides = true;
 }
 
 void IRVisitor::VisitFuncDefinition(ASTNode* node)
@@ -609,7 +649,7 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!foundFunc)
     {
-        StoreInternalError("IRVisitor::VisitFuncDefinition unknown func");
+        StoreInternalError("IRVisitor::VisitFuncDefinition unknown func", node->command);
         return;
     }
     this->m_currFunc = foundFunc;
@@ -628,7 +668,8 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     }
     this->m_varTableIndex.push(0);
     
-    this->m_entityLogger.Info("Added FuncDefinition IR handling");
+    this->m_entityLogger.Info("Added FuncDefinition IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
 }
 
 void IRVisitor::VisitEndOfCommand(ASTNode* node)
@@ -636,27 +677,35 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     if (this->m_returnedAlready) return; // Incase already returned
     // Only resetting.
     this->m_lastSavedValue = nullptr;
+    this->m_handledInsides = false;
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
-    this->m_entityLogger.Info("Added EndOfCommand IR handling");
+    if (node) // If this is null it was called from blockEnd
+    {
+        this->m_entityLogger.Info("Added EndOfCommand IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
+    }
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)
 {
-    this->m_entityLogger.Info("Added VoidCommand IR handling");
+    this->m_entityLogger.Info("Added VoidCommand IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
     return;
 }
 
 void IRVisitor::VisitPass(ASTNode* node)
 {
-    this->m_entityLogger.Info("Added Pass IR handling");
+    this->m_entityLogger.Info("Added Pass IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
     return;
 }
 
 void IRVisitor::VisitEof(ASTNode* node)
 {
-    this->m_entityLogger.Info("Added Eof IR handling");
+    this->m_entityLogger.Info("Added Eof IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
     return;
 }
 
@@ -688,7 +737,7 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         break;
     
     default:
-        StoreInternalError("IRVisitor::TypeToIRType got an illegal type");
+        StoreInternalError("IRVisitor::TypeToIRType got an illegal type", Command());
         return IRType::GetVoid();
         break;
     }
@@ -718,7 +767,7 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
         return IRType::GetVoid();
     }
 
-    StoreInternalError("IRVisitor::TypeToIRType got an illegal type");
+    StoreInternalError("IRVisitor::TypeToIRType got an illegal type", Command());
     return IRType::GetVoid();
 }
 
@@ -805,7 +854,18 @@ IRInstruction* IRVisitor::ChooseOperation(
         break;
 
     case Operators::FloorDiv:
-        return this->m_irbuilder.CreateSDiv(lsh, rsh);
+        if (signage)
+        {
+            return this->m_irbuilder.CreateSFloorDiv(lsh, rsh);
+        }
+        else if (floatness)
+        {
+            return this->m_irbuilder.CreateFFloorDiv(lsh, rsh);
+        }
+        else
+        {
+            return this->m_irbuilder.CreateUFloorDiv(lsh, rsh);
+        }
         break;
     
     case Operators::Rem:
@@ -930,7 +990,7 @@ IRInstruction* IRVisitor::ChooseOperation(
         break;
     
     default:
-        StoreInternalError("IRVisitor::ChooseOperation got an illegal Operator");
+        StoreInternalError("IRVisitor::ChooseOperation got an illegal Operator", Command());
         return nullptr;
         break;
     }
@@ -1006,7 +1066,7 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
     const std::optional<VarMetaData>& varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData)
     {
-        StoreInternalError("IRVisitor::HandleIdentifierValue unknown var");
+        StoreInternalError("IRVisitor::HandleIdentifierValue unknown var", node->command);
         return nullptr;
     }
 
@@ -1021,7 +1081,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!funcMetaData)
     {
-        StoreInternalError("IRVisitor::HandleFuncCall unknown func");
+        StoreInternalError("IRVisitor::HandleFuncCall unknown func", command);
         return nullptr;
     }
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
@@ -1094,7 +1154,7 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     }
     else
     {
-        StoreInternalError("IRVisitor::HandleSizeof Couldn't find valid type");
+        StoreInternalError("IRVisitor::HandleSizeof Couldn't find valid type", command);
         return(nullptr);
     }
 }
@@ -1208,7 +1268,7 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
 
     this->m_mergeCnt++;
     std::string tempLabelHolder = "merge" + std::to_string(this->m_mergeCnt - 1);
-    StoreInternalError("IRVisitor::GetCorrespondingLabel couldn't create a label created a default: " + tempLabelHolder);
+    StoreInternalError("IRVisitor::GetCorrespondingLabel couldn't create a label created a default: " + tempLabelHolder, Command());
     return tempLabelHolder;
 }
 
@@ -1222,7 +1282,7 @@ IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
 {
     if (!value)
     {
-        StoreInternalError("IRVisitor::ApplyNotIfNeeded value somehow is null");
+        StoreInternalError("IRVisitor::ApplyNotIfNeeded value somehow is null", Command());
         return nullptr;
     }
     if (notCnt % 2 == 0) return value;
@@ -1350,7 +1410,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
         {
             if (paramIndex >= command.GetParams().size())
             {
-                StoreInternalError("IRVisitor::CollectExprItems paramIndex overflow");
+                StoreInternalError("IRVisitor::CollectExprItems paramIndex overflow", command);
             }
             Command innerCommand = command.GetParams()[paramIndex++];
 
@@ -1383,7 +1443,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             }
             else
             {
-                StoreInternalError("IRVisitor::CollectExprItems unknown param");
+                StoreInternalError("IRVisitor::CollectExprItems unknown param", command);
             }
 
             ExprItem it;
@@ -1439,7 +1499,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
         }
         else
         {
-            StoreInternalError("IRVisitor::CollectExprItems unknown expression token");
+            StoreInternalError("IRVisitor::CollectExprItems unknown expression token", command);
         }
     }
 
@@ -1467,7 +1527,7 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     std::vector<ExprItem> expr = CollectExprItems(command, tokens, tokenIndex, paramIndex);
     if (expr.empty())
     {
-        StoreInternalError("IRVisitor::HandleExpression somehow expression is null after flattening");
+        StoreInternalError("IRVisitor::HandleExpression somehow expression is null after flattening", command);
         return nullptr;
     }
 
@@ -1519,12 +1579,31 @@ IRBaseValue* IRVisitor::FindPointer(const std::string& name)
     }
     else
     {
-        StoreInternalError("IRVisitor::FindPointer Couldn't find stored var: " + name);
+        StoreInternalError("IRVisitor::FindPointer Couldn't find stored var: " + name, Command());
         return nullptr;
     }
 }
 
-void IRVisitor::StoreInternalError(const std::string& msg)
+void IRVisitor::StoreInternalError(const std::string& msg, const Command& command)
 {
-    this->m_errorManager.StoreError(CompileTimeError(ErrorTypes::INTERNAL_ERROR, msg, 0, 0, ""));
+    if (command.GetTokens().size() == 0)
+    {
+        this->m_errorManager.StoreError(CompileTimeError(
+            ErrorTypes::INTERNAL_ERROR,
+            msg,
+            0,
+            0,
+            "")
+        );
+    }
+    else
+    {
+        this->m_errorManager.StoreError(CompileTimeError(
+            ErrorTypes::INTERNAL_ERROR,
+            msg,
+            command[0].GetLine(),
+            command[0].GetColumn(),
+            "")
+        );
+    }
 }

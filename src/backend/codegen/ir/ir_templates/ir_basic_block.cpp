@@ -71,13 +71,7 @@ void BasicBlock::AddInstruction(std::unique_ptr<IRInstruction> instruction)
 
 void BasicBlock::AddFirstInstruction(std::unique_ptr<IRInstruction> instruction)
 {
-    if (this->m_terminator) return; // After endpoint no more adding.
-
     instruction->SetParent(this);
-    if (instruction->IsTerminator())
-    {
-        this->m_terminator = instruction.get();
-    }
 
     // insert before first non-Phi
     auto it = this->m_instructions.begin();

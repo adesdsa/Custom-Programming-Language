@@ -174,6 +174,11 @@ private:
     bool m_expectedAssignment;
 
     bool m_returnedAlready;
+    /// @brief This is used to flag that we already handled the insides:
+    /// e.g. let's say we had an if statement we had to run the expression inside it at the VisitIf
+    /// this means we dont need to run it once again until the curr FullCommand is finished.
+    bool m_handledInsides;
+    bool m_insideFor;
 
     /**********************\
     |    Helper Methods    |
@@ -246,7 +251,7 @@ private:
     /// @return The StoreInstruction that holds the pointer.
     IRBaseValue* FindPointer(const std::string& name);
     
-    void StoreInternalError(const std::string& msg);
+    void StoreInternalError(const std::string& msg , const Command& command);
 
     /**********************\
     |   Expression Utils   |
