@@ -5,6 +5,7 @@
 #include "includes/shared/common/ast_helpers/ast_iterator.h"
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_module.h"
+#include "includes/backend/codegen/ir/ir_visitor.h"
 
 /**
     * @brief Generate picoC code into LLVM IR code
@@ -43,7 +44,7 @@ public:
      *     @brief Change the IR code by optimizing it                            |
      *     @return None (Change the code at IRMoudle)                            |
      ****************************************************************************/
-    const IRModule& MainFlow();
+    IRModule& MainFlow();
 
 private:
     /**********************\
@@ -56,7 +57,7 @@ private:
     |        Jobs          |
     \**********************/
     ASTIterator m_astIterator;
-    // IRVisitor m_irVisitor;  // generate each node into ir
+    IRVisitor m_irVisitor;  // generate each node into ir
 
     /**********************\
     |        Output        |

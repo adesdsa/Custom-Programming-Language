@@ -16,6 +16,7 @@ enum class IROpcode
     FSub,       // %r = fsub float %a, %b
     FMul,       // %r = fmul float %a, %b
     FDiv,       // %r = fdiv float %a, %b
+    FRem,       // %r = frem float %a, %b
 
     // Bitwise
     And,        // %r = and i32 %a, %b
@@ -55,7 +56,31 @@ enum class IROpcode
     CondBr,     // br i1 %cond, label %t, label %f  (conditional jump)
     Ret,        // ret i32 %val              (return from function)
     Call,       // %r = call i32 @func(...)  (function call)
+    Select,     // %result = select i1 %cond, i32 %trueVal, i32 %falseVal (ternary select)
 
     // SSA
     Phi         // %r = phi i32 [%a, %bb1], [%b, %bb2]
+};
+
+enum class Operators
+{
+    Add,
+    Sub,
+    Mul,
+    Div,
+    FloorDiv,
+    Rem,
+    And,
+    Or,
+    Xor,
+    Shl,
+    LShr,
+    AShr,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    None
 };

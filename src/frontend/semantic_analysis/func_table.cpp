@@ -25,7 +25,7 @@ bool FuncTable::InsertFunction(FuncMetaData&& funcMetadata)
                 std::make_unique<FuncMetaData>(std::move(funcMetadata));
             return true;
         }
-        this->m_entityLogger.Warnning(
+        this->m_entityLogger.Warn(
             "Function " + sFuncName + " already exists. Inseration failed"
         );
         return false;

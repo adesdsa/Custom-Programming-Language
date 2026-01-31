@@ -52,7 +52,7 @@ bool IRInstruction::IsTerminator() const noexcept
 
 bool IRInstruction::IsFuncCall() const noexcept
 {
-    return this->m_calledFunc != nullptr;
+    return this->m_opcode == IROpcode::Call;
 }
 
 void IRInstruction::SetCalledFunction(IRFunction* func) noexcept
@@ -83,6 +83,16 @@ void IRInstruction::AddOperand(IRBaseValue* operand) noexcept
     this->m_operands.push_back(operand);
 }
 
+void IRInstruction::SetOperand(size_t index, IRBaseValue* newValue)
+{
+    if (index >= this->m_operands.size())
+    {
+        return;
+    }
+
+    this->m_operands[index] = newValue;
+}
+
 bool IRInstruction::IsPhi() const noexcept
 {
     return this->m_opcode == IROpcode::Phi;
@@ -110,3 +120,12 @@ const std::vector<PhiIncoming>& IRInstruction::GetIncomingList() const noexcept
     return this->m_incoming;
 }
 
+void IRInstruction::SetIncomingValue(size_t index, IRBaseValue* newValue)
+{
+    if (index >= this->m_incoming.size())
+    {
+        return;
+    }
+
+    this->m_incoming[index].value = newValue;
+}

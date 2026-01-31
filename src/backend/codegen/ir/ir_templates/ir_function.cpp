@@ -1,12 +1,11 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_function.h"
-#include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
 
 IRFunction::IRFunction(
     const std::string& name,
-    std::shared_ptr<const IRType> returnType
+    std::shared_ptr<const IRType> functionType
 ) :
     m_name(name),
-    m_returnType(returnType),
+    m_functionType(functionType),
     m_parent(nullptr)
 {}
 
@@ -15,9 +14,19 @@ const std::string& IRFunction::GetName() const noexcept
     return this->m_name;
 }
 
+std::shared_ptr<const IRType> IRFunction::GetFunctionType() noexcept
+{
+    return this->m_functionType;
+}
+
 std::shared_ptr<const IRType> IRFunction::GetReturnType() const noexcept
 {
-    return this->m_returnType;
+    return this->m_functionType->GetReturnType();
+}
+
+const std::vector<std::shared_ptr<const IRType>>& IRFunction::GetArguemntsTypes() const noexcept
+{
+    return this->m_functionType->GetParameters();
 }
 
 IRModule* IRFunction::GetParent() const noexcept
@@ -98,4 +107,50 @@ BasicBlock* IRFunction::AddBasicBlock(const std::string& label)
     this->m_blockMap[label]->SetParent(this);
     
     return this->m_blockMap[label];
+}
+
+BasicBlock* IRFunction::AddBasicBlock(std::unique_ptr<BasicBlock> copyBlock)
+{
+    // save label before moving the unique_ptr
+    std::string label = copyBlock->GetLabel();
+    
+    if (this->m_blockMap.find(label) != this->m_blockMap.end()) return nullptr;
+
+    this->m_basicBlocks.push_back(std::move(copyBlock));
+    this->m_blockMap[label] = this->m_basicBlocks.back().get();
+    this->m_blockMap[label]->SetParent(this);
+    
+    return this->m_blockMap[label];
+}
+
+IRInstruction* IRFunction::FindAllocatedVar(const std::string& name)
+{
+    if (this->m_basicBlocks.size() == 0) return nullptr;
+    for (auto& instruction : this->GetEntryBlock()->GetInstructions())
+    {
+        if (instruction.get()->GetName() == name) return instruction.get();
+    }
+    return nullptr;
+}
+
+void IRFunction::RemoveBasicBlock(BasicBlock *basicBlock)
+{
+    if (!basicBlock) return;
+
+    this->m_blockMap.erase(basicBlock->GetLabel());
+
+    // find basic block in vector
+    auto basicBlockIterator = std::find_if(
+        this->m_basicBlocks.begin(),
+        this->m_basicBlocks.end(),
+        [basicBlock](const std::unique_ptr<BasicBlock>& ptr) 
+        {
+            return ptr.get() == basicBlock;
+        }
+    );
+
+    if (basicBlockIterator != this->m_basicBlocks.end())
+    {
+        this->m_basicBlocks.erase(basicBlockIterator);
+    }
 }

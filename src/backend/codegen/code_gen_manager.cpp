@@ -7,5 +7,8 @@ CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST) :
 void CodeGenManager::MainFlow()
 {
     IRGenerator irGenerator(this->m_decoratedAST);
-    (void)irGenerator.MainFlow();
+    IRModule& irProgram = irGenerator.MainFlow();
+
+    OptimizationManager optimizationManager;
+    optimizationManager.MainFlow(irProgram);
 }

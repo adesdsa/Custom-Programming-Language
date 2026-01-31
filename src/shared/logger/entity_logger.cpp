@@ -15,7 +15,7 @@ void EntityLogger::Info(const std::string &msg) const
     );
 }
 
-void EntityLogger::Warnning(const std::string &msg) const
+void EntityLogger::Warn(const std::string &msg) const
 {
     this->m_console.BuildAndSendLogMessage(
         this->m_entity, DebugLevel("WARN", DEBUG_COLORS.at("warn")), msg

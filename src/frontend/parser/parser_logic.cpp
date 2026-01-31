@@ -15,7 +15,7 @@ const AST& ParserLogic::MainFlow()
 {
     this->m_entityLogger.Info("Start parsing file");
 
-    while (!this->m_lexer.IsFinishedReadingSRC())
+    while (this->m_currentToken.GetType() != TokenTypes::EOF_TOKEN)
     {
         FullCommand fullCommand(this->m_entityLogger);
 
@@ -28,11 +28,6 @@ const AST& ParserLogic::MainFlow()
 
         this->HandleFullCommand(fullCommand);
     }
-
-    // cover last FullCommand
-    FullCommand lastFullCommand(this->m_entityLogger);
-    lastFullCommand.AddToken(this->m_currentToken, this->m_nextToken);
-    this->HandleFullCommand(lastFullCommand);
 
     if (this->m_errorManager.HasErrorsOccured())
     {

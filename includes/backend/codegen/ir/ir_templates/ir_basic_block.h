@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
@@ -43,6 +44,9 @@ public:
     void AddSuccessor(BasicBlock* block);
     void AddInstruction(std::unique_ptr<IRInstruction> instruction);
     void AddFirstInstruction(std::unique_ptr<IRInstruction> instruction);
+
+    // Remove given instruction from this block
+    void RemoveInstruction(IRInstruction* instruction);
 
 private:
     const std::string m_label;  // block name                                   

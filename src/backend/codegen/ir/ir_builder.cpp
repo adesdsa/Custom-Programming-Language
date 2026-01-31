@@ -197,6 +197,70 @@ IRInstruction* IRBuilder::CreateSDiv(
     );
 }
 
+IRInstruction* IRBuilder::CreateSFloorDiv(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFloorDiv: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFloorDiv: rhs is nullptr");
+        return nullptr;
+    }
+
+    std::string instName = name.empty() ? NextTemp() : name;
+
+    // q = lhs / rhs
+    auto* q = CreateSDiv(lhs, rhs, instName + ".q");
+
+    // r = lhs % rhs
+    auto* r = CreateSRem(lhs, rhs, instName + ".r");
+
+    // constants
+    auto* zero = GetInt64(0);
+    auto* one  = GetInt64(1);
+
+    // r != 0
+    auto* rNotZero = CreateICmpNE(r, zero, instName + ".r.nz");
+
+    // lhs < 0
+    auto* lhsNeg = CreateICmpSLT(lhs, zero, instName + ".lhs.neg");
+
+    // rhs < 0
+    auto* rhsNeg = CreateICmpSLT(rhs, zero, instName + ".rhs.neg");
+
+    // signs differ
+    auto* signsDiffer = CreateBinaryOp(
+        IROpcode::Xor,
+        lhsNeg,
+        rhsNeg,
+        lhsNeg->GetType(),
+        instName + ".sign.diff"
+    );
+
+    // need adjust?
+    auto* needAdjust = CreateBinaryOp(
+        IROpcode::And,
+        rNotZero,
+        signsDiffer,
+        rNotZero->GetType(),
+        instName + ".need.adjust"
+    );
+
+    // q - 1
+    auto* qMinusOne = CreateSub(q, one, instName + ".q.dec");
+
+    m_entitylogger.Info("Created a new SFloorDiv instruction");
+    // select(needAdjust, q-1, q)
+    return CreateSelect(needAdjust, qMinusOne, q, instName);
+}
+
+
 IRInstruction* IRBuilder::CreateSRem(
     IRBaseValue* lhs,
     IRBaseValue* rhs,
@@ -247,6 +311,26 @@ IRInstruction* IRBuilder::CreateUDiv(
         lhs->GetType(),
         name
     );
+}
+
+IRInstruction* IRBuilder::CreateUFloorDiv(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFloorDiv: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFloorDiv: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new UFloorDiv instruction");
+    return CreateUDiv(lhs, rhs, name);
 }
 
 IRInstruction* IRBuilder::CreateURem(
@@ -372,6 +456,86 @@ IRInstruction* IRBuilder::CreateFDiv(
     m_entitylogger.Info("Created a new FDiv instruction");
     return CreateBinaryOp(
         IROpcode::FDiv,
+        lhs,
+        rhs,
+        lhs->GetType(),
+        name
+    );
+}
+
+IRInstruction* IRBuilder::CreateFFloorDiv(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFloorDiv: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFloorDiv: rhs is nullptr");
+        return nullptr;
+    }
+
+    std::string instName = name.empty() ? NextTemp() : name;
+
+    IRBaseValue* one = nullptr;
+    IRBaseValue* zero = nullptr;
+    if (TargetArchitecture::Is32Bit())
+    {
+        one = GetFloat(1.0);
+        zero = GetFloat(0.0);
+    }
+    else
+    {
+        one = GetDouble(1.0);
+        zero = GetDouble(0.0);
+    }
+
+    // div = lhs / rhs
+    IRInstruction* div = CreateFDiv(lhs, rhs, NextTemp());
+
+    // frac = FRem(div, 1.0)
+    IRInstruction* frac = CreateFRem(div, one, NextTemp());
+
+    // div < 0 ?
+    IRInstruction* isNegative = CreateFCmpLT(div, zero, NextTemp());
+
+    // frac != 0 ?
+    IRInstruction* hasFraction = CreateFCmpNE(frac, zero, NextTemp());
+
+    // needSubtract = isNegative && hasFraction
+    IRInstruction* needSubtract = CreateAnd(isNegative, hasFraction, NextTemp());
+
+    // div - 1.0
+    IRInstruction* divMinusOne = CreateFSub(div, one, NextTemp());
+
+    m_entitylogger.Info("Created a new FFloorDiv instruction");
+    // select(needSubtract ? div-1 : div)
+    return CreateSelect(needSubtract, divMinusOne, div, instName);
+}
+
+IRInstruction* IRBuilder::CreateFRem(
+    IRBaseValue* lhs,
+    IRBaseValue* rhs,
+    const std::string& name)
+{
+    if (!lhs)
+    {
+        StoreInternalError("IRBuilder::CreateFRem: lhs is nullptr");
+        return nullptr;
+    }
+    if (!rhs)
+    {
+        StoreInternalError("IRBuilder::CreateFRem: rhs is nullptr");
+        return nullptr;
+    }
+
+    m_entitylogger.Info("Created a new URem instruction");
+    return CreateBinaryOp(
+        IROpcode::FRem,
         lhs,
         rhs,
         lhs->GetType(),
@@ -970,8 +1134,21 @@ IRInstruction* IRBuilder::CreateAlloca(
         this->m_insertBlock
     );
 
+    if (!inst.get())
+    {
+        StoreInternalError("IRBuilder::Insert: inst is nullptr");
+        return nullptr;
+    }
+    if (!this->m_insertBlock) 
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
+
+    IRInstruction* ptr = inst.get();
+    this->m_insertBlock->AddFirstInstruction(std::move(inst));
     m_entitylogger.Info("Created a new Alloca instruction");
-    return Insert(std::move(inst));
+    return ptr;
 }
 
 IRInstruction* IRBuilder::CreateLoad(
@@ -1203,9 +1380,40 @@ IRInstruction* IRBuilder::CreatePhi(
     return InsertPhi(std::move(inst));
 }
 
-const std::vector<std::unique_ptr<IRBaseValue>>& IRBuilder::DumpConstants() const noexcept
+IRInstruction* IRBuilder::CreateSelect(
+    IRBaseValue* cond,
+    IRBaseValue* trueVal,
+    IRBaseValue* falseVal,
+    const std::string& name)
 {
-    return this->m_constants;
+    if (!cond || !trueVal || !falseVal)
+    {
+        StoreInternalError("IRBuilder::CreateSelect: nullptr operand");
+        return nullptr;
+    }
+
+    if (!m_insertBlock)
+    {
+        StoreInternalError("IRBuilder::CreateSelect: No insert block set");
+        return nullptr;
+    }
+
+    std::string instName = name.empty() ? NextTemp() : name;
+
+    auto inst = std::make_unique<IRInstruction>(
+        instName,
+        trueVal->GetType(),
+        IROpcode::Select,
+        std::vector<IRBaseValue*>{ cond, trueVal, falseVal },
+        m_insertBlock
+    );
+
+    return Insert(std::move(inst));
+}
+
+std::vector<std::unique_ptr<IRBaseValue>> IRBuilder::DumpConstants() noexcept
+{
+    return std::move(this->m_constants);
 }
 
 void IRBuilder::ClearConstants() noexcept

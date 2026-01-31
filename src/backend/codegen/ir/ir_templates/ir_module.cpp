@@ -79,3 +79,30 @@ bool IRModule::IsVarExistByName(const std::string& name) const
 {
     return this->m_globalMap.find(name) != this->m_globalMap.end();
 }
+
+void IRModule::RemoveVariable(IRGlobalVariable* globalVar)
+{
+    if (!globalVar) return;
+
+    this->m_globalMap.erase(globalVar->GetName());
+
+    // find var in vector
+    auto globalVarIterator = std::find_if(
+        this->m_globals.begin(),
+        this->m_globals.end(),
+        [globalVar](const std::unique_ptr<IRGlobalVariable>& ptr) 
+        {
+            return ptr.get() == globalVar;
+        }
+    );
+
+    if (globalVarIterator != this->m_globals.end())
+    {
+        this->m_globals.erase(globalVarIterator);
+    }
+}
+
+void IRModule::AddConstant(std::unique_ptr<IRBaseValue> constant)
+{
+    this->m_constants.push_back(std::move(constant));
+}

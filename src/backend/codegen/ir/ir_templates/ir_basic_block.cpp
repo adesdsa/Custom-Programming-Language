@@ -71,13 +71,7 @@ void BasicBlock::AddInstruction(std::unique_ptr<IRInstruction> instruction)
 
 void BasicBlock::AddFirstInstruction(std::unique_ptr<IRInstruction> instruction)
 {
-    if (this->m_terminator) return; // After endpoint no more adding.
-
     instruction->SetParent(this);
-    if (instruction->IsTerminator())
-    {
-        this->m_terminator = instruction.get();
-    }
 
     // insert before first non-Phi
     auto it = this->m_instructions.begin();
@@ -87,4 +81,27 @@ void BasicBlock::AddFirstInstruction(std::unique_ptr<IRInstruction> instruction)
     }
 
     it = this->m_instructions.insert(it, std::move(instruction));
+}
+
+void BasicBlock::RemoveInstruction(IRInstruction* instruction)
+{
+    // find the instruction
+    auto instructionIterator = std::find_if(
+        this->m_instructions.begin(),
+        this->m_instructions.end(),
+        [instruction](const std::unique_ptr<IRInstruction>& ptr) 
+        {
+            return ptr.get() == instruction;
+        }
+    );
+
+    if (instructionIterator != this->m_instructions.end())
+    {
+        if (this->m_terminator == instruction)
+        {
+            this->m_terminator = nullptr;
+        }
+
+        this->m_instructions.erase(instructionIterator);
+    }
 }

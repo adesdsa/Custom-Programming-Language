@@ -4,25 +4,30 @@ IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
     m_IRLogger("IR GENERATOR"),
     m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(decoratedAST.ast),
-    m_irMoudle("program") // TODO: put the output file name instead
+    m_irMoudle("program"), // TODO: put the output file name instead
+    m_irVisitor(m_IRLogger, m_errorManager, decoratedAST, m_irMoudle)
 {
     this->m_IRLogger.Info("Finished initializing IR Generator component successfully");
 }
 
-const IRModule& IRGenerator::MainFlow()
-{
+IRModule& IRGenerator::MainFlow()
+{    
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();
-        // this->m_irVisitor.Visit(curr);
+        this->m_irVisitor.Visit(curr);
         (void)this->m_astIterator.Next();
     }
-
     if (this->m_errorManager.HasErrorsOccured())
     {
         this->m_errorManager.HandleErrors();
     }
 
+    auto tempConstantSave = this->m_irVisitor.DumpConstants();
+    for (auto&& constatnt : tempConstantSave)
+    {
+        this->m_irMoudle.AddConstant(std::move(constatnt));
+    }
     this->m_IRLogger.Info("Finished generating IR");
     return this->m_irMoudle;
 }
