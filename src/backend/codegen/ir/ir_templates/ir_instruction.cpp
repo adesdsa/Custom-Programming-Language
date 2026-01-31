@@ -52,7 +52,7 @@ bool IRInstruction::IsTerminator() const noexcept
 
 bool IRInstruction::IsFuncCall() const noexcept
 {
-    return this->m_calledFunc != nullptr;
+    return this->m_opcode == IROpcode::Call;
 }
 
 void IRInstruction::SetCalledFunction(IRFunction* func) noexcept
