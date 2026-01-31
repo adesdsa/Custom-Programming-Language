@@ -44,7 +44,7 @@ public:
      *     @brief Change the IR code by optimizing it                            |
      *     @return None (Change the code at IRMoudle)                            |
      ****************************************************************************/
-    const IRModule& MainFlow();
+    IRModule& MainFlow();
 
 private:
     /**********************\

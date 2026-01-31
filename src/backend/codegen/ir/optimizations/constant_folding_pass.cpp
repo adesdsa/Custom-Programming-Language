@@ -188,10 +188,10 @@ bool ConstantFoldingPass::IsFoldable(const IROpcode& opcode)
         case IROpcode::CondBr:
         case IROpcode::Ret:
         case IROpcode::Phi:
-            return true;
+            return false;
 
         default:
-            return false;
+            return true;
     }
 }
 

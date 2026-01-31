@@ -28,4 +28,6 @@ void OptimizationManager::MainFlow(IRModule& program)
             changed = true;
         }
     }
+
+    this->m_optimizerLogger.Info("Optimizer done.");
 }

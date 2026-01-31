@@ -7,10 +7,8 @@ CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST) :
 void CodeGenManager::MainFlow()
 {
     IRGenerator irGenerator(this->m_decoratedAST);
-    const IRModule& irProgram = irGenerator.MainFlow();
+    IRModule& irProgram = irGenerator.MainFlow();
 
     OptimizationManager optimizationManager;
     optimizationManager.MainFlow(irProgram);
-
-    std::cout << "Hello" << std::endl;
 }

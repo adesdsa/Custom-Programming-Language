@@ -346,7 +346,7 @@ std::shared_ptr<const IRType> GetArchIntType()
 // TEST: Constant Folding - Happy Flow - Constant expressions should be folded
 TEST(OptimizationTest, ConstantFoldingHappyFlow) 
 {
-    EntityLogger testLogger("OPTIMIZATION_TEST");
+    EntityLogger testLogger("OPTIMIZATION");
     testLogger.Info("Testing Constant Folding - Happy Flow");
 
     // Create an IRModule with a function that has foldable constant expressions
@@ -440,7 +440,7 @@ TEST(OptimizationTest, ConstantFoldingHappyFlow)
 // TEST: Constant Folding - Negative Flow - No constants to fold
 TEST(OptimizationTest, ConstantFoldingNegativeFlow) 
 {
-    EntityLogger testLogger("OPTIMIZATION_TEST");
+    EntityLogger testLogger("OPTIMIZATION");
     testLogger.Info("Testing Constant Folding - Negative Flow");
 
     // Create an IRModule with a function that has NO foldable expressions
@@ -510,7 +510,7 @@ TEST(OptimizationTest, ConstantFoldingNegativeFlow)
 // TEST: DCE - Happy Flow - Dead code should be removed
 TEST(OptimizationTest, DCEHappyFlow) 
 {
-    EntityLogger testLogger("OPTIMIZATION_TEST");
+    EntityLogger testLogger("OPTIMIZATION");
     testLogger.Info("Testing DCE - Happy Flow");
 
     // Create an IRModule with dead code
@@ -583,7 +583,7 @@ TEST(OptimizationTest, DCEHappyFlow)
 // TEST: DCE - Negative Flow - All code is live (no dead code)
 TEST(OptimizationTest, DCENegativeFlow) 
 {
-    EntityLogger testLogger("OPTIMIZATION_TEST");
+    EntityLogger testLogger("OPTIMIZATION");
     testLogger.Info("Testing DCE - Negative Flow");
 
     // Create an IRModule with NO dead code - all instructions are used

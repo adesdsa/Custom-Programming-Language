@@ -10,7 +10,7 @@ IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
     this->m_IRLogger.Info("Finished initializing IR Generator component successfully");
 }
 
-const IRModule& IRGenerator::MainFlow()
+IRModule& IRGenerator::MainFlow()
 {    
     while (this->m_astIterator.HasNext())
     {
