@@ -3,43 +3,18 @@ cmake_minimum_required(VERSION 3.14)
 project(Custom-Programming-Language LANGUAGES CXX)
 
 # -----------------------------
-# MSVC Runtime + GoogleTest config
-# MUST come BEFORE FetchContent
+# MSVC Runtime config
 # -----------------------------
 if(MSVC)
     # /MDd for Debug, /MD for Release
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "" FORCE)
-
-    # Force googletest to use shared CRT (/MD, /MDd)
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    set(BUILD_GTEST ON CACHE BOOL "" FORCE)
-    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
-    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-
-    # Prevent any system-installed GTest from being detected
-    set(GTest_ROOT "" CACHE PATH "" FORCE)
 endif()
 
 # =============================
-# FetchContent
+# Find Packages (installed by vcpkg)
 # =============================
-include(FetchContent)
-
-# ----- Mio -----
-FetchContent_Declare(
-    mio
-    GIT_REPOSITORY https://github.com/mandreyel/mio.git
-    GIT_TAG master
-)
-FetchContent_MakeAvailable(mio)
-
-# ----- GoogleTest -----
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG main
-)
-FetchContent_MakeAvailable(googletest)
+find_package(mio CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 
 # =============================
 # Source Files
@@ -54,7 +29,7 @@ add_library(CPLib ${SRC_FILES})
 target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR})
 add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 
-target_link_libraries(CPLib PUBLIC mio gtest)
+target_link_libraries(CPLib PUBLIC mio::mio GTest::gtest)
 
 set_target_properties(CPLib PROPERTIES
     CXX_STANDARD 17
@@ -62,17 +37,54 @@ set_target_properties(CPLib PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
+# Compiler warnings (comprehensive)
 if(MSVC)
-    target_compile_options(CPLib PRIVATE /W4 /permissive-)
+    target_compile_options(CPLib PRIVATE
+        /W4             # High warning level
+        /permissive-    # Strict standards conformance
+        /w14242         # Conversion warnings
+        /w14254         # Operator conversion warnings  
+        /w14263         # Member function hiding
+        /w14265         # Class has virtual functions but destructor is not virtual
+        /w14287         # Unsigned/negative constant mismatch
+        /w14296         # Expression is always true/false
+        /w14311         # Pointer truncation
+        /w14545         # Expression before comma evaluates to a function
+        /w14546         # Function call before comma missing argument list
+        /w14547         # Operator before comma has no effect
+        /w14549         # Operator before comma has no effect
+        /w14555         # Expression has no effect
+        /w14619         # Pragma warning invalid
+        /w14640         # Thread unsafe static member initialization
+        /w14826         # Conversion is sign-extended
+        /w14905         # Wide string literal cast to LPSTR
+        /w14906         # String literal cast to LPWSTR
+        /w14928         # Illegal copy-initialization
+    )
 else()
-    target_compile_options(CPLib PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(CPLib PRIVATE
+        -Wall           # All common warnings
+        -Wextra         # Extra warnings not in -Wall
+        -Wpedantic      # Strict ISO C++ compliance
+        -Wshadow        # Variable shadowing
+        -Wconversion    # Implicit type conversions
+        -Wsign-conversion # Sign conversion warnings
+        -Wnull-dereference # Null pointer dereference
+        -Wdouble-promotion # Float implicitly promoted to double
+        -Wformat=2      # Printf/scanf format string issues
+        -Wcast-align    # Pointer cast increases alignment
+        -Wunused        # Unused variables/functions
+        -Wnon-virtual-dtor # Non-virtual destructor in class with virtual functions
+        -Woverloaded-virtual # Overloaded virtual function
+        -Wold-style-cast # C-style casts
+    )
 endif()
 
 # =============================
 # Main executable
 # =============================
 add_executable(Custom-Programming-Language main.cpp)
-target_link_libraries(Custom-Programming-Language PRIVATE CPLib mio)
+target_link_libraries(Custom-Programming-Language PRIVATE CPLib mio::mio)
 
 set_target_properties(Custom-Programming-Language PROPERTIES
     CXX_STANDARD 17
@@ -89,7 +101,7 @@ if(BUILD_TESTS)
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/test_scripts/*.cpp)
 
     add_executable(unit_tests ${TEST_SOURCES})
-    target_link_libraries(unit_tests PRIVATE gtest_main CPLib)
+    target_link_libraries(unit_tests PRIVATE GTest::gtest_main CPLib)
 
     set_target_properties(unit_tests PROPERTIES
         CXX_STANDARD 17
@@ -99,17 +111,3 @@ if(BUILD_TESTS)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
-
-# =============================
-# Usage 
-# =============================
-# Normal build (no tests): 
-# mkdir build
-# cmake -S . -B build
-# cmake --build build --config Debug
-# 
-# Build with tests: 
-# mkdir build
-# cmake -S . -B build -DBUILD_TESTS=ON
-# cmake --build build --config Debug
-# ctest

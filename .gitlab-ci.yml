@@ -21,6 +21,10 @@ stages:
   - test
   - security
 
+# Global variables
+variables:
+  VCPKG_ROOT: ${CI_PROJECT_DIR}/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${CI_PROJECT_DIR}/.vcpkg_cache
 
 # =====================
 # Build
@@ -28,12 +32,47 @@ stages:
 build:
   stage: build
   image: ubuntu:22.04
+  before_script:
+    # Install system dependencies
+    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git curl zip unzip tar pkg-config
+    # Setup vcpkg cache directory
+    - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
+    # Install vcpkg (only if not cached)
+    - |
+      if [ ! -f "$VCPKG_ROOT/vcpkg" ]; then
+        git clone https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
+        $VCPKG_ROOT/bootstrap-vcpkg.sh
+      fi
+    # Install project dependencies
+    - $VCPKG_ROOT/vcpkg install --triplet x64-linux
   script:
-    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git
+    - set -o pipefail  # Ensure pipeline failures are caught
     - rm -rf build
     - mkdir -p build
-    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON | tee build/cmake_output.log
-    - cmake --build build | tee build/build_output.log
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake 2>&1 | tee build/cmake_output.log
+    - cmake --build build 2>&1 | tee build/build_output.log
+    # Count and report warnings (informational only)
+    - |
+      echo ""
+      echo "========================================"
+      echo "         COMPILER WARNINGS REPORT       "
+      echo "========================================"
+      WARNING_COUNT=$(grep -c "warning:" build/build_output.log || echo "0")
+      echo "Total warnings found: $WARNING_COUNT"
+      echo "========================================"
+      if [ "$WARNING_COUNT" -gt "0" ]; then
+        echo "⚠️  Warnings found:"
+        grep "warning:" build/build_output.log | head -30
+        echo ""
+        echo "(showing first 30 warnings)"
+      else
+        echo "✅ No warnings! Great job!"
+      fi
+  cache:
+    key: vcpkg-$CI_COMMIT_REF_SLUG
+    paths:
+      - .vcpkg_cache/
+      - vcpkg/
   artifacts:
     when: always
     paths:
