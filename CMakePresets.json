@@ -14,6 +14,16 @@
       }
     },
     {
+      "name": "run",
+      "displayName": "Run",
+      "description": "Debug build without tests",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTS": "OFF"
+      }
+    },
+    {
       "name": "debug",
       "displayName": "Debug",
       "description": "Debug build with tests enabled",
@@ -34,6 +44,11 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "run",
+      "displayName": "Run Build",
+      "configurePreset": "run"
+    },
     {
       "name": "debug",
       "displayName": "Debug Build",

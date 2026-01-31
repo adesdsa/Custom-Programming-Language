@@ -1,20 +1,34 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: environment variables
 set "COMMAND=%~1"
 set "BUILD_DIR=%~dp0build"
 set "EXE_NAME=Custom-Programming-Language.exe"
 set "PROJECT_ROOT=%~dp0"
 
+:: Define colors
+for /f %%a in ('echo prompt $E^| cmd') do set "ESC=%%a"
+
+:: Color definitions
+set "RED=%ESC%[91m"
+set "GREEN=%ESC%[92m"
+set "YELLOW=%ESC%[93m"
+set "BLUE=%ESC%[94m"
+set "CYAN=%ESC%[96m"
+set "RESET=%ESC%[0m"
+
+:: forward to help command if no arguments have been pass
 if "%COMMAND%"=="" set "COMMAND=help"
 
+:: available commands
 if /i "%COMMAND%"=="run" goto :run
 if /i "%COMMAND%"=="test" goto :test
 if /i "%COMMAND%"=="release" goto :release
-if /i "%COMMAND%"=="debug" goto :debug
-if /i "%COMMAND%"=="clean" goto :clean
+if /i "%COMMAND%"=="rebuild" goto :rebuild
 if /i "%COMMAND%"=="help" goto :help
-goto :help
+goto :help 
+:: case of unknown command
 
 :logo
 echo.
@@ -28,12 +42,13 @@ echo    picoC - MIT License
 echo.
 goto :eof
 
+:: run command implementation
 :run
 call :logo
 echo.
 echo   ^>^> Configuring Debug Build
 echo.
-cmake --preset debug
+cmake --preset run
 echo.
 echo   ^>^> Building Debug
 echo.
@@ -44,6 +59,7 @@ echo.
 "%BUILD_DIR%\Debug\%EXE_NAME%" %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 
+:: test command implementation
 :test
 call :logo
 echo.
@@ -60,6 +76,7 @@ echo.
 ctest --test-dir "%BUILD_DIR%" -C Debug --output-on-failure
 goto :eof
 
+:: release command implementation
 :release
 call :logo
 set "START_TIME=%TIME%"
@@ -74,21 +91,19 @@ cmake --build "%BUILD_DIR%" --config Release --clean-first > "%BUILD_DIR%\releas
 type "%BUILD_DIR%\release_build.log"
 set "END_TIME=%TIME%"
 
-REM Count warnings and errors
+:: count warnings and errors
 set WARNING_COUNT=0
 set ERROR_COUNT=0
 for /f %%a in ('findstr /i /c:"warning C" /c:"warning:" "%BUILD_DIR%\release_build.log" 2^>nul ^| find /c /v ""') do set WARNING_COUNT=%%a
 for /f %%a in ('findstr /i /c:"error C" /c:" error:" "%BUILD_DIR%\release_build.log" 2^>nul ^| find /c /v ""') do set ERROR_COUNT=%%a
 
-REM Count source files
+:: count source files
 set CPP_COUNT=0
 set H_COUNT=0
 for /f %%a in ('dir /s /b "%PROJECT_ROOT%src\*.cpp" 2^>nul ^| find /c /v ""') do set CPP_COUNT=%%a
 for /f %%a in ('dir /s /b "%PROJECT_ROOT%includes\*.h" 2^>nul ^| find /c /v ""') do set H_COUNT=%%a
 
-REM ============================================
-REM SHOW WARNINGS FIRST (if any)
-REM ============================================
+:: display warnnings
 if %WARNING_COUNT% GTR 0 (
     echo.
     echo   +--------------------------------------------------------+
@@ -99,24 +114,21 @@ if %WARNING_COUNT% GTR 0 (
     echo.
 )
 
-REM ============================================
-REM BUILD STATISTICS
-REM ============================================
+:: determine build status
+if %ERROR_COUNT% GTR 0 (
+    set "STATUS=[XX] FAILED"
+) else if %WARNING_COUNT% GTR 0 (
+    set "STATUS=[^!^!] SUCCESS with %WARNING_COUNT% warning(s)"
+) else (
+    set "STATUS=[OK] SUCCESS"
+)
+
+:: display statistics
 echo.
 echo   +--------------------------------------------------------+
 echo   ^|                   BUILD COMPLETE                       ^|
-echo   +--------------------------------------------------------+
-echo.
-
-if %ERROR_COUNT% GTR 0 (
-    echo   [XX] FAILED
-) else if %WARNING_COUNT% GTR 0 (
-    echo   [^^!^^!] SUCCESS with %WARNING_COUNT% warning^(s^)
-) else (
-    echo   [OK] SUCCESS
-)
-echo.
 echo   +------------------+-------------------------------------+
+echo   ^|  Status          ^|  !STATUS!    ^|
 echo   ^|  Configuration   ^|  Release ^(optimized^)                ^|
 echo   ^|  Build Time      ^|  %START_TIME% - %END_TIME%          ^|
 echo   +------------------+-------------------------------------+
@@ -125,7 +137,7 @@ echo   ^|  Warnings        ^|  %WARNING_COUNT%                                 ^
 echo   ^|  Errors          ^|  %ERROR_COUNT%                                  ^|
 echo   +------------------+-------------------------------------+
 
-REM Check if executables exist and show sizes
+:: check if executables exist and show sizes
 if exist "%BUILD_DIR%\Release\%EXE_NAME%" (
     for %%F in ("%BUILD_DIR%\Release\%EXE_NAME%") do (
         set /a EXE_KB=%%~zF / 1024
@@ -142,19 +154,7 @@ echo   +------------------+-------------------------------------+
 echo.
 goto :eof
 
-:debug
-call :logo
-echo.
-echo   ^>^> Configuring Debug Build
-echo.
-cmake --preset debug
-echo.
-echo   ^>^> Building Debug
-echo.
-cmake --build "%BUILD_DIR%" --config Debug
-goto :eof
-
-:clean
+:rebuild
 call :logo
 echo.
 echo   ^>^> Cleaning Build Directory
@@ -166,6 +166,16 @@ if exist "%BUILD_DIR%" (
     echo   [--] Build directory doesn't exist.
 )
 echo.
+echo   ^>^> Reconfiguring Project
+echo.
+cmake --preset run
+echo.
+echo   ^>^> Building Debug
+echo.
+cmake --build "%BUILD_DIR%" --config Debug
+echo.
+echo   [OK] Rebuild complete.
+echo.
 goto :eof
 
 :help
@@ -175,15 +185,13 @@ echo.
 echo   --------------------------------------------------------
 echo.
 echo   run [args]     Build debug and run the executable
-echo                  Example: build run input.txt
+echo                  Example: picoc run input.txt
 echo.
-echo   test           Build debug and run all unit tests
+echo   test           Build with tests and run all unit tests
 echo.
 echo   release        Build optimized release version
 echo.
-echo   debug          Build debug version only
-echo.
-echo   clean          Remove the build directory
+echo   rebuild        Clean and rebuild from scratch
 echo.
 echo   help           Show this help message
 echo.
