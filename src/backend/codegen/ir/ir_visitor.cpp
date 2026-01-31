@@ -38,7 +38,8 @@ std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
 void IRVisitor::VisitVarDeclaration(ASTNode* node)
 {
     if (this->m_returnedAlready) return;
-    
+    if (this->m_handledInsides) return; // Incase already handled the insides.
+
     if (!this->m_currVarTableNode)
     {
         StoreInternalError("IRVisitor::VisitVarDeclaration m_currVarTableNode is null", node->command);
@@ -130,6 +131,7 @@ void IRVisitor::VisitIdentifierValue(ASTNode* node)
 void IRVisitor::VisitAssignment(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+    if (this->m_insideFor) return; // Assignment inside for already handled.
     // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
@@ -323,7 +325,7 @@ void IRVisitor::VisitFor(ASTNode* node)
     }
     ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]);
     VisitAssignment(&tempNode);
-    HandleExpression(node->command);
+    HandleExpression(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
 
     // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
@@ -335,7 +337,7 @@ void IRVisitor::VisitFor(ASTNode* node)
     this->m_nextControlEntryBlock = std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::entry));
 
     // Creating the condition expression inside the for.cond block
-    HandleExpression(node->command);
+    HandleExpression(node->command.GetParams()[FOR_COND_INDEX]);
     auto forCondResult = GetLastIsntruction();
     this->m_irbuilder.CreateCondBr(
         this->m_irbuilder.CreateAnd(
@@ -350,6 +352,7 @@ void IRVisitor::VisitFor(ASTNode* node)
     this->m_entityLogger.Info("Added For IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
     this->m_handledInsides = true;
+    this->m_insideFor = true;
 }
 
 void IRVisitor::VisitReturn(ASTNode* node)
@@ -398,6 +401,7 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
     this->m_handledInsides = false; // Reset
+    this->m_insideFor = false; // Reset
 
     if (this->m_blockHistory.empty())
     {
@@ -483,6 +487,8 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     default:
         break;
     }
+
+    VisitEndOfCommand(nullptr); // Resets
     this->m_entityLogger.Info("Added BlockStart IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
 }
@@ -498,6 +504,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     ASTNode* forNode;
     BasicBlock* tempExitBlockHolder;
     ASTNode tempNode(node->command);
+    std::vector<Command> tempParams;
 
     // Moving the VarTable to the correct node.
     this->m_varTableIndex.pop();
@@ -554,8 +561,6 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         // Re-initialize state for next function
         this->m_currVarTableNode = &this->m_decoratedAst.varTable;  // Reset to root
         this->m_varTableIndex.push(nextFuncIndex);  // Preserve index for next function
-        
-        VisitEndOfCommand(node); // More resets here
         this->m_entityLogger.Info("Added BlockEnd IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
         return;  // Early return - blockHistory already emptied
@@ -566,11 +571,12 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
         forCommand = forNode->command;
+        tempParams = forCommand.GetParams();
         tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
         VisitIdentifier(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
         VisitAssignment(&tempNode);
-        HandleExpression(node->command);
+        HandleExpression(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
         /// @note not having break is intended
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
@@ -616,6 +622,8 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     default:
         break;
     }
+
+    VisitEndOfCommand(nullptr); // Resets
     this->m_blockHistory.pop(); // Reset
     this->m_entityLogger.Info("Added BlockEnd IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
@@ -673,8 +681,11 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
-    this->m_entityLogger.Info("Added EndOfCommand IR handling.\nAt line: "
-        + std::to_string(node->command[0].GetLine()));
+    if (node) // If this is null it was called from blockEnd
+    {
+        this->m_entityLogger.Info("Added EndOfCommand IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
+    }
 }
 
 void IRVisitor::VisitVoidCommand(ASTNode* node)

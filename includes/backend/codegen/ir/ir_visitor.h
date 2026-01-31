@@ -178,6 +178,7 @@ private:
     /// e.g. let's say we had an if statement we had to run the expression inside it at the VisitIf
     /// this means we dont need to run it once again until the curr FullCommand is finished.
     bool m_handledInsides;
+    bool m_insideFor;
 
     /**********************\
     |    Helper Methods    |
