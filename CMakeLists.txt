@@ -111,25 +111,3 @@ if(BUILD_TESTS)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
-
-# =============================
-# Usage
-# =============================
-# Prerequisites:
-#   1. Install vcpkg: git clone https://github.com/microsoft/vcpkg.git
-#   2. Bootstrap: ./vcpkg/bootstrap-vcpkg.sh (or .bat on Windows)
-#   3. Set VCPKG_ROOT environment variable
-#   4. Install dependencies: vcpkg install
-#
-# Build with presets:
-#   cmake --preset debug
-#   cmake --build build
-#
-# Or manual build:
-#   cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
-#   cmake --build build --config Debug
-#
-# Build with tests:
-#   cmake --preset debug  (BUILD_TESTS=ON is included in debug preset)
-#   cmake --build build
-#   ctest --test-dir build
