@@ -14,10 +14,6 @@ int main(int argc, const char* argv[])
 
     try
     {
-<<<<<<< HEAD
-=======
-
->>>>>>> 712f150c2058f662de5d97f7dbec27a72743d1b2
         CompilerOrchestrator compilerOrchestrator(argc, argv);
         compilerOrchestrator.MainFlow();
     }
