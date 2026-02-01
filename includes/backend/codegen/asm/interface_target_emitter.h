@@ -5,7 +5,8 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_module.h"
 #include "includes/backend/codegen/target_architecture.h"
 
-// Emitter Interface, ASM generation will be through those // API'S calls
+// Emitter Interface, ASM generation will be through those
+// API calls
 class ITargetEmitter
 {
 public:
