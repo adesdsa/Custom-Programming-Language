@@ -7,7 +7,7 @@
 #include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
 #include "includes/backend/codegen/ir/optimizations/constant_folding_pass.h"
 #include "includes/backend/codegen/ir/optimizations/dce_pass.h"
-#include "includes/backend/codegen/target_architecture.h"
+#include "includes/shared/common/target_architecture.h"
 #include "includes/shared/utils/tests_utils.h"
 #include "includes/shared/utils/system_utils.h"
 

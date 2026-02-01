@@ -14,7 +14,7 @@
 #include "includes/backend/codegen/ir/ir_builder.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
 #include "includes/backend/codegen/ir/ir_common_types.h"
-#include "includes/backend/codegen/target_architecture.h"
+#include "includes/shared/common/target_architecture.h"
 
 constexpr int FUNC_IDENTIFIER_INDEX = 0;
 constexpr int CONDITION_INDEX = 0;
