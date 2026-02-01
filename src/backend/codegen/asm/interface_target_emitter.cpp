@@ -1,6 +1,6 @@
 #include "includes/backend/codegen/asm/interface_target_emitter.h"
 
-virtual std::string ITargetEmitter::GetFileExtension() const
+std::string ITargetEmitter::GetFileExtension() const
 {
     switch (TargetArchitecture::GetArch())
     {
