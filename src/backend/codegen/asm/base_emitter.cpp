@@ -1,12 +1,12 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 
-std::string BaseEmitter::Emit(const IRModule& module) override final;
+std::string BaseEmitter::Emit(const IRModule& module)
 {
     std::ostringstream out;
     out << EmitHeader();
-    out << EmitDataSection(module);
-    out << EmitBssSection(module);
-    out << EmitTextSection(module);
+    EmitDataSection(module, out);
+    EmitBssSection(module, out);
+    EmitTextSection(module, out);
     return out.str();
 }
 
@@ -16,7 +16,7 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
 
     for (const auto& globalVar : module.GetVariables())
     {
-        if (globalVar->HasInitializer())
+        if (globalVar.get()->GetInitializer())
         {
             int varSize = GetTypeSize(globalVar->GetType().get());
             out << Indent() << globalVar->GetName() << ": ";
