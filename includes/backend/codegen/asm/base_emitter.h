@@ -1,0 +1,70 @@
+#pragma once
+
+#include <sstream>
+#include <string>
+
+#include "includes/backend/codegen/ir/ir_templates/ir_module.h"
+#include "includes/backend/codegen/asm/asm_common_types.h"
+
+class BaseEmitter : public ITargetEmitter
+{
+public:
+    std::string Emit(const IRModule& module) override final;
+
+protcted:
+    /// @brief Emits .data section (initialized globals)
+    void EmitDataSection(const IRModule& module, std::ostream& out);
+    
+    /// @brief Emits .bss section (uninitialized globals)
+    void EmitBssSection(const IRModule& module, std::ostream& out);
+    
+    /// @brief emits .text section (all functions)
+    void EmitTextSection(const IRModule& module, std::ostream& out);
+
+    void BaseEmitter::EmitFunction(const IRFunction* func, std::ostream& out);
+
+    void BaseEmitter::EmitBasicBlock(const BasicBlock* block, std::ostream& out);
+
+    /// @note remove it later, those methods are diff between bit archi!!!
+    
+    // Gets sections name as a string e.g., section .text
+    std::string GetSectionDirective(SectionType sectionType) = 0;
+
+    // Get global section for linker, will be avaiable between all files
+    std::string GetGlobalDirective(std::string export) = 0;
+
+    // header signaure for the file
+    std::string EmitHeader() = 0;
+ 
+    /** 
+      * my_function:
+      * push rbp  ; Save old base pointer
+      * mov rbp, rsp  ; Set new base pointer to current stack
+      * sub rsp, 32  ; Reserve 32 bytes for local variables
+    */
+    std::string EmitPrologue() = 0;
+
+    /** 
+      * mov rsp, rbp  ; Restore stack pointer
+      * pop rbp  ; Restore old base pointer
+      * TODO: Check if `ret` should be here or it will be   handle via the EmitInstructions
+     */
+    std::string EmitEpilogue() = 0;
+
+    // Convert given IR instruction into an assembly instruction
+    std::string EmitInstruction(IRInstruction* instruction, std::ostream& out) = 0;
+
+    // Converts operand into it's value in runtime:
+    // e.g.,: IRConstantInt will evaluate as a it's value
+    // Local variable will use stack offset [rbp - 4]
+    // Globals will just use name [my_global]
+    std::string GetOperandAsm(const IRBaseValue* operand) = 0;
+
+    /// @breif: Get .data keywords e.g., db, dw, etc..
+    /// @param bytes: size of the variable in bytes
+    std::string GetDataDirective(int bytes) = 0;
+
+    /// @breif: Get .bss keywords e.g., resb, resw, resd etc..
+    /// @param bytes: size of the variable in bytes
+    std::string GetReserveDirective(int bytes) = 0;
+};
