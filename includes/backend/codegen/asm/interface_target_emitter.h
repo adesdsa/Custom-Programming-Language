@@ -3,7 +3,7 @@
 #include <string>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_module.h"
-#include "includes/backend/codegen/target_architecture.h"
+#include "includes/shared/common/target_architecture.h"
 
 // Emitter Interface, ASM generation will be through those
 // API calls

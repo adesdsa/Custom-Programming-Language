@@ -21,19 +21,30 @@ VarMetaData VarFactory::CreateVarMetadata(
     switch (varType)
     {
     case Type::BOOL_TYPE:
-        varOffsetInsideFrame = sizeof(bool);
+        varOffsetInsideFrame = 1;
         break;
     
     case Type::DOUBLE_TYPE:
-        varOffsetInsideFrame = sizeof(double);
+        if (TargetArchitecture::Is32Bit())
+        {
+            varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
+        }
+        else
+        {
+            varOffsetInsideFrame = NORMAL_64BIT_TYPE_SIZE;
+        }
         break;
 
     case Type::INT_TYPE:
-        varOffsetInsideFrame = sizeof(int);
-        break;
-
     case Type::UNSIGNED_INT_TYPE:
-        varOffsetInsideFrame = sizeof(int);
+        if (TargetArchitecture::Is32Bit())
+        {
+            varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
+        }
+        else
+        {
+            varOffsetInsideFrame = NORMAL_64BIT_TYPE_SIZE;
+        }
         break;
 
     default:

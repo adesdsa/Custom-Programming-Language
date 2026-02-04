@@ -15,7 +15,7 @@
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/backend/codegen/ir/ir_common_types.h"
 #include "includes/shared/errors/error_manager.h"
-#include "includes/backend/codegen/target_architecture.h"
+#include "includes/shared/common/target_architecture.h"
 
 /// @brief Helper class that simplifies IR construction.
 ///

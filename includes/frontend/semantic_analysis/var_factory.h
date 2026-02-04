@@ -2,6 +2,10 @@
 
 #include "var_metadata.h"
 #include "var_table_node.h"
+#include "includes/shared/common/target_architecture.h"
+
+constexpr int NORMAL_32BIT_TYPE_SIZE = 4;
+constexpr int NORMAL_64BIT_TYPE_SIZE = 8;
 
 class VarFactory
 {
