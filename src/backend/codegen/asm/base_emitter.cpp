@@ -98,29 +98,35 @@ void BaseEmitter::EmitBasicBlock(const BasicBlock* block, std::ostream& out)
 
 int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
 {
-    if (type == IRType::GetInt32())
+    switch (type->GetKind())
     {
+    case IRTypeKind::Float32:
         return 4;
-    }
-    else if (type == IRType::GetFloat32())
-    {
+        break;
+
+    case IRTypeKind::Float64:
+        return 8;
+        break;
+
+    case IRTypeKind::Int1:
+        return 1
+        break;
+
+    case IRTypeKind::Int32:
         return 4;
-    }
-    else if (type == IRType::GetInt64())
-    {
+        break;
+
+    case IRTypeKind::Int64:
         return 8;
-    }
-    else if (type == IRType::GetFloat64())
-    {
-        return 8;
-    }
-    else if (type == IRType::GetInt1())
-    {
-        return 1;
-    }
-    else // Incase of error or void (shouldnt get here)
-    {
+        break;
+
+    case IRTypeKind::Int8:
+        return 1
+        break;
+    
+    default: // Incase of error or void (shouldnt get here)
         return 0;
+        break;
     }
 }
 
