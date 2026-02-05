@@ -69,6 +69,12 @@ protected:
     /// @param bytes: size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) = 0;
 
+    /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
+    virtual void EmitStart(std::ostream& out) = 0;
+
+    /// @brief The func handles a return (puts in the correct register the return value).
+    virtual void EmitReturn(std::ostream& out) = 0;
+
 private:
     const FuncTable& m_funcTable;
     const IRFunction* m_currentFunc;
