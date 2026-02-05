@@ -33,3 +33,26 @@ std::string IRGlobalVariable::ToString() const
 {
     return "@" + this->GetName();  // globals use @ prefix
 }
+
+std::string IRGlobalVariable::GetInitializerString() const
+{
+    std::shared_ptr<const IRType> varType = this->m_initializer->GetType();
+    if (varType == IRType::GetInt32() ||
+        varType == IRType::GetInt64())
+    {
+        return std::to_string(static_cast<IRConstantInt*>(this->m_initializer)->GetValue());
+    }
+    else if (varType == IRType::GetFloat32() ||
+        varType == IRType::GetFloat64())
+    {
+        return std::to_string(static_cast<IRConstantFloat*>(this->m_initializer)->GetValue());
+    }
+    else if (varType == IRType::GetInt1())
+    {
+        return static_cast<IRConstantBool*>(this->m_initializer)->GetValue() ? "1" : "0";
+    }
+    else
+    {
+        return "0"; // error (shouldnt get here)
+    }
+}

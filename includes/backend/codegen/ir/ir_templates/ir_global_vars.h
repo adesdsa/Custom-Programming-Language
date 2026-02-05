@@ -4,6 +4,9 @@
 #include <memory>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_base_value.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_bool.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_float.h"
 
 class IRModule;
 
@@ -27,6 +30,8 @@ public:
     void SetInitializer(IRBaseValue* init);
 
     std::string ToString() const override;
+
+    std::string GetInitializerString() const;
 
 private:
     IRModule* m_parent;
