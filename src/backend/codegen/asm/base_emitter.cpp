@@ -1,5 +1,10 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 
+BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
+    m_currentFunc(nullptr),
+    m_funcTable(funcTable)
+{}
+
 std::string BaseEmitter::Emit(const IRModule& module)
 {
     std::ostringstream out;
@@ -18,9 +23,9 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
     {
         if (globalVar.get()->GetInitializer())
         {
-            int varSize = GetTypeSize(globalVar->GetType().get());
+            int varSize = GetTypeSize(globalVar->GetType());
             out << Indent() << globalVar->GetName() << ": ";
-            out << GetDataDirective(size) << " ";
+            out << GetDataDirective(varSize) << " ";
             out << globalVar->GetInitializerString() << "\n";
         }
     }
@@ -32,11 +37,11 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
     
     for (const auto& global : module.GetVariables())
     {
-        if (!global->HasInitializer())
+        if (!global.get()->GetInitializer())
         {
-            int size = GetTypeSize(global->GetType().get());
+            int size = GetTypeSize(global->GetType());
             out << Indent() << global->GetName() << ": ";
-            // TODO: The 1 here means the quantity to reserve, check when do we need more than 1
+            /// @note we only save scalar (no arrays) so only 1 count is needed
             out << GetReserveDirective(size) << " 1\n";
         }
     }
@@ -63,11 +68,12 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
 void BaseEmitter::EmitFunction(const IRFunction* func, std::ostream& out)
 {
     this->m_currentFunc = func;
+    FuncMetaData* funcMetadata = this->m_funcTable.FindFunctionByName(func->GetName());
 
     // function label
     out << func->GetName() << ":\n";
 
-    int frameSize = funcMetadata.ComputeStackSize();
+    int frameSize = funcMetadata->ComputeFrameSize();
     EmitPrologue(func, frameSize, out);
 
     for (const auto& block : func->GetBasicBlocks())
@@ -86,4 +92,37 @@ void BaseEmitter::EmitBasicBlock(const BasicBlock* block, std::ostream& out)
     {
         EmitInstruction(instr.get(), out);
     }
+}
+
+int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
+{
+    if (type == IRType::GetInt32())
+    {
+        return 4;
+    }
+    else if (type == IRType::GetFloat32())
+    {
+        return 4;
+    }
+    else if (type == IRType::GetInt64())
+    {
+        return 8;
+    }
+    else if (type == IRType::GetFloat64())
+    {
+        return 8;
+    }
+    else if (type == IRType::GetInt1())
+    {
+        return 1;
+    }
+    else // Incase of error or void (shouldnt get here)
+    {
+        return 0;
+    }
+}
+
+std::string BaseEmitter::Indent() const
+{
+    return "    "; // 4 spaces (or "\t" if you prefer tabs)
 }
