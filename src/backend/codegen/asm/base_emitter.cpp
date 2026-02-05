@@ -1,17 +1,19 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 
 BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
-    m_currentFunc(nullptr),
-    m_funcTable(funcTable)
+    m_funcTable(funcTable),
+    m_currentFunc(nullptr)
 {}
 
 std::string BaseEmitter::Emit(const IRModule& module)
 {
     std::ostringstream out;
+
     out << EmitHeader();
     EmitDataSection(module, out);
     EmitBssSection(module, out);
     EmitTextSection(module, out);
+
     return out.str();
 }
 
@@ -102,31 +104,24 @@ int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
     {
     case IRTypeKind::Float32:
         return 4;
-        break;
 
     case IRTypeKind::Float64:
         return 8;
-        break;
 
     case IRTypeKind::Int1:
         return 1;
-        break;
 
     case IRTypeKind::Int32:
         return 4;
-        break;
 
     case IRTypeKind::Int64:
         return 8;
-        break;
 
     case IRTypeKind::Int8:
         return 1;
-        break;
     
     default: // Incase of error or void (shouldnt get here)
         return 0;
-        break;
     }
 }
 
