@@ -109,7 +109,7 @@ int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
         break;
 
     case IRTypeKind::Int1:
-        return 1
+        return 1;
         break;
 
     case IRTypeKind::Int32:
@@ -121,7 +121,7 @@ int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
         break;
 
     case IRTypeKind::Int8:
-        return 1
+        return 1;
         break;
     
     default: // Incase of error or void (shouldnt get here)
