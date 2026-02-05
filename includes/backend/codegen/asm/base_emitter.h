@@ -15,25 +15,6 @@ public:
     std::string Emit(const IRModule& module) override final;
 
 protected:
-    /// @brief Emits .data section (initialized globals)
-    void EmitDataSection(const IRModule& module, std::ostream& out);
-    
-    /// @brief Emits .bss section (uninitialized globals)
-    void EmitBssSection(const IRModule& module, std::ostream& out);
-    
-    /// @brief emits .text section (all functions)
-    void EmitTextSection(const IRModule& module, std::ostream& out);
-
-    void EmitFunction(const IRFunction* func, std::ostream& out);
-
-    void EmitBasicBlock(const BasicBlock* block, std::ostream& out);
-    
-    // Gets sections name as a string e.g., section .text
-    virtual std::string GetSectionDirective(SectionType sectionType) = 0;
-
-    // Get global section for linker, will be avaiable between all files
-    virtual std::string GetGlobalDirective(const std::string& symbol) = 0;
-
     // header signaure for the file
     virtual std::string EmitHeader() = 0;
  
@@ -43,17 +24,28 @@ protected:
       * mov rbp, rsp  ; Set new base pointer to current stack
       * sub rsp, 32  ; Reserve 32 bytes for local variables
     */
-    virtual std::string EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out) = 0;
+    virtual void EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out) = 0;
 
     /** 
       * mov rsp, rbp  ; Restore stack pointer
       * pop rbp  ; Restore old base pointer
-      * TODO: Check if `ret` should be here or it will be handled via the EmitInstructions
      */
-    virtual std::string EmitEpilogue() = 0;
+    virtual void EmitEpilogue() = 0;
 
     // Convert given IR instruction into an assembly instruction
-    virtual std::string EmitInstruction(IRInstruction* instruction, std::ostream& out) = 0;
+    virtual void EmitInstruction(IRInstruction* instruction, std::ostream& out) = 0;
+
+    /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
+    virtual void EmitStart(std::ostream& out) = 0;
+
+    /// @brief The func handles a return (puts in the correct register the return value).
+    virtual void EmitReturn(std::ostream& out) = 0;
+
+    // Gets sections name as a string e.g., section .text
+    virtual std::string GetSectionDirective(SectionType sectionType) = 0;
+
+    // Get global section for linker, will be avaiable between all files
+    virtual std::string GetGlobalDirective(const std::string& symbol) = 0;
 
     // Converts operand into it's value in runtime:
     // e.g.,: IRConstantInt will evaluate as a it's value
@@ -69,17 +61,29 @@ protected:
     /// @param bytes: size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) = 0;
 
-    /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
-    virtual void EmitStart(std::ostream& out) = 0;
-
-    /// @brief The func handles a return (puts in the correct register the return value).
-    virtual void EmitReturn(std::ostream& out) = 0;
-
 private:
     const FuncTable& m_funcTable;
     const IRFunction* m_currentFunc;
 
 
+    /// @brief Emits .data section (initialized globals)
+    virtual void EmitDataSection(const IRModule& module, std::ostream& out) final;
+    
+    /// @brief Emits .bss section (uninitialized globals)
+    virtual void EmitBssSection(const IRModule& module, std::ostream& out) final;
+    
+    /// @brief emits .text section (all functions)
+    virtual void EmitTextSection(const IRModule& module, std::ostream& out) final;
+
+    virtual void EmitFunction(const IRFunction* func, std::ostream& out) final;
+
+    virtual void EmitBasicBlock(const BasicBlock* block, std::ostream& out) final;
+
+    //------------------------//
+    //                        //
+    //    Helper Functions    //
+    //                        //
+    //------------------------//
     int GetTypeSize(std::shared_ptr<const IRType> type) const;
     std::string Indent() const;
 };
