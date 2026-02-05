@@ -30,7 +30,7 @@ protected:
       * mov rsp, rbp  ; Restore stack pointer
       * pop rbp  ; Restore old base pointer
      */
-    virtual void EmitEpilogue() = 0;
+    virtual void EmitEpilogue(std::ostream& out) = 0;
 
     // Convert given IR instruction into an assembly instruction
     virtual void EmitInstruction(IRInstruction* instruction, std::ostream& out) = 0;
@@ -67,17 +67,17 @@ private:
 
 
     /// @brief Emits .data section (initialized globals)
-    virtual void EmitDataSection(const IRModule& module, std::ostream& out) final;
+    void EmitDataSection(const IRModule& module, std::ostream& out);
     
     /// @brief Emits .bss section (uninitialized globals)
-    virtual void EmitBssSection(const IRModule& module, std::ostream& out) final;
+    void EmitBssSection(const IRModule& module, std::ostream& out);
     
     /// @brief emits .text section (all functions)
-    virtual void EmitTextSection(const IRModule& module, std::ostream& out) final;
+    void EmitTextSection(const IRModule& module, std::ostream& out);
 
-    virtual void EmitFunction(const IRFunction* func, std::ostream& out) final;
+    void EmitFunction(const IRFunction* func, std::ostream& out);
 
-    virtual void EmitBasicBlock(const BasicBlock* block, std::ostream& out) final;
+    void EmitBasicBlock(const BasicBlock* block, std::ostream& out);
 
     //------------------------//
     //                        //
