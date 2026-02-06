@@ -7,6 +7,7 @@
 #include "includes/backend/codegen/asm/asm_common_types.h"
 #include "includes/backend/codegen/asm/interface_target_emitter.h"
 #include "includes/frontend/semantic_analysis/func_table.h"
+#include "includes/shared/common/target_architecture.h"
 
 class BaseEmitter : public ITargetEmitter
 {
@@ -15,9 +16,12 @@ public:
     std::string Emit(const IRModule& module) override final;
 
 protected:
+    const FuncTable& m_funcTable;
+    const IRFunction* m_currentFunc;
+
     // header signaure for the file
     virtual std::string EmitHeader() = 0;
- 
+
     /** 
       * my_function:
       * push rbp  ; Save old base pointer
@@ -29,6 +33,7 @@ protected:
     /** 
       * mov rsp, rbp  ; Restore stack pointer
       * pop rbp  ; Restore old base pointer
+      * ret
      */
     virtual void EmitEpilogue(std::ostream& out) = 0;
 
@@ -37,9 +42,6 @@ protected:
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
     virtual void EmitStart(std::ostream& out) = 0;
-
-    /// @brief The func handles a return (puts in the correct register the return value).
-    virtual void EmitReturn(std::ostream& out) = 0;
 
     // Gets sections name as a string e.g., section .text
     virtual std::string GetSectionDirective(SectionType sectionType) = 0;
@@ -62,10 +64,6 @@ protected:
     virtual std::string GetReserveDirective(int bytes) = 0;
 
 private:
-    const FuncTable& m_funcTable;
-    const IRFunction* m_currentFunc;
-
-
     /// @brief Emits .data section (initialized globals)
     void EmitDataSection(const IRModule& module, std::ostream& out);
     

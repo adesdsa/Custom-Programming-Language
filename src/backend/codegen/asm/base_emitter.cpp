@@ -68,7 +68,7 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
     }
 }
 
-void BaseEmitter::EmitFunction(const IRFunction* func, std::ostream& out)
+void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 {
     FuncMetaData* funcMetadata = this->m_funcTable.FindFunctionByName(func->GetName());
     if (!funcMetadata) return;
