@@ -88,6 +88,7 @@ void X86_64Emitter::EmitEpilogue(std::ostream& out)
 
 void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
 {
+    int offset = 0;
     auto opcode = instr->GetOpcode();
 
     // --- normal instruction operands ---
@@ -98,7 +99,7 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
     // --- SSA destination: the instruction itself ---
     auto slotOfInstr = [this](IRBaseValue* value) -> std::string
     {
-        if (!value) return -1;
+        if (!value) return "";
 
         auto it = m_valueToStackOffset.find(value);
         if (it != m_valueToStackOffset.end())
@@ -136,7 +137,7 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
     auto makeLabel = [&]() -> std::string
     {
         static int localLabelCounter = 0;
-        int id = (m_labelCounter++) + (localLabelCounter++ << 20);
+        int id = (localLabelCounter++) + (localLabelCounter++ << 20);
         return ".Lsel_" + std::to_string(id);
     };
 
@@ -349,7 +350,7 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
 
         case IROpcode::Alloca:
             // Allocate a new stack slot for this instruction
-            int offset = this->m_nextVarStackOffset;
+            offset = this->m_nextVarStackOffset;
             this->m_nextVarStackOffset += 8;
             this->m_valueToStackOffset[instr] = offset;
             break;
@@ -374,7 +375,7 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
             break;
 
         case IROpcode::Call:
-            out << "    call " << instr->GetCalledFunctionName() << "\n";
+            out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
             out << "    mov " << slotOfInstr(instr) << ", rax\n";
             break;
 
@@ -399,3 +400,105 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
     }
 }
 
+void X86_64Emitter::EmitStart(std::ostream& out)
+{
+    if (TargetArchitecture::GetOS() == OS::Linux)
+    {
+        out << "global _start\n";
+        out << "extern main\n";
+        out << "extern exit\n\n";
+
+        out << "section .text\n";
+        out << "_start:\n";
+
+        // Kernel enters with RSP % 16 == 8
+        // Align before calling C code
+        out << "    and rsp, -16\n";
+
+        // call main()
+        out << "    call main\n";
+
+        // exit(main_return)
+        out << "    mov rdi, rax\n";
+        out << "    call exit\n";
+
+        out << "    hlt\n";
+    }
+    else if (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        out << "global mainCRTStartup\n";
+        out << "extern main\n";
+        out << "extern ExitProcess\n\n";
+
+        out << "section .text\n";
+        out << "mainCRTStartup:\n";
+
+        // Windows x64 ABI:
+        // - Stack is 16-byte aligned *before call*
+        // - 32 bytes of shadow space required
+        out << "    sub rsp, 40\n"; // 32 shadow + 8 align
+
+        // call main()
+        out << "    call main\n";
+
+        // ExitProcess(main_return)
+        out << "    mov ecx, eax\n";
+        out << "    call ExitProcess\n";
+
+        out << "    hlt\n";
+    }
+}
+
+std::string X86_64Emitter::GetSectionDirective(SectionType sectionType)
+{
+    switch (sectionType)
+    {
+    case SectionType::TEXT:
+        return "section .text";
+
+    case SectionType::DATA:
+        return "section .data";
+
+    case SectionType::RODATA:
+        // NASM uses .rdata on Windows, .rodata on ELF
+        if (TargetArchitecture::GetOS() == OS::Windows) return "section .rdata";
+        return "section .rodata";
+
+    case SectionType::BSS:
+        return "section .bss";
+
+    default:
+        return "";
+    }
+}
+
+std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol)
+{
+    return "global " + symbol;
+}
+
+std::string X86_64Emitter::GetDataDirective(int bytes)
+{
+    switch (bytes)
+    {
+    case 1: return "db";
+    case 2: return "dw";
+    case 4: return "dd";
+    case 8: return "dq";
+    default:
+        // Fallback.
+        return "db";
+    }
+}
+
+std::string X86_64Emitter::GetReserveDirective(int bytes)
+{
+    switch (bytes)
+    {
+    case 1: return "resb";
+    case 2: return "resw";
+    case 4: return "resd";
+    case 8: return "resq";
+    default: return "resb";
+    }
+}

@@ -4,5 +4,6 @@ enum class SectionType
 {
     DATA,
     BSS,
-    TEXT
+    TEXT,
+    RODATA
 };

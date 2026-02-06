@@ -58,5 +58,4 @@ private:
     /// @breif: Get .bss keywords e.g., resb, resw, resd etc..
     /// @param bytes: size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) override final;
-
 };
