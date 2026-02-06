@@ -1,7 +1,19 @@
 #pragma once
 
+#include <vector>
+
 #include "includes/backend/codegen/asm/base_emitter.h"
 #include "includes/shared/common/target_architecture.h"
+
+namespace x86_64
+{
+inline const std::vector<std::string> linuxArgMapping = 
+    {"RDI", "RSI", "RDX", "RCX", "R8", "R9"};
+
+inline const std::vector<std::string> windowsArgMapping =
+    {"RCX", "RDX", "R8", "R9"};
+
+}
 
 class X86_64Emitter : public BaseEmitter
 {
@@ -49,7 +61,7 @@ private:
     // e.g.,: IRConstantInt will evaluate as a it's value
     // Local variable will use stack offset [rbp - 4]
     // Globals will just use name [my_global]
-    virtual std::string GetOperandAsm(const IRBaseValue* operand) override final;
+    virtual std::string GetOperandAsm(IRBaseValue* operand, std::ostream& out) override final;
 
     /// @breif: Get .data keywords e.g., db, dw, etc..
     /// @param bytes: size of the variable in bytes
@@ -58,4 +70,8 @@ private:
     /// @breif: Get .bss keywords e.g., resb, resw, resd etc..
     /// @param bytes: size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) override final;
+
+    std::string slotOfInstr(IRBaseValue* value, std::ostream& out);
+
+    void LoadOperandAsFloat(IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
 };
