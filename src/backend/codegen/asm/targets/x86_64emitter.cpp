@@ -616,7 +616,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
         float floatValue = castResult->GetValue();
         uint32_t bits;
         std::memcpy(&bits, &floatValue, sizeof(float));
-        out << "    mov dword " << slot << ", 0x" << std::hex << bits << "\n";
+        out << "    mov dword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";
         // return the slot
         return slot;
     }
@@ -649,7 +649,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
             {
                 // first stack-passed argResult (7th argument, foundIndex==6) is at [rbp+16]
                 // formula: offset = 8 * (foundIndex - 6)
-                int stackOffset = STACK_SLOT_SIZE * static_cast<int>(foundIndex - SIX_ARGUEMENTS);
+                int stackOffset = FIRST_STACK_ARG_OFFSET_LINUX + STACK_SLOT_SIZE * static_cast<int>(foundIndex - SIX_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
             }
         }
@@ -669,7 +669,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
                 // shadow space: [rbp+16 .. rbp+47]
                 // first pushed argResult (arg5, foundIndex==4) is at [rbp+48]
                 // so offset = 48 + 8 * (foundIndex - 4)
-                int stackOffset = 48 + STACK_SLOT_SIZE * static_cast<int>(foundIndex - FOUR_ARGUEMENTS);
+                int stackOffset = FIRST_STACK_ARG_OFFSET_WINDOWS + STACK_SLOT_SIZE * static_cast<int>(foundIndex - FOUR_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
             }
         }

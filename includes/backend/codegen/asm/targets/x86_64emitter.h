@@ -15,13 +15,15 @@ constexpr int THREE_OPERANDS_INDEX = 2;
 constexpr int FOUR_ARGUEMENTS = 4;
 constexpr int SIX_ARGUEMENTS = 6;
 constexpr int STACK_SLOT_SIZE = 8;
+constexpr int FIRST_STACK_ARG_OFFSET_LINUX = 16;
+constexpr int FIRST_STACK_ARG_OFFSET_WINDOWS = 48;
 constexpr int STACK_ALIGNMENT = 16;
 constexpr int WINDOWS_X64_SHADOW_SPACE = 32;
 
 namespace x86_64
 {
 inline const std::vector<std::string> linuxArgMapping = 
-    {"rdi", "rsi", "rdx", "rcs", "r8", "r9"};
+    {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 inline const std::vector<std::string> windowsArgMapping =
     {"rcx", "rdx", "r8", "r9"};
