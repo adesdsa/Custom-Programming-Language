@@ -5,13 +5,26 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 #include "includes/shared/common/target_architecture.h"
 
+
+constexpr int SINGLE_OPERAND = 1;
+constexpr int SINGLE_OPERAND_INDEX = 0;
+constexpr int TWO_OPERANDS = 2;
+constexpr int TWO_OPERANDS_INDEX = 1;
+constexpr int THREE_OPERANDS = 3;
+constexpr int THREE_OPERANDS_INDEX = 2;
+constexpr int FOUR_ARGUEMENTS = 4;
+constexpr int SIX_ARGUEMENTS = 6;
+constexpr int STACK_SLOT_SIZE = 8;
+constexpr int STACK_ALIGNMENT = 16;
+constexpr int WINDOWS_X64_SHADOW_SPACE = 32;
+
 namespace x86_64
 {
 inline const std::vector<std::string> linuxArgMapping = 
-    {"RDI", "RSI", "RDX", "RCX", "R8", "R9"};
+    {"rdi", "rsi", "rdx", "rcs", "r8", "r9"};
 
 inline const std::vector<std::string> windowsArgMapping =
-    {"RCX", "RDX", "R8", "R9"};
+    {"rcx", "rdx", "r8", "r9"};
 
 }
 
@@ -28,15 +41,6 @@ inline const std::vector<std::string> windowsArgMapping =
  *  - Lower custom IR instructions into x86-64 assembly
  *  - Handle register and stack-based operands
  *  - Manage SSA temporaries and local variable stack layout
- *
- * Calling conventions:
- *  - Linux (System V AMD64 ABI):
- *      Arguments: RDI, RSI, RDX, RCX, R8, R9
- *      Stack aligned to 16 bytes before CALL
- *
- *  - Windows (Microsoft x64 ABI):
- *      Arguments: RCX, RDX, R8, R9
- *      32-byte shadow space required by the caller
  *
  * References:
  *  @see System V AMD64 ABI:
