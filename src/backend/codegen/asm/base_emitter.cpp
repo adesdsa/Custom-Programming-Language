@@ -61,6 +61,9 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
         EmitFunction(func.get(), out);
         out << "\n";
     }
+
+    out << ".func_epilogue:\n";
+    EmitEpilogue(out);
 }
 
 void BaseEmitter::EmitFunction(const IRFunction* func, std::ostream& out)

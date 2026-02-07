@@ -1,5 +1,12 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 
+X86_64Emitter::X86_64Emitter(const FuncTable& funcTable) :
+BaseEmitter(funcTable),
+m_nextTempStackOffset(0),
+m_nextVarStackOffset(0),
+m_selectLabelCounter(0)
+{ }
+
 std::string X86_64Emitter::EmitHeader()
 {
     switch (TargetArchitecture::GetOS())
@@ -35,7 +42,7 @@ void X86_64Emitter::EmitPrologue(
     out << "    push rbp\n";
     out << "    mov rbp, rsp\n";
 
-    // Calculate total frame = aligned frameSize (do NOT add caller shadow space)
+    // Calculate total frame = aligned frameSize
     int totalFrame = frameSize;
     switch (TargetArchitecture::GetOS())
     {
@@ -44,7 +51,6 @@ void X86_64Emitter::EmitPrologue(
             break;
 
         case OS::Windows:
-            // Do NOT add the 32-byte shadow space here (caller provides it).
             totalFrame = (frameSize + 15) & ~15;
             break;
 
@@ -59,11 +65,11 @@ void X86_64Emitter::EmitPrologue(
         out << "    sub rsp, " << totalFrame << "\n";
     }
 
-    // next temp slot starts right after the allocated locals (offset from rbp)
+    // Next temp slot starts right after the allocated locals (offset from rbp)
     this->m_nextTempStackOffset = totalFrame;
 
-    // For addressing incoming args on Windows, many backends treat shadow-space as
-    // existing at rbp+16..rbp+47; so set nextVar offset base for Alloca if you want:
+    // For addressing incoming args on Windows, we treat shadow-space as
+    // existing; so set nextVar offset for Alloca is concidered as existing.
     if (TargetArchitecture::GetOS() == OS::Linux)
     {
         this->m_nextVarStackOffset = 0;
@@ -72,10 +78,9 @@ void X86_64Emitter::EmitPrologue(
     {
         // We don't allocate the shadow space, but logically treat it as present
         // above saved RBP for computing argument addresses.
-        this->m_nextVarStackOffset = 0;
+        this->m_nextVarStackOffset = -32;
     }
 
-    this->m_currentFunc = func;
     out << "\n";
 }
 
@@ -86,28 +91,23 @@ void X86_64Emitter::EmitEpilogue(std::ostream& out)
     out << "    ret\n";           // Return from function.
     this->m_valueToStackOffset.clear();
     this->m_nextTempStackOffset = 0;
-    this->m_currentFunc = nullptr;
+    this->m_nextVarStackOffset = 0;
 }
 
 void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
 {
+    // Helper fields
     int offset = 0;
     int numOperands = 0;
     std::vector<IRBaseValue*> operands;
+
+    // --- opcode ---
     auto opcode = instr->GetOpcode();
 
     // --- normal instruction operands ---
     IRBaseValue* source1 = instr->GetNumOperands() >= 1 ? instr->GetOperand(0) : nullptr;
     IRBaseValue* source2 = instr->GetNumOperands() >= 2 ? instr->GetOperand(1) : nullptr;
     IRBaseValue* source3 = instr->GetNumOperands() >= 3 ? instr->GetOperand(2) : nullptr;
-
-    // --- label generator for Select ---
-    auto makeLabel = [&]() -> std::string
-    {
-        static int localLabelCounter = 0;
-        int id = (localLabelCounter++) + (localLabelCounter++ << 20);
-        return ".Lsel_" + std::to_string(id);
-    };
 
     switch (opcode)
     {
@@ -126,9 +126,15 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
 
             switch (opcode)
             {
-                case IROpcode::Add: out << "    add rax, " << GetOperandAsm(source2, out) << "\n"; break;
-                case IROpcode::Sub: out << "    sub rax, " << GetOperandAsm(source2, out) << "\n"; break;
-                case IROpcode::Mul: out << "    imul rax, " << GetOperandAsm(source2, out) << "\n"; break;
+                case IROpcode::Add:
+                    out << "    add rax, " << GetOperandAsm(source2, out) << "\n";
+                    break;
+                case IROpcode::Sub:
+                    out << "    sub rax, " << GetOperandAsm(source2, out) << "\n";
+                    break;
+                case IROpcode::Mul:
+                    out << "    imul rax, " << GetOperandAsm(source2, out) << "\n";
+                    break;
 
                 case IROpcode::SDiv:
                     out << "    cqo\n";
@@ -152,7 +158,8 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
                     out << "    mov rax, rdx\n"; // remainder
                     break;
 
-                default: break;
+                default:
+                    break;
             }
 
             out << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
@@ -162,41 +169,58 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
         // -----------------------
         // Bitwise
         // -----------------------
-        case IROpcode::And: out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
-                                << "    and rax, " << GetOperandAsm(source2, out) << "\n"
-                                << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; break;
+        case IROpcode::And:
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
+                << "    and rax, " << GetOperandAsm(source2, out) << "\n"
+                << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                break;
 
-        case IROpcode::Or:  out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
-                                << "    or rax, " << GetOperandAsm(source2, out) << "\n"
-                                << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; break;
+        case IROpcode::Or:
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
+                << "    or rax, " << GetOperandAsm(source2, out) << "\n"
+                << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                break;
 
-        case IROpcode::Xor: out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
-                                << "    xor rax, " << GetOperandAsm(source2, out) << "\n"
-                                << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; break;
+        case IROpcode::Xor:
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
+                << "    xor rax, " << GetOperandAsm(source2, out) << "\n"
+                << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                break;
 
-        case IROpcode::Shl: out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
-                                << "    mov cl, " << GetOperandAsm(source2, out) << "\n"
-                                << "    shl rax, cl\n"
-                                << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; break;
+        case IROpcode::Shl:
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
+                << "    mov cl, " << GetOperandAsm(source2, out) << "\n"
+                << "    shl rax, cl\n"
+                << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                break;
 
-        case IROpcode::LShr: out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
-                                 << "    mov cl, " << GetOperandAsm(source2, out) << "\n"
-                                 << "    shr rax, cl\n"
-                                 << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; break;
+        case IROpcode::LShr:
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
+                << "    mov cl, " << GetOperandAsm(source2, out) << "\n"
+                << "    shr rax, cl\n"
+                << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                break;
 
-        case IROpcode::AShr: out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
-                                 << "    mov cl, " << GetOperandAsm(source2, out) << "\n"
-                                 << "    sar rax, cl\n"
-                                 << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; break;
+        case IROpcode::AShr:
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
+                << "    mov cl, " << GetOperandAsm(source2, out) << "\n"
+                << "    sar rax, cl\n"
+                << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                break;
 
         // -----------------------
         // Integer comparisons
         // -----------------------
-        case IROpcode::ICmpEq: case IROpcode::ICmpNe:
-        case IROpcode::ICmpSlt: case IROpcode::ICmpSle:
-        case IROpcode::ICmpSgt: case IROpcode::ICmpSge:
-        case IROpcode::ICmpUlt: case IROpcode::ICmpUle:
-        case IROpcode::ICmpUgt: case IROpcode::ICmpUge:
+        case IROpcode::ICmpEq:
+        case IROpcode::ICmpNe:
+        case IROpcode::ICmpSlt:
+        case IROpcode::ICmpSle:
+        case IROpcode::ICmpSgt:
+        case IROpcode::ICmpSge:
+        case IROpcode::ICmpUlt:
+        case IROpcode::ICmpUle:
+        case IROpcode::ICmpUgt:
+        case IROpcode::ICmpUge:
         {
             out << "    mov rax, " << GetOperandAsm(source1, out) << "\n";
             out << "    cmp rax, " << GetOperandAsm(source2, out) << "\n";
@@ -204,17 +228,38 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
             const char* setInstr = "sete";
             switch (opcode)
             {
-                case IROpcode::ICmpEq: setInstr="sete"; break;
-                case IROpcode::ICmpNe: setInstr="setne"; break;
-                case IROpcode::ICmpSlt: setInstr="setl"; break;
-                case IROpcode::ICmpSle: setInstr="setle"; break;
-                case IROpcode::ICmpSgt: setInstr="setg"; break;
-                case IROpcode::ICmpSge: setInstr="setge"; break;
-                case IROpcode::ICmpUlt: setInstr="setb"; break;
-                case IROpcode::ICmpUle: setInstr="setbe"; break;
-                case IROpcode::ICmpUgt: setInstr="seta"; break;
-                case IROpcode::ICmpUge: setInstr="setae"; break;
-                default: break;
+                case IROpcode::ICmpEq:
+                    setInstr="sete";
+                    break;
+                case IROpcode::ICmpNe:
+                    setInstr="setne";
+                    break;
+                case IROpcode::ICmpSlt:
+                    setInstr="setl";
+                    break;
+                case IROpcode::ICmpSle:
+                    setInstr="setle";
+                    break;
+                case IROpcode::ICmpSgt:
+                    setInstr="setg";
+                    break;
+                case IROpcode::ICmpSge:
+                    setInstr="setge";
+                    break;
+                case IROpcode::ICmpUlt:
+                    setInstr="setb";
+                    break;
+                case IROpcode::ICmpUle:
+                    setInstr="setbe"; 
+                    break;
+                case IROpcode::ICmpUgt:
+                    setInstr="seta";
+                    break;
+                case IROpcode::ICmpUge:
+                    setInstr="setae";
+                    break;
+                default:
+                    break;
             }
 
             out << "    " << setInstr << " al\n"
@@ -226,11 +271,13 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
         // -----------------------
         // Floating-point arithmetic (SSE)
         // -----------------------
-        case IROpcode::FAdd: case IROpcode::FSub:
-        case IROpcode::FMul: case IROpcode::FDiv:
+        case IROpcode::FAdd:
+        case IROpcode::FSub:
+        case IROpcode::FMul:
+        case IROpcode::FDiv:
         case IROpcode::FRem:
         {
-            // Load operands into XMM registers
+            // Load operands into XMM registers (special float registers)
             LoadOperandAsFloat(source1, "xmm0", out);
             LoadOperandAsFloat(source2, "xmm1", out);
 
@@ -256,27 +303,15 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
                 {
                     // xmm0 = a, xmm1 = b (already loaded)
                     out << "    divss xmm0, xmm1\n";             // a / b
-                    out << "    roundss xmm0, xmm0, 1    ; floor(a/b)\n";
+                    out << "    roundss xmm0, xmm0, 1\n";        // floor(a/b)
                     out << "    mulss xmm0, xmm1\n";             // floor(a/b) * b
 
-                    // Load original a into xmm2 using correct size
-                    if (source1->GetType() == IRType::GetFloat64()) {
-                        // double precision
-                        out << "    movsd xmm2, qword " << GetOperandAsm(source1, out) << "\n";
-                    } else {
-                        // assume float32 or int (we already converted ints earlier when loading operands)
-                        // if source1 was an integer, GetOperandAsm may be a slot with int — convert it:
-                        if (source1->GetType() == IRType::GetFloat64()) {
-                            out << "    movss xmm2, dword " << GetOperandAsm(source1, out) << "\n";
-                        } else {
-                            out << "    mov eax, " << GetOperandAsm(source1, out) << "\n";
-                            out << "    cvtsi2ss xmm2, eax\n";
-                        }
-                    }
+                    // Load original a into xmm2
+                    out << "    movsd xmm2, qword " << GetOperandAsm(source1, out) << "\n";
 
                     out << "    subss xmm2, xmm0\n";
                     out << "    movss dword " << GetOperandAsm(instr, out) << ", xmm2\n";
-                    return; // finished (keeps behavior consistent with your earlier code)
+                    return;
                 }
             }
 
@@ -288,9 +323,12 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
         // -----------------------
         // Floating-point comparisons
         // -----------------------
-        case IROpcode::FCmpEq: case IROpcode::FCmpNe:
-        case IROpcode::FCmpLt: case IROpcode::FCmpLe:
-        case IROpcode::FCmpGt: case IROpcode::FCmpGe:
+        case IROpcode::FCmpEq:
+        case IROpcode::FCmpNe:
+        case IROpcode::FCmpLt:
+        case IROpcode::FCmpLe:
+        case IROpcode::FCmpGt:
+        case IROpcode::FCmpGe:
         {
             // Load operands as float
             LoadOperandAsFloat(source1, "xmm0", out);
@@ -300,13 +338,26 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
             out << "    ucomiss xmm0, xmm1\n";
 
             const char* setInstr = "sete";
-            switch(opcode){
-                case IROpcode::FCmpEq: setInstr="sete"; break;
-                case IROpcode::FCmpNe: setInstr="setne"; break;
-                case IROpcode::FCmpLt: setInstr="setb"; break;
-                case IROpcode::FCmpLe: setInstr="setbe"; break;
-                case IROpcode::FCmpGt: setInstr="seta"; break;
-                case IROpcode::FCmpGe: setInstr="setae"; break;
+            switch(opcode)
+            {
+                case IROpcode::FCmpEq:
+                    setInstr="sete";
+                    break;
+                case IROpcode::FCmpNe:
+                    setInstr="setne";
+                    break;
+                case IROpcode::FCmpLt:
+                    setInstr="setb";
+                    break;
+                case IROpcode::FCmpLe:
+                    setInstr="setbe";
+                    break;
+                case IROpcode::FCmpGt:
+                    setInstr="seta";
+                    break;
+                case IROpcode::FCmpGe:
+                    setInstr="setae";
+                    break;
                 default: break;
             }
 
@@ -322,36 +373,21 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
         // -----------------------
         case IROpcode::Load:
         {
-            auto srcAsm = GetOperandAsm(source1, out);
-            // If srcAsm is a memory operand like "[rbp-8]", load directly.
-            if (!srcAsm.empty() && srcAsm.front() == '[') {
-                out << "    mov rax, " << srcAsm << "\n";
-            } else {
-                // srcAsm is a register or immediate that contains an address; deref it.
-                out << "    mov rax, [" << srcAsm << "]\n";
-            }
+            out << "    mov rax, " << GetOperandAsm(source1, out) << "\n";
             out << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
             break;
         }
 
         case IROpcode::Store:
         {
-            auto dstAsm = GetOperandAsm(source2, out); // destination address or memory operand
             // Load value to store into rax
             out << "    mov rax, " << GetOperandAsm(source1, out) << "\n";
-
-            if (!dstAsm.empty() && dstAsm.front() == '[') {
-                // destination is a memory operand: store directly
-                out << "    mov " << dstAsm << ", rax\n";
-            } else {
-                // destination is an address in a register/immediate: deref into memory
-                out << "    mov [" << dstAsm << "], rax\n";
-            }
+            out << "    mov " << GetOperandAsm(source2, out) << ", rax\n";
             break;
         }
 
         case IROpcode::Alloca:
-            // Allocate a new stack slot for this instruction
+            // Allocate a new stack slot new var
             offset = this->m_nextVarStackOffset;
             this->m_nextVarStackOffset += 8;
             this->m_valueToStackOffset[instr] = offset;
@@ -372,7 +408,10 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
             break;
 
         case IROpcode::Ret:
-            if(source1) out << "    mov rax, " << GetOperandAsm(source1, out) << "\n";
+            if(source1)
+            {
+                out << "    mov rax, " << GetOperandAsm(source1, out) << "\n";
+            }
             out << "    jmp .func_epilogue\n";
             break;
 
@@ -382,55 +421,65 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
 
             if (TargetArchitecture::GetOS() == OS::Linux)
             {
+                // Stack allignment.
                 int extraArgs = numOperands > 6 ? numOperands - 6 : 0;
-                if (extraArgs % 2 != 0) out << "    sub rsp, 8    ; align stack\n";
+                if (extraArgs % 2 != 0) out << "    sub rsp, 8\n";
 
-                // push extra args right-to-left
+                // push extra args right to left.
                 for (int i = numOperands - 1; i >= 6; --i)
+                {
                     out << "    push " << GetOperandAsm(operands[i], out) << "\n";
+                }
 
                 // move register args
                 for (int i = 0; i < std::min(6, numOperands); ++i)
+                {
                     out << "    mov " << x86_64::linuxArgMapping[i]
                         << ", " << GetOperandAsm(operands[i], out) << "\n";
+                }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
-                out << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
+                out << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; // Return value.
 
+                // Restoring allignment and removing the func extra args.
                 if (extraArgs > 0) out << "    add rsp, " << (extraArgs * 8) << "\n";
-                if (extraArgs % 2 != 0) out << "    add rsp, 8    ; restore alignment\n";
+                if (extraArgs % 2 != 0) out << "    add rsp, 8\n";
             }
             else if (TargetArchitecture::GetOS() == OS::Windows)
             {
                 int extraArgs = numOperands > 4 ? numOperands - 4 : 0;
+                int stackArgsSize = extraArgs * 8;
 
-                // Reserve 32-byte shadow (always required by caller).
-                // We'll also allocate space for extra pushed args and alignment in one reservation,
-                // so push is not needed: we will write extras into that space or do pushes but then cleaning is simpler.
-                // Simpler approach (preserve your push-based style): reserve shadow+possible padding first.
-                int pad = (extraArgs % 2 != 0) ? 8 : 0; // keep 16-bytes alignment rule
-                int reserve = 32 + pad; // keep space for shadow + alignment
-                out << "    sub rsp, " << reserve << "    ; reserve shadow + padding\n";
+                int total = 32 + stackArgsSize;
 
-                // Push extra args (right-to-left) AFTER reserve (they will grow below current rsp)
-                for (int i = numOperands - 1; i >= 4; --i)
-                    out << "    push " << GetOperandAsm(operands[i], out) << "\n";
+                // Ensure 16-byte alignment at CALL
+                if ((total % 16) != 0)
+                {
+                    total += 8;
+                }
 
-                // Move first 4 args into registers
+                out << "    sub rsp, " << total << "\n";
+
+                // Write stack args (right-to-left)
+                for (int i = 0; i < extraArgs; ++i)
+                {
+                    int argIndex = 4 + i;
+                    int offset = 32 + i * 8;
+                    out << "    mov qword [rsp + " << offset << "], "
+                        << GetOperandAsm(operands[argIndex], out) << "\n";
+                }
+
+                // Register args
                 for (int i = 0; i < std::min(4, numOperands); ++i)
+                {
                     out << "    mov " << x86_64::windowsArgMapping[i]
                         << ", " << GetOperandAsm(operands[i], out) << "\n";
+                }
 
-                // Call
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
                 out << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
 
-                // Cleanup pushed args
-                if (extraArgs > 0)
-                    out << "    add rsp, " << (extraArgs * 8) << "\n";
-
-                // Restore reserved shadow + padding
-                out << "    add rsp, " << reserve << "    ; restore shadow + padding\n";
+                out << "    add rsp, " << total << "\n";
             }
             else
             {
@@ -441,8 +490,8 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
 
         case IROpcode::Select:
         {
-            std::string lblTrue = makeLabel();
-            std::string lblEnd = makeLabel();
+            std::string lblTrue = SelectLabelGenerator();
+            std::string lblEnd = SelectLabelGenerator();
             out << "    mov rax, " << GetOperandAsm(source1, out) << "\n"
                 << "    cmp rax, 0\n"
                 << "    jne " << lblTrue << "\n"
@@ -555,11 +604,16 @@ std::string X86_64Emitter::GetReserveDirective(int bytes)
 {
     switch (bytes)
     {
-    case 1: return "resb";
-    case 2: return "resw";
-    case 4: return "resd";
-    case 8: return "resq";
-    default: return "resb";
+    case 1:
+        return "resb";
+    case 2:
+        return "resw";
+    case 4:
+        return "resd";
+    case 8:
+        return "resq";
+    default:
+        return "resb";
     }
 }
 
@@ -567,34 +621,37 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
 {
     if (!operand) return "0";
 
-    if (auto c = dynamic_cast<IRConstantInt*>(operand)) {
-        return std::to_string(c->GetValue());
+    if (auto castResult = dynamic_cast<IRConstantInt*>(operand))
+    {
+        return std::to_string(castResult->GetValue());
     }
-    else if (auto c = dynamic_cast<IRConstantFloat*>(operand))
+    else if (auto castResult = dynamic_cast<IRConstantFloat*>(operand))
     {
         // allocate a slot once and write the constant there
-        std::string slot = slotOfInstr(c, out);
-        // write constant bits into slot (single-precision assumed)
-        float floatValue = c->GetValue();
+        std::string slot = slotOfInstr(castResult, out);
+        // write constant bits into slot
+        float floatValue = castResult->GetValue();
         uint32_t bits;
         std::memcpy(&bits, &floatValue, sizeof(float));
-        out << "    mov dword " << slot << ", 0x" << std::hex << bits << "    ; float constant\n";
-        // return the slot (address expression)
+        out << "    mov dword " << slot << ", 0x" << std::hex << bits << "\n";
+        // return the slot
         return slot;
     }
-    else if (auto c = dynamic_cast<IRConstantBool*>(operand)) {
-        return std::to_string(c->GetValue());
+    else if (auto castResult = dynamic_cast<IRConstantBool*>(operand))
+    {
+        return std::to_string(castResult->GetValue());
     }
-    else if (auto g = dynamic_cast<IRGlobalVariable*>(operand)) {
-        return g->GetName();
+    else if (auto globalResult = dynamic_cast<IRGlobalVariable*>(operand))
+    {
+        return globalResult->GetName();
     }
-    else if (auto arg = dynamic_cast<IRArgument*>(operand))
+    else if (auto argResult = dynamic_cast<IRArgument*>(operand))
     {
         // find argument index in current func (0-based)
         size_t foundIndex = 0;
-        for (auto& a : this->m_currentFunc->GetArguments())
+        for (auto& arg : this->m_currentFunc->GetArguments())
         {
-            if (arg == a.get()) break;
+            if (argResult == arg.get()) break;
             ++foundIndex;
         }
 
@@ -607,7 +664,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
             }
             else
             {
-                // first stack-passed arg (7th argument, foundIndex==6) is at [rbp+16]
+                // first stack-passed argResult (7th argument, foundIndex==6) is at [rbp+16]
                 // formula: offset = 8 * (foundIndex - 4)
                 int stackOffset = 8 * static_cast<int>(foundIndex - 4);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
@@ -627,7 +684,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
                 // saved rbp: [rbp]
                 // return addr: [rbp+8]
                 // shadow space: [rbp+16 .. rbp+47]
-                // first pushed arg (arg5, foundIndex==4) is at [rbp+48]
+                // first pushed argResult (arg5, foundIndex==4) is at [rbp+48]
                 // so offset = 48 + 8 * (foundIndex - 4)
                 int stackOffset = 48 + 8 * static_cast<int>(foundIndex - 4);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
@@ -639,7 +696,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
         }
     }
 
-    // otherwise it's a local / temp -> allocate stack slot (rbp - offset)
+    // otherwise it's a local / temp
     return slotOfInstr(operand, out);
 }
 
@@ -647,17 +704,17 @@ std::string X86_64Emitter::slotOfInstr(IRBaseValue* value, std::ostream& out)
 {
     if (!value) return "";
 
-    auto it = m_valueToStackOffset.find(value);
-    if (it != m_valueToStackOffset.end())
+    auto it = this->m_valueToStackOffset.find(value);
+    if (it != this->m_valueToStackOffset.end()) // already assigned
     {
-        return "[rbp-" + std::to_string(it->second) + "]"; // already assigned
+        return "[rbp-" + std::to_string(it->second) + "]";
     }
 
     out << "    sub rsp, 8\n"; // Grow frame.
     // allocate new stack slot
     int offset = this->m_nextTempStackOffset;
     this->m_nextTempStackOffset += 8;   // 8 bytes per slot
-    m_valueToStackOffset[value] = offset;
+    this->m_valueToStackOffset[value] = offset;
     return "[rbp-" + std::to_string(offset) + "]";
 }
 
@@ -668,15 +725,17 @@ void X86_64Emitter::LoadOperandAsFloat(IRBaseValue* operand, const std::string& 
     {
         out << "    movsd " << xmmReg << ", qword " << GetOperandAsm(operand, out) << "\n";
     }
-    // Float32 -> single precision (movss)
-    else if (operand->GetType() == IRType::GetFloat32())
-    {
-        out << "    movss " << xmmReg << ", dword " << GetOperandAsm(operand, out) << "\n";
-    }
     // Integer -> convert 64-bit int to double
     else
     {
         out << "    mov rax, " << GetOperandAsm(operand, out) << "\n"; // 64-bit integer
         out << "    cvtsi2sd " << xmmReg << ", rax\n";                 // convert to double
     }
+}
+
+std::string X86_64Emitter::SelectLabelGenerator()
+{
+    int id = this->m_selectLabelCounter;
+    this->m_selectLabelCounter++;
+    return ".Lsel_" + std::to_string(id);
 }

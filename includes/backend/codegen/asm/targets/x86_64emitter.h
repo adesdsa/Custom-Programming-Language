@@ -18,12 +18,13 @@ inline const std::vector<std::string> windowsArgMapping =
 class X86_64Emitter : public BaseEmitter
 {
 public:
-    X86_64Emitter() = default;
+    X86_64Emitter(const FuncTable& funcTable);
 
 private:
     std::unordered_map<IRBaseValue*, int> m_valueToStackOffset;
     size_t m_nextTempStackOffset;   // tracks top of ssa variable's frame
     size_t m_nextVarStackOffset;   // tracks top of normal func variable's frame
+    int m_selectLabelCounter;
 
     // header signaure for the file
     virtual std::string EmitHeader() override final;
@@ -71,4 +72,6 @@ private:
     std::string slotOfInstr(IRBaseValue* value, std::ostream& out);
 
     void LoadOperandAsFloat(IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
+
+    std::string SelectLabelGenerator();
 };
