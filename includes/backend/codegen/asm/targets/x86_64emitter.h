@@ -15,6 +15,39 @@ inline const std::vector<std::string> windowsArgMapping =
 
 }
 
+
+/**
+ * Emits Intel x86-64 (64-bit) assembly in NASM Intel syntax.
+ *
+ * This emitter targets the System V AMD64 ABI on Linux and
+ * the Microsoft x64 ABI on Windows.
+ *
+ * Responsibilities:
+ *  - Emit file headers and platform-specific entry points
+ *  - Emit function prologues / epilogues with correct stack alignment
+ *  - Lower custom IR instructions into x86-64 assembly
+ *  - Handle register and stack-based operands
+ *  - Manage SSA temporaries and local variable stack layout
+ *
+ * Calling conventions:
+ *  - Linux (System V AMD64 ABI):
+ *      Arguments: RDI, RSI, RDX, RCX, R8, R9
+ *      Stack aligned to 16 bytes before CALL
+ *
+ *  - Windows (Microsoft x64 ABI):
+ *      Arguments: RCX, RDX, R8, R9
+ *      32-byte shadow space required by the caller
+ *
+ * References:
+ *  @see System V AMD64 ABI:
+ *       https://refspecs.linuxfoundation.org/elf/x86_64-abi-0.99.pdf
+ *
+ *  @see Microsoft x64 calling convention:
+ *       https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention
+ *
+ *  @see x86-64 registers & flags:
+ *       https://www.felixcloutier.com/x86/
+ */
 class X86_64Emitter : public BaseEmitter
 {
 public:
@@ -69,9 +102,16 @@ private:
     /// @param bytes: size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) override final;
 
+    /// @brief The func turns an IRBaseValue into an asm value or memory location.
+    /// @param value The value/memory location that we try to write into asm.
+    /// @return A string that either holds a value or a memory location.
     std::string slotOfInstr(IRBaseValue* value, std::ostream& out);
 
+    /// @brief Picoc supports float+integer arethmatic+boolean thats why if one of them is float both need to be turned into one.
+    /// @param operand The operand that is checked.
+    /// @param xmmReg The special float register the value will be saved at.
     void LoadOperandAsFloat(IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
 
+    /// @brief A Select operand label generator.
     std::string SelectLabelGenerator();
 };
