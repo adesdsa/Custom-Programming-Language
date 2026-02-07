@@ -612,11 +612,10 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
     {
         // allocate a slot once and write the constant there
         std::string slot = slotOfInstr(castResult, out);
-        // write constant bits into slot
-        float floatValue = castResult->GetValue();
-        uint32_t bits;
-        std::memcpy(&bits, &floatValue, sizeof(float));
-        out << "    mov dword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";
+        double floatValue = castResult->GetValue();   // 64-bit float
+        uint64_t bits;
+        std::memcpy(&bits, &floatValue, sizeof(double));
+        out << "    mov qword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";  // qword = 64-bit
         // return the slot
         return slot;
     }
