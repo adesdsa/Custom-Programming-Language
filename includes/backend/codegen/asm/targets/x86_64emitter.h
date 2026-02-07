@@ -48,9 +48,6 @@ private:
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
     virtual void EmitStart(std::ostream& out) override final;
 
-    /// @brief The func handles a return (puts in the correct register the return value).
-    virtual void EmitReturn(std::ostream& out) override final;
-
     // Gets sections name as a string e.g., section .text
     virtual std::string GetSectionDirective(SectionType sectionType) override final;
 
