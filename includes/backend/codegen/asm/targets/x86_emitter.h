@@ -28,7 +28,8 @@ namespace x86_32
     // Each argument takes 4 bytes in 32-bit cdecl
     constexpr int ARGUMENT_SIZE = 4;
 
-    constexpr std::string FPU_C2_FLAG = "0x04";
+    // x87 FPU status word C2 flag (reduction incomplete)
+    constexpr int FPU_C2_FLAG = 0x04;
 }
 
 /**

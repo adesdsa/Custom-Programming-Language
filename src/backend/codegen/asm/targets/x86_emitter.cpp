@@ -381,9 +381,9 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::Alloca:
         {
             // allocate a new stack slot for a local variable
-            int offset = this->m_nextVarStackOffset;
-            this-> m_nextVarStackOffset += STACK_SLOT_SIZE;
-            this->m_valueToStackOffset[instruction] = offset;
+            int offset = m_nextVarStackOffset;
+            m_nextVarStackOffset += x86_32::STACK_SLOT_SIZE;
+            m_valueToStackOffset[instruction] = offset;
             break;
         }
 
@@ -567,7 +567,7 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
         // allocate a slot and write the constant there
         std::string slot = this->slotOfInstr(floatLiteral);
 
-        float value = floatLiteral->GetValue();
+        float value = static_cast<float>(floatLiteral->GetValue());
         uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(float));
 
@@ -598,8 +598,8 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
     // [ebp+8] = arg0, [ebp+12] = arg1, etc.
     if (auto* arg = dynamic_cast<const IRArgument*>(operand))
     {
-        int argIndex = arg->GetIndex();
-        int offset = x86_32::BASE_OFFSET + (argIndex * x86_32::ARGUMENT_SIZE);
+        size_t argIndex = arg->GetIndex();
+        int offset = x86_32::BASE_OFFSET + (static_cast<int>(argIndex) * x86_32::ARGUMENT_SIZE);
         return "dword [ebp+" + std::to_string(offset) + "]";
     }
 
@@ -672,7 +672,7 @@ void X86_Emitter::LoadOperandAsFloat(const IRBaseValue* operand, std::ostream& o
 
     if (auto* floatConst = dynamic_cast<const IRConstantFloat*>(operand))
     {
-        float value = floatConst->GetValue();
+        float value = static_cast<float>(floatConst->GetValue());
         uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(float));
 
