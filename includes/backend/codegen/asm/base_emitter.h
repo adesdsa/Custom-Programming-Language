@@ -15,6 +15,8 @@ public:
     std::string Emit(const IRModule& module) override final;
 
 protected:
+    const FuncTable& m_funcTable;
+    const IRFunction* m_currentFunc;
     // header signaure for the file
     virtual std::string EmitHeader() = 0;
  
@@ -51,7 +53,7 @@ protected:
     // e.g.,: IRConstantInt will evaluate as a it's value
     // Local variable will use stack offset [rbp - 4]
     // Globals will just use name [my_global]
-    virtual std::string GetOperandAsm(const IRBaseValue* operand) = 0;
+    virtual std::string GetOperandAsm(IRBaseValue* operand, std::ostream& out) = 0;
 
     /// @breif: Get .data keywords e.g., db, dw, etc..
     /// @param bytes: size of the variable in bytes
@@ -62,10 +64,6 @@ protected:
     virtual std::string GetReserveDirective(int bytes) = 0;
 
 private:
-    const FuncTable& m_funcTable;
-    const IRFunction* m_currentFunc;
-
-
     /// @brief Emits .data section (initialized globals)
     void EmitDataSection(const IRModule& module, std::ostream& out);
     
