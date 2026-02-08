@@ -19,12 +19,16 @@ namespace x86_32
 
     // stack alignment
     constexpr int STACK_ALIGNMENT = 4;
+    // via bitwise operator alignment of 4 works like so: (n + 3) & ~3
+    constexpr int STACK_ALIGNMENT_BIT_WISE = 3;
 
     // Skip saved EBP (4 bytes) + return address (4 bytes)
     constexpr int BASE_OFFSET = 8;
 
     // Each argument takes 4 bytes in 32-bit cdecl
     constexpr int ARGUMENT_SIZE = 4;
+
+    constexpr std::string FPU_C2_FLAG = "0x04";
 }
 
 /**
