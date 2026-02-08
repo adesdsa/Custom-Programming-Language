@@ -98,9 +98,14 @@ std::string X86_Emitter::GetSectionDirective(SectionType sectionType)
 
         case SectionType::RODATA:
             // NASM uses .rdata on Windows, .rodata on ELF
-            return (TargetArchitecture::GetOS() == OS::Windows) ? 
-                "section .rdata\n" :
-                "section .rodata\n";
+            if (TargetArchitecture::GetOS() == OS::Windows)
+            {
+                return "section .rdata\n" :
+            }
+            else
+            {
+                return "section .rodata\n";
+            }
 
         case SectionType::BSS:
             return "section .bss\n";
@@ -127,7 +132,56 @@ std::string X86_Emitter::GetGlobalDirective(const std::string &symbol)
 
 std::string X86_Emitter::GetOperandAsm(const IRBaseValue *operand)
 {
-    return std::string();
+    if (!operand) return "0";
+
+    // case opearnd is a literal value, return it's literal value
+
+    if (auto* intLiteral = dynamic_cast<const IRConstantInt*>(operand))
+    {
+        return std::to_string(intLiteral->GetValue());
+    }
+
+    if (auto* floatLiteral = dynamic_cast<const IRConstantFloat*>(operand))
+    {
+        float value = constFloat->GetValue();
+
+        uint32_t bits;
+        std::memcpy(&bits, &value, sizeof(float));
+        
+        // return as hex
+        std::ostringstream ss;
+        ss << "0x" << std::hex << std::uppercase << bits;
+        return ss.str();
+    }
+
+    if (auto* boolLiteral = dynamic_cast<const IRConstantBool*>(operand))
+    {
+        return std::to_string(boolLiteral->GetValue());
+    }
+
+
+
+    if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
+    {
+        if (TargetArchitecture::GetOS() == OS::Windows)
+        {
+            return "[_" + globalVar->GetName() + "]";
+        }
+        else
+        {
+            return "[" + globalVar->GetName() + "]";
+        }
+    }
+
+    // function argument [ebp + offset]
+    // 32-bit cdecl: all arguments on stack
+    // [ebp+8] = arg1, [ebp+12] = arg2, etc.
+    if (auto* arg = dynamic_cast<const IRArgument*>(operand))
+    {
+        int argIndex = arg->GetIndex();
+        int offset = BASE_OFFSET + (argIndex * ARGUMENT_BYTES);
+        return "dword [ebp+" + std::to_string(offset) + "]";
+    }
 }
 
 std::string X86_Emitter::GetDataDirective(int bytes)

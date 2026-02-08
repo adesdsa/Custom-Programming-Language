@@ -2,6 +2,12 @@
 
 #include "includes/backend/codegen/asm/base_emitter.h"
 
+// skip saved EBP (4 bytes) + return address (4 bytes)
+constexpr int BASE_OFFSET = 8;
+
+// each argument takes 4 bytes in 32 bit
+constexpr int ARGUMENT_BYTES = 4;
+
 /**
     * Emits Intel x86 (32-bit)
     * @see calling convenstions at http://www.unixwiz.net/techtips/win32-callconv-asm.html

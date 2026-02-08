@@ -53,12 +53,7 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
 {
     out << GetSectionDirective(SectionType::TEXT);
     
-    // export start if main exists
-    if (module.IsFuncExistByName("main"))
-    {
-        out << Indent() << GetGlobalDirective("_start");
-        EmitStart(out);
-    }
+    EmitStart(out);
     out << "\n";
     
     for (const auto& func : module.GetFunctions())
@@ -66,6 +61,9 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
         EmitFunction(func.get(), out);
         out << "\n";
     }
+
+    out << ".func_epilogue:\n";
+    EmitEpilogue(out);
 }
 
 void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
