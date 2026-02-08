@@ -7,7 +7,7 @@ m_nextVarStackOffset(0),
 m_selectLabelCounter(0)
 { }
 
-std::string X86_64Emitter::EmitHeader()
+std::string X86_64Emitter::EmitHeader() const
 {
     std::ostringstream header;
 
@@ -88,20 +88,20 @@ void X86_64Emitter::EmitEpilogue(std::ostream& out)
     this->m_nextVarStackOffset = 0;
 }
 
-void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
+void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& out)
 {
     // Helper fields
     int offset = 0;
     int numOperands = 0;
-    std::vector<IRBaseValue*> operands;
+    std::vector<const IRBaseValue*> operands;
 
     // --- opcode ---
     auto opcode = instr->GetOpcode();
 
     // --- normal instruction operands ---
-    IRBaseValue* source1 = instr->GetNumOperands() >= SINGLE_OPERAND ? instr->GetOperand(SINGLE_OPERAND_INDEX) : nullptr;
-    IRBaseValue* source2 = instr->GetNumOperands() >= TWO_OPERANDS ? instr->GetOperand(TWO_OPERANDS_INDEX) : nullptr;
-    IRBaseValue* source3 = instr->GetNumOperands() >= THREE_OPERANDS ? instr->GetOperand(THREE_OPERANDS_INDEX) : nullptr;
+    const IRBaseValue* source1 = instr->GetNumOperands() >= SINGLE_OPERAND ? instr->GetOperand(SINGLE_OPERAND_INDEX) : nullptr;
+    const IRBaseValue* source2 = instr->GetNumOperands() >= TWO_OPERANDS ? instr->GetOperand(TWO_OPERANDS_INDEX) : nullptr;
+    const IRBaseValue* source3 = instr->GetNumOperands() >= THREE_OPERANDS ? instr->GetOperand(THREE_OPERANDS_INDEX) : nullptr;
 
     switch (opcode)
     {
@@ -541,7 +541,7 @@ void X86_64Emitter::EmitStart(std::ostream& out)
     }
 }
 
-std::string X86_64Emitter::GetSectionDirective(SectionType sectionType)
+std::string X86_64Emitter::GetSectionDirective(SectionType sectionType) const
 {
     switch (sectionType)
     {
@@ -564,12 +564,12 @@ std::string X86_64Emitter::GetSectionDirective(SectionType sectionType)
     }
 }
 
-std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol)
+std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol) const
 {
     return "global " + symbol;
 }
 
-std::string X86_64Emitter::GetDataDirective(int bytes)
+std::string X86_64Emitter::GetDataDirective(int bytes) const
 {
     switch (bytes)
     {
@@ -583,7 +583,7 @@ std::string X86_64Emitter::GetDataDirective(int bytes)
     }
 }
 
-std::string X86_64Emitter::GetReserveDirective(int bytes)
+std::string X86_64Emitter::GetReserveDirective(int bytes) const
 {
     switch (bytes)
     {
@@ -600,15 +600,15 @@ std::string X86_64Emitter::GetReserveDirective(int bytes)
     }
 }
 
-std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out)
+std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream& out)
 {
     if (!operand) return "0";
 
-    if (auto castResult = dynamic_cast<IRConstantInt*>(operand))
+    if (auto castResult = dynamic_cast<const IRConstantInt*>(operand))
     {
         return std::to_string(castResult->GetValue());
     }
-    else if (auto castResult = dynamic_cast<IRConstantFloat*>(operand))
+    else if (auto castResult = dynamic_cast<const IRConstantFloat*>(operand))
     {
         // allocate a slot once and write the constant there
         std::string slot = slotOfInstr(castResult, out);
@@ -619,15 +619,15 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
         // return the slot
         return slot;
     }
-    else if (auto castResult = dynamic_cast<IRConstantBool*>(operand))
+    else if (auto castResult = dynamic_cast<const IRConstantBool*>(operand))
     {
         return std::to_string(castResult->GetValue());
     }
-    else if (auto globalResult = dynamic_cast<IRGlobalVariable*>(operand))
+    else if (auto globalResult = dynamic_cast<const IRGlobalVariable*>(operand))
     {
         return globalResult->GetName();
     }
-    else if (auto argResult = dynamic_cast<IRArgument*>(operand))
+    else if (auto argResult = dynamic_cast<const IRArgument*>(operand))
     {
         // find argument index in current func (0-based)
         size_t foundIndex = 0;
@@ -682,7 +682,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
     return slotOfInstr(operand, out);
 }
 
-std::string X86_64Emitter::slotOfInstr(IRBaseValue* value, std::ostream& out)
+std::string X86_64Emitter::slotOfInstr(const IRBaseValue* value, std::ostream& out)
 {
     if (!value) return "";
 
@@ -695,12 +695,12 @@ std::string X86_64Emitter::slotOfInstr(IRBaseValue* value, std::ostream& out)
     out << "    sub rsp, 8\n"; // Grow frame.
     // allocate new stack slot
     int offset = this->m_nextTempStackOffset;
-    this->m_nextTempStackOffset += STACK_SLOT_SIZE;   // 8 bytes per slot
+    this->m_nextTempStackOffset += STACK_SLOT_SIZE;   // 8 bytes per slot 
     this->m_valueToStackOffset[value] = offset;
     return "[rbp-" + std::to_string(offset) + "]";
 }
 
-void X86_64Emitter::LoadOperandAsFloat(IRBaseValue* operand, const std::string& xmmReg, std::ostream& out)
+void X86_64Emitter::LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out)
 {
     // Float64 -> double precision (movsd)
     if (operand->GetType() == IRType::GetFloat64())

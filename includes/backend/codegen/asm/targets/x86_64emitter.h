@@ -60,13 +60,13 @@ public:
     X86_64Emitter(const FuncTable& funcTable);
 
 private:
-    std::unordered_map<IRBaseValue*, int> m_valueToStackOffset;
+    mutable std::unordered_map<const IRBaseValue*, int> m_valueToStackOffset;
     size_t m_nextTempStackOffset;   // tracks top of ssa variable's frame
     size_t m_nextVarStackOffset;   // tracks top of normal func variable's frame
     int m_selectLabelCounter;
 
-    // header signaure for the file
-    virtual std::string EmitHeader() override final;
+    // header signature for the file
+    std::string EmitHeader() const override final;
  
     /** 
       * my_function:
@@ -74,49 +74,49 @@ private:
       * mov rbp, rsp  ; Set new base pointer to current stack
       * sub rsp, 32  ; Reserve 32 bytes for local variables
     */
-    virtual void EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out) override final;
+    void EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out) override final;
 
     /** 
       * mov rsp, rbp  ; Restore stack pointer
       * pop rbp  ; Restore old base pointer
      */
-    virtual void EmitEpilogue(std::ostream& out) override final;
+    void EmitEpilogue(std::ostream& out) override final;
 
     // Convert given IR instruction into an assembly instruction
-    virtual void EmitInstruction(IRInstruction* instruction, std::ostream& out) override final;
+    void EmitInstruction(const IRInstruction* instruction, std::ostream& out) override final;
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
-    virtual void EmitStart(std::ostream& out) override final;
+    void EmitStart(std::ostream& out) override final;
 
     // Gets sections name as a string e.g., section .text
-    virtual std::string GetSectionDirective(SectionType sectionType) override final;
+    std::string GetSectionDirective(SectionType sectionType) const override final;
 
-    // Get global section for linker, will be avaiable between all files
-    virtual std::string GetGlobalDirective(const std::string& symbol) override final;
+    // Get global section for linker, will be available between all files
+    std::string GetGlobalDirective(const std::string& symbol) const override final;
 
-    // Converts operand into it's value in runtime:
-    // e.g.,: IRConstantInt will evaluate as a it's value
-    // Local variable will use stack offset [rbp - 4]
+    // Converts operand into its value in runtime:
+    // e.g., IRConstantInt will evaluate as its value
+    // Local variable will use stack offset [rbp - 8]
     // Globals will just use name [my_global]
-    virtual std::string GetOperandAsm(IRBaseValue* operand, std::ostream& out) override final;
+    std::string GetOperandAsm(const IRBaseValue* operand, std::ostream& out) override final;
 
-    /// @breif: Get .data keywords e.g., db, dw, etc..
-    /// @param bytes: size of the variable in bytes
-    virtual std::string GetDataDirective(int bytes) override final;
+    /// @brief Get .data keywords e.g., db, dw, etc..
+    /// @param bytes size of the variable in bytes
+    std::string GetDataDirective(int bytes) const override final;
 
-    /// @breif: Get .bss keywords e.g., resb, resw, resd etc..
-    /// @param bytes: size of the variable in bytes
-    virtual std::string GetReserveDirective(int bytes) override final;
+    /// @brief Get .bss keywords e.g., resb, resw, resd etc..
+    /// @param bytes size of the variable in bytes
+    std::string GetReserveDirective(int bytes) const override final;
 
     /// @brief The func turns an IRBaseValue into an asm value or memory location.
     /// @param value The value/memory location that we try to write into asm.
     /// @return A string that either holds a value or a memory location.
-    std::string slotOfInstr(IRBaseValue* value, std::ostream& out);
+    std::string slotOfInstr(const IRBaseValue* value, std::ostream& out);
 
-    /// @brief Picoc supports float+integer arethmatic+boolean thats why if one of them is float both need to be turned into one.
+    /// @brief Picoc supports float+integer arithmetic+boolean thats why if one of them is float both need to be turned into one.
     /// @param operand The operand that is checked.
     /// @param xmmReg The special float register the value will be saved at.
-    void LoadOperandAsFloat(IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
+    void LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
 
     /// @brief A Select operand label generator.
     std::string SelectLabelGenerator();
