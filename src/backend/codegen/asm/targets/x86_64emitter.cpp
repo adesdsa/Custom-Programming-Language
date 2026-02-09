@@ -7,7 +7,7 @@ m_nextVarStackOffset(0),
 m_selectLabelCounter(0)
 { }
 
-std::string X86_64Emitter::EmitHeader()
+std::string X86_64Emitter::EmitHeader() const
 {
     std::ostringstream header;
 
@@ -88,20 +88,15 @@ void X86_64Emitter::EmitEpilogue(std::ostream& out)
     this->m_nextVarStackOffset = 0;
 }
 
-void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
+void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& out)
 {
-    // Helper fields
-    int offset = 0;
-    int numOperands = 0;
-    std::vector<IRBaseValue*> operands;
-
     // --- opcode ---
     auto opcode = instr->GetOpcode();
 
     // --- normal instruction operands ---
-    IRBaseValue* source1 = instr->GetNumOperands() >= SINGLE_OPERAND ? instr->GetOperand(SINGLE_OPERAND_INDEX) : nullptr;
-    IRBaseValue* source2 = instr->GetNumOperands() >= TWO_OPERANDS ? instr->GetOperand(TWO_OPERANDS_INDEX) : nullptr;
-    IRBaseValue* source3 = instr->GetNumOperands() >= THREE_OPERANDS ? instr->GetOperand(THREE_OPERANDS_INDEX) : nullptr;
+    const IRBaseValue* source1 = instr->GetNumOperands() >= SINGLE_OPERAND ? instr->GetOperand(SINGLE_OPERAND_INDEX) : nullptr;
+    const IRBaseValue* source2 = instr->GetNumOperands() >= TWO_OPERANDS ? instr->GetOperand(TWO_OPERANDS_INDEX) : nullptr;
+    const IRBaseValue* source3 = instr->GetNumOperands() >= THREE_OPERANDS ? instr->GetOperand(THREE_OPERANDS_INDEX) : nullptr;
 
     switch (opcode)
     {
@@ -381,11 +376,13 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
         }
 
         case IROpcode::Alloca:
-            // Allocate a new stack slot new var
-            offset = this->m_nextVarStackOffset;
+        {
+            // Allocate a new stack slot for new var
+            int allocaOffset = this->m_nextVarStackOffset;
             this->m_nextVarStackOffset += STACK_SLOT_SIZE;
-            this->m_valueToStackOffset[instr] = offset;
+            this->m_valueToStackOffset[instr] = allocaOffset;
             break;
+        }
 
         // -----------------------
         // Control flow
@@ -410,38 +407,39 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
             break;
 
         case IROpcode::Call:
-            operands = instr->GetOperands();
-            numOperands = static_cast<int>(operands.size());
+        {
+            auto callOperands = instr->GetOperands();
+            int numCallOperands = static_cast<int>(callOperands.size());
 
             if (TargetArchitecture::GetOS() == OS::Linux)
             {
-                // Stack allignment.
-                int extraArgs = numOperands > SIX_ARGUEMENTS ? numOperands - SIX_ARGUEMENTS : 0;
+                // Stack alignment
+                int extraArgs = numCallOperands > SIX_ARGUEMENTS ? numCallOperands - SIX_ARGUEMENTS : 0;
                 if (extraArgs % 2 != 0) out << "    sub rsp, 8\n";
 
-                // push extra args right to left.
-                for (int i = numOperands - 1; i >= SIX_ARGUEMENTS; --i)
+                // push extra args right to left
+                for (int i = numCallOperands - 1; i >= SIX_ARGUEMENTS; --i)
                 {
-                    out << "    push " << GetOperandAsm(operands[i], out) << "\n";
+                    out << "    push " << GetOperandAsm(callOperands[i], out) << "\n";
                 }
 
                 // move register args
-                for (int i = 0; i < std::min(SIX_ARGUEMENTS, numOperands); ++i)
+                for (int i = 0; i < std::min(SIX_ARGUEMENTS, numCallOperands); ++i)
                 {
                     out << "    mov " << x86_64::linuxArgMapping[i]
-                        << ", " << GetOperandAsm(operands[i], out) << "\n";
+                        << ", " << GetOperandAsm(callOperands[i], out) << "\n";
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
-                out << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; // Return value.
+                out << "    mov " << GetOperandAsm(instr, out) << ", rax\n"; // Return value
 
-                // Restoring allignment and removing the func extra args.
+                // Restoring alignment and removing the func extra args
                 if (extraArgs > 0) out << "    add rsp, " << (extraArgs * STACK_SLOT_SIZE) << "\n";
                 if (extraArgs % 2 != 0) out << "    add rsp, 8\n";
             }
             else if (TargetArchitecture::GetOS() == OS::Windows)
             {
-                int extraArgs = numOperands > FOUR_ARGUEMENTS ? numOperands - FOUR_ARGUEMENTS : 0;
+                int extraArgs = numCallOperands > FOUR_ARGUEMENTS ? numCallOperands - FOUR_ARGUEMENTS : 0;
                 int stackArgsSize = extraArgs * STACK_SLOT_SIZE;
 
                 int total = WINDOWS_X64_SHADOW_SPACE + stackArgsSize;
@@ -458,16 +456,16 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
                 for (int i = 0; i < extraArgs; ++i)
                 {
                     int argIndex = FOUR_ARGUEMENTS + i;
-                    int offset = WINDOWS_X64_SHADOW_SPACE + i * STACK_SLOT_SIZE;
-                    out << "    mov qword [rsp + " << offset << "], "
-                        << GetOperandAsm(operands[argIndex], out) << "\n";
+                    int argOffset = WINDOWS_X64_SHADOW_SPACE + i * STACK_SLOT_SIZE;
+                    out << "    mov qword [rsp + " << argOffset << "], "
+                        << GetOperandAsm(callOperands[argIndex], out) << "\n";
                 }
 
                 // Register args
-                for (int i = 0; i < std::min(FOUR_ARGUEMENTS, numOperands); ++i)
+                for (int i = 0; i < std::min(FOUR_ARGUEMENTS, numCallOperands); ++i)
                 {
                     out << "    mov " << x86_64::windowsArgMapping[i]
-                        << ", " << GetOperandAsm(operands[i], out) << "\n";
+                        << ", " << GetOperandAsm(callOperands[i], out) << "\n";
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
@@ -481,6 +479,7 @@ void X86_64Emitter::EmitInstruction(IRInstruction* instr, std::ostream& out)
                 out << "    mov " << GetOperandAsm(instr, out) << ", rax\n";
             }
             break;
+        }
 
         case IROpcode::Select:
         {
@@ -541,7 +540,7 @@ void X86_64Emitter::EmitStart(std::ostream& out)
     }
 }
 
-std::string X86_64Emitter::GetSectionDirective(SectionType sectionType)
+std::string X86_64Emitter::GetSectionDirective(SectionType sectionType) const
 {
     switch (sectionType)
     {
@@ -564,12 +563,12 @@ std::string X86_64Emitter::GetSectionDirective(SectionType sectionType)
     }
 }
 
-std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol)
+std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol) const
 {
     return "global " + symbol;
 }
 
-std::string X86_64Emitter::GetDataDirective(int bytes)
+std::string X86_64Emitter::GetDataDirective(int bytes) const
 {
     switch (bytes)
     {
@@ -583,7 +582,7 @@ std::string X86_64Emitter::GetDataDirective(int bytes)
     }
 }
 
-std::string X86_64Emitter::GetReserveDirective(int bytes)
+std::string X86_64Emitter::GetReserveDirective(int bytes) const
 {
     switch (bytes)
     {
@@ -600,40 +599,40 @@ std::string X86_64Emitter::GetReserveDirective(int bytes)
     }
 }
 
-std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out)
+std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream& out)
 {
     if (!operand) return "0";
 
-    if (auto castResult = dynamic_cast<IRConstantInt*>(operand))
+    if (auto* intConst = dynamic_cast<const IRConstantInt*>(operand))
     {
-        return std::to_string(castResult->GetValue());
+        return std::to_string(intConst->GetValue());
     }
-    else if (auto castResult = dynamic_cast<IRConstantFloat*>(operand))
+    else if (auto* floatConst = dynamic_cast<const IRConstantFloat*>(operand))
     {
         // allocate a slot once and write the constant there
-        std::string slot = slotOfInstr(castResult, out);
-        double floatValue = castResult->GetValue();   // 64-bit float
+        std::string slot = slotOfInstr(floatConst, out);
+        double floatValue = floatConst->GetValue();   // 64-bit float
         uint64_t bits;
         std::memcpy(&bits, &floatValue, sizeof(double));
         out << "    mov qword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";  // qword = 64-bit
         // return the slot
         return slot;
     }
-    else if (auto castResult = dynamic_cast<IRConstantBool*>(operand))
+    else if (auto* boolConst = dynamic_cast<const IRConstantBool*>(operand))
     {
-        return std::to_string(castResult->GetValue());
+        return std::to_string(boolConst->GetValue());
     }
-    else if (auto globalResult = dynamic_cast<IRGlobalVariable*>(operand))
+    else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
-        return globalResult->GetName();
+        return globalVar->GetName();
     }
-    else if (auto argResult = dynamic_cast<IRArgument*>(operand))
+    else if (auto* argVal = dynamic_cast<const IRArgument*>(operand))
     {
         // find argument index in current func (0-based)
         size_t foundIndex = 0;
         for (auto& arg : this->m_currentFunc->GetArguments())
         {
-            if (argResult == arg.get()) break;
+            if (argVal == arg.get()) break;
             ++foundIndex;
         }
 
@@ -646,7 +645,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
             }
             else
             {
-                // first stack-passed argResult (7th argument, foundIndex==6) is at [rbp+16]
+                // first stack-passed arg (7th argument, foundIndex==6) is at [rbp+16]
                 // formula: offset = 8 * (foundIndex - 6)
                 int stackOffset = FIRST_STACK_ARG_OFFSET_LINUX + STACK_SLOT_SIZE * static_cast<int>(foundIndex - SIX_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
@@ -666,7 +665,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
                 // saved rbp: [rbp]
                 // return addr: [rbp+8]
                 // shadow space: [rbp+16 .. rbp+47]
-                // first pushed argResult (arg5, foundIndex==4) is at [rbp+48]
+                // first pushed arg (arg5, foundIndex==4) is at [rbp+48]
                 // so offset = 48 + 8 * (foundIndex - 4)
                 int stackOffset = FIRST_STACK_ARG_OFFSET_WINDOWS + STACK_SLOT_SIZE * static_cast<int>(foundIndex - FOUR_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
@@ -682,7 +681,7 @@ std::string X86_64Emitter::GetOperandAsm(IRBaseValue* operand, std::ostream& out
     return slotOfInstr(operand, out);
 }
 
-std::string X86_64Emitter::slotOfInstr(IRBaseValue* value, std::ostream& out)
+std::string X86_64Emitter::slotOfInstr(const IRBaseValue* value, std::ostream& out)
 {
     if (!value) return "";
 
@@ -694,13 +693,13 @@ std::string X86_64Emitter::slotOfInstr(IRBaseValue* value, std::ostream& out)
 
     out << "    sub rsp, 8\n"; // Grow frame.
     // allocate new stack slot
-    int offset = this->m_nextTempStackOffset;
-    this->m_nextTempStackOffset += STACK_SLOT_SIZE;   // 8 bytes per slot
-    this->m_valueToStackOffset[value] = offset;
-    return "[rbp-" + std::to_string(offset) + "]";
+    size_t slotOffset = this->m_nextTempStackOffset;
+    this->m_nextTempStackOffset += STACK_SLOT_SIZE;   // 8 bytes per slot 
+    this->m_valueToStackOffset[value] = static_cast<int>(slotOffset);
+    return "[rbp-" + std::to_string(slotOffset) + "]";
 }
 
-void X86_64Emitter::LoadOperandAsFloat(IRBaseValue* operand, const std::string& xmmReg, std::ostream& out)
+void X86_64Emitter::LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out)
 {
     // Float64 -> double precision (movsd)
     if (operand->GetType() == IRType::GetFloat64())

@@ -7,6 +7,7 @@
 #include "includes/backend/codegen/asm/asm_common_types.h"
 #include "includes/backend/codegen/asm/interface_target_emitter.h"
 #include "includes/frontend/semantic_analysis/func_table.h"
+#include "includes/shared/common/target_architecture.h"
 
 class BaseEmitter : public ITargetEmitter
 {
@@ -17,9 +18,10 @@ public:
 protected:
     const FuncTable& m_funcTable;
     const IRFunction* m_currentFunc;
-    // header signaure for the file
-    virtual std::string EmitHeader() = 0;
- 
+    
+    // header signature for the file
+    virtual std::string EmitHeader() const = 0;
+
     /** 
       * my_function:
       * push rbp  ; Save old base pointer
@@ -31,37 +33,35 @@ protected:
     /** 
       * mov rsp, rbp  ; Restore stack pointer
       * pop rbp  ; Restore old base pointer
+      * ret
      */
     virtual void EmitEpilogue(std::ostream& out) = 0;
 
     // Convert given IR instruction into an assembly instruction
-    virtual void EmitInstruction(IRInstruction* instruction, std::ostream& out) = 0;
+    virtual void EmitInstruction(const IRInstruction* instruction, std::ostream& out) = 0;
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
     virtual void EmitStart(std::ostream& out) = 0;
 
-    /// @brief The func handles a return (puts in the correct register the return value).
-    virtual void EmitReturn(std::ostream& out) = 0;
-
     // Gets sections name as a string e.g., section .text
-    virtual std::string GetSectionDirective(SectionType sectionType) = 0;
+    virtual std::string GetSectionDirective(SectionType sectionType) const = 0;
 
-    // Get global section for linker, will be avaiable between all files
-    virtual std::string GetGlobalDirective(const std::string& symbol) = 0;
+    // Get global section for linker, will be available between all files
+    virtual std::string GetGlobalDirective(const std::string& symbol) const = 0;
 
-    // Converts operand into it's value in runtime:
-    // e.g.,: IRConstantInt will evaluate as a it's value
-    // Local variable will use stack offset [rbp - 4]
+    // Converts operand into its value in runtime:
+    // e.g., IRConstantInt will evaluate as its value
+    // Local variable will use stack offset [rbp - 4] or [ebp - 4]
     // Globals will just use name [my_global]
-    virtual std::string GetOperandAsm(IRBaseValue* operand, std::ostream& out) = 0;
+    virtual std::string GetOperandAsm(const IRBaseValue* operand, std::ostream& out) = 0;
 
-    /// @breif: Get .data keywords e.g., db, dw, etc..
-    /// @param bytes: size of the variable in bytes
-    virtual std::string GetDataDirective(int bytes) = 0;
+    /// @brief Get .data keywords e.g., db, dw, etc..
+    /// @param bytes size of the variable in bytes
+    virtual std::string GetDataDirective(int bytes) const = 0;
 
-    /// @breif: Get .bss keywords e.g., resb, resw, resd etc..
-    /// @param bytes: size of the variable in bytes
-    virtual std::string GetReserveDirective(int bytes) = 0;
+    /// @brief Get .bss keywords e.g., resb, resw, resd etc..
+    /// @param bytes size of the variable in bytes
+    virtual std::string GetReserveDirective(int bytes) const = 0;
 
 private:
     /// @brief Emits .data section (initialized globals)
