@@ -19,12 +19,14 @@ std::string X86_Emitter::EmitHeader() const
         case OS::Linux:
             header << "; Target: x86 Linux (32-bit)\n\n";
             header << "BITS 32\n";
+            header << "global _start\n";
             header << "extern main\n\n";
             break;
 
         case OS::Windows:
             header << "; Target: x86 Windows (32-bit)\n\n";
             header << "BITS 32\n";
+            header << "global _mainCRTStartup\n";
             header << "extern _main\n";
             header << "extern _ExitProcess@4\n\n";
             break;
@@ -475,7 +477,6 @@ void X86_Emitter::EmitStart(std::ostream& out)
     {
         case OS::Linux:
         {
-            out << "global _start\n";
             out << "_start:\n";
             out << "    call main\n";
 
@@ -488,7 +489,6 @@ void X86_Emitter::EmitStart(std::ostream& out)
 
         case OS::Windows:
         {
-            out << "global _mainCRTStartup\n";
             out << "_mainCRTStartup:\n";
             out << "    call _main\n";
 
