@@ -27,20 +27,18 @@ namespace x86_32
 
     // Each argument takes 4 bytes in 32-bit cdecl
     constexpr int ARGUMENT_SIZE = 4;
-
-    // x87 FPU status word C2 flag (reduction incomplete)
-    constexpr int FPU_C2_FLAG = 0x04;
 }
 
 /**
  * Emits Intel x86 (32-bit) NASM assembly
- * Uses cdecl calling convention:
- *   - ALL arguments passed on stack (right-to-left)
- *   - Caller cleans up the stack
- *   - Return value in EAX
  * 
- * @see calling conventions at http://www.unixwiz.net/techtips/win32-callconv-asm.html
- * @see registers & flags at https://www.eecg.utoronto.ca/~amza/www.mindsec.com/files/x86regs.html
+ * References:
+ * 
+ * Calling Conventions:
+ *      @see http://www.unixwiz.net/techtips/win32-callconv-asm.html
+ * 
+ * Registers & Flags: 
+ *      @see https://www.eecg.utoronto.ca/~amza/www.mindsec.com/files/x86regs.html
  */
 class X86_Emitter : public BaseEmitter
 {
@@ -54,7 +52,7 @@ private:
     int m_nextTempStackOffset = 0;
     mutable std::unordered_map<const IRBaseValue*, int> m_valueToStackOffset;
 
-    // Label counter for Select instruction
+    // label counter for Select instruction
     int m_selectLabelCounter = 0;
 
     std::string EmitHeader() const override final;
@@ -86,6 +84,6 @@ private:
     // generate unique labels for Select instruction
     std::string SelectLabelGenerator();
 
-    // load an operand into an x87 FPU register
-    void LoadOperandAsFloat(const IRBaseValue* operand, std::ostream& out);
+    // load an operand into an SSE XMM register
+    void LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
 };
