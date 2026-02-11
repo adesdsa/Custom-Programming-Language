@@ -6,7 +6,6 @@ project(Custom-Programming-Language LANGUAGES CXX)
 # MSVC Runtime config
 # -----------------------------
 if(MSVC)
-    # /MDd for Debug, /MD for Release
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "" FORCE)
 endif()
 
@@ -28,7 +27,6 @@ list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/main.cpp")
 add_library(CPLib ${SRC_FILES})
 target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR})
 add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
-
 target_link_libraries(CPLib PUBLIC mio::mio GTest::gtest)
 
 set_target_properties(CPLib PROPERTIES
@@ -37,47 +35,13 @@ set_target_properties(CPLib PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
-# Compiler warnings (comprehensive)
+# =============================
+# Compiler warnings
+# =============================
 if(MSVC)
-    target_compile_options(CPLib PRIVATE
-        /W4             # High warning level
-        /permissive-    # Strict standards conformance
-        /w14242         # Conversion warnings
-        /w14254         # Operator conversion warnings  
-        /w14263         # Member function hiding
-        /w14265         # Class has virtual functions but destructor is not virtual
-        /w14287         # Unsigned/negative constant mismatch
-        /w14296         # Expression is always true/false
-        /w14311         # Pointer truncation
-        /w14545         # Expression before comma evaluates to a function
-        /w14546         # Function call before comma missing argument list
-        /w14547         # Operator before comma has no effect
-        /w14549         # Operator before comma has no effect
-        /w14555         # Expression has no effect
-        /w14619         # Pragma warning invalid
-        /w14640         # Thread unsafe static member initialization
-        /w14826         # Conversion is sign-extended
-        /w14905         # Wide string literal cast to LPSTR
-        /w14906         # String literal cast to LPWSTR
-        /w14928         # Illegal copy-initialization
-    )
+    target_compile_options(CPLib PRIVATE /W4 /permissive-)
 else()
-    target_compile_options(CPLib PRIVATE
-        -Wall           # All common warnings
-        -Wextra         # Extra warnings not in -Wall
-        -Wpedantic      # Strict ISO C++ compliance
-        -Wshadow        # Variable shadowing
-        -Wconversion    # Implicit type conversions
-        -Wsign-conversion # Sign conversion warnings
-        -Wnull-dereference # Null pointer dereference
-        -Wdouble-promotion # Float implicitly promoted to double
-        -Wformat=2      # Printf/scanf format string issues
-        -Wcast-align    # Pointer cast increases alignment
-        -Wunused        # Unused variables/functions
-        -Wnon-virtual-dtor # Non-virtual destructor in class with virtual functions
-        -Woverloaded-virtual # Overloaded virtual function
-        -Wold-style-cast # C-style casts
-    )
+    target_compile_options(CPLib PRIVATE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion)
 endif()
 
 # =============================
@@ -85,7 +49,6 @@ endif()
 # =============================
 add_executable(Custom-Programming-Language main.cpp)
 target_link_libraries(Custom-Programming-Language PRIVATE CPLib mio::mio)
-
 set_target_properties(Custom-Programming-Language PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
@@ -95,19 +58,102 @@ set_target_properties(Custom-Programming-Language PROPERTIES
 # Tests
 # =============================
 option(BUILD_TESTS "Build unit tests" OFF)
-
 if(BUILD_TESTS)
     enable_testing()
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/test_scripts/*.cpp)
-
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE GTest::gtest_main CPLib)
-
     set_target_properties(unit_tests PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
     )
-
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
+endif()
+
+# ==============================
+# NASM
+# ==============================
+if(WIN32)
+    # Pick 32-bit or 64-bit NASM depending on target architecture
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(NASM_EXECUTABLE "${CMAKE_SOURCE_DIR}/tools/nasm/nasm64.exe")
+    else()
+        set(NASM_EXECUTABLE "${CMAKE_SOURCE_DIR}/tools/nasm/nasm32.exe")
+    endif()
+
+    if(NOT EXISTS ${NASM_EXECUTABLE})
+        message(FATAL_ERROR "NASM executable not found at ${NASM_EXECUTABLE}. Place it in tools/nasm/")
+    endif()
+    message(STATUS "Using NASM: ${NASM_EXECUTABLE}")
+
+else() # Linux / macOS
+    find_program(NASM_EXECUTABLE nasm)
+    if(NOT NASM_EXECUTABLE)
+        message(STATUS "NASM not found, attempting to install via apt...")
+        execute_process(COMMAND sudo apt-get update)
+        execute_process(COMMAND sudo apt-get install -y nasm
+                        RESULT_VARIABLE NASM_RESULT
+                        OUTPUT_QUIET ERROR_QUIET)
+        if(NASM_RESULT EQUAL 0)
+            find_program(NASM_EXECUTABLE nasm)
+            if(NOT NASM_EXECUTABLE)
+                message(FATAL_ERROR "NASM installation failed. Please install manually.")
+            else()
+                message(STATUS "NASM installed successfully: ${NASM_EXECUTABLE}")
+            endif()
+        else()
+            message(FATAL_ERROR "Failed to auto-install NASM. Please install manually.")
+        endif()
+    else()
+        message(STATUS "NASM found: ${NASM_EXECUTABLE}")
+    endif()
+endif()
+
+
+# ==============================
+# Linker
+# ==============================
+if(WIN32)
+    # Try to find link.exe in PATH first
+    find_program(LINK_EXECUTABLE link)
+    
+    # If not found, try to detect Visual Studio automatically
+    if(NOT LINK_EXECUTABLE AND MSVC)
+        if(DEFINED ENV{VSINSTALLDIR})
+            set(LINK_EXECUTABLE "$ENV{VSINSTALLDIR}/VC/Tools/MSVC/${CMAKE_VS_MSVC_VERSION}/bin/Hostx64/x64/link.exe")
+        endif()
+    endif()
+
+    if(NOT LINK_EXECUTABLE OR NOT EXISTS ${LINK_EXECUTABLE})
+        message(FATAL_ERROR "link.exe not found. Install Visual Studio Build Tools and ensure PATH or VSINSTALLDIR is correct.")
+    endif()
+
+    message(STATUS "Using link.exe: ${LINK_EXECUTABLE}")
+
+else() # Linux / macOS
+    find_program(LD_EXECUTABLE ld)
+    if(NOT LD_EXECUTABLE)
+        if(UNIX)
+            message(STATUS "ld not found, attempting to install binutils...")
+            execute_process(COMMAND sudo apt-get update)
+            execute_process(COMMAND sudo apt-get install -y binutils
+                            RESULT_VARIABLE LD_RESULT
+                            OUTPUT_QUIET ERROR_QUIET)
+            if(LD_RESULT EQUAL 0)
+                find_program(LD_EXECUTABLE ld)
+                if(NOT LD_EXECUTABLE)
+                    message(FATAL_ERROR "ld installation failed. Please install manually.")
+                else()
+                    message(STATUS "ld installed successfully: ${LD_EXECUTABLE}")
+                endif()
+            else()
+                message(FATAL_ERROR "Failed to auto-install ld. Please install manually.")
+            endif()
+        else()
+            message(FATAL_ERROR "ld not found. Please install binutils.")
+        endif()
+    else()
+        message(STATUS "Using ld: ${LD_EXECUTABLE}")
+    endif()
 endif()

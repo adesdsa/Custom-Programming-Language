@@ -37,4 +37,8 @@ void CodeGenManager::MainFlow()
 
     Assembler assembler(this->m_errorManager);
     std::filesystem::path objPath = assembler.Assemble(asmContent);
+
+    Linker linker(this->m_errorManager);
+    std::filesystem::path exePath = linker.Link(objPath);
+    /// @todo handle output
 }
