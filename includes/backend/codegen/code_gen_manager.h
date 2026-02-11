@@ -1,10 +1,18 @@
 #pragma once
 
+#include <filesystem>
+
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 
 // Sub-Managers
 #include "includes/backend/codegen/ir/ir_generator.h"
 #include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
+#include "includes/backend/codegen/asm/targets/x86_64emitter.h"
+#include "includes/backend/codegen/asm/targets/x86_emitter.h"
+#include "includes/backend/codegen/assembler.h"
+#include "includes/backend/codegen/linker.h"
+
+#include "includes/shared/common/target_architecture.h"
 
 /**
     * Responsible for converting each source code into .o bin file.
@@ -23,4 +31,5 @@ public:
 
 private:
     const DecoratedAST& m_decoratedAST;
+    ErrorManager& m_errorManager;
 };
