@@ -13,7 +13,7 @@ void CodeGenManager::MainFlow()
     OptimizationManager optimizationManager;
     optimizationManager.MainFlow(irProgram);
 
-    std::string asmContent;
+    /*std::string asmContent;
     if (TargetArchitecture::Is32Bit())
     {
         X86_Emitter emitter(this->m_decoratedAST.funcTable);
@@ -33,10 +33,29 @@ void CodeGenManager::MainFlow()
             "")
         );
         return;
-    }
+    }*/
 
+    std::string asmContent = R"asm(
+global main
+section .text
+
+main:
+    ; Reserve 8 bytes for local variable x
+    sub rsp, 8
+
+    ; int x = 1
+    mov dword [rsp], 1
+
+    ; Return 0
+    xor eax, eax
+
+    ; Restore stack
+    add rsp, 8
+    ret
+)asm";
     Assembler assembler(this->m_errorManager);
     std::filesystem::path objPath = assembler.Assemble(asmContent);
+    if (objPath.empty()) this->m_errorManager.HandleErrors();
 
     Linker linker(this->m_errorManager);
     std::filesystem::path exePath = linker.Link(objPath);
