@@ -10,6 +10,7 @@
 #include "includes/shared/errors/error_manager.h"
 #include "includes/shared/common/target_architecture.h"
 #include "includes/shared/utils/system_utils.h"
+#include "includes/shared/logger/entity_logger.h"
 
 /// @brief Simple wrapper around NASM assembler invocation.
 class Assembler
@@ -26,7 +27,7 @@ public:
     std::string Mainflow(const std::string& asmPath, const std::string& programName);
 
 private:
-    ErrorManager& m_errorManager;
+    EntityLogger m_assemblerLogger;
 
     /// @brief Build the NASM command line for a given ASM file and output object file.
     /// @param nasmPath Path to the NASM executable.

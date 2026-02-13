@@ -18,4 +18,6 @@ void CodeGenManager::MainFlow()
 
     Assembler assembler(this->m_errorManager);
     std::string objectFilePath = assembler.Mainflow(asmFilePath, "out");
+
+    /// @todo add linker
 }

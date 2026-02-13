@@ -1,7 +1,8 @@
-#include "includes/backend/codegen/assembler.h"
+#include "includes/backend/assembler/assembler.h"
+#include <stdexcept>
 
 Assembler::Assembler(ErrorManager& errorManager) :
-    m_errorManager(errorManager)
+    m_assemblerLogger("Assembler")
 { }
 
 std::string Assembler::Mainflow(const std::string& asmPath, const std::string& programName)
@@ -13,15 +14,10 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
 
     if (!fs::exists(asmFile))
     {
-        this->m_errorManager.StoreError(CompileTimeError(
-            ErrorTypes::INTERNAL_ERROR,
-            "ASM file does not exist: " + asmFile.string(),
-            0, 0, "")
-        );
-        return {};
+        this->m_assemblerLogger.Error("ASM file does not exist: " + asmFile.string());
+        throw std::runtime_error("");
     }
 
-    // Determine NASM executable and format
     std::string objExt, nasmFormat;
     fs::path nasmPath;
     fs::path toolsDir;
@@ -38,38 +34,37 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
                 : toolsDir / "nasm32.exe";
 
             if (!ValidateNasmPath(nasmPath))
-                return {};
+                throw std::runtime_error("");
             break;
 
         case OS::Linux:
             objExt = ".o";
             nasmFormat = TargetArchitecture::Is64Bit() ? "elf64" : "elf32";
-            nasmPath = "nasm"; // assume installed
+            nasmPath = "nasm";
             break;
 
         default:
-            this->m_errorManager.StoreError(CompileTimeError(
-                ErrorTypes::INTERNAL_ERROR,
-                "Unsupported OS for NASM backend",
-                0, 0, "")
-            );
-            return {};
+        {
+            this->m_assemblerLogger.Error("Unsupported OS for NASM backend");
+            throw std::runtime_error("");
+        }
     }
 
     fs::path objFile = outputDir / (programName + objExt);
 
     std::string cmd = BuildNasmCommand(nasmPath, asmFile, objFile, nasmFormat);
+
+    this->m_logger.Info("Assembling: " + cmd);
+
     int result = std::system(cmd.c_str());
 
     if (result != 0)
     {
-        this->m_errorManager.StoreError(CompileTimeError(
-            ErrorTypes::INTERNAL_ERROR,
-            "NASM failed with exit code: " + std::to_string(result),
-            0, 0, "")
-        );
-        return {};
+        this->m_assemblerLogger.Error("NASM failed with exit code: " + std::to_string(result));
+        throw std::runtime_error("");
     }
+
+    this->m_logger.Info("Assembled successfully: " + objFile.string());
 
     return objFile.string();
 }
@@ -84,7 +79,6 @@ std::string Assembler::BuildNasmCommand(
 
     if (TargetArchitecture::GetOS() == OS::Windows)
     {
-        // Wrap in cmd /C for Windows
         std::ostringstream inner;
         inner << "\"" << nasmPath.string() << "\""
               << " -f " << nasmFormat
@@ -107,14 +101,12 @@ std::string Assembler::BuildNasmCommand(
 bool Assembler::ValidateNasmPath(const std::filesystem::path& nasmPath)
 {
     namespace fs = std::filesystem;
+
     if (!fs::exists(nasmPath))
     {
-        this->m_errorManager.StoreError(CompileTimeError(
-            ErrorTypes::INTERNAL_ERROR,
-            "NASM executable not found at: " + nasmPath.string(),
-            0, 0, "")
-        );
-        return false;
+        this->m_assemblerLogger.Error("NASM executable not found at: " + nasmPath.string();
+        throw std::runtime_error("");
     }
+
     return true;
 }

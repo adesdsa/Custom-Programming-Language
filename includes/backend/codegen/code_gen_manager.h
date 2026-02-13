@@ -8,7 +8,7 @@
 #include "includes/backend/codegen/ir/ir_generator.h"
 #include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
 #include "includes/backend/codegen/asm/asm_generator.h"
-#include "includes/backend/codegen/assembler.h"
+#include "includes/backend/assembler/assembler.h"
 
 /**
     * Responsible for converting each source code into .o bin file.
