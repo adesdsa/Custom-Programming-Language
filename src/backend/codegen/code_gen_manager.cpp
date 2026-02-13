@@ -12,4 +12,9 @@ void CodeGenManager::MainFlow()
 
     OptimizationManager optimizationManager;
     optimizationManager.MainFlow(irProgram);
+
+    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable);
+    std::string asmFilePath = asmGenerator.MainFlow();
+
+    //TODO: Insert assembler
 }

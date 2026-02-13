@@ -27,6 +27,14 @@ list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/main.cpp")
 add_library(CPLib ${SRC_FILES})
 target_include_directories(CPLib PUBLIC ${CMAKE_SOURCE_DIR})
 add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
+
+# =============================
+# Bundled Toolchain Paths
+# =============================
+if(WIN32)
+    add_compile_definitions(GOLINK_TOOL_PATH="${CMAKE_SOURCE_DIR}/tools/golink/GoLink.exe")
+endif()
+
 target_link_libraries(CPLib PUBLIC mio::mio GTest::gtest)
 
 set_target_properties(CPLib PROPERTIES

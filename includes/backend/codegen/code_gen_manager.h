@@ -7,12 +7,7 @@
 // Sub-Managers
 #include "includes/backend/codegen/ir/ir_generator.h"
 #include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
-#include "includes/backend/codegen/asm/targets/x86_64emitter.h"
-#include "includes/backend/codegen/asm/targets/x86_emitter.h"
-#include "includes/backend/codegen/assembler.h"
-#include "includes/backend/codegen/linker.h"
-
-#include "includes/shared/common/target_architecture.h"
+#include "includes/backend/codegen/asm/asm_generator.h"
 
 /**
     * Responsible for converting each source code into .o bin file.
@@ -27,7 +22,7 @@ public:
     CodeGenManager(const DecoratedAST& decoratedAST);
     ~CodeGenManager() = default;
 
-    void MainFlow();  // TODO: Change return value based on .o files implomention
+    void MainFlow();
 
 private:
     const DecoratedAST& m_decoratedAST;
