@@ -67,7 +67,7 @@ private:
 
     // header signature for the file
     std::string EmitHeader() const override final;
- 
+
     /** 
       * my_function:
       * push rbp  ; Save old base pointer

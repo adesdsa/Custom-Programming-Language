@@ -395,15 +395,21 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         // Control flow
         // -----------------------
         case IROpcode::Br:
-            out << "    jmp " << op1->GetName() << "\n";
+        {
+            const auto& successors = instruction->GetParent()->GetSuccessors();
+            out << "    jmp ." << successors[0]->GetLabel() << "\n";
             break;
+        }
 
         case IROpcode::CondBr:
+        {
+            const auto& successors = instruction->GetParent()->GetSuccessors();
             out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
             out << "    cmp eax, 0\n";
-            out << "    jne " << op2->GetName() << "\n";
-            out << "    jmp " << op3->GetName() << "\n";
+            out << "    jne ." << successors[0]->GetLabel() << "\n";
+            out << "    jmp ." << successors[1]->GetLabel() << "\n";
             break;
+        }
 
         case IROpcode::Ret:
             if (op1)
