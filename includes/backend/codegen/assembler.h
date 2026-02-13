@@ -21,7 +21,7 @@ public:
 
     /// @brief Assemble given ASM source code and return path to object file.
     /// @param asmContents The ASM source code to assemble.
-    /// @param programName A unique program name used for temporary file generation.
+    /// @param programName A unique program name used for temporary file generation (without extension).
     /// @return Path to the resulting object file, or an empty path on error.
     std::string Mainflow(const std::string& asmPath, const std::string& programName);
 
