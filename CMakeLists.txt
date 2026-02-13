@@ -47,9 +47,45 @@ set_target_properties(CPLib PROPERTIES
 # Compiler warnings
 # =============================
 if(MSVC)
-    target_compile_options(CPLib PRIVATE /W4 /permissive-)
+    target_compile_options(CPLib PRIVATE
+        /W4             # High warning level
+        /permissive-    # Strict standards conformance
+        /w14242         # Conversion warnings
+        /w14254         # Operator conversion warnings  
+        /w14263         # Member function hiding
+        /w14265         # Class has virtual functions but destructor is not virtual
+        /w14287         # Unsigned/negative constant mismatch
+        /w14296         # Expression is always true/false
+        /w14311         # Pointer truncation
+        /w14545         # Expression before comma evaluates to a function
+        /w14546         # Function call before comma missing argument list
+        /w14547         # Operator before comma has no effect
+        /w14549         # Operator before comma has no effect
+        /w14555         # Expression has no effect
+        /w14619         # Pragma warning invalid
+        /w14640         # Thread unsafe static member initialization
+        /w14826         # Conversion is sign-extended
+        /w14905         # Wide string literal cast to LPSTR
+        /w14906         # String literal cast to LPWSTR
+        /w14928         # Illegal copy-initialization
+    )
 else()
-    target_compile_options(CPLib PRIVATE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion)
+    target_compile_options(CPLib PRIVATE
+        -Wall           # All common warnings
+        -Wextra         # Extra warnings not in -Wall
+        -Wpedantic      # Strict ISO C++ compliance
+        -Wshadow        # Variable shadowing
+        -Wconversion    # Implicit type conversions
+        -Wsign-conversion # Sign conversion warnings
+        -Wnull-dereference # Null pointer dereference
+        -Wdouble-promotion # Float implicitly promoted to double
+        -Wformat=2      # Printf/scanf format string issues
+        -Wcast-align    # Pointer cast increases alignment
+        -Wunused        # Unused variables/functions
+        -Wnon-virtual-dtor # Non-virtual destructor in class with virtual functions
+        -Woverloaded-virtual # Overloaded virtual function
+        -Wold-style-cast # C-style casts
+    )
 endif()
 
 # =============================
