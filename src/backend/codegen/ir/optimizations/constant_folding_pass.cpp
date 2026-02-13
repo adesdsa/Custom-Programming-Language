@@ -17,6 +17,12 @@ bool ConstantFoldingPass::Run(IRModule& program)
         }
     }
 
+    for (auto& constant : this->m_foldedConstants)
+    {
+        program.AddConstant(std::move(constant));
+    }
+    this->m_foldedConstants.clear();
+
     return hasChanged;
 }
 
