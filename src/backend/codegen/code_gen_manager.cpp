@@ -53,8 +53,9 @@ main:
     add rsp, 8
     ret
 )asm";
+    std::string programName = "0tempOutput";
     Assembler assembler(this->m_errorManager);
-    std::filesystem::path objPath = assembler.Assemble(asmContent);
+    std::filesystem::path objPath = assembler.Assemble(asmContent, programName);
     if (objPath.empty()) this->m_errorManager.HandleErrors();
 
     Linker linker(this->m_errorManager);
