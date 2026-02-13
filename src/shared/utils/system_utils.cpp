@@ -33,4 +33,38 @@ namespace SystemUtils
                     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().to_bytes(relativePath));
         #endif
     }
+
+    int RunProcess(const std::string& command, std::string& output)
+    {
+        output.clear();
+
+        // redirect stderr to stdout so we capture everything
+        std::string fullCommand = command + " 2>&1";
+
+        #ifdef _WIN32
+            FILE* pipe = _popen(fullCommand.c_str(), "r");
+        #else
+            FILE* pipe = popen(fullCommand.c_str(), "r");
+        #endif
+
+        if (!pipe)
+        {
+            output = "Failed to launch process: " + command;
+            return -1;
+        }
+
+        std::array<char, 256> buffer{};
+        while (std::fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr)
+        {
+            output += buffer.data();
+        }
+
+        #ifdef _WIN32
+            int exitCode = _pclose(pipe);
+        #else
+            int exitCode = pclose(pipe);
+        #endif
+
+        return exitCode;
+    }
 }
