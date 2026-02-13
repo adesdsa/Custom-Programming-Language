@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 Assembler::Assembler(ErrorManager& errorManager) :
-    m_assemblerLogger("Assembler")
+    m_assemblerLogger("ASSEMBLER")
 { }
 
 std::string Assembler::Mainflow(const std::string& asmPath, const std::string& programName)
@@ -54,7 +54,7 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
 
     std::string cmd = BuildNasmCommand(nasmPath, asmFile, objFile, nasmFormat);
 
-    this->m_logger.Info("Assembling: " + cmd);
+    this->m_assemblerLogger.Info("Assembling: " + cmd);
 
     int result = std::system(cmd.c_str());
 
@@ -64,7 +64,7 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
         throw std::runtime_error("");
     }
 
-    this->m_logger.Info("Assembled successfully: " + objFile.string());
+    this->m_assemblerLogger.Info("Assembled successfully: " + objFile.string());
 
     return objFile.string();
 }
@@ -104,7 +104,7 @@ bool Assembler::ValidateNasmPath(const std::filesystem::path& nasmPath)
 
     if (!fs::exists(nasmPath))
     {
-        this->m_assemblerLogger.Error("NASM executable not found at: " + nasmPath.string();
+        this->m_assemblerLogger.Error("NASM executable not found at: " + nasmPath.string());
         throw std::runtime_error("");
     }
 
