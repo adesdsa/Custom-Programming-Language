@@ -17,22 +17,16 @@ class Assembler
 public:
     /// @brief Construct an Assembler with a reference to an ErrorManager.
     /// @param errorManager Reference to an error manager for reporting assembly errors.
-    explicit Assembler(ErrorManager& errorManager);
+    Assembler(ErrorManager& errorManager);
 
     /// @brief Assemble given ASM source code and return path to object file.
     /// @param asmContents The ASM source code to assemble.
     /// @param programName A unique program name used for temporary file generation.
     /// @return Path to the resulting object file, or an empty path on error.
-    std::filesystem::path Assemble(const std::string& asmContents, const std::string& programName);
+    std::string Mainflow(const std::string& asmPath, const std::string& programName);
 
 private:
-    ErrorManager& m_errorManager; ///< Reference to an error manager for error reporting.
-
-    /// @brief Write ASM contents to a temporary file.
-    /// @param asmContents The ASM source code to write.
-    /// @param uniqueName Unique name to use for the temporary file.
-    /// @return Path to the temporary ASM file.
-    std::filesystem::path WriteAsmFile(const std::string& asmContents, const std::string& uniqueName);
+    ErrorManager& m_errorManager;
 
     /// @brief Build the NASM command line for a given ASM file and output object file.
     /// @param nasmPath Path to the NASM executable.

@@ -4,18 +4,27 @@ Assembler::Assembler(ErrorManager& errorManager) :
     m_errorManager(errorManager)
 { }
 
-std::filesystem::path Assembler::Assemble(const std::string& asmContents, const std::string& programName)
+std::string Assembler::Mainflow(const std::string& asmPath, const std::string& programName)
 {
     namespace fs = std::filesystem;
 
     fs::path outputDir = fs::current_path();
-    fs::path asmFile = WriteAsmFile(asmContents, programName);
-    if (asmFile.empty()) return fs::path{}; // error already stored
+    fs::path asmFile = asmPath;
+
+    if (!fs::exists(asmFile))
+    {
+        this->m_errorManager.StoreError(CompileTimeError(
+            ErrorTypes::INTERNAL_ERROR,
+            "ASM file does not exist: " + asmFile.string(),
+            0, 0, "")
+        );
+        return {};
+    }
 
     // Determine NASM executable and format
     std::string objExt, nasmFormat;
     fs::path nasmPath;
-    fs::path toolsDir; // temporary
+    fs::path toolsDir;
 
     switch (TargetArchitecture::GetOS())
     {
@@ -28,7 +37,8 @@ std::filesystem::path Assembler::Assemble(const std::string& asmContents, const 
                 ? toolsDir / "nasm64.exe"
                 : toolsDir / "nasm32.exe";
 
-            if (!ValidateNasmPath(nasmPath)) return fs::path{}; // error already stored
+            if (!ValidateNasmPath(nasmPath))
+                return {};
             break;
 
         case OS::Linux:
@@ -43,14 +53,14 @@ std::filesystem::path Assembler::Assemble(const std::string& asmContents, const 
                 "Unsupported OS for NASM backend",
                 0, 0, "")
             );
-            return fs::path{};
+            return {};
     }
 
     fs::path objFile = outputDir / (programName + objExt);
 
-    // Build command and run
     std::string cmd = BuildNasmCommand(nasmPath, asmFile, objFile, nasmFormat);
     int result = std::system(cmd.c_str());
+
     if (result != 0)
     {
         this->m_errorManager.StoreError(CompileTimeError(
@@ -58,32 +68,10 @@ std::filesystem::path Assembler::Assemble(const std::string& asmContents, const 
             "NASM failed with exit code: " + std::to_string(result),
             0, 0, "")
         );
-        fs::remove(asmFile);
-        return fs::path{};
+        return {};
     }
 
-    return objFile;
-}
-
-std::filesystem::path Assembler::WriteAsmFile(const std::string& asmContents, const std::string& programName)
-{
-    namespace fs = std::filesystem;
-    fs::path asmFile = fs::current_path() / (programName + ".asm");
-
-    std::ofstream out(asmFile, std::ios::binary);
-    if (!out)
-    {
-        this->m_errorManager.StoreError(CompileTimeError(
-            ErrorTypes::INTERNAL_ERROR,
-            "Failed to create ASM file",
-            0, 0, "")
-        );
-        return fs::path{};
-    }
-
-    out << asmContents;
-    out.close();
-    return asmFile;
+    return objFile.string();
 }
 
 std::string Assembler::BuildNasmCommand(
