@@ -51,30 +51,6 @@ void X86_64Emitter::EmitPrologue(
     out << "    push rbp\n";
     out << "    mov rbp, rsp\n";
 
-    // Removing the var's that are transfered by registers.
-    if (TargetArchitecture::GetOS() == OS::Linux)
-    {
-        if (frameSize >= x86_64::linuxArgMapping.size())
-        {
-            frameSize -= x86_64::linuxArgMapping.size();
-        }
-        else
-        {
-            frameSize = 0;
-        }
-    }
-    else if (TargetArchitecture::GetOS() == OS::Windows)
-    {
-        if (frameSize >= x86_64::windowsArgMapping.size())
-        {
-            frameSize -= x86_64::windowsArgMapping.size();
-        }
-        else
-        {
-            frameSize = 0;
-        }
-    }
-
     // Calculating temp variables
     int temporaryVarSize = func->CountTempVars() * STACK_SLOT_SIZE;
 
@@ -545,7 +521,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 int extraArgs = numCallOperands > FOUR_ARGUEMENTS ? numCallOperands - FOUR_ARGUEMENTS : 0;
                 int stackArgsSize = extraArgs * STACK_SLOT_SIZE;
 
-                int total = stackArgsSize;
+                int total = WINDOWS_X64_SHADOW_SPACE + stackArgsSize;
 
                 // Ensure 16-byte alignment at CALL
                 if ((total % STACK_ALIGNMENT) != 0)
@@ -727,7 +703,10 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
 
     if (auto* intConst = dynamic_cast<const IRConstantInt*>(operand))
     {
-        return std::to_string(intConst->GetValue());
+        uint64_t bits = static_cast<uint64_t>(intConst->GetValue());
+        out << "    mov qword r10" << ", 0x" 
+            << std::hex << bits << std::dec << "\n";
+        return "r10";
     }
     else if (auto* floatConst = dynamic_cast<const IRConstantFloat*>(operand))
     {
@@ -742,7 +721,10 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     }
     else if (auto* boolConst = dynamic_cast<const IRConstantBool*>(operand))
     {
-        return std::to_string(boolConst->GetValue());
+        uint64_t bits = static_cast<uint64_t>(boolConst->GetValue());  // 0 or 1
+        out << "    mov qword r10" << ", 0x" 
+            << std::hex << bits << std::dec << "\n";
+        return "r10";
     }
     else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
