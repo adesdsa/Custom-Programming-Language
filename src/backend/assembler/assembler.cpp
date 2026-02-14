@@ -1,7 +1,7 @@
 #include "includes/backend/assembler/assembler.h"
 #include <stdexcept>
 
-Assembler::Assembler(ErrorManager& errorManager) :
+Assembler::Assembler() :
     m_assemblerLogger("ASSEMBLER")
 { }
 
@@ -15,7 +15,7 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
     if (!fs::exists(asmFile))
     {
         this->m_assemblerLogger.Error("ASM file does not exist: " + asmFile.string());
-        throw std::runtime_error("");
+        throw std::runtime_error("ASM file does not exist: " + asmFile.string());
     }
 
     std::string objExt, nasmFormat;
@@ -33,8 +33,7 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
                 ? toolsDir / "nasm64.exe"
                 : toolsDir / "nasm32.exe";
 
-            if (!ValidateNasmPath(nasmPath))
-                throw std::runtime_error("");
+            ValidateNasmPath(nasmPath); // Errors handled inside
             break;
 
         case OS::Linux:
@@ -46,7 +45,7 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
         default:
         {
             this->m_assemblerLogger.Error("Unsupported OS for NASM backend");
-            throw std::runtime_error("");
+            throw std::runtime_error("Unsupported OS for NASM backend");
         }
     }
 
@@ -56,12 +55,13 @@ std::string Assembler::Mainflow(const std::string& asmPath, const std::string& p
 
     this->m_assemblerLogger.Info("Assembling: " + cmd);
 
-    int result = std::system(cmd.c_str());
+    std::string output;
+    int result = SystemUtils::RunProcess(cmd, output);
 
     if (result != 0)
     {
-        this->m_assemblerLogger.Error("NASM failed with exit code: " + std::to_string(result));
-        throw std::runtime_error("");
+        this->m_assemblerLogger.Error("NASM output: \n" + output);
+        throw std::runtime_error("NASM failed with exit code: " + std::to_string(result));
     }
 
     this->m_assemblerLogger.Info("Assembled successfully: " + objFile.string());
@@ -105,7 +105,7 @@ bool Assembler::ValidateNasmPath(const std::filesystem::path& nasmPath)
     if (!fs::exists(nasmPath))
     {
         this->m_assemblerLogger.Error("NASM executable not found at: " + nasmPath.string());
-        throw std::runtime_error("");
+        throw std::runtime_error("NASM executable not found at: " + nasmPath.string());
     }
 
     return true;

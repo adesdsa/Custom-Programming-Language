@@ -16,7 +16,7 @@ void CodeGenManager::MainFlow()
     ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable);
     std::string asmFilePath = asmGenerator.MainFlow();
 
-    Assembler assembler(this->m_errorManager);
+    Assembler assembler;
     std::string objectFilePath = assembler.Mainflow(asmFilePath, "out");
 
     /// @todo add linker

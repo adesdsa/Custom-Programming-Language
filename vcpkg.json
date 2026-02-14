@@ -1,17 +1,15 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
     "name": "picoc",
-    "version": "1.0.0",
-    "description": "Open Source Custom Compiler",
-    "builtin-baseline": "6d7bf7ef2193e2d1c5798a5ff8811d533104c861",
-    "dependencies": [
-        "mio",
-        {
-            "name": "gtest",
-            "host": true
-        }
-    ],
-    "overrides": []
+  "version": "1.0.0",
+  "description": "Open Source Custom Compiler",
+  "dependencies": [
+    "mio",
+    {
+      "name": "gtest",
+      "host": true
+    }
+  ]
 }
 
 

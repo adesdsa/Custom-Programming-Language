@@ -7,7 +7,6 @@
 #include <chrono>
 #include <iostream>
 
-#include "includes/shared/errors/error_manager.h"
 #include "includes/shared/common/target_architecture.h"
 #include "includes/shared/utils/system_utils.h"
 #include "includes/shared/logger/entity_logger.h"
@@ -18,7 +17,7 @@ class Assembler
 public:
     /// @brief Construct an Assembler with a reference to an ErrorManager.
     /// @param errorManager Reference to an error manager for reporting assembly errors.
-    Assembler(ErrorManager& errorManager);
+    Assembler();
 
     /// @brief Assemble given ASM source code and return path to object file.
     /// @param asmContents The ASM source code to assemble.
