@@ -18,8 +18,8 @@ const std::unordered_map<std::string, std::string> ENTITY_COLORS = {
     {"OPTIMIZATION", "\033[38;5;220m"}, // Gold
     {"LINKER", "\033[38;5;81m"},       // Sky Blue
     {"ERROR-MANAGER", "\033[31m"},    // Red
-    {"GENERAL", "\033[37m"}          // White
-    {"ASM", "\033[38;5;213m"},      // Pink
+    {"GENERAL", "\033[37m"},         // White
+    {"ASM", "\033[38;5;213m"}       // Pink
 };
 
 const std::unordered_map<std::string, std::string> DEBUG_COLORS = {
