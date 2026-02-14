@@ -1,7 +1,8 @@
 #include "includes/backend/codegen/code_gen_manager.h"
 
 CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST) :
-    m_decoratedAST(decoratedAST)
+    m_decoratedAST(decoratedAST),
+    m_errorManager(ErrorManager::GetInstance())
 {}
 
 void CodeGenManager::MainFlow()
@@ -15,5 +16,8 @@ void CodeGenManager::MainFlow()
     ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable);
     std::string asmFilePath = asmGenerator.MainFlow();
 
-    //TODO: Insert assembler
+    Assembler assembler;
+    std::string objectFilePath = assembler.Mainflow(asmFilePath, "out");
+
+    /// @todo add linker
 }
