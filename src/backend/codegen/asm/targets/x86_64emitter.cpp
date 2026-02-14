@@ -4,8 +4,8 @@ X86_64Emitter::X86_64Emitter(const FuncTable& funcTable) :
 BaseEmitter(funcTable),
 m_nextTempStackOffset(STACK_SLOT_SIZE),
 m_nextVarStackOffset(0),
-m_selectLabelCounter(0),
-m_allocaCounter(0)
+m_selectLabelCounter(0)
+
 { }
 
 std::string X86_64Emitter::EmitHeader() const
@@ -47,29 +47,57 @@ void X86_64Emitter::EmitPrologue(
     int frameSize,
     std::ostream& out)
 {
-    this->m_allocaCounter = 0;
     // Push old base pointer and set new one.
     out << "    push rbp\n";
     out << "    mov rbp, rsp\n";
 
-    // Calculate total frame = aligned frameSize
-    int totalFrame = (frameSize + 15) & ~15;
-
-    // Next temp slot starts right after the allocated locals (offset from rbp)
-    this->m_nextTempStackOffset = totalFrame + STACK_SLOT_SIZE;
-
-    // For addressing incoming args on Windows, we treat shadow-space as
-    // existing; so set nextVar offset for Alloca is concidered as existing.
+    // Removing the var's that are transfered by registers.
     if (TargetArchitecture::GetOS() == OS::Linux)
     {
-        this->m_nextVarStackOffset = 0;
+        if (frameSize >= x86_64::linuxArgMapping.size())
+        {
+            frameSize -= x86_64::linuxArgMapping.size();
+        }
+        else
+        {
+            frameSize = 0;
+        }
     }
     else if (TargetArchitecture::GetOS() == OS::Windows)
     {
-        // We don't allocate the shadow space, but logically treat it as present
-        // above saved RBP for computing argument addresses.
-        this->m_nextVarStackOffset = WINDOWS_X64_SHADOW_SPACE;
+        if (frameSize >= x86_64::windowsArgMapping.size())
+        {
+            frameSize -= x86_64::windowsArgMapping.size();
+        }
+        else
+        {
+            frameSize = 0;
+        }
     }
+
+    // Calculating temp variables
+    int temporaryVarSize = func->CountTempVars() * STACK_SLOT_SIZE;
+
+    // Calculate total frame = aligned frameSize
+    int bufferedTempSize = (temporaryVarSize + 15) & ~15;
+    int bufferedFrameSize = (frameSize + 15) & ~15;
+    int totalFrame = (bufferedTempSize + bufferedFrameSize + 15) & ~15;
+    if (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        totalFrame += WINDOWS_X64_SHADOW_SPACE;
+    }
+
+    // Allocate stack space if needed
+    if (totalFrame > 0)
+    {
+        out << "    ; allocate " << totalFrame << " bytes for locals/temps\n";
+        out << "    sub rsp, " << totalFrame << "\n";
+    }
+
+
+    // Next temp slot starts right after the allocated locals (offset from rbp)
+    this->m_nextTempStackOffset = bufferedFrameSize + STACK_SLOT_SIZE;
+    this->m_nextVarStackOffset = STACK_SLOT_SIZE;
 
     out << "\n";
 }
@@ -97,8 +125,6 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
     std::string tempAsmValue;
 
     // General comment header for the emitted instruction block
-    out << "    ; --- Emitting IR instruction (opcode index) ---\n";
-
     switch (opcode)
     {
         // -----------------------
@@ -437,27 +463,10 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
         case IROpcode::Alloca:
         {
-            this->m_allocaCounter++;
-            if (TargetArchitecture::GetOS() == OS::Linux)
-            {
-                if (this->m_allocaCounter < x86_64::linuxArgMapping.size())
-                {
-                    break;
-                }
-            }
-            else
-            {
-                if (this->m_allocaCounter < x86_64::windowsArgMapping.size())
-                {
-                    break;
-                }
-            }
-            out << "    ; Alloca: reserve a stack slot for a local variable\n";
             // Allocate a new stack slot for new var
             int allocaOffset = this->m_nextVarStackOffset;
             this->m_nextVarStackOffset += STACK_SLOT_SIZE;
             this->m_valueToStackOffset[instr] = allocaOffset;
-            out << "    sub rsp, " << STACK_SLOT_SIZE << "\n";
             break;
         }
 
@@ -536,7 +545,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 int extraArgs = numCallOperands > FOUR_ARGUEMENTS ? numCallOperands - FOUR_ARGUEMENTS : 0;
                 int stackArgsSize = extraArgs * STACK_SLOT_SIZE;
 
-                int total = WINDOWS_X64_SHADOW_SPACE + stackArgsSize;
+                int total = stackArgsSize;
 
                 // Ensure 16-byte alignment at CALL
                 if ((total % STACK_ALIGNMENT) != 0)
@@ -550,7 +559,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 for (int i = 0; i < extraArgs; ++i)
                 {
                     int argIndex = FOUR_ARGUEMENTS + i;
-                    int argOffset = WINDOWS_X64_SHADOW_SPACE + i * STACK_SLOT_SIZE;
+                    int argOffset = i * STACK_SLOT_SIZE;
                     tempAsmValue = GetOperandAsm(callOperands[argIndex], out);
                     out << "    mov qword [rsp + " << argOffset << "], "
                         << tempAsmValue << "\n";
@@ -585,7 +594,6 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             out << "    ; Select (ternary) operator: choose between two values\n";
             std::string lblTrue = SelectLabelGenerator();
             std::string lblEnd = SelectLabelGenerator();
-            std::string lblMerge = SelectLabelGenerator();
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n"
                 << "    cmp rax, 0\n"
@@ -597,12 +605,10 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 << lblTrue << ":\n";
             tempAsmValue = GetOperandAsm(source3, out);
             out << "    mov rax, " << tempAsmValue << "\n"
-                << "    jmp " << lblMerge << "\n"
-
+                
                 << lblEnd << ":\n";
             tempAsmValue = GetOperandAsm(instr, out);
-            out << "    mov " << tempAsmValue << ", rax\n"
-                << lblMerge << ":\n";
+            out << "    mov " << tempAsmValue << ", rax\n";
             break;
         }
 
@@ -807,8 +813,6 @@ std::string X86_64Emitter::slotOfInstr(const IRBaseValue* value, std::ostream& o
         return "[rbp-" + std::to_string(it->second) + "]";
     }
 
-    out << "    ; allocating new temporary stack slot (8 bytes)\n";
-    out << "    sub rsp, 8\n"; // Grow frame.
     // allocate new stack slot
     size_t slotOffset = this->m_nextTempStackOffset;
     this->m_nextTempStackOffset += STACK_SLOT_SIZE;   // 8 bytes per slot 

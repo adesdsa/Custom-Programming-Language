@@ -514,6 +514,10 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     {
     case BlockKind::functionBlock:
     {
+        if (this->m_currFunc->GetReturnType() == IRType::GetVoid())
+        {
+            this->m_irbuilder.CreateRetVoid();
+        }
         /// ====== Resets ======
         this->m_currFunc = nullptr;
         this->m_irbuilder.SetInsertPoint(nullptr);
