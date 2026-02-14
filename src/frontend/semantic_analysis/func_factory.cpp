@@ -8,7 +8,7 @@ FuncMetaData FuncFactory::CreateFuncMetadata(
     const std::vector<VarMetaData>& funcParams,
     size_t declarationLine,
     size_t declarationColumn,
-    std::unique_ptr<VarTableNode> funcBody
+    VarTableNode* funcBody
 ) const
 {
     return FuncMetaData(
@@ -18,6 +18,6 @@ FuncMetaData FuncFactory::CreateFuncMetadata(
         funcParams,
         declarationLine,
         declarationColumn,
-        std::move(funcBody)
+        funcBody
     );
 }
