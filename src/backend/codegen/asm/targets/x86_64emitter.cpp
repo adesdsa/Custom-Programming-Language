@@ -56,6 +56,7 @@ void X86_64Emitter::EmitPrologue(
     // Allocate stack space if needed
     if (totalFrame > 0)
     {
+        out << "    ; allocate " << totalFrame << " bytes for locals/temps\n";
         out << "    sub rsp, " << totalFrame << "\n";
     }
 
@@ -100,6 +101,9 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
     std::string tempAsmValue;
 
+    // General comment header for the emitted instruction block
+    out << "    ; --- Emitting IR instruction (opcode index) ---\n";
+
     switch (opcode)
     {
         // -----------------------
@@ -113,37 +117,45 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::SRem:
         case IROpcode::URem:
         {
+            out << "    ; Integer arithmetic operation\n";
+
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
 
             switch (opcode)
             {
                 case IROpcode::Add:
+                    out << "    ; add rax, operand\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    add rax, " << tempAsmValue << "\n";
                     break;
                 case IROpcode::Sub:
+                    out << "    ; sub rax, operand\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    sub rax, " << tempAsmValue << "\n";
                     break;
                 case IROpcode::Mul:
+                    out << "    ; signed multiply rax * operand -> rax\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    imul rax, " << tempAsmValue << "\n";
                     break;
 
                 case IROpcode::SDiv:
+                    out << "    ; signed divide rdx:rax / operand -> rax (quotient)\n";
                     out << "    cqo\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    idiv " << tempAsmValue << "\n";
                     break;
 
                 case IROpcode::UDiv:
+                    out << "    ; unsigned divide rax / operand -> rax (quotient)\n";
                     out << "    xor rdx, rdx\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    div " << tempAsmValue << "\n";
                     break;
 
                 case IROpcode::SRem:
+                    out << "    ; signed remainder in rdx\n";
                     out << "    cqo\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    idiv " << tempAsmValue << "\n";
@@ -151,6 +163,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     break;
 
                 case IROpcode::URem:
+                    out << "    ; unsigned remainder in rdx\n";
                     out << "    xor rdx, rdx\n";
                     tempAsmValue = GetOperandAsm(source2, out);
                     out << "    div " << tempAsmValue << "\n";
@@ -170,6 +183,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         // Bitwise
         // -----------------------
         case IROpcode::And:
+            out << "    ; Bitwise AND\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -179,6 +193,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 break;
 
         case IROpcode::Or:
+            out << "    ; Bitwise OR\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -188,6 +203,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 break;
 
         case IROpcode::Xor:
+            out << "    ; Bitwise XOR\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -197,6 +213,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 break;
 
         case IROpcode::Shl:
+            out << "    ; Logical shift left\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -207,6 +224,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 break;
 
         case IROpcode::LShr:
+            out << "    ; Logical shift right\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -217,6 +235,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 break;
 
         case IROpcode::AShr:
+            out << "    ; Arithmetic shift right (preserve sign)\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -240,6 +259,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::ICmpUgt:
         case IROpcode::ICmpUge:
         {
+            out << "    ; Integer comparison -> boolean (0/1)\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
@@ -298,6 +318,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::FDiv:
         case IROpcode::FRem:
         {
+            out << "    ; Floating-point (double) operation using XMM registers\n";
             // Load operands into XMM registers (special float registers)
             LoadOperandAsFloat(source1, "xmm0", out);
             LoadOperandAsFloat(source2, "xmm1", out);
@@ -323,6 +344,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 case IROpcode::FRem:
                 {
                     // xmm0 = a, xmm1 = b (already loaded)
+                    out << "    ; floating-point remainder (a - floor(a/b)*b)\n";
                     out << "    divsd xmm0, xmm1\n";             // a / b
                     out << "    roundsd xmm0, xmm0, 1\n";        // floor(a/b)
                     out << "    mulsd xmm0, xmm1\n";             // floor(a/b) * b
@@ -354,6 +376,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::FCmpGt:
         case IROpcode::FCmpGe:
         {
+            out << "    ; Floating-point comparison -> boolean (0/1)\n";
             // Load operands as float
             LoadOperandAsFloat(source1, "xmm0", out);
             LoadOperandAsFloat(source2, "xmm1", out);
@@ -398,6 +421,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         // -----------------------
         case IROpcode::Load:
         {
+            out << "    ; Load from memory into register/slot\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(instr, out);
@@ -407,6 +431,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
         case IROpcode::Store:
         {
+            out << "    ; Store value into memory\n";
             // Load value to store into rax
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
@@ -417,6 +442,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
         case IROpcode::Alloca:
         {
+            out << "    ; Alloca: reserve a stack slot for a local variable\n";
             // Allocate a new stack slot for new var
             int allocaOffset = this->m_nextVarStackOffset;
             this->m_nextVarStackOffset += STACK_SLOT_SIZE;
@@ -430,6 +456,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::Br:
         {
             const auto& successors = instr->GetParent()->GetSuccessors();
+            out << "    ; Unconditional branch\n";
             out << "    jmp " << this->m_currentFunc->GetName() << "." << successors[0]->GetLabel() << "\n";
             break;
         }
@@ -437,6 +464,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::CondBr:
         {
             const auto& successors = instr->GetParent()->GetSuccessors();
+            out << "    ; Conditional branch: if operand != 0 jump to true label\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n"
                 << "    cmp rax, 0\n"
@@ -446,6 +474,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         }
 
         case IROpcode::Ret:
+            out << "    ; Return from function (jump to epilogue label)\n";
             if(source1)
             {
                 tempAsmValue = GetOperandAsm(source1, out);
@@ -456,11 +485,13 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
         case IROpcode::Call:
         {
+            out << "    ; Function call\n";
             auto callOperands = instr->GetOperands();
             int numCallOperands = static_cast<int>(callOperands.size());
 
             if (TargetArchitecture::GetOS() == OS::Linux)
             {
+                out << "    ; Linux SysV calling convention handling\n";
                 // Stack alignment
                 int extraArgs = numCallOperands > SIX_ARGUEMENTS ? numCallOperands - SIX_ARGUEMENTS : 0;
                 if (extraArgs % 2 != 0) out << "    sub rsp, 8\n";
@@ -490,6 +521,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             }
             else if (TargetArchitecture::GetOS() == OS::Windows)
             {
+                out << "    ; Windows x64 calling convention handling (shadow space + register args)\n";
                 int extraArgs = numCallOperands > FOUR_ARGUEMENTS ? numCallOperands - FOUR_ARGUEMENTS : 0;
                 int stackArgsSize = extraArgs * STACK_SLOT_SIZE;
 
@@ -529,6 +561,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             }
             else
             {
+                out << "    ; Generic call fallback\n";
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
                 tempAsmValue = GetOperandAsm(instr, out);
                 out << "    mov " << tempAsmValue << ", rax\n";
@@ -538,6 +571,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
         case IROpcode::Select:
         {
+            out << "    ; Select (ternary) operator: choose between two values\n";
             std::string lblTrue = SelectLabelGenerator();
             std::string lblEnd = SelectLabelGenerator();
             std::string lblMerge = SelectLabelGenerator();
@@ -562,6 +596,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         }
 
         default:
+            out << "    ; (unhandled or no-op IR instruction)\n";
             break;
     }
 }
@@ -573,15 +608,18 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "_start:\n";
 
         // Kernel enters with RSP % 16 == 8
+        out << "    ; Align stack to 16 bytes (kernel provides RSP % 16 == 8 on entry)\n";
         out << "    and rsp, -16\n";
 
         // call main()
+        out << "    ; call main() and pass its return value to exit\n";
         out << "    call main\n";
 
         // exit(main_return)
         out << "    mov rdi, rax\n";
         out << "    call exit\n";
 
+        out << "    ; Halt if exit returns (should not)\n";
         out << "    hlt\n";
     }
     else if (TargetArchitecture::GetOS() == OS::Windows)
@@ -591,15 +629,18 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         // Windows x64 ABI:
         // - Stack is 16-byte aligned before CALL
         // - 32 bytes of shadow space required
+        out << "    ; allocate shadow space + alignment for calling main\n";
         out << "    sub rsp, 40\n"; // 32 shadow + 8 align
 
         // call main()
+        out << "    ; call main() (CRT entry -> user main)\n";
         out << "    call main\n";
 
         // ExitProcess with the return from main
         out << "    mov ecx, eax\n";
         out << "    call ExitProcess\n";
 
+        out << "    ; Halt if ExitProcess returns (should not)\n";
         out << "    hlt\n";
     }
 }
@@ -755,6 +796,7 @@ std::string X86_64Emitter::slotOfInstr(const IRBaseValue* value, std::ostream& o
         return "[rbp-" + std::to_string(it->second) + "]";
     }
 
+    out << "    ; allocating new temporary stack slot (8 bytes)\n";
     out << "    sub rsp, 8\n"; // Grow frame.
     // allocate new stack slot
     size_t slotOffset = this->m_nextTempStackOffset;
@@ -769,12 +811,14 @@ void X86_64Emitter::LoadOperandAsFloat(const IRBaseValue* operand, const std::st
     if (operand->GetType() == IRType::GetFloat64())
     {
         std::string tempAsmValue = GetOperandAsm(operand, out);
+        out << "    ; load double constant/slot into " << xmmReg << "\n";
         out << "    movsd " << xmmReg << ", qword " << tempAsmValue << "\n";
     }
     // Integer -> convert 64-bit int to double
     else
     {
         std::string tempAsmValue = GetOperandAsm(operand, out);
+        out << "    ; convert 64-bit int to double in " << xmmReg << "\n";
         out << "    mov rax, " << tempAsmValue << "\n"; // 64-bit integer
         out << "    cvtsi2sd " << xmmReg << ", rax\n";                 // convert to double
     }
