@@ -64,6 +64,7 @@ private:
     size_t m_nextTempStackOffset;   // tracks top of ssa variable's frame
     size_t m_nextVarStackOffset;   // tracks top of normal func variable's frame
     int m_selectLabelCounter;
+    int m_allocaCounter;
 
     // header signature for the file
     std::string EmitHeader() const override final;
