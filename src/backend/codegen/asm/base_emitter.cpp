@@ -76,6 +76,9 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 {
     FuncMetaData* funcMetadata = this->m_funcTable.FindFunctionByName(func->GetName());
     if (!funcMetadata) return;
+
+    // skip built-in / external functions (no basic blocks = no user-defined body)
+    if (func->GetNumBasicBlocks() == 0) return;
     this->m_currentFunc = func;
 
     // function label

@@ -410,7 +410,7 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
             newFunc->SetDefined();
         }
     }
-    
+
     this->m_currentFunctionName = funcName;
     
     // signal VisitBlockStart what kind of block is coming
@@ -438,16 +438,23 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     
     if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
     {
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::NAME_ERROR,
-                "Undefined function '" + funcName + "'",
-                tokens[FIRST_TOKEN_INDEX].GetLine(),
-                tokens[FIRST_TOKEN_INDEX].GetColumn(),
-                "Function must be declared before calling"
-            )
-        );
-        return;
+        // Lazily register built-in functions on first use
+        this->m_funcTable.RegisterBuiltins();
+
+        // Re-check after registering built-ins
+        if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Undefined function '" + funcName + "'",
+                    tokens[FIRST_TOKEN_INDEX].GetLine(),
+                    tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                    "Function must be declared before calling"
+                )
+            );
+            return;
+        }
     }
     
     std::vector<ExpressionType> argTypes;

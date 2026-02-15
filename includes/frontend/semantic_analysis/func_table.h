@@ -26,6 +26,9 @@ public:
     /// @note && means passing ownership of this object.
     bool InsertFunction(FuncMetaData&& funcMetadata);
 
+    /// @brief Registers compiler built-in functions (e.g. println) into the table.
+    void RegisterBuiltins();
+
     const std::unordered_map<std::string, std::unique_ptr<FuncMetaData>>&
     GetAllFunctions() const noexcept;
 

@@ -79,7 +79,8 @@ std::string Linker::BuildLinkerCommand(
             + " /entry " + entryPoint
             + " /fo \"" + exePath + "\""
             + " \"" + objPath + "\""
-            + " kernel32.dll";
+            + " kernel32.dll"
+            + " msvcrt.dll";
 
         return "cmd /C \"" + inner + "\"";
     }

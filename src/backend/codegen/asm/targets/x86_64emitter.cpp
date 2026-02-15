@@ -1,11 +1,7 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 
 X86_64Emitter::X86_64Emitter(const FuncTable& funcTable) :
-BaseEmitter(funcTable),
-m_nextTempStackOffset(STACK_SLOT_SIZE),
-m_nextVarStackOffset(0),
-m_selectLabelCounter(0)
-
+X86BaseEmitter(funcTable)
 { }
 
 std::string X86_64Emitter::EmitHeader() const
@@ -32,7 +28,13 @@ std::string X86_64Emitter::EmitHeader() const
         case OS::Windows:
             header << "global mainCRTStartup\n";
             header << "extern main\n";
-            header << "extern ExitProcess\n\n";
+            header << "extern ExitProcess\n";
+            header << "extern printf\n";
+            header << "extern exit\n\n";
+
+            // Built-in format strings (used by println and other built-ins)
+            header << "section .data\n";
+            header << "    __println_fmt_int db \"%lld\", 10, 0\n\n";
             break;
 
         default:
@@ -51,16 +53,27 @@ void X86_64Emitter::EmitPrologue(
     out << "    push rbp\n";
     out << "    mov rbp, rsp\n";
 
+    int numArgs = static_cast<int>(func->GetNumArguments());
+
     // Calculating temp variables
-    int temporaryVarSize = func->CountTempVars() * STACK_SLOT_SIZE;
+    int temporaryVarSize = func->CountTempVars() * x86_64::STACK_SLOT_SIZE;
+
+    // On Linux, register arguments must be spilled into the local frame
+    // (there is no caller-provided shadow space like on Windows).
+    int argSpillSize = 0;
+    if (TargetArchitecture::GetOS() == OS::Linux)
+    {
+        int regArgs = std::min(numArgs, x86_64::SIX_ARGUEMENTS);
+        argSpillSize = regArgs * x86_64::STACK_SLOT_SIZE;
+    }
 
     // Calculate total frame = aligned frameSize
-    int bufferedTempSize = (temporaryVarSize + 15) & ~15;
+    int bufferedTempSize = (temporaryVarSize + argSpillSize + 15) & ~15;
     int bufferedFrameSize = (frameSize + 15) & ~15;
     int totalFrame = (bufferedTempSize + bufferedFrameSize + 15) & ~15;
     if (TargetArchitecture::GetOS() == OS::Windows)
     {
-        totalFrame += WINDOWS_X64_SHADOW_SPACE;
+        totalFrame += x86_64::WINDOWS_X64_SHADOW_SPACE;
     }
 
     // Allocate stack space if needed
@@ -70,10 +83,54 @@ void X86_64Emitter::EmitPrologue(
         out << "    sub rsp, " << totalFrame << "\n";
     }
 
-
     // Next temp slot starts right after the allocated locals (offset from rbp)
-    this->m_nextTempStackOffset = bufferedFrameSize + STACK_SLOT_SIZE;
-    this->m_nextVarStackOffset = STACK_SLOT_SIZE;
+    this->m_nextTempStackOffset = bufferedFrameSize + x86_64::STACK_SLOT_SIZE;
+    this->m_nextVarStackOffset = x86_64::STACK_SLOT_SIZE;
+
+    // ---------------------------------------------------------------
+    // Spill register arguments to memory so they survive clobbers
+    // (idiv overwrites rdx, function calls destroy all volatile regs).
+    // ---------------------------------------------------------------
+    if (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        // Windows x64 ABI: the caller allocates 32 bytes of shadow space
+        // right above the return address.  After `push rbp; mov rbp,rsp`:
+        //   [rbp+16] = home slot for rcx  (arg 0)
+        //   [rbp+24] = home slot for rdx  (arg 1)
+        //   [rbp+32] = home slot for r8   (arg 2)
+        //   [rbp+40] = home slot for r9   (arg 3)
+        int regArgs = std::min(numArgs, x86_64::FOUR_ARGUEMENTS);
+        if (regArgs > 0)
+        {
+            out << "    ; spill register arguments to shadow space\n";
+        }
+        for (int i = 0; i < regArgs; ++i)
+        {
+            int offset = 16 + i * x86_64::STACK_SLOT_SIZE;
+            out << "    mov [rbp+" << offset << "], "
+                << x86_64::windowsArgMapping[i] << "\n";
+        }
+    }
+    else if (TargetArchitecture::GetOS() == OS::Linux)
+    {
+        // Linux SysV ABI: no shadow space — spill into the local frame.
+        // Each register argument gets a dedicated slot tracked via
+        // m_valueToStackOffset so GetOperandAsm resolves them normally.
+        int regArgs = std::min(numArgs, x86_64::SIX_ARGUEMENTS);
+        if (regArgs > 0)
+        {
+            out << "    ; spill register arguments to local stack slots\n";
+        }
+        for (int i = 0; i < regArgs; ++i)
+        {
+            const IRBaseValue* argValue = func->GetArguments()[i].get();
+            int offset = this->m_nextTempStackOffset;
+            this->m_nextTempStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_valueToStackOffset[argValue] = offset;
+            out << "    mov [rbp-" << offset << "], "
+                << x86_64::linuxArgMapping[i] << "\n";
+        }
+    }
 
     out << "\n";
 }
@@ -94,9 +151,9 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
     auto opcode = instr->GetOpcode();
 
     // --- normal instruction operands ---
-    const IRBaseValue* source1 = instr->GetNumOperands() >= SINGLE_OPERAND ? instr->GetOperand(SINGLE_OPERAND_INDEX) : nullptr;
-    const IRBaseValue* source2 = instr->GetNumOperands() >= TWO_OPERANDS ? instr->GetOperand(TWO_OPERANDS_INDEX) : nullptr;
-    const IRBaseValue* source3 = instr->GetNumOperands() >= THREE_OPERANDS ? instr->GetOperand(THREE_OPERANDS_INDEX) : nullptr;
+    const IRBaseValue* source1 = instr->GetNumOperands() >= x86_common::SINGLE_OPERAND ? instr->GetOperand(x86_common::SINGLE_OPERAND_INDEX) : nullptr;
+    const IRBaseValue* source2 = instr->GetNumOperands() >= x86_common::TWO_OPERANDS ? instr->GetOperand(x86_common::TWO_OPERANDS_INDEX) : nullptr;
+    const IRBaseValue* source3 = instr->GetNumOperands() >= x86_common::THREE_OPERANDS ? instr->GetOperand(x86_common::THREE_OPERANDS_INDEX) : nullptr;
 
     std::string tempAsmValue;
 
@@ -141,21 +198,31 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     out << "    ; signed divide rdx:rax / operand -> rax (quotient)\n";
                     out << "    cqo\n";
                     tempAsmValue = GetOperandAsm(source2, out);
-                    out << "    idiv " << tempAsmValue << "\n";
+                    // Memory operands need an explicit qword size to match cqo (64-bit)
+                    if (!tempAsmValue.empty() && tempAsmValue[0] == '[')
+                        out << "    idiv qword " << tempAsmValue << "\n";
+                    else
+                        out << "    idiv " << tempAsmValue << "\n";
                     break;
 
                 case IROpcode::UDiv:
                     out << "    ; unsigned divide rax / operand -> rax (quotient)\n";
                     out << "    xor rdx, rdx\n";
                     tempAsmValue = GetOperandAsm(source2, out);
-                    out << "    div " << tempAsmValue << "\n";
+                    if (!tempAsmValue.empty() && tempAsmValue[0] == '[')
+                        out << "    div qword " << tempAsmValue << "\n";
+                    else
+                        out << "    div " << tempAsmValue << "\n";
                     break;
 
                 case IROpcode::SRem:
                     out << "    ; signed remainder in rdx\n";
                     out << "    cqo\n";
                     tempAsmValue = GetOperandAsm(source2, out);
-                    out << "    idiv " << tempAsmValue << "\n";
+                    if (!tempAsmValue.empty() && tempAsmValue[0] == '[')
+                        out << "    idiv qword " << tempAsmValue << "\n";
+                    else
+                        out << "    idiv " << tempAsmValue << "\n";
                     out << "    mov rax, rdx\n"; // remainder
                     break;
 
@@ -163,7 +230,10 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     out << "    ; unsigned remainder in rdx\n";
                     out << "    xor rdx, rdx\n";
                     tempAsmValue = GetOperandAsm(source2, out);
-                    out << "    div " << tempAsmValue << "\n";
+                    if (!tempAsmValue.empty() && tempAsmValue[0] == '[')
+                        out << "    div qword " << tempAsmValue << "\n";
+                    else
+                        out << "    div " << tempAsmValue << "\n";
                     out << "    mov rax, rdx\n"; // remainder
                     break;
 
@@ -262,42 +332,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             tempAsmValue = GetOperandAsm(source2, out);
             out << "    cmp rax, " << tempAsmValue << "\n";
 
-            const char* setInstr = "sete";
-            switch (opcode)
-            {
-                case IROpcode::ICmpEq:
-                    setInstr="sete";
-                    break;
-                case IROpcode::ICmpNe:
-                    setInstr="setne";
-                    break;
-                case IROpcode::ICmpSlt:
-                    setInstr="setl";
-                    break;
-                case IROpcode::ICmpSle:
-                    setInstr="setle";
-                    break;
-                case IROpcode::ICmpSgt:
-                    setInstr="setg";
-                    break;
-                case IROpcode::ICmpSge:
-                    setInstr="setge";
-                    break;
-                case IROpcode::ICmpUlt:
-                    setInstr="setb";
-                    break;
-                case IROpcode::ICmpUle:
-                    setInstr="setbe"; 
-                    break;
-                case IROpcode::ICmpUgt:
-                    setInstr="seta";
-                    break;
-                case IROpcode::ICmpUge:
-                    setInstr="setae";
-                    break;
-                default:
-                    break;
-            }
+            const char* setInstr = GetSetccMnemonic(opcode);
 
             tempAsmValue = GetOperandAsm(instr, out);
             out << "    " << setInstr << " al\n"
@@ -381,29 +416,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             // Compare
             out << "    ucomisd xmm0, xmm1\n";
 
-            const char* setInstr = "sete";
-            switch(opcode)
-            {
-                case IROpcode::FCmpEq:
-                    setInstr="sete";
-                    break;
-                case IROpcode::FCmpNe:
-                    setInstr="setne";
-                    break;
-                case IROpcode::FCmpLt:
-                    setInstr="setb";
-                    break;
-                case IROpcode::FCmpLe:
-                    setInstr="setbe";
-                    break;
-                case IROpcode::FCmpGt:
-                    setInstr="seta";
-                    break;
-                case IROpcode::FCmpGe:
-                    setInstr="setae";
-                    break;
-                default: break;
-            }
+            const char* setInstr = GetSetccMnemonic(opcode);
 
             // Store boolean result (0 or 1)
             out << "    " << setInstr << " al\n";
@@ -441,7 +454,7 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         {
             // Allocate a new stack slot for new var
             int allocaOffset = this->m_nextVarStackOffset;
-            this->m_nextVarStackOffset += STACK_SLOT_SIZE;
+            this->m_nextVarStackOffset += x86_64::STACK_SLOT_SIZE;
             this->m_valueToStackOffset[instr] = allocaOffset;
             break;
         }
@@ -489,18 +502,18 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             {
                 out << "    ; Linux SysV calling convention handling\n";
                 // Stack alignment
-                int extraArgs = numCallOperands > SIX_ARGUEMENTS ? numCallOperands - SIX_ARGUEMENTS : 0;
+                int extraArgs = numCallOperands > x86_64::SIX_ARGUEMENTS ? numCallOperands - x86_64::SIX_ARGUEMENTS : 0;
                 if (extraArgs % 2 != 0) out << "    sub rsp, 8\n";
 
                 // push extra args right to left
-                for (int i = numCallOperands - 1; i >= SIX_ARGUEMENTS; --i)
+                for (int i = numCallOperands - 1; i >= x86_64::SIX_ARGUEMENTS; --i)
                 {
                     tempAsmValue = GetOperandAsm(callOperands[i], out);
                     out << "    push " << tempAsmValue << "\n";
                 }
 
                 // move register args
-                for (int i = 0; i < std::min(SIX_ARGUEMENTS, numCallOperands); ++i)
+                for (int i = 0; i < std::min(x86_64::SIX_ARGUEMENTS, numCallOperands); ++i)
                 {
                     tempAsmValue = GetOperandAsm(callOperands[i], out);
                     out << "    mov " << x86_64::linuxArgMapping[i]
@@ -512,21 +525,21 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 out << "    mov " << tempAsmValue << ", rax\n"; // Return value
 
                 // Restoring alignment and removing the func extra args
-                if (extraArgs > 0) out << "    add rsp, " << (extraArgs * STACK_SLOT_SIZE) << "\n";
+                if (extraArgs > 0) out << "    add rsp, " << (extraArgs * x86_64::STACK_SLOT_SIZE) << "\n";
                 if (extraArgs % 2 != 0) out << "    add rsp, 8\n";
             }
             else if (TargetArchitecture::GetOS() == OS::Windows)
             {
                 out << "    ; Windows x64 calling convention handling (shadow space + register args)\n";
-                int extraArgs = numCallOperands > FOUR_ARGUEMENTS ? numCallOperands - FOUR_ARGUEMENTS : 0;
-                int stackArgsSize = extraArgs * STACK_SLOT_SIZE;
+                int extraArgs = numCallOperands > x86_64::FOUR_ARGUEMENTS ? numCallOperands - x86_64::FOUR_ARGUEMENTS : 0;
+                int stackArgsSize = extraArgs * x86_64::STACK_SLOT_SIZE;
 
-                int total = WINDOWS_X64_SHADOW_SPACE + stackArgsSize;
+                int total = x86_64::WINDOWS_X64_SHADOW_SPACE + stackArgsSize;
 
                 // Ensure 16-byte alignment at CALL
-                if ((total % STACK_ALIGNMENT) != 0)
+                if ((total % x86_64::STACK_ALIGNMENT) != 0)
                 {
-                    total += STACK_SLOT_SIZE;
+                    total += x86_64::STACK_SLOT_SIZE;
                 }
 
                 out << "    sub rsp, " << total << "\n";
@@ -534,15 +547,15 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 // Write stack args (right-to-left)
                 for (int i = 0; i < extraArgs; ++i)
                 {
-                    int argIndex = FOUR_ARGUEMENTS + i;
-                    int argOffset = i * STACK_SLOT_SIZE;
+                    int argIndex = x86_64::FOUR_ARGUEMENTS + i;
+                    int argOffset = i * x86_64::STACK_SLOT_SIZE;
                     tempAsmValue = GetOperandAsm(callOperands[argIndex], out);
                     out << "    mov qword [rsp + " << argOffset << "], "
                         << tempAsmValue << "\n";
                 }
 
                 // Register args
-                for (int i = 0; i < std::min(FOUR_ARGUEMENTS, numCallOperands); ++i)
+                for (int i = 0; i < std::min(x86_64::FOUR_ARGUEMENTS, numCallOperands); ++i)
                 {
                     std::string tempValue = GetOperandAsm(callOperands[i], out);
                     out << "    mov " << x86_64::windowsArgMapping[i]
@@ -574,12 +587,14 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             out << "    mov rax, " << tempAsmValue << "\n"
                 << "    cmp rax, 0\n"
                 << "    jne " << lblTrue << "\n";
-            tempAsmValue = GetOperandAsm(source2, out);
+            // Condition false: use source3 (false value)
+            tempAsmValue = GetOperandAsm(source3, out);
             out << "    mov rax, " << tempAsmValue << "\n"
                 << "    jmp " << lblEnd << "\n"
 
                 << lblTrue << ":\n";
-            tempAsmValue = GetOperandAsm(source3, out);
+            // Condition true: use source2 (true value)
+            tempAsmValue = GetOperandAsm(source2, out);
             out << "    mov rax, " << tempAsmValue << "\n"
                 
                 << lblEnd << ":\n";
@@ -629,72 +644,33 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "    ; call main() (CRT entry -> user main)\n";
         out << "    call main\n";
 
-        // ExitProcess with the return from main
+        // exit() flushes CRT stdio buffers (needed for printf / println)
         out << "    mov ecx, eax\n";
-        out << "    call ExitProcess\n";
+        out << "    call exit\n";
 
-        out << "    ; Halt if ExitProcess returns (should not)\n";
+        out << "    ; Halt if exit returns (should not)\n";
         out << "    hlt\n";
-    }
-}
 
-std::string X86_64Emitter::GetSectionDirective(SectionType sectionType) const
-{
-    switch (sectionType)
-    {
-    case SectionType::TEXT:
-        return "section .text";
-
-    case SectionType::DATA:
-        return "section .data";
-
-    case SectionType::RODATA:
-        // NASM uses .rdata on Windows, .rodata on ELF
-        if (TargetArchitecture::GetOS() == OS::Windows) return "section .rdata";
-        return "section .rodata";
-
-    case SectionType::BSS:
-        return "section .bss";
-
-    default:
-        return "";
+        // ---- Built-in: println(value: int) -> void ----
+        // Wraps printf with a "%lld\n" format string.
+        out << "\n";
+        out << "println:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    ; rcx = value (first arg from caller)\n";
+        out << "    mov rdx, rcx\n";                          // 2nd printf arg = value
+        out << "    lea rcx, [rel __println_fmt_int]\n";      // 1st printf arg = fmt
+        out << "    sub rsp, 32\n";                            // shadow space
+        out << "    call printf\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
     }
 }
 
 std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol) const
 {
     return "global " + symbol;
-}
-
-std::string X86_64Emitter::GetDataDirective(int bytes) const
-{
-    switch (bytes)
-    {
-    case 1: return "db";
-    case 2: return "dw";
-    case 4: return "dd";
-    case 8: return "dq";
-    default:
-        // Fallback.
-        return "db";
-    }
-}
-
-std::string X86_64Emitter::GetReserveDirective(int bytes) const
-{
-    switch (bytes)
-    {
-    case 1:
-        return "resb";
-    case 2:
-        return "resw";
-    case 4:
-        return "resd";
-    case 8:
-        return "resq";
-    default:
-        return "resb";
-    }
 }
 
 std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream& out)
@@ -742,36 +718,36 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
 
         if (TargetArchitecture::GetOS() == OS::Linux)
         {
-            // first 6 args in registers RDI, RSI, RDX, RCX, R8, R9
-            if (foundIndex < SIX_ARGUEMENTS)
+            if (foundIndex < x86_64::SIX_ARGUEMENTS)
             {
-                return x86_64::linuxArgMapping[foundIndex];
+                // Register arguments were spilled to local stack slots in
+                // the prologue and recorded in m_valueToStackOffset.
+                auto it = this->m_valueToStackOffset.find(argVal);
+                if (it != this->m_valueToStackOffset.end())
+                {
+                    return "[rbp-" + std::to_string(it->second) + "]";
+                }
             }
-            else
-            {
-                // first stack-passed arg (7th argument, foundIndex==6) is at [rbp+16]
-                // formula: offset = 8 * (foundIndex - 6)
-                int stackOffset = FIRST_STACK_ARG_OFFSET_LINUX + STACK_SLOT_SIZE * static_cast<int>(foundIndex - SIX_ARGUEMENTS);
-                return "[rbp+" + std::to_string(stackOffset) + "]";
-            }
+
+            // Stack-passed args (7th+): [rbp+16], [rbp+24], …
+            int stackOffset = x86_64::FIRST_STACK_ARG_OFFSET_LINUX + x86_64::STACK_SLOT_SIZE * static_cast<int>(foundIndex - x86_64::SIX_ARGUEMENTS);
+            return "[rbp+" + std::to_string(stackOffset) + "]";
         }
         else if (TargetArchitecture::GetOS() == OS::Windows)
         {
-            // first 4 args in RCX,RDX,R8,R9
-            if (foundIndex < FOUR_ARGUEMENTS)
+            if (foundIndex < x86_64::FOUR_ARGUEMENTS)
             {
-                return x86_64::windowsArgMapping[foundIndex];
+                // Register arguments were spilled to the caller's shadow
+                // space in the prologue.  Read from there so we are safe
+                // even after idiv / call clobber the volatile registers.
+                //   [rbp+16] = arg 0,  [rbp+24] = arg 1, …
+                int offset = 16 + static_cast<int>(foundIndex) * x86_64::STACK_SLOT_SIZE;
+                return "qword [rbp+" + std::to_string(offset) + "]";
             }
             else
             {
-                // On Windows the caller provides a 32-byte shadow area at entry.
-                // After push rbp; mov rbp,rsp:
-                // saved rbp: [rbp]
-                // return addr: [rbp+8]
-                // shadow space: [rbp+16 .. rbp+47]
-                // first pushed arg (arg5, foundIndex==4) is at [rbp+48]
-                // so offset = 48 + 8 * (foundIndex - 4)
-                int stackOffset = FIRST_STACK_ARG_OFFSET_WINDOWS + STACK_SLOT_SIZE * static_cast<int>(foundIndex - FOUR_ARGUEMENTS);
+                // Stack-passed args (5th+): [rbp+48], [rbp+56], …
+                int stackOffset = x86_64::FIRST_STACK_ARG_OFFSET_WINDOWS + x86_64::STACK_SLOT_SIZE * static_cast<int>(foundIndex - x86_64::FOUR_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
             }
         }
@@ -796,9 +772,9 @@ std::string X86_64Emitter::slotOfInstr(const IRBaseValue* value, std::ostream& o
     }
 
     // allocate new stack slot
-    size_t slotOffset = this->m_nextTempStackOffset;
-    this->m_nextTempStackOffset += STACK_SLOT_SIZE;   // 8 bytes per slot 
-    this->m_valueToStackOffset[value] = static_cast<int>(slotOffset);
+    int slotOffset = this->m_nextTempStackOffset;
+    this->m_nextTempStackOffset += x86_64::STACK_SLOT_SIZE;   // 8 bytes per slot 
+    this->m_valueToStackOffset[value] = slotOffset;
     return "[rbp-" + std::to_string(slotOffset) + "]";
 }
 

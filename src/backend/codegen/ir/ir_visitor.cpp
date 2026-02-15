@@ -1092,6 +1092,14 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     }
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
 
+    // For built-in functions (e.g. println), lazily add a stub
+    // IRFunction to the module so that CreateCall has a target.
+    const std::string& funcName = funcMetaData->GetName();
+    if (!this->m_currModule.IsFuncExistByName(funcName))
+    {
+        this->m_currModule.AddFunction(funcName, TypeToIRType(funcMetaData->GetRType()));
+    }
+
     // Setting up the temporary holder
     std::vector<IRBaseValue*> tempInstructionHolder;
 
@@ -1107,7 +1115,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 
     // Creating the Call Instruction
     IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction(funcMetaData->GetName()),
+        this->m_currModule.GetFunction(funcName),
         tempInstructionHolder
     );
 

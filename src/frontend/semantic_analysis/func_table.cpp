@@ -43,3 +43,26 @@ FuncTable::GetAllFunctions() const noexcept
 {
     return this->m_functions;
 }
+
+void FuncTable::RegisterBuiltins()
+{
+    // guard: only register once
+    if (this->FindFunctionByName("println")) return;
+
+    // println(value: int) -> void
+    std::vector<VarMetaData> printlnParams = {
+        VarMetaData("value", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData printlnFunc(
+        this->m_entityLogger,
+        "println",
+        Type::VOID_TYPE,
+        printlnParams,
+        0, 0,  // no source location (built-in)
+        nullptr // no scope root (built-in)
+    );
+    printlnFunc.SetDefined(); // mark as defined so the linker check passes
+    this->InsertFunction(std::move(printlnFunc));
+
+    this->m_entityLogger.Info("Registered built-in functions");
+}
