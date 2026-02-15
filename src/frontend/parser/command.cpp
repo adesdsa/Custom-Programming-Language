@@ -331,6 +331,11 @@ bool Command::ParseParameterKeywordStart(Token& currToken, Token& nextToken)
                 return FinishAndAssignType(CommandTypes::SIZEOF);
             else return FoundUnknown(currToken);
         }
+        // This ')' belongs to a sub-expression inside the keyword,
+        // not the keyword's own closing paren.  Suppress it so it
+        // doesn't inflate the main token list (mirrors the '('
+        // suppression in HandleDefaultPossibleParamChecks).
+        m_bIgnoreCurrToken = true;
     }
 
     HandleKeywordParams(currToken, nextToken);
@@ -344,7 +349,11 @@ bool Command::ParseExpressionValue(Token& currToken, Token& nextToken)
     else if (IsValue(currToken, ")"))
     {
         LowerParanthesesCounter(currToken);
-        return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
+        // A closing ')' ends a parenthesised sub-expression, which
+        // produces a *value*.  The next legal token is an operator
+        // (e.g.  "(a+b) * c"), so we stay in the VALUE state where
+        // operators are accepted.
+        return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
     }
     else return FoundUnknown(currToken);
 }

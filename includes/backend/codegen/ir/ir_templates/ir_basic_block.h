@@ -48,6 +48,10 @@ public:
     // Remove given instruction from this block
     void RemoveInstruction(IRInstruction* instruction);
 
+    /// @brief Counts all the instructions that emit an SSA temp value in the block.
+    /// @return Number of SSA temp values in the block.
+    int CountTempVars() const;
+
 private:
     const std::string m_label;  // block name                                   
     IRFunction* m_parent;  // owner of the block                                  

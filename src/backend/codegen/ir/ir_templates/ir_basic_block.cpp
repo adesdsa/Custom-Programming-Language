@@ -105,3 +105,21 @@ void BasicBlock::RemoveInstruction(IRInstruction* instruction)
         this->m_instructions.erase(instructionIterator);
     }
 }
+
+int BasicBlock::CountTempVars() const
+{
+    int cntTemps = 0;
+    for (const auto& instr : this->m_instructions)
+    {
+        IROpcode opcode = instr->GetOpcode();
+        if (opcode != IROpcode::Ret &&
+            opcode != IROpcode::CondBr &&
+            opcode != IROpcode::Br &&
+            opcode != IROpcode::Store &&
+            opcode != IROpcode::Alloca)
+        {
+            cntTemps++;
+        }
+    }
+    return cntTemps;
+}

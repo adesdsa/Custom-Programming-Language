@@ -2,32 +2,24 @@
 
 #include <vector>
 
-#include "includes/backend/codegen/asm/base_emitter.h"
+#include "includes/backend/codegen/asm/x86_base_emitter.h"
 #include "includes/shared/common/target_architecture.h"
-
-
-constexpr int SINGLE_OPERAND = 1;
-constexpr int SINGLE_OPERAND_INDEX = 0;
-constexpr int TWO_OPERANDS = 2;
-constexpr int TWO_OPERANDS_INDEX = 1;
-constexpr int THREE_OPERANDS = 3;
-constexpr int THREE_OPERANDS_INDEX = 2;
-constexpr int FOUR_ARGUEMENTS = 4;
-constexpr int SIX_ARGUEMENTS = 6;
-constexpr int STACK_SLOT_SIZE = 8;
-constexpr int FIRST_STACK_ARG_OFFSET_LINUX = 16;
-constexpr int FIRST_STACK_ARG_OFFSET_WINDOWS = 48;
-constexpr int STACK_ALIGNMENT = 16;
-constexpr int WINDOWS_X64_SHADOW_SPACE = 32;
 
 namespace x86_64
 {
-inline const std::vector<std::string> linuxArgMapping = 
-    {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+    constexpr int FOUR_ARGUEMENTS = 4;
+    constexpr int SIX_ARGUEMENTS = 6;
+    constexpr int STACK_SLOT_SIZE = 8;
+    constexpr int FIRST_STACK_ARG_OFFSET_LINUX = 16;
+    constexpr int FIRST_STACK_ARG_OFFSET_WINDOWS = 48;
+    constexpr int STACK_ALIGNMENT = 16;
+    constexpr int WINDOWS_X64_SHADOW_SPACE = 32;
 
-inline const std::vector<std::string> windowsArgMapping =
-    {"rcx", "rdx", "r8", "r9"};
+    inline const std::vector<std::string> linuxArgMapping = 
+        {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
+    inline const std::vector<std::string> windowsArgMapping =
+        {"rcx", "rdx", "r8", "r9"};
 }
 
 
@@ -54,17 +46,12 @@ inline const std::vector<std::string> windowsArgMapping =
  *  @see x86-64 registers & flags:
  *       https://www.felixcloutier.com/x86/
  */
-class X86_64Emitter : public BaseEmitter
+class X86_64Emitter : public X86BaseEmitter
 {
 public:
     X86_64Emitter(const FuncTable& funcTable);
 
 private:
-    mutable std::unordered_map<const IRBaseValue*, int> m_valueToStackOffset;
-    size_t m_nextTempStackOffset;   // tracks top of ssa variable's frame
-    size_t m_nextVarStackOffset;   // tracks top of normal func variable's frame
-    int m_selectLabelCounter;
-
     // header signature for the file
     std::string EmitHeader() const override final;
 
@@ -88,9 +75,6 @@ private:
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
     void EmitStart(std::ostream& out) override final;
 
-    // Gets sections name as a string e.g., section .text
-    std::string GetSectionDirective(SectionType sectionType) const override final;
-
     // Get global section for linker, will be available between all files
     std::string GetGlobalDirective(const std::string& symbol) const override final;
 
@@ -99,14 +83,6 @@ private:
     // Local variable will use stack offset [rbp - 8]
     // Globals will just use name [my_global]
     std::string GetOperandAsm(const IRBaseValue* operand, std::ostream& out) override final;
-
-    /// @brief Get .data keywords e.g., db, dw, etc..
-    /// @param bytes size of the variable in bytes
-    std::string GetDataDirective(int bytes) const override final;
-
-    /// @brief Get .bss keywords e.g., resb, resw, resd etc..
-    /// @param bytes size of the variable in bytes
-    std::string GetReserveDirective(int bytes) const override final;
 
     /// @brief The func turns an IRBaseValue into an asm value or memory location.
     /// @param value The value/memory location that we try to write into asm.
@@ -118,6 +94,6 @@ private:
     /// @param xmmReg The special float register the value will be saved at.
     void LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
 
-    /// @brief A Select operand label generator.
+    /// @brief A Select operand label generator (x86_64 prefixes with function name).
     std::string SelectLabelGenerator();
 };

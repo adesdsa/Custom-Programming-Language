@@ -299,7 +299,6 @@ TEST(ParserTest, HappyFlowFullProgram)
     IF (if)
         EXPRESSION ()
             IDENTIFIER (low)
-            IDENTIFIER (low)
     */
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IF);
 
@@ -308,7 +307,6 @@ TEST(ParserTest, HappyFlowFullProgram)
 
     astPtr = astPtr->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
-    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
@@ -515,6 +513,7 @@ TEST(ParserTest, HappyFlowFullProgram)
     /*
     FINISHED_FUNC_CALL (println)
         IDENTIFIER (low)
+    */
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_CALL);
     EXPECT_EQ(astPtr->nodeFirstChild->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
@@ -524,8 +523,10 @@ TEST(ParserTest, HappyFlowFullProgram)
 
     // END_OF_COMMAND (;)
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::END_OF_COMMAND);
-    astPtr = astPtr->nodeNextSibling;
-    */
+
+    astPtr = currentNextSibling->nodeNextSibling;
+    currentNextSibling = currentNextSibling->nodeNextSibling;
+
 
     // BLOCK_END (})
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::BLOCK_END);

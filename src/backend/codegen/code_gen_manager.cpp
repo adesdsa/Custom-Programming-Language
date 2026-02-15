@@ -19,5 +19,7 @@ void CodeGenManager::MainFlow()
     Assembler assembler;
     std::string objectFilePath = assembler.Mainflow(asmFilePath, "out");
 
-    /// @todo add linker
+    Linker linker;
+    std::string executableFilePath = linker.MainFlow(objectFilePath);
+    /// @todo handle output
 }

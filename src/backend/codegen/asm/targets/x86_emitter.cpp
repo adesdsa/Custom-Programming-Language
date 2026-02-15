@@ -1,10 +1,7 @@
 #include "includes/backend/codegen/asm/targets/x86_emitter.h"
 
 X86_Emitter::X86_Emitter(const FuncTable& funcTable) : 
-    BaseEmitter(funcTable),
-    m_nextVarStackOffset(0),
-    m_nextTempStackOffset(0),
-    m_selectLabelCounter(0)
+    X86BaseEmitter(funcTable)
 {}
 
 std::string X86_Emitter::EmitHeader() const
@@ -68,16 +65,16 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
 {
     auto opcode = instruction->GetOpcode();
 
-    const IRBaseValue* op1 = instruction->GetNumOperands() >= x86_32::SINGLE_OPERAND ? 
-        instruction->GetOperand(x86_32::SINGLE_OPERAND_INDEX) : 
+    const IRBaseValue* op1 = instruction->GetNumOperands() >= x86_common::SINGLE_OPERAND ? 
+        instruction->GetOperand(x86_common::SINGLE_OPERAND_INDEX) : 
         nullptr;
     
-    const IRBaseValue* op2 = instruction->GetNumOperands() >= x86_32::TWO_OPERANDS ? 
-        instruction->GetOperand(x86_32::TWO_OPERANDS_INDEX) : 
+    const IRBaseValue* op2 = instruction->GetNumOperands() >= x86_common::TWO_OPERANDS ? 
+        instruction->GetOperand(x86_common::TWO_OPERANDS_INDEX) : 
         nullptr;
 
-    const IRBaseValue* op3 = instruction->GetNumOperands() >= x86_32::THREE_OPERANDS ? 
-        instruction->GetOperand(x86_32::THREE_OPERANDS_INDEX) : 
+    const IRBaseValue* op3 = instruction->GetNumOperands() >= x86_common::THREE_OPERANDS ? 
+        instruction->GetOperand(x86_common::THREE_OPERANDS_INDEX) : 
         nullptr;
 
     switch (opcode)
@@ -202,51 +199,7 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
             out << "    cmp eax, " << this->GetOperandAsm(op2, out) << "\n";
 
-            const char* setInstr = "sete";
-            switch (opcode)
-            {
-                case IROpcode::ICmpEq:  
-                    setInstr = "sete";  
-                    break;
-
-                case IROpcode::ICmpNe:  
-                    setInstr = "setne"; 
-                    break;
-
-                case IROpcode::ICmpSlt: 
-                    setInstr = "setl";  
-                    break;
-
-                case IROpcode::ICmpSle: 
-                    setInstr = "setle"; 
-                    break;
-
-                case IROpcode::ICmpSgt: 
-                    setInstr = "setg";  
-                    break;
-
-                case IROpcode::ICmpSge: 
-                    setInstr = "setge"; 
-                    break;
-
-                case IROpcode::ICmpUlt: 
-                    setInstr = "setb";  
-                    break;
-
-                case IROpcode::ICmpUle: 
-                    setInstr = "setbe"; 
-                    break;
-
-                case IROpcode::ICmpUgt: 
-                    setInstr = "seta";  
-                    break;
-
-                case IROpcode::ICmpUge: 
-                    setInstr = "setae"; 
-                    break;
-
-                default: break;
-            }
+            const char* setInstr = GetSetccMnemonic(opcode);
 
             out << "    " << setInstr << " al\n";
             out << "    movzx eax, al\n";
@@ -328,36 +281,7 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             // Compare xmm0 with xmm1 (sets EFLAGS)
             out << "    ucomiss xmm0, xmm1\n";
 
-            const char* setInstr = "sete";
-            switch (opcode)
-            {
-                case IROpcode::FCmpEq:  
-                    setInstr = "sete";  
-                    break;
-
-                case IROpcode::FCmpNe:  
-                    setInstr = "setne"; 
-                    break;
-
-                case IROpcode::FCmpLt:  
-                    setInstr = "setb";  
-                    break;
-
-                case IROpcode::FCmpLe:  
-                    setInstr = "setbe"; 
-                    break;
-
-                case IROpcode::FCmpGt:  
-                    setInstr = "seta";  
-                    break;
-    
-                case IROpcode::FCmpGe:  
-                    setInstr = "setae"; 
-                    break;
-
-                default: 
-                    break;
-            }
+            const char* setInstr = GetSetccMnemonic(opcode);
 
             out << "    " << setInstr << " al\n";
             out << "    movzx eax, al\n";
@@ -509,35 +433,6 @@ void X86_Emitter::EmitStart(std::ostream& out)
     }
 }
 
-std::string X86_Emitter::GetSectionDirective(SectionType sectionType) const
-{
-    switch (sectionType)
-    {
-        case SectionType::TEXT:
-            return "section .text\n";
-
-        case SectionType::DATA:
-            return "section .data\n";
-
-        case SectionType::RODATA:
-            // NASM uses .rdata on Windows, .rodata on ELF
-            if (TargetArchitecture::GetOS() == OS::Windows)
-            {
-                return "section .rdata\n";
-            }
-            else
-            {
-                return "section .rodata\n";
-            }
-
-        case SectionType::BSS:
-            return "section .bss\n";
-
-        default:
-            return "";
-    }
-}
-
 std::string X86_Emitter::GetGlobalDirective(const std::string& symbol) const
 {
     switch (TargetArchitecture::GetOS())
@@ -617,30 +512,6 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
     return slotOfInstr(operand);
 }
 
-std::string X86_Emitter::GetDataDirective(int bytes) const
-{
-    switch (bytes)
-    {
-        case 1:  return "db";
-        case 2:  return "dw";
-        case 4:  return "dd";
-        case 8:  return "dq";
-        default: return "db";
-    }
-}
-
-std::string X86_Emitter::GetReserveDirective(int bytes) const
-{
-    switch (bytes)
-    {
-        case 1:  return "resb";
-        case 2:  return "resw";
-        case 4:  return "resd";
-        case 8:  return "resq";
-        default: return "resb";
-    }
-}
-
 std::string X86_Emitter::slotOfInstr(const IRBaseValue* value)
 {
     if (!value)
@@ -661,11 +532,6 @@ std::string X86_Emitter::slotOfInstr(const IRBaseValue* value)
     this->m_valueToStackOffset[value] = offset;
 
     return "dword [ebp-" + std::to_string(offset) + "]";
-}
-
-std::string X86_Emitter::SelectLabelGenerator()
-{
-    return ".L_sel_" + std::to_string(m_selectLabelCounter++);
 }
 
 void X86_Emitter::LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out)

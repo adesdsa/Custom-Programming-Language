@@ -17,12 +17,12 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
         let is_prime: bool = true;
 
         # 0 and 1 are not prime numbers
-        if(low == 0 or low == 1)
+        if(low < 2)
         {
             is_prime = false;
         }
 
-        for(let i: int = 2; i < (low // 2); i = i + 1)
+        for(let i: int = 2; i < ((low // 2) + 1) ; i = i + 1)
         {
             if(low % i == 0)
             {
@@ -33,7 +33,7 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
 
         if(is_prime)
         {
-            # println(low); Prints with \n
+            println(low);
         }
 
         low = low + 1;

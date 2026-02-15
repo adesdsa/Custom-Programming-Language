@@ -60,6 +60,10 @@ public:
     // <======= Alloca Methods =======>
     IRInstruction* FindAllocatedVar(const std::string& name);
 
+    /// @brief Counts all the instructions that emit an SSA temp value in the function.
+    /// @return Number of SSA temp values in the function.
+    int CountTempVars() const;
+
     void RemoveBasicBlock(BasicBlock* basicBlock);
 
 private:

@@ -133,6 +133,16 @@ IRInstruction* IRFunction::FindAllocatedVar(const std::string& name)
     return nullptr;
 }
 
+int IRFunction::CountTempVars() const
+{
+    int cntTemps = 0;
+    for (const auto& block : this->m_basicBlocks)
+    {
+        cntTemps += block->CountTempVars();
+    }
+    return cntTemps;
+}
+
 void IRFunction::RemoveBasicBlock(BasicBlock *basicBlock)
 {
     if (!basicBlock) return;

@@ -24,7 +24,7 @@ public:
         const std::vector<VarMetaData>& funcParams,
         size_t declarationLine,
         size_t declarationColumn,
-        std::unique_ptr<VarTableNode> functionScopeRoot = nullptr
+        VarTableNode* functionScopeRoot = nullptr
     );
     ~FuncMetaData() = default;
 
@@ -46,6 +46,10 @@ public:
     size_t GetDeclarationColumn() const noexcept;
 
     void SetDefined() noexcept;
+
+    /// @brief Sets the function's scope root (non-owning pointer).
+    /// @note The scope tree is owned by the VarTableNode hierarchy in DecoratedAST.
+    void SetFunctionScopeRoot(VarTableNode* scopeRoot) noexcept;
 
     /// @brief Check for given function's signature equality.
     /// @param other: Function to compare to the original.
@@ -76,7 +80,7 @@ private:
     /*****************\
     |  FUNCTION BODY  |
     \*****************/
-    std::unique_ptr<VarTableNode> m_functionScopeRoot;
+    VarTableNode* m_functionScopeRoot;
 
     /******************\
     |  FUNCTION FLAGS  |

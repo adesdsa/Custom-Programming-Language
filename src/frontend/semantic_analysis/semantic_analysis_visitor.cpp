@@ -410,16 +410,21 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
             newFunc->SetDefined();
         }
     }
-    
-    // Track current function for return type checking
+
     this->m_currentFunctionName = funcName;
     
     // signal VisitBlockStart what kind of block is coming
     this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Function;
     this->m_hasPendingBlock = true;
 
-    // New var block starts now to save arguements.
+    // new var block starts now to save arguements.
     this->m_currentScope = this->m_currentScope->CreateBlock();
+
+    FuncMetaData* funcMeta = this->m_funcTable.FindFunctionByName(funcName);
+    if (funcMeta != nullptr)
+    {
+        funcMeta->SetFunctionScopeRoot(this->m_currentScope);
+    }
 }
 
 void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
@@ -433,16 +438,23 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     
     if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
     {
-        this->m_errorManager.StoreError(
-            CompileTimeError(
-                ErrorTypes::NAME_ERROR,
-                "Undefined function '" + funcName + "'",
-                tokens[FIRST_TOKEN_INDEX].GetLine(),
-                tokens[FIRST_TOKEN_INDEX].GetColumn(),
-                "Function must be declared before calling"
-            )
-        );
-        return;
+        // Lazily register built-in functions on first use
+        this->m_funcTable.RegisterBuiltins();
+
+        // Re-check after registering built-ins
+        if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Undefined function '" + funcName + "'",
+                    tokens[FIRST_TOKEN_INDEX].GetLine(),
+                    tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                    "Function must be declared before calling"
+                )
+            );
+            return;
+        }
     }
     
     std::vector<ExpressionType> argTypes;

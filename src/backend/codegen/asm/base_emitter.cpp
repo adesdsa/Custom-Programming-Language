@@ -20,6 +20,7 @@ std::string BaseEmitter::Emit(const IRModule& module)
 void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
 {
     out << GetSectionDirective(SectionType::DATA);
+    out << "\n";
 
     for (const auto& globalVar : module.GetVariables())
     {
@@ -31,11 +32,14 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
             out << globalVar->GetInitializerString() << "\n";
         }
     }
+    out << "\n";
+    out << "\n";
 }
     
 void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
 {
     out << GetSectionDirective(SectionType::BSS);
+    out << "\n";
     
     for (const auto& global : module.GetVariables())
     {
@@ -47,11 +51,14 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
             out << GetReserveDirective(size) << " 1\n";
         }
     }
+    out << "\n";
+    out << "\n";
 }
 
 void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
 {
     out << GetSectionDirective(SectionType::TEXT);
+    out << "\n";
     
     EmitStart(out);
     out << "\n";
@@ -61,15 +68,17 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
         EmitFunction(func.get(), out);
         out << "\n";
     }
-
-    out << ".func_epilogue:\n";
-    EmitEpilogue(out);
+    out << "\n";
+    out << "\n";
 }
 
 void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 {
     FuncMetaData* funcMetadata = this->m_funcTable.FindFunctionByName(func->GetName());
     if (!funcMetadata) return;
+
+    // skip built-in / external functions (no basic blocks = no user-defined body)
+    if (func->GetNumBasicBlocks() == 0) return;
     this->m_currentFunc = func;
 
     // function label
@@ -83,17 +92,23 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
         EmitBasicBlock(block.get(), out);
     }
     
+    out << this->m_currentFunc->GetName() << ".func_epilogue:\n";
+    EmitEpilogue(out);
     this->m_currentFunc = nullptr;
+    out << "\n";
+    out << "\n";
 }
 
 void BaseEmitter::EmitBasicBlock(const BasicBlock* block, std::ostream& out)
 {
-    out << "." << block->GetLabel() << ":\n";
+    out << this->m_currentFunc->GetName() << "." << block->GetLabel() << ":\n";
 
     for (const auto& instr : block->GetInstructions())
     {
         EmitInstruction(instr.get(), out);
     }
+    out << "\n";
+    out << "\n";
 }
 
 int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const

@@ -16,7 +16,10 @@ bool VarTableNode::InsertVar(const VarMetaData& varMetaData)
     }
 
     this->m_nCurrentStackOffset -= varMetaData.offsetInsideFrame;
-    this->m_vars.insert({varMetaData.sName, varMetaData});
+    
+    VarMetaData adjustedVar = varMetaData;
+    adjustedVar.offsetInsideFrame = this->m_nCurrentStackOffset;
+    this->m_vars.insert({adjustedVar.sName, adjustedVar});
     m_entityLogger.Info("Added a new var to the varTable");
     return true;
 }
@@ -24,7 +27,9 @@ bool VarTableNode::InsertVar(const VarMetaData& varMetaData)
 VarTableNode* VarTableNode::CreateBlock()
 {
     m_entityLogger.Info("Created a new block inside the varTable");
-    this->m_children.push_back(std::make_unique<VarTableNode>(this, m_entityLogger));
+    auto child = std::make_unique<VarTableNode>(this, m_entityLogger);
+    child->m_nCurrentStackOffset = this->m_nCurrentStackOffset;
+    this->m_children.push_back(std::move(child));
     return this->m_children.back().get();
 }
 
@@ -40,11 +45,11 @@ std::optional<VarMetaData> VarTableNode::FindVar(const std::string& sVarName) co
     {
         return findValue->second;
     }
-    else if (this->m_parent == nullptr) // Incase we are in the root.
+    else if (this->m_parent == nullptr)
     {
         return std::nullopt;
     }
-    else // Checking if the var was created at the larger scope.
+    else
     {
         return this->m_parent->FindVar(sVarName);
     }

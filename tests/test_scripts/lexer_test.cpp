@@ -176,13 +176,9 @@ TEST(LexerTest, FullProgram)
         Token("if", TokenTypes::KEYWORD, 20, 9),
         Token("(", TokenTypes::PUNCTUATION, 20, 11),
         Token("low", TokenTypes::IDENTIFIER, 20, 12),
-        Token("==", TokenTypes::OPERATOR, 20, 16),
-        Token("0", TokenTypes::VALUE, 20, 19),
-        Token("or", TokenTypes::KEYWORD, 20, 21),
-        Token("low", TokenTypes::IDENTIFIER, 20, 24),
-        Token("==", TokenTypes::OPERATOR, 20, 28),
-        Token("1", TokenTypes::VALUE, 20, 31),
-        Token(")", TokenTypes::PUNCTUATION, 20, 32),
+        Token("<", TokenTypes::OPERATOR, 20, 16),
+        Token("2", TokenTypes::VALUE, 20, 18),
+        Token(")", TokenTypes::PUNCTUATION, 20, 19),
 
         // Line 21
         Token("{", TokenTypes::PUNCTUATION, 21, 9),
@@ -209,17 +205,21 @@ TEST(LexerTest, FullProgram)
         Token("i", TokenTypes::IDENTIFIER, 25, 29),
         Token("<", TokenTypes::OPERATOR, 25, 31),
         Token("(", TokenTypes::PUNCTUATION, 25, 33),
-        Token("low", TokenTypes::IDENTIFIER, 25, 34),
-        Token("//", TokenTypes::OPERATOR, 25, 38),
-        Token("2", TokenTypes::VALUE, 25, 41),
-        Token(")", TokenTypes::PUNCTUATION, 25, 42),
-        Token(";", TokenTypes::PUNCTUATION, 25, 43),
-        Token("i", TokenTypes::IDENTIFIER, 25, 45),
-        Token("=", TokenTypes::OPERATOR, 25, 47),
-        Token("i", TokenTypes::IDENTIFIER, 25, 49),
-        Token("+", TokenTypes::OPERATOR, 25, 51),
-        Token("1", TokenTypes::VALUE, 25, 53),
-        Token(")", TokenTypes::PUNCTUATION, 25, 54),
+        Token("(", TokenTypes::PUNCTUATION, 25, 34),
+        Token("low", TokenTypes::IDENTIFIER, 25, 35),
+        Token("//", TokenTypes::OPERATOR, 25, 39),
+        Token("2", TokenTypes::VALUE, 25, 42),
+        Token(")", TokenTypes::PUNCTUATION, 25, 43),
+        Token("+", TokenTypes::OPERATOR, 25, 45),
+        Token("1", TokenTypes::VALUE, 25, 47),
+        Token(")", TokenTypes::PUNCTUATION, 25, 48),
+        Token(";", TokenTypes::PUNCTUATION, 25, 50),
+        Token("i", TokenTypes::IDENTIFIER, 25, 52),
+        Token("=", TokenTypes::OPERATOR, 25, 54),
+        Token("i", TokenTypes::IDENTIFIER, 25, 56),
+        Token("+", TokenTypes::OPERATOR, 25, 58),
+        Token("1", TokenTypes::VALUE, 25, 60),
+        Token(")", TokenTypes::PUNCTUATION, 25, 61),
         
         // Line 26
         Token("{", TokenTypes::PUNCTUATION, 26, 9),
@@ -262,14 +262,12 @@ TEST(LexerTest, FullProgram)
         // Line 35  
         Token("{", TokenTypes::PUNCTUATION, 35, 9),
 
-        /*
         // Line 36
         Token("println", TokenTypes::IDENTIFIER, 36, 13),
         Token("(", TokenTypes::PUNCTUATION, 36, 20),
         Token("low", TokenTypes::IDENTIFIER, 36, 21),
         Token(")", TokenTypes::PUNCTUATION, 36, 24),
         Token(";", TokenTypes::PUNCTUATION, 36, 25),
-        */
 
         // Line 37
         Token("}", TokenTypes::PUNCTUATION, 37, 9),
@@ -285,13 +283,8 @@ TEST(LexerTest, FullProgram)
         // Line 40
         Token("}", TokenTypes::PUNCTUATION, 40, 5),
 
-        /*
-        // Line 41
-        Token("println", TokenTypes::IDENTIFIER, 41, 5),
-        Token("(", TokenTypes::PUNCTUATION, 41, 12),
-        Token(")", TokenTypes::PUNCTUATION, 41, 13),
-        Token(";", TokenTypes::PUNCTUATION, 41, 14),
-        */
+        // Line 41 is a comment: # println(); Display with \n
+        // (no tokens emitted for comments)
 
         // Line 42
         Token("}", TokenTypes::PUNCTUATION, 42, 1),

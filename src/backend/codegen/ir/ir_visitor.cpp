@@ -325,7 +325,8 @@ void IRVisitor::VisitFor(ASTNode* node)
     }
     ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]);
     VisitAssignment(&tempNode);
-    HandleExpression(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
+    tempNode = ASTNode(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
+    VisitExpression(&tempNode);
 
     // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
@@ -514,6 +515,10 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     {
     case BlockKind::functionBlock:
     {
+        if (this->m_currFunc->GetReturnType() == IRType::GetVoid())
+        {
+            this->m_irbuilder.CreateRetVoid();
+        }
         /// ====== Resets ======
         this->m_currFunc = nullptr;
         this->m_irbuilder.SetInsertPoint(nullptr);
@@ -576,7 +581,8 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         VisitIdentifier(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
         VisitAssignment(&tempNode);
-        HandleExpression(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+        VisitExpression(&tempNode);
         /// @note not having break is intended
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
@@ -1086,6 +1092,14 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     }
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
 
+    // For built-in functions (e.g. println), lazily add a stub
+    // IRFunction to the module so that CreateCall has a target.
+    const std::string& funcName = funcMetaData->GetName();
+    if (!this->m_currModule.IsFuncExistByName(funcName))
+    {
+        this->m_currModule.AddFunction(funcName, TypeToIRType(funcMetaData->GetRType()));
+    }
+
     // Setting up the temporary holder
     std::vector<IRBaseValue*> tempInstructionHolder;
 
@@ -1101,7 +1115,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
 
     // Creating the Call Instruction
     IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction(funcMetaData->GetName()),
+        this->m_currModule.GetFunction(funcName),
         tempInstructionHolder
     );
 

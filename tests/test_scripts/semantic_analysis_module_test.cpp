@@ -155,6 +155,19 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
     EXPECT_EQ(displayParams[1].sName, "high");
     EXPECT_EQ(displayParams[1].type, Type::INT_TYPE);
 
+    // Built-in function: println(value: int) -> void
+    // Registered lazily when the semantic analysis encounters a call to println
+    FuncMetaData* printlnFunc = funcTable.FindFunctionByName("println");
+    ASSERT_NE(printlnFunc, nullptr);
+    EXPECT_EQ(printlnFunc->GetName(), "println");
+    EXPECT_EQ(printlnFunc->GetRType(), Type::VOID_TYPE);
+    EXPECT_TRUE(printlnFunc->IsFuncDefined());
+
+    const auto& printlnParams = printlnFunc->GetFuncParams();
+    EXPECT_EQ(printlnParams.size(), 1);
+    EXPECT_EQ(printlnParams[0].sName, "value");
+    EXPECT_EQ(printlnParams[0].type, Type::INT_TYPE);
+
     testLogger.Info("HappyFlowFullProgram PASSED");
 }
 

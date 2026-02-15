@@ -7,7 +7,7 @@ FuncMetaData::FuncMetaData(
     const std::vector<VarMetaData>& funcParams,
     size_t declarationLine,
     size_t declarationColumn,
-    std::unique_ptr<VarTableNode> functionScopeRoot
+    VarTableNode* functionScopeRoot
 ) :
     m_entityLogger(entityLogger),
     m_name(funcName),
@@ -15,7 +15,7 @@ FuncMetaData::FuncMetaData(
     m_params(funcParams),  // case of no params funcParams will be {}
     m_declarationLine(declarationLine),
     m_declarationColumn(declarationColumn),
-    m_functionScopeRoot(std::move(functionScopeRoot)) 
+    m_functionScopeRoot(functionScopeRoot) 
 {
     // if there is body to the function, it definition
     if (this->m_functionScopeRoot)
@@ -66,6 +66,11 @@ void FuncMetaData::SetDefined() noexcept
     this->m_isDefined = true;
 }
 
+void FuncMetaData::SetFunctionScopeRoot(VarTableNode* scopeRoot) noexcept
+{
+    this->m_functionScopeRoot = scopeRoot;
+}
+
 bool FuncMetaData::HasSameSignature(const FuncMetaData& other) const
 {
     if (this->m_name != other.m_name) return false;
@@ -97,7 +102,7 @@ int FuncMetaData::ComputeFrameSize()
 
     // furthest offset from stack frame will be 
     // number of bytes to alloceate for the stack later on
-    int deepestOffset = FindFurthestOffset(this->m_functionScopeRoot.get());
+    int deepestOffset = FindFurthestOffset(this->m_functionScopeRoot);
     int frameSize = -deepestOffset;  // offsets are negative
 
     // adjust for ABI alignment x86-64

@@ -16,6 +16,7 @@ std::string Linker::MainFlow(const std::string& objFilePath)
     }
 
     std::string exePath = this->DeriveOutputPath(objFilePath);
+    exePath = std::filesystem::absolute(exePath).string();
     std::string command = this->BuildLinkerCommand(objFilePath, exePath);
 
     this->m_logger.Info("Linking: " + command);
@@ -48,11 +49,11 @@ std::string Linker::BuildLinkerCommand(
     const std::string& objPath,
     const std::string& exePath) const
 {
-    if constexpr (TargetArchitecture::GetOS() == OS::Windows)
-    {
-        std::string golinkPath = GOLINK_TOOL_PATH;
+    #if defined(_WIN32) || defined(_WIN64)
+
+        std::string golinkPath = std::filesystem::absolute(GOLINK_TOOL_PATH).string();
         std::string entryPoint;
-    
+
         if constexpr (TargetArchitecture::Is64Bit())
         {
             entryPoint = "mainCRTStartup";
@@ -66,18 +67,25 @@ std::string Linker::BuildLinkerCommand(
             * /console  -> produce a console application
             * /entry    -> set the entry point symbol
             * kernel32.dll -> resolve ExitProcess and other WinAPIs
+            *
+            * The inner command is wrapped with cmd /C "..." so that
+            * _popen (which itself invokes cmd /C) does not strip the
+            * leading/trailing quotes from the executable path — this
+            * is required when the path contains spaces.
         */
-        return (
+        std::string inner =
             "\"" + golinkPath + "\""
             + " /console"
             + " /entry " + entryPoint
             + " /fo \"" + exePath + "\""
             + " \"" + objPath + "\""
             + " kernel32.dll"
-        );
-    }
-    else if constexpr (TargetArchitecture::GetOS() == OS::Linux)
-    {
+            + " msvcrt.dll";
+
+        return "cmd /C \"" + inner + "\"";
+
+    #elif defined(__linux__)
+
         if constexpr (TargetArchitecture::Is64Bit())
         {
             return "ld -o \"" + exePath + "\" \"" + objPath + "\"";
@@ -86,11 +94,10 @@ std::string Linker::BuildLinkerCommand(
         {
             return "ld -m elf_i386 -o \"" + exePath + "\" \"" + objPath + "\"";
         }
-    }
-    else
-    {
+
+    #else
         throw std::runtime_error("Unsupported OS for linking");
-    }
+    #endif
 }
 
 std::string Linker::DeriveOutputPath(const std::string& objPath) const

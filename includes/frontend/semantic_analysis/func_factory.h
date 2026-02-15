@@ -16,7 +16,7 @@ public:
         const std::vector<VarMetaData>& funcParams,
         size_t declarationLine,
         size_t declarationColumn,
-        std::unique_ptr<VarTableNode> functionScopeRoot = nullptr
+        VarTableNode* functionScopeRoot = nullptr
     ) const;
 
 private:
