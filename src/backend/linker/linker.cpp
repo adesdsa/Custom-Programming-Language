@@ -49,11 +49,11 @@ std::string Linker::BuildLinkerCommand(
     const std::string& objPath,
     const std::string& exePath) const
 {
-    if constexpr (TargetArchitecture::GetOS() == OS::Windows)
-    {
+    #if defined(_WIN32) || defined(_WIN64)
+
         std::string golinkPath = std::filesystem::absolute(GOLINK_TOOL_PATH).string();
         std::string entryPoint;
-    
+
         if constexpr (TargetArchitecture::Is64Bit())
         {
             entryPoint = "mainCRTStartup";
@@ -83,9 +83,9 @@ std::string Linker::BuildLinkerCommand(
             + " msvcrt.dll";
 
         return "cmd /C \"" + inner + "\"";
-    }
-    else if constexpr (TargetArchitecture::GetOS() == OS::Linux)
-    {
+
+    #elif defined(__linux__)
+
         if constexpr (TargetArchitecture::Is64Bit())
         {
             return "ld -o \"" + exePath + "\" \"" + objPath + "\"";
@@ -94,11 +94,10 @@ std::string Linker::BuildLinkerCommand(
         {
             return "ld -m elf_i386 -o \"" + exePath + "\" \"" + objPath + "\"";
         }
-    }
-    else
-    {
+
+    #else
         throw std::runtime_error("Unsupported OS for linking");
-    }
+    #endif
 }
 
 std::string Linker::DeriveOutputPath(const std::string& objPath) const
