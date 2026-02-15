@@ -16,10 +16,11 @@ const std::unordered_map<std::string, std::string> ENTITY_COLORS = {
     {"SEMANTIC_ANALYSIS", "\033[35m"},    // Pink (Magneta)
     {"IR GENERATOR", "\033[38;5;208m"},  // Orange
     {"OPTIMIZATION", "\033[38;5;220m"}, // Gold
-    {"LINKER", "\033[38;5;81m"},       // Sky Blue
-    {"ERROR-MANAGER", "\033[31m"},    // Red
-    {"GENERAL", "\033[37m"},         // White
-    {"ASM", "\033[38;5;213m"}       // Pink
+    {"ASSEMBLER", "\033[38;5;141m"},   // Light Purple
+    {"LINKER", "\033[38;5;81m"},      // Sky Blue
+    {"ERROR-MANAGER", "\033[31m"},   // Red
+    {"GENERAL", "\033[37m"},        // White
+    {"ASM", "\033[38;5;213m"}      // Pink
 };
 
 const std::unordered_map<std::string, std::string> DEBUG_COLORS = {
