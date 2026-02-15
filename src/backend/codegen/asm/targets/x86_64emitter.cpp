@@ -1,5 +1,7 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 
+#include <cstring>
+
 X86_64Emitter::X86_64Emitter(const FuncTable& funcTable) :
 X86BaseEmitter(funcTable)
 { }
