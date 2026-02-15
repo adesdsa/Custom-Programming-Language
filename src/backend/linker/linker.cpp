@@ -67,15 +67,21 @@ std::string Linker::BuildLinkerCommand(
             * /console  -> produce a console application
             * /entry    -> set the entry point symbol
             * kernel32.dll -> resolve ExitProcess and other WinAPIs
+            *
+            * The inner command is wrapped with cmd /C "..." so that
+            * _popen (which itself invokes cmd /C) does not strip the
+            * leading/trailing quotes from the executable path — this
+            * is required when the path contains spaces.
         */
-        return (
+        std::string inner =
             "\"" + golinkPath + "\""
             + " /console"
             + " /entry " + entryPoint
             + " /fo \"" + exePath + "\""
             + " \"" + objPath + "\""
-            + " kernel32.dll"
-        );
+            + " kernel32.dll";
+
+        return "cmd /C \"" + inner + "\"";
     }
     else if constexpr (TargetArchitecture::GetOS() == OS::Linux)
     {
