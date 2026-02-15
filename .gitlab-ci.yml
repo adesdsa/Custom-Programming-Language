@@ -34,7 +34,7 @@ build:
   image: ubuntu:22.04
   before_script:
     # Install system dependencies
-    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git curl zip unzip tar pkg-config
+    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git curl zip unzip tar pkg-config nasm
     # Setup vcpkg cache directory
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
     # Install vcpkg (only if not cached)
