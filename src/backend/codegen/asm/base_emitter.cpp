@@ -70,9 +70,6 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
     }
     out << "\n";
     out << "\n";
-
-    out << ".func_epilogue:\n";
-    EmitEpilogue(out);
 }
 
 void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
@@ -92,6 +89,8 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
         EmitBasicBlock(block.get(), out);
     }
     
+    out << this->m_currentFunc->GetName() << ".func_epilogue:\n";
+    EmitEpilogue(out);
     this->m_currentFunc = nullptr;
     out << "\n";
     out << "\n";
