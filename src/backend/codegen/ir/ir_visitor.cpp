@@ -325,7 +325,8 @@ void IRVisitor::VisitFor(ASTNode* node)
     }
     ASTNode tempNode(node->command.GetParams()[FOR_PRE_COND_ASSIGNMENT_INDEX]);
     VisitAssignment(&tempNode);
-    HandleExpression(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
+    tempNode = ASTNode(node->command.GetParams()[FOR_PRE_COND_EXPRESSION_INDEX]);
+    VisitExpression(&tempNode);
 
     // Then we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::condition));
@@ -580,7 +581,8 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         VisitIdentifier(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
         VisitAssignment(&tempNode);
-        HandleExpression(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+        VisitExpression(&tempNode);
         /// @note not having break is intended
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.
