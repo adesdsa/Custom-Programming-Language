@@ -141,8 +141,8 @@ TEST(IRTest, HappyFlowFullProgram)
     /////////////////////////////////////////////////////////////////
     testLogger.Info("Validating IR Module structure");
 
-    // Module should contain 2 functions (main + displayAllPrimeNumbersInRange)
-    EXPECT_EQ(irModule.GetNumFunctions(), 2);
+    // Module should contain 3 functions (main + displayAllPrimeNumbersInRange + println built-in stub)
+    EXPECT_EQ(irModule.GetNumFunctions(), 3);
 
     /////////////////////////////////////////////////////////////////
     // Function: main                                               |
@@ -329,6 +329,41 @@ TEST(IRTest, HappyFlowFullProgram)
 
     EXPECT_TRUE(foundArithmetic) << "Expected arithmetic instructions (i + 1)";
     EXPECT_TRUE(foundModulo) << "Expected modulo instruction (low % i)";
+
+    /////////////////////////////////////////////////////////////////
+    // Built-in: println (stub function, no basic blocks)           |
+    /////////////////////////////////////////////////////////////////
+    testLogger.Info("Validating println built-in stub");
+
+    ASSERT_TRUE(irModule.IsFuncExistByName("println"));
+    IRFunction* printlnFunc = irModule.GetFunction("println");
+    ASSERT_NE(printlnFunc, nullptr);
+    EXPECT_EQ(printlnFunc->GetName(), "println");
+
+    // Built-in stub has no basic blocks (emitted directly in the ASM layer)
+    EXPECT_EQ(printlnFunc->GetNumBasicBlocks(), 0);
+
+    // Verify displayAllPrimeNumbersInRange calls println
+    bool foundPrintlnCall = false;
+    for (const auto& block : displayFunc->GetBasicBlocks())
+    {
+        for (const auto& instruction : block->GetInstructions())
+        {
+            if (instruction->IsFuncCall())
+            {
+                IRFunction* calledFunc = instruction->GetCalledFunction();
+                if (calledFunc && calledFunc->GetName() == "println")
+                {
+                    foundPrintlnCall = true;
+                    EXPECT_EQ(instruction->GetNumOperands(), 1)
+                        << "println should be called with 1 argument";
+                    break;
+                }
+            }
+        }
+        if (foundPrintlnCall) break;
+    }
+    EXPECT_TRUE(foundPrintlnCall) << "Expected a call to println in displayAllPrimeNumbersInRange";
 
     testLogger.Info("HappyFlowFullProgram PASSED");
 }

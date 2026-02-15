@@ -262,14 +262,12 @@ TEST(LexerTest, FullProgram)
         // Line 35  
         Token("{", TokenTypes::PUNCTUATION, 35, 9),
 
-        /*
         // Line 36
         Token("println", TokenTypes::IDENTIFIER, 36, 13),
         Token("(", TokenTypes::PUNCTUATION, 36, 20),
         Token("low", TokenTypes::IDENTIFIER, 36, 21),
         Token(")", TokenTypes::PUNCTUATION, 36, 24),
         Token(";", TokenTypes::PUNCTUATION, 36, 25),
-        */
 
         // Line 37
         Token("}", TokenTypes::PUNCTUATION, 37, 9),
@@ -285,13 +283,8 @@ TEST(LexerTest, FullProgram)
         // Line 40
         Token("}", TokenTypes::PUNCTUATION, 40, 5),
 
-        /*
-        // Line 41
-        Token("println", TokenTypes::IDENTIFIER, 41, 5),
-        Token("(", TokenTypes::PUNCTUATION, 41, 12),
-        Token(")", TokenTypes::PUNCTUATION, 41, 13),
-        Token(";", TokenTypes::PUNCTUATION, 41, 14),
-        */
+        // Line 41 is a comment: # println(); Display with \n
+        // (no tokens emitted for comments)
 
         // Line 42
         Token("}", TokenTypes::PUNCTUATION, 42, 1),
