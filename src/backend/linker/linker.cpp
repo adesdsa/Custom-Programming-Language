@@ -16,6 +16,7 @@ std::string Linker::MainFlow(const std::string& objFilePath)
     }
 
     std::string exePath = this->DeriveOutputPath(objFilePath);
+    exePath = std::filesystem::absolute(exePath).string();
     std::string command = this->BuildLinkerCommand(objFilePath, exePath);
 
     this->m_logger.Info("Linking: " + command);
@@ -50,7 +51,7 @@ std::string Linker::BuildLinkerCommand(
 {
     if constexpr (TargetArchitecture::GetOS() == OS::Windows)
     {
-        std::string golinkPath = GOLINK_TOOL_PATH;
+        std::string golinkPath = std::filesystem::absolute(GOLINK_TOOL_PATH).string();
         std::string entryPoint;
     
         if constexpr (TargetArchitecture::Is64Bit())

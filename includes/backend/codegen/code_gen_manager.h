@@ -9,6 +9,7 @@
 #include "includes/backend/codegen/ir/optimizations/optimization_manager.h"
 #include "includes/backend/codegen/asm/asm_generator.h"
 #include "includes/backend/assembler/assembler.h"
+#include "includes/backend/linker/linker.h"
 
 /**
     * Responsible for converting each source code into .o bin file.
