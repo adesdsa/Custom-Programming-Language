@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>  // gtest FrameWork
 
-#include "includes/parser/parser_logic.h"
-#include "includes/semantic_analysis/semantic_analysis_logic.h"
-#include "includes/utils/tests_utils.h"
-#include "includes/utils/system_utils.h"
+#include "includes/frontend/parser/parser_logic.h"
+#include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
+#include "includes/shared/utils/tests_utils.h"
+#include "includes/shared/utils/system_utils.h"
 
 
 // TEST: Happy Flow - Single function
@@ -154,6 +154,19 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
     EXPECT_EQ(displayParams[0].type, Type::INT_TYPE);
     EXPECT_EQ(displayParams[1].sName, "high");
     EXPECT_EQ(displayParams[1].type, Type::INT_TYPE);
+
+    // Built-in function: println(value: int) -> void
+    // Registered lazily when the semantic analysis encounters a call to println
+    FuncMetaData* printlnFunc = funcTable.FindFunctionByName("println");
+    ASSERT_NE(printlnFunc, nullptr);
+    EXPECT_EQ(printlnFunc->GetName(), "println");
+    EXPECT_EQ(printlnFunc->GetRType(), Type::VOID_TYPE);
+    EXPECT_TRUE(printlnFunc->IsFuncDefined());
+
+    const auto& printlnParams = printlnFunc->GetFuncParams();
+    EXPECT_EQ(printlnParams.size(), 1);
+    EXPECT_EQ(printlnParams[0].sName, "value");
+    EXPECT_EQ(printlnParams[0].type, Type::INT_TYPE);
 
     testLogger.Info("HappyFlowFullProgram PASSED");
 }

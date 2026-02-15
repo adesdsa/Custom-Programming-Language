@@ -21,6 +21,10 @@ stages:
   - test
   - security
 
+# Global variables
+variables:
+  VCPKG_ROOT: ${CI_PROJECT_DIR}/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${CI_PROJECT_DIR}/.vcpkg_cache
 
 # =====================
 # Build
@@ -28,12 +32,29 @@ stages:
 build:
   stage: build
   image: ubuntu:22.04
+  before_script:
+    # Install system dependencies
+    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git curl zip unzip tar pkg-config nasm
+    # Setup vcpkg cache directory
+    - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
+    # Install vcpkg (only if not cached)
+    - |
+      if [ ! -f "$VCPKG_ROOT/vcpkg" ]; then
+        git clone https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
+        $VCPKG_ROOT/bootstrap-vcpkg.sh
+      fi
+    # Install project dependencies
+    - $VCPKG_ROOT/vcpkg install --triplet x64-linux
   script:
-    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git
     - rm -rf build
     - mkdir -p build
-    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON | tee build/cmake_output.log
-    - cmake --build build | tee build/build_output.log
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+    - cmake --build build
+  cache:
+    key: vcpkg-$CI_COMMIT_REF_SLUG
+    paths:
+      - .vcpkg_cache/
+      - vcpkg/
   artifacts:
     when: always
     paths:
@@ -111,6 +132,31 @@ test-semantic_analysis:
   artifacts:
     reports:
       junit: build/test_results/semantic_analysis.xml
+    paths:
+      - build/test_results/
+    expire_in: 1h
+
+# =====================
+# IR Tests
+# =====================
+test-ir:
+  stage: test
+  image: ubuntu:22.04
+  needs:
+    - job: build
+      artifacts: true 
+  script:
+    - apt-get update && apt-get install -y valgrind
+    - ln -s $CI_PROJECT_DIR/tests /tests
+    - chmod +x build/unit_tests
+    # Run tests
+    - mkdir -p build/test_results
+    - ./build/unit_tests --gtest_filter=IRTest.* --gtest_output=xml:build/test_results/ir.xml
+    # Memory check
+    - valgrind --leak-check=full ./build/unit_tests --gtest_filter=IRTest.*
+  artifacts:
+    reports:
+      junit: build/test_results/ir.xml
     paths:
       - build/test_results/
     expire_in: 1h
