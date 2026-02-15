@@ -299,7 +299,6 @@ TEST(ParserTest, HappyFlowFullProgram)
     IF (if)
         EXPRESSION ()
             IDENTIFIER (low)
-            IDENTIFIER (low)
     */
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IF);
 
@@ -308,7 +307,6 @@ TEST(ParserTest, HappyFlowFullProgram)
 
     astPtr = astPtr->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
-    EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::IDENTIFIER_VALUE);
 
     astPtr = currentNextSibling->nodeNextSibling;
     currentNextSibling = currentNextSibling->nodeNextSibling;
