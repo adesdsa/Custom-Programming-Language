@@ -1,15 +1,41 @@
 #include "includes/shared/logger/console.h"
+#include "includes/driver/compiler_options.h"
 
-Console::Console()
-{
-    static int x = 0;
-    this->m_supportsColor = DetectColorSupport();
-}
+Console::Console() :
+    m_supportsColor(DetectColorSupport()),
+    m_warningLevel(WarningLevel::NORMAL)
+{}
 
 Console& Console::GetInstance() noexcept
 {
     static Console instance;  // created on first call
     return instance;
+}
+
+void Console::SetVerbosity(Verbosity level) noexcept
+{
+    m_verbosity = level;
+}
+
+Verbosity Console::GetVerbosity() const noexcept
+{
+    return m_verbosity;
+}
+
+void Console::SetWarningLevel(WarningLevel level) noexcept
+{
+    m_warningLevel = level;
+}
+
+WarningLevel Console::GetWarningLevel() const noexcept
+{
+    return m_warningLevel;
+}
+
+void Console::EnableFileLogging(const std::string& outputName) noexcept
+{
+    std::filesystem::path logPath = std::filesystem::current_path() / (outputName + ".log");
+    m_logFile.open(logPath, std::ios::out | std::ios::trunc);
 }
 
 void Console::BuildAndSendLogMessage(
@@ -18,9 +44,25 @@ void Console::BuildAndSendLogMessage(
     const std::string msg
 ) const noexcept
 {
-    this->Log(
-        LogMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg)
-    );
+    // --warn-off suppresses warnings everywhere
+    if (debugLevel.sName == "WARN" && m_warningLevel == WarningLevel::OFF)
+    {
+        return;
+    }
+
+    LogMessage logMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg);
+
+    // always write to file when file logging is enabled
+    if (m_logFile.is_open())
+    {
+        this->LogToFile(logMessage);
+    }
+
+    // only write to stdout when verbose
+    if (m_verbosity == Verbosity::VERBOSE)
+    {
+        this->Log(logMessage);
+    }
 }
 
 void Console::Log(const LogMessage& logMessage) const noexcept
@@ -46,6 +88,22 @@ void Console::Log(const LogMessage& logMessage) const noexcept
         << k_sEntityColor
         << logMessage.sContent
         << k_sReset << std::endl;
+}
+
+void Console::LogToFile(const LogMessage& logMessage) const noexcept
+{
+    const size_t k_nEntityWidth = 22;
+    const size_t k_nLevelWidth  = 10;
+
+    std::string entityBracketed = "[" + logMessage.entity.sName + "]";
+    std::string levelBracketed = "[" + logMessage.debugLevel.sName + "]";
+
+    m_logFile
+        << logMessage.sTimeStamp << "\t"
+        << std::left << std::setw(k_nEntityWidth) << entityBracketed
+        << std::left << std::setw(k_nLevelWidth) << levelBracketed
+        << logMessage.sContent
+        << "\n";
 }
 
 bool Console::DetectColorSupport() noexcept

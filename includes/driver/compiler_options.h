@@ -7,6 +7,14 @@
 
 constexpr int MAX_OPTIMIATION_LEVEL = 1;
 
+/// controls which warnings are emitted during compilation.
+enum class WarningLevel
+{
+    OFF,        // suppress all warnings (--warn-off)
+    NORMAL,     // common warnings (default)
+    ALL         // all warnings including pedantic (--warn-all)
+};
+
 struct CompilerOptions
 {
     // =======================
@@ -40,14 +48,9 @@ struct CompilerOptions
     // ===== LOGS FLAGS ======
     // =======================
 
-    /// @brief Controls which warnings are emitted during compilation:
-        //   0 – no warnings (--warn-off)
-        //   1 – common warnings (default)
-        //   2 – all warnings including pedantic (--warn-all)
-    /// @struct 
-        // --warn-off
-        // --warn-all
-    short warningLevel = 0;
+    /// @brief Controls which warnings are emitted during compilation.
+    /// @struct --warn-off / --warn-all
+    WarningLevel warningLevel = WarningLevel::NORMAL;
 
     /// @brief print all compiler logs at UI
     /// @struct -v

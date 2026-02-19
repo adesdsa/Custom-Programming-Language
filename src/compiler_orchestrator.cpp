@@ -1,4 +1,6 @@
 #include "includes/compiler_orchestrator.h"
+#include "includes/shared/logger/console.h"
+#include "includes/shared/utils/string_utils.hpp"
 
 CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
     m_options(CLIParser::Parse(argc, argv))
@@ -19,10 +21,21 @@ void CompilerOrchestrator::MainFlow()
         return;
     }
 
+    Console& console = Console::GetInstance();
+    if (m_options.isVerbose)
+    {
+        console.SetVerbosity(Verbosity::VERBOSE);
+    }
+    console.SetWarningLevel(m_options.warningLevel);
+    if (m_options.saveLogs)
+    {
+        console.EnableFileLogging(StringUtils::ToNarrow(m_options.outputFileName));
+    }
+
     // TODO: Support multi-file compilation; for now compile the first file
     std::filesystem::path filePath(m_options.inputFilesPath[0]);
 
-    // Resolve relative paths against the caller's working directory;
+    // resolve relative paths against the caller's working directory;
     // absolute paths (e.g. C:\...) are used as-is.
     if (filePath.is_relative())
     {
@@ -32,11 +45,10 @@ void CompilerOrchestrator::MainFlow()
     ParserLogic parserComponent(filePath);
 
     const AST& ast = parserComponent.MainFlow();
-    ast.PrintAST();
 
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
 
-    CodeGenManager codeGenManager(decoratedAST);
+    CodeGenManager codeGenManager(decoratedAST, m_options);
     codeGenManager.MainFlow();
 }

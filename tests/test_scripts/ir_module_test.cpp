@@ -21,7 +21,7 @@ IRTypeKind GetExpectedIntType()
 TEST(IRTest, HappyFlowSmallCodeExample) 
 {
     // Setup: Parse -> Semantic Analysis -> IR Generation
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.picoc"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
@@ -124,7 +124,7 @@ TEST(IRTest, HappyFlowSmallCodeExample)
 TEST(IRTest, HappyFlowFullProgram) 
 {
     // Setup: Parse -> Semantic Analysis -> IR Generation
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.picoc"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();

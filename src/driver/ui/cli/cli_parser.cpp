@@ -1,4 +1,5 @@
 #include "includes/driver/ui/cli/cli_parser.h"
+#include "includes/driver/options_validator.h"
 
 #include "includes/shared/utils/string_utils.hpp"
 
@@ -19,10 +20,10 @@ static const std::unordered_map<std::string, bool CompilerOptions::*> BOOL_FLAGS
     {"--save-temp", &CompilerOptions::saveTemps},
 };
 
-/// Warning level flags: flag string -> level value
-static const std::unordered_map<std::string, short> WARNING_FLAGS = {
-    {"--warn-off", static_cast<short>(0)},
-    {"--warn-all", static_cast<short>(2)},
+/// Warning level flags: flag string -> enum value
+static const std::unordered_map<std::string, WarningLevel> WARNING_FLAGS = {
+    {"--warn-off", WarningLevel::OFF},
+    {"--warn-all", WarningLevel::ALL},
 };
 
 CompilerOptions CLIParser::Parse(int argc, const char* argv[])
@@ -54,6 +55,14 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
             {
                 throw std::runtime_error("Flag '-o' requires an output file name.");
             }
+
+            std::string nextArg(argv[i + 1]);
+            if (StringUtils::StartsWith(nextArg, "-"))
+            {
+                throw std::runtime_error(
+                    "Flag '-o' requires an output file name, but got flag '" + nextArg + "'.");
+            }
+
             options.outputFileName = StringUtils::ToWide(argv[++i]);
         }
 
@@ -114,20 +123,7 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         return options;
     }
 
-    if (options.inputFilesPath.empty())
-    {
-        throw std::runtime_error("No input files specified. Use --help for usage.");
-    }
-
-    if (options.isVerbose && options.isQuite)
-    {
-        throw std::runtime_error("Flags '-v' (verbose) and '-q' (quiet) are mutually exclusive.");
-    }
-
-    if (options.stopAtAsm && options.stopAtBin)
-    {
-        throw std::runtime_error("Flags '--asm' and '--bin' are mutually exclusive.");
-    }
+    OptionsValidator::Validate(options);
 
     return options;
 }

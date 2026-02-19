@@ -10,7 +10,7 @@
 TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample) 
 {
     // Setup: Parse and run semantic analysis
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.picoc"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
 
@@ -79,7 +79,7 @@ TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample)
 TEST(SemanticAnalysisTest, HappyFlowFullProgram) 
 {
     // Setup: Parse and run semantic analysis
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.picoc"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
 
@@ -175,7 +175,7 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
 TEST(SemanticAnalysisTest, NegativeFlowSemanticErrors) 
 {
     // Setup: Parse and run semantic analysis
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/file_with_logic_errors.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/file_with_logic_errors.picoc"));
     const AST& ast = parser.MainFlow();
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     
