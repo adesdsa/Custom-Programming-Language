@@ -1,14 +1,35 @@
 #include "includes/compiler_orchestrator.h"
 
 CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
-    m_filePath(DesriralizeCLI(argc, argv))
+    m_options(CLIParser::Parse(argc, argv))
 {}
 
 void CompilerOrchestrator::MainFlow()
 {
-    ParserLogic parserComponent(
-        SystemUtils::BuildRelativePath(this->m_filePath)
-    );
+    // Handle standalone commands before compilation
+    if (m_options.displayHelp)
+    {
+        CLIParser::PrintUsage();
+        return;
+    }
+
+    if (m_options.displayVersion)
+    {
+        CLIParser::PrintVersion();
+        return;
+    }
+
+    // TODO: Support multi-file compilation; for now compile the first file
+    std::filesystem::path filePath(m_options.inputFilesPath[0]);
+
+    // Resolve relative paths against the caller's working directory;
+    // absolute paths (e.g. C:\...) are used as-is.
+    if (filePath.is_relative())
+    {
+        filePath = std::filesystem::current_path() / filePath;
+    }
+
+    ParserLogic parserComponent(filePath);
 
     const AST& ast = parserComponent.MainFlow();
     ast.PrintAST();
@@ -18,15 +39,4 @@ void CompilerOrchestrator::MainFlow()
 
     CodeGenManager codeGenManager(decoratedAST);
     codeGenManager.MainFlow();
-}
-
-std::wstring CompilerOrchestrator::DesriralizeCLI(int argc, const char *argv[])
-{
-    // @note for now only compilation of single file supported, no flags too
-    if (argc != 2)
-    {
-        throw std::runtime_error("ERROR: Supports only single file compilation for now...");
-    }
-    const char* filePath = argv[1];  // fow now assumes argv[1] is a valid file...
-    return std::wstring(filePath, filePath + strlen(filePath));
 }
