@@ -12,12 +12,27 @@ Console& Console::GetInstance() noexcept
     return instance;
 }
 
+void Console::SetVerbosity(Verbosity level) noexcept
+{
+    m_verbosity = level;
+}
+
+Verbosity Console::GetVerbosity() const noexcept
+{
+    return m_verbosity;
+}
+
 void Console::BuildAndSendLogMessage(
     const Entity &entity, 
     const DebugLevel &debugLevel, 
     const std::string msg
 ) const noexcept
 {
+    if (m_verbosity == Verbosity::QUIET)
+    {
+        return;
+    }
+
     this->Log(
         LogMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg)
     );

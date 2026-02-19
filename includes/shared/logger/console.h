@@ -12,6 +12,13 @@
     #include <cstdio>
 #endif
 
+/// Controls how much logging output is produced.
+enum class Verbosity
+{
+    QUIET,    // suppress all logs (default; errors still shown via ErrorManager)
+    VERBOSE   // print all compiler logs at UI (-v)
+};
+
 // Responsible to log the messages
 class Console
 {
@@ -23,6 +30,12 @@ public:
     // Create the only instance this class will have throughout the program
     // @return: Instance of the console class.
     static Console& GetInstance() noexcept;
+
+    /// @brief Set the global verbosity level (call before pipeline starts).
+    void SetVerbosity(Verbosity level) noexcept;
+
+    /// @brief Get the current verbosity level.
+    Verbosity GetVerbosity() const noexcept;
 
     // Build log message based on given params and log it.
     // @param entity: The entity that sent the message.
@@ -36,6 +49,7 @@ public:
 
 private:
     bool m_supportsColor;
+    Verbosity m_verbosity = Verbosity::QUIET;
 
     // Private constructor and destructor so that no one could create instance of this class
     Console();

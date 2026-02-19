@@ -2,6 +2,7 @@
 
 #include <filesystem>
 
+#include "includes/driver/compiler_options.h"
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 
 // Sub-Managers
@@ -21,12 +22,13 @@
 class CodeGenManager
 {
 public:
-    CodeGenManager(const DecoratedAST& decoratedAST);
+    CodeGenManager(const DecoratedAST& decoratedAST, const CompilerOptions& options);
     ~CodeGenManager() = default;
 
     void MainFlow();
 
 private:
     const DecoratedAST& m_decoratedAST;
+    const CompilerOptions& m_options;
     ErrorManager& m_errorManager;
 };
