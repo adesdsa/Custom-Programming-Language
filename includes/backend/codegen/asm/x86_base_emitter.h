@@ -49,3 +49,4 @@ protected:
     /// @brief Get .bss keyword for a given size e.g. "resb", "resw", "resd", "resq"
     std::string GetReserveDirective(int bytes) const override final;
 };
+

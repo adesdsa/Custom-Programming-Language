@@ -3,8 +3,9 @@
 #include <vector>
 #include <string>
 #include <exception>
-#include <cstring>
 
+#include "includes/driver/compiler_options.h"
+#include "includes/driver/ui/cli/cli_parser.h"
 #include "includes/shared/utils/system_utils.h"
 #include "includes/frontend/parser/parser_logic.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
@@ -63,12 +64,6 @@ public:
      ****************************************************************************/
     void MainFlow();
 
-    // TODO: Replace this method logic with Desrializer class call
-    // @brief Desrialize input file path into wstring file path.
-    // @param argc & argv: Command Line Arguments.
-    // @return Encoded file path as wstring.
-    std::wstring DesriralizeCLI(int argc, const char* argv[]);
-
 private:
-    std::wstring m_filePath;
+    CompilerOptions m_options;
 };

@@ -89,3 +89,4 @@ std::string X86BaseEmitter::GetReserveDirective(int bytes) const
         default: return "resb";
     }
 }
+

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#define DEFAULT_OUTPUT_PATH L"output"
+
 constexpr int MAX_OPTIMIATION_LEVEL = 1;
 
 struct CompilerOptions
@@ -17,7 +19,7 @@ struct CompilerOptions
 
     /// @brief desired output executable name (without extension)
     /// @struct -o <output_path>
-    std::wstring outputFileName = "output";
+    std::wstring outputFileName = DEFAULT_OUTPUT_PATH;
 
     // =======================
     // ==== COMMAND FLAGS ====
