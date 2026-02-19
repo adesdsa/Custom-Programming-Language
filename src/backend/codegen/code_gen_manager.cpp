@@ -18,14 +18,15 @@ void CodeGenManager::MainFlow()
         optimizationManager.MainFlow(irProgram);
     }
 
-    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable);
+    std::string outputName = StringUtils::ToNarrow(m_options.outputFileName);
+
+    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable, outputName);
     std::string asmFilePath = asmGenerator.MainFlow();
 
     if (m_options.stopAtAsm)
     {
         return;
     }
-    std::string outputName = StringUtils::ToNarrow(m_options.outputFileName);
 
     Assembler assembler;
     std::string objectFilePath = assembler.Mainflow(asmFilePath, outputName);

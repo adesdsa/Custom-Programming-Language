@@ -19,10 +19,10 @@ static const std::unordered_map<std::string, bool CompilerOptions::*> BOOL_FLAGS
     {"--save-temp", &CompilerOptions::saveTemps},
 };
 
-/// Warning level flags: flag string -> level value
-static const std::unordered_map<std::string, short> WARNING_FLAGS = {
-    {"--warn-off", static_cast<short>(0)},
-    {"--warn-all", static_cast<short>(2)},
+/// Warning level flags: flag string -> enum value
+static const std::unordered_map<std::string, WarningLevel> WARNING_FLAGS = {
+    {"--warn-off", WarningLevel::OFF},
+    {"--warn-all", WarningLevel::ALL},
 };
 
 CompilerOptions CLIParser::Parse(int argc, const char* argv[])

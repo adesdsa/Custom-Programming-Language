@@ -5,9 +5,10 @@
 #include <fstream>
 #include <stdexcept>
 
-ASMGenerator::ASMGenerator(const IRModule& program, const FuncTable& funcTable) :
+ASMGenerator::ASMGenerator(const IRModule& program, const FuncTable& funcTable, const std::string& outputName) :
     m_irMoudle(program),
     m_funcTable(funcTable),
+    m_outputName(outputName),
     m_ASMLogger("ASM"),
     m_errorManager(ErrorManager::GetInstance())
 {
@@ -55,11 +56,9 @@ std::string ASMGenerator::WriteAsmToFile(
     const std::string& fileExtension
 ) const
 {
-    // build output path: /build/out.asm
-    std::filesystem::path outputDir = std::filesystem::path(PROJECT_ROOT) / "build";
-    std::filesystem::create_directories(outputDir);
-
-    std::string outputFileName = "out" + fileExtension;
+    // build output path in the current working directory
+    std::filesystem::path outputDir = std::filesystem::current_path();
+    std::string outputFileName = m_outputName + fileExtension;
     std::filesystem::path outputPath = outputDir / outputFileName;
 
     std::ofstream outFile(outputPath);

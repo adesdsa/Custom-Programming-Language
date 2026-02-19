@@ -20,10 +20,12 @@ void CompilerOrchestrator::MainFlow()
         return;
     }
 
+    Console& console = Console::GetInstance();
     if (m_options.isVerbose)
     {
-        Console::GetInstance().SetVerbosity(Verbosity::VERBOSE);
+        console.SetVerbosity(Verbosity::VERBOSE);
     }
+    console.SetWarningLevel(m_options.warningLevel);
 
     // TODO: Support multi-file compilation; for now compile the first file
     std::filesystem::path filePath(m_options.inputFilesPath[0]);
@@ -38,7 +40,6 @@ void CompilerOrchestrator::MainFlow()
     ParserLogic parserComponent(filePath);
 
     const AST& ast = parserComponent.MainFlow();
-    ast.PrintAST();
 
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();

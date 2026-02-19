@@ -5,6 +5,9 @@
 #include "logger_library.h"
 #include "includes/shared/utils/system_utils.h"
 
+// forward declaration (defined in compiler_options.h)
+enum class WarningLevel : int;
+
 #ifdef _WIN32
     #include <windows.h>
 #else
@@ -37,6 +40,12 @@ public:
     /// @brief Get the current verbosity level.
     Verbosity GetVerbosity() const noexcept;
 
+    /// @brief Set the warning level.
+    void SetWarningLevel(WarningLevel level) noexcept;
+
+    /// @brief Get the current warning level.
+    WarningLevel GetWarningLevel() const noexcept;
+
     // Build log message based on given params and log it.
     // @param entity: The entity that sent the message.
     // @param debugLevel: Type of message (INFO/Warnning/Error).
@@ -50,6 +59,7 @@ public:
 private:
     bool m_supportsColor;
     Verbosity m_verbosity = Verbosity::QUIET;
+    WarningLevel m_warningLevel;
 
     // Private constructor and destructor so that no one could create instance of this class
     Console();

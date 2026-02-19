@@ -1,10 +1,10 @@
 #include "includes/shared/logger/console.h"
+#include "includes/driver/compiler_options.h"
 
-Console::Console()
-{
-    static int x = 0;
-    this->m_supportsColor = DetectColorSupport();
-}
+Console::Console() :
+    m_supportsColor(DetectColorSupport()),
+    m_warningLevel(WarningLevel::NORMAL)
+{}
 
 Console& Console::GetInstance() noexcept
 {
@@ -22,6 +22,16 @@ Verbosity Console::GetVerbosity() const noexcept
     return m_verbosity;
 }
 
+void Console::SetWarningLevel(WarningLevel level) noexcept
+{
+    m_warningLevel = level;
+}
+
+WarningLevel Console::GetWarningLevel() const noexcept
+{
+    return m_warningLevel;
+}
+
 void Console::BuildAndSendLogMessage(
     const Entity &entity, 
     const DebugLevel &debugLevel, 
@@ -29,6 +39,12 @@ void Console::BuildAndSendLogMessage(
 ) const noexcept
 {
     if (m_verbosity == Verbosity::QUIET)
+    {
+        return;
+    }
+
+    // --warn-off suppresses warnings even in verbose mode
+    if (debugLevel.sName == "WARN" && m_warningLevel == WarningLevel::OFF)
     {
         return;
     }
