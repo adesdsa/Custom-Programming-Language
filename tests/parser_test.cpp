@@ -7,7 +7,7 @@
 // TEST: Happy Flow - Single function
 TEST(ParserTest, HappyFlowSmallCodeExample) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test3.picoc"));
     const AST& ast = parser.MainFlow();
     ASTNode* result_ast = ast.GetRoot();
 
@@ -64,7 +64,7 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
 // TEST: Happy Flow - main function + other function and logic
 TEST(ParserTest, HappyFlowFullProgram) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test4.picoc"));
     const AST& ast = parser.MainFlow();
     ASTNode* result_ast = ast.GetRoot();
 
@@ -538,6 +538,6 @@ TEST(ParserTest, HappyFlowFullProgram)
 // TEST: Negative Flow - Code with syntax errors
 TEST(ParserTest, NegativeFlowSyntaxErrors) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test6.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test6.picoc"));
     EXPECT_THROW(parser.MainFlow(), CompilationAbortException);
 }

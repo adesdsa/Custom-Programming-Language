@@ -9,7 +9,7 @@ TEST(LexerTest, EmptyInput)
 {
     std::vector<Token> expected;
 
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/empty_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/empty_file.picoc"));
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
 
     TestsUtils::CompareTokens(results, expected);
@@ -20,7 +20,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 {
     std::vector<Token> expected;
 
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/only_trivia_tokens_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/only_trivia_tokens_file.picoc"));
     std::vector<Token> results = TestsUtils::CollectTokens(lexer);
     
     TestsUtils::CompareTokens(results, expected);
@@ -29,7 +29,7 @@ TEST(LexerTest, OnlyTriviaTokens)
 // TEST: A small code example
 TEST(LexerTest, SmallCodeExample) 
 {
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.picoc"));
 
     std::vector<Token> expected = {
         // Line 5
@@ -70,7 +70,7 @@ TEST(LexerTest, SmallCodeExample)
 // TEST: Full program example
 TEST(LexerTest, FullProgram) 
 {
-    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
+    Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.picoc"));
 
     std::vector<Token> expected = {
         // Line 1

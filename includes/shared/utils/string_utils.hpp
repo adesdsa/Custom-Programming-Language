@@ -29,5 +29,12 @@ namespace StringUtils
         return str.size() >= prefix.size() &&
                str.compare(0, prefix.size(), prefix) == 0;
     }
+
+    /// @brief Check if a string ends with a given suffix.
+    inline bool EndsWith(const std::string& str, const std::string& suffix)
+    {
+        return str.size() >= suffix.size() &&
+               str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
 }
 

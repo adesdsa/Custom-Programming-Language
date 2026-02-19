@@ -119,6 +119,18 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         throw std::runtime_error("No input files specified. Use --help for usage.");
     }
 
+    // Validate all input files have .picoc extension
+    for (const auto& filePath : options.inputFilesPath)
+    {
+        std::string narrow = StringUtils::ToNarrow(filePath);
+        if (!StringUtils::EndsWith(narrow, ".picoc"))
+        {
+            throw std::runtime_error(
+                "Invalid input file: '" + narrow + "'. "
+                "Only .picoc files are accepted.");
+        }
+    }
+
     if (options.isVerbose && options.isQuite)
     {
         throw std::runtime_error("Flags '-v' (verbose) and '-q' (quiet) are mutually exclusive.");
