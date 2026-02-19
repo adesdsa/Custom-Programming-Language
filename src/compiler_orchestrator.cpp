@@ -1,5 +1,6 @@
 #include "includes/compiler_orchestrator.h"
 #include "includes/shared/logger/console.h"
+#include "includes/shared/utils/string_utils.hpp"
 
 CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
     m_options(CLIParser::Parse(argc, argv))
@@ -26,6 +27,10 @@ void CompilerOrchestrator::MainFlow()
         console.SetVerbosity(Verbosity::VERBOSE);
     }
     console.SetWarningLevel(m_options.warningLevel);
+    if (m_options.saveLogs)
+    {
+        console.EnableFileLogging(StringUtils::ToNarrow(m_options.outputFileName));
+    }
 
     // TODO: Support multi-file compilation; for now compile the first file
     std::filesystem::path filePath(m_options.inputFilesPath[0]);

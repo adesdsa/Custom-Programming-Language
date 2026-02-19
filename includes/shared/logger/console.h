@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 
 #include "logger_library.h"
 #include "includes/shared/utils/system_utils.h"
@@ -46,6 +47,9 @@ public:
     /// @brief Get the current warning level.
     WarningLevel GetWarningLevel() const noexcept;
 
+    /// @brief Enable file logging — all logs are also written to <outputName>.log alongside output files.
+    void EnableFileLogging(const std::string& outputName) noexcept;
+
     // Build log message based on given params and log it.
     // @param entity: The entity that sent the message.
     // @param debugLevel: Type of message (INFO/Warnning/Error).
@@ -60,16 +64,18 @@ private:
     bool m_supportsColor;
     Verbosity m_verbosity = Verbosity::QUIET;
     WarningLevel m_warningLevel;
+    mutable std::ofstream m_logFile;
 
     // Private constructor and destructor so that no one could create instance of this class
     Console();
     ~Console() = default;
 
-    // Log message into console.
-    // @param logMessage: Message to log with all the information built (entity sender, message type and the content).
+    /// @brief Log message into console.
     void Log(const LogMessage& logMessage) const noexcept;
 
+    /// @brief Log message into file.
+    void LogToFile(const LogMessage& logMessage) const noexcept;
+
     // Detects whether the console supports colored text output, and enables if it doesn't.
-    // @return: true -> Color enabled successfully, false -> Otherwise.
     static bool DetectColorSupport() noexcept;
 };

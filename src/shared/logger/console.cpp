@@ -32,26 +32,37 @@ WarningLevel Console::GetWarningLevel() const noexcept
     return m_warningLevel;
 }
 
+void Console::EnableFileLogging(const std::string& outputName) noexcept
+{
+    std::filesystem::path logPath = std::filesystem::current_path() / (outputName + ".log");
+    m_logFile.open(logPath, std::ios::out | std::ios::trunc);
+}
+
 void Console::BuildAndSendLogMessage(
     const Entity &entity, 
     const DebugLevel &debugLevel, 
     const std::string msg
 ) const noexcept
 {
-    if (m_verbosity == Verbosity::QUIET)
-    {
-        return;
-    }
-
-    // --warn-off suppresses warnings even in verbose mode
+    // --warn-off suppresses warnings everywhere
     if (debugLevel.sName == "WARN" && m_warningLevel == WarningLevel::OFF)
     {
         return;
     }
 
-    this->Log(
-        LogMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg)
-    );
+    LogMessage logMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg);
+
+    // always write to file when file logging is enabled
+    if (m_logFile.is_open())
+    {
+        this->LogToFile(logMessage);
+    }
+
+    // only write to stdout when verbose
+    if (m_verbosity == Verbosity::VERBOSE)
+    {
+        this->Log(logMessage);
+    }
 }
 
 void Console::Log(const LogMessage& logMessage) const noexcept
@@ -77,6 +88,22 @@ void Console::Log(const LogMessage& logMessage) const noexcept
         << k_sEntityColor
         << logMessage.sContent
         << k_sReset << std::endl;
+}
+
+void Console::LogToFile(const LogMessage& logMessage) const noexcept
+{
+    const size_t k_nEntityWidth = 22;
+    const size_t k_nLevelWidth  = 10;
+
+    std::string entityBracketed = "[" + logMessage.entity.sName + "]";
+    std::string levelBracketed = "[" + logMessage.debugLevel.sName + "]";
+
+    m_logFile
+        << logMessage.sTimeStamp << "\t"
+        << std::left << std::setw(k_nEntityWidth) << entityBracketed
+        << std::left << std::setw(k_nLevelWidth) << levelBracketed
+        << logMessage.sContent
+        << "\n";
 }
 
 bool Console::DetectColorSupport() noexcept
