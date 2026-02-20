@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QGroupBox>
 #include <QListWidget>
 #include <QLineEdit>
 #include <QCheckBox>
@@ -8,10 +9,6 @@
 #include <QTextEdit>
 #include <QPushButton>
 
-/// @brief Main window for the picoc GUI IDE.
-///
-/// Provides a graphical interface for selecting source files,
-/// configuring compiler options, and viewing compilation output.
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -37,28 +34,38 @@ private slots:
     void OnBrowseOutputDir();
 
 private:
-    /// @brief Build the UI layout.
+    /// @brief Build the entire UI layout by composing the helper methods below.
     void SetupUI();
 
     /// @brief Append a message to the log output area.
     void AppendLog(const QString& message);
 
+    // ---- UI builder helpers (each returns a self-contained widget) ----
+    QGroupBox* CreateInputFilesGroup();
+    QGroupBox* CreateOutputGroup();
+    QGroupBox* CreateOptimizationGroup();
+    QGroupBox* CreateWarningGroup();
+    QGroupBox* CreateLoggingGroup();
+    QGroupBox* CreateCompilationTypeGroup();
+    QWidget*   CreateLogPanel();
+    QPushButton* CreateCompileButton();
+
     // ---- Input/Output widgets ----
-    QListWidget* m_fileList;
-    QLineEdit*   m_outputNameEdit;
-    QLineEdit*   m_outputDirEdit;
+    QListWidget* m_fileList      = nullptr;
+    QLineEdit*   m_outputNameEdit = nullptr;
+    QLineEdit*   m_outputDirEdit  = nullptr;
 
     // ---- Flag widgets ----
-    QComboBox* m_optimizationCombo;
-    QComboBox* m_warningCombo;
-    QCheckBox* m_verboseCheck;
-    QCheckBox* m_quietCheck;
-    QCheckBox* m_saveLogsCheck;
-    QCheckBox* m_stopAsmCheck;
-    QCheckBox* m_stopBinCheck;
-    QCheckBox* m_saveTempsCheck;
+    QComboBox* m_optimizationCombo = nullptr;
+    QComboBox* m_warningCombo      = nullptr;
+    QCheckBox* m_verboseCheck      = nullptr;
+    QCheckBox* m_quietCheck        = nullptr;
+    QCheckBox* m_saveLogsCheck     = nullptr;
+    QCheckBox* m_stopAsmCheck      = nullptr;
+    QCheckBox* m_stopBinCheck      = nullptr;
+    QCheckBox* m_saveTempsCheck    = nullptr;
 
     // ---- Action widgets ----
-    QPushButton* m_compileButton;
-    QTextEdit*   m_logOutput;
+    QPushButton* m_compileButton = nullptr;
+    QTextEdit*   m_logOutput     = nullptr;
 };

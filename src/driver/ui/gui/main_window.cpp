@@ -26,9 +26,6 @@ MainWindow::MainWindow(QWidget* parent)
 
 void MainWindow::SetupUI()
 {
-    // ============================
-    // Central widget & main layout
-    // ============================
     QWidget* central = new QWidget(this);
     setCentralWidget(central);
 
@@ -36,9 +33,7 @@ void MainWindow::SetupUI()
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(12, 12, 12, 12);
 
-    // ============================
-    // Title
-    // ============================
+    // ---- title ----
     QLabel* titleLabel = new QLabel("picoc Compiler");
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(16);
@@ -47,150 +42,184 @@ void MainWindow::SetupUI()
     titleLabel->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(titleLabel);
 
-    // ============================
-    // Splitter: left (settings) | right (log)
-    // ============================
+    // ---- left panel (settings) | right panel (log) ----
     QSplitter* splitter = new QSplitter(Qt::Horizontal);
-    mainLayout->addWidget(splitter, 1);
 
-    // ---------- Left panel ----------
     QWidget* leftPanel = new QWidget();
     QVBoxLayout* leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setContentsMargins(0, 0, 0, 0);
 
-    // ---- Input Files group ----
-    QGroupBox* fileGroup = new QGroupBox("Input Files (.picoc)");
-    QVBoxLayout* fileLayout = new QVBoxLayout(fileGroup);
+    leftLayout->addWidget(CreateInputFilesGroup());
+    leftLayout->addWidget(CreateOutputGroup());
+    leftLayout->addWidget(CreateOptimizationGroup());
+    leftLayout->addWidget(CreateWarningGroup());
+    leftLayout->addWidget(CreateLoggingGroup());
+    leftLayout->addWidget(CreateCompilationTypeGroup());
+    leftLayout->addStretch();
+
+    splitter->addWidget(leftPanel);
+    splitter->addWidget(CreateLogPanel());
+    splitter->setSizes({350, 550});
+
+    mainLayout->addWidget(splitter, 1);
+
+    // ---- compile button ----
+    mainLayout->addWidget(CreateCompileButton());
+}
+
+QGroupBox* MainWindow::CreateInputFilesGroup()
+{
+    QGroupBox* group = new QGroupBox("Input Files (.picoc)");
+    QVBoxLayout* layout = new QVBoxLayout(group);
 
     m_fileList = new QListWidget();
     m_fileList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    fileLayout->addWidget(m_fileList);
+    layout->addWidget(m_fileList);
 
-    QHBoxLayout* fileButtons = new QHBoxLayout();
+    QHBoxLayout* buttons = new QHBoxLayout();
     QPushButton* addBtn = new QPushButton("Add Files...");
     QPushButton* removeBtn = new QPushButton("Remove Selected");
-    fileButtons->addWidget(addBtn);
-    fileButtons->addWidget(removeBtn);
-    fileLayout->addLayout(fileButtons);
+    buttons->addWidget(addBtn);
+    buttons->addWidget(removeBtn);
+    layout->addLayout(buttons);
 
     connect(addBtn, &QPushButton::clicked, this, &MainWindow::OnAddFiles);
     connect(removeBtn, &QPushButton::clicked, this, &MainWindow::OnRemoveFiles);
 
-    leftLayout->addWidget(fileGroup);
+    return group;
+}
 
-    // ---- Output group ----
-    QGroupBox* outputGroup = new QGroupBox("Output");
-    QVBoxLayout* outputGroupLayout = new QVBoxLayout(outputGroup);
+QGroupBox* MainWindow::CreateOutputGroup()
+{
+    QGroupBox* group = new QGroupBox("Output");
+    QVBoxLayout* layout = new QVBoxLayout(group);
 
-    // Name row
-    QHBoxLayout* outputNameRow = new QHBoxLayout();
-    outputNameRow->addWidget(new QLabel("Name:"));
+    // name row
+    QHBoxLayout* nameRow = new QHBoxLayout();
+    nameRow->addWidget(new QLabel("Name:"));
     m_outputNameEdit = new QLineEdit();
     m_outputNameEdit->setPlaceholderText("output (default)");
-    outputNameRow->addWidget(m_outputNameEdit);
-    outputGroupLayout->addLayout(outputNameRow);
+    nameRow->addWidget(m_outputNameEdit);
+    layout->addLayout(nameRow);
 
-    // Directory row
-    QHBoxLayout* outputDirRow = new QHBoxLayout();
-    outputDirRow->addWidget(new QLabel("Directory:"));
+    // directory row
+    QHBoxLayout* dirRow = new QHBoxLayout();
+    dirRow->addWidget(new QLabel("Directory:"));
     m_outputDirEdit = new QLineEdit();
     m_outputDirEdit->setPlaceholderText("current working directory (default)");
-    outputDirRow->addWidget(m_outputDirEdit);
-    QPushButton* browseDirBtn = new QPushButton("Browse...");
-    connect(browseDirBtn, &QPushButton::clicked, this, &MainWindow::OnBrowseOutputDir);
-    outputDirRow->addWidget(browseDirBtn);
-    outputGroupLayout->addLayout(outputDirRow);
+    dirRow->addWidget(m_outputDirEdit);
 
-    leftLayout->addWidget(outputGroup);
+    QPushButton* browseBtn = new QPushButton("Browse...");
+    connect(browseBtn, &QPushButton::clicked, this, &MainWindow::OnBrowseOutputDir);
+    dirRow->addWidget(browseBtn);
+    layout->addLayout(dirRow);
 
-    // ---- Optimization group ----
-    QGroupBox* optGroup = new QGroupBox("Optimization");
-    QHBoxLayout* optLayout = new QHBoxLayout(optGroup);
-    optLayout->addWidget(new QLabel("Level:"));
+    return group;
+}
+
+QGroupBox* MainWindow::CreateOptimizationGroup()
+{
+    QGroupBox* group = new QGroupBox("Optimization");
+    QHBoxLayout* layout = new QHBoxLayout(group);
+
+    layout->addWidget(new QLabel("Level:"));
     m_optimizationCombo = new QComboBox();
     m_optimizationCombo->addItem("-O0  (No optimizations)", 0);
     m_optimizationCombo->addItem("-O1  (Basic optimizations)", 1);
-    m_optimizationCombo->setCurrentIndex(1); // default: -O1
-    optLayout->addWidget(m_optimizationCombo);
-    leftLayout->addWidget(optGroup);
+    m_optimizationCombo->setCurrentIndex(1);
+    layout->addWidget(m_optimizationCombo);
 
-    // ---- Warning group ----
-    QGroupBox* warnGroup = new QGroupBox("Warnings");
-    QHBoxLayout* warnLayout = new QHBoxLayout(warnGroup);
-    warnLayout->addWidget(new QLabel("Level:"));
+    return group;
+}
+
+QGroupBox* MainWindow::CreateWarningGroup()
+{
+    QGroupBox* group = new QGroupBox("Warnings");
+    QHBoxLayout* layout = new QHBoxLayout(group);
+
+    layout->addWidget(new QLabel("Level:"));
     m_warningCombo = new QComboBox();
     m_warningCombo->addItem("Off (--warn-off)", static_cast<int>(WarningLevel::OFF));
     m_warningCombo->addItem("Normal (default)", static_cast<int>(WarningLevel::NORMAL));
     m_warningCombo->addItem("All (--warn-all)", static_cast<int>(WarningLevel::ALL));
-    m_warningCombo->setCurrentIndex(1); // default: NORMAL
-    warnLayout->addWidget(m_warningCombo);
-    leftLayout->addWidget(warnGroup);
+    m_warningCombo->setCurrentIndex(1);
+    layout->addWidget(m_warningCombo);
 
-    // ---- Logging group ----
-    QGroupBox* logGroup = new QGroupBox("Logging");
-    QVBoxLayout* logFlagsLayout = new QVBoxLayout(logGroup);
-    m_verboseCheck = new QCheckBox("Verbose (-v)");
-    m_quietCheck = new QCheckBox("Quiet (-q)");
+    return group;
+}
+
+QGroupBox* MainWindow::CreateLoggingGroup()
+{
+    QGroupBox* group = new QGroupBox("Logging");
+    QVBoxLayout* layout = new QVBoxLayout(group);
+
+    m_verboseCheck  = new QCheckBox("Verbose (-v)");
+    m_quietCheck    = new QCheckBox("Quiet (-q)");
     m_saveLogsCheck = new QCheckBox("Save logs to file (--save-logs)");
-    logFlagsLayout->addWidget(m_verboseCheck);
-    logFlagsLayout->addWidget(m_quietCheck);
-    logFlagsLayout->addWidget(m_saveLogsCheck);
-    leftLayout->addWidget(logGroup);
 
-    // ---- Compilation Type group ----
-    QGroupBox* compTypeGroup = new QGroupBox("Compilation Output");
-    QVBoxLayout* compTypeLayout = new QVBoxLayout(compTypeGroup);
-    m_stopAsmCheck = new QCheckBox("Stop at assembly (--asm)");
-    m_stopBinCheck = new QCheckBox("Stop at object file (--bin)");
+    layout->addWidget(m_verboseCheck);
+    layout->addWidget(m_quietCheck);
+    layout->addWidget(m_saveLogsCheck);
+
+    return group;
+}
+
+QGroupBox* MainWindow::CreateCompilationTypeGroup()
+{
+    QGroupBox* group = new QGroupBox("Compilation Output");
+    QVBoxLayout* layout = new QVBoxLayout(group);
+
+    m_stopAsmCheck   = new QCheckBox("Stop at assembly (--asm)");
+    m_stopBinCheck   = new QCheckBox("Stop at object file (--bin)");
     m_saveTempsCheck = new QCheckBox("Save intermediate files (--save-temp)");
-    compTypeLayout->addWidget(m_stopAsmCheck);
-    compTypeLayout->addWidget(m_stopBinCheck);
-    compTypeLayout->addWidget(m_saveTempsCheck);
-    leftLayout->addWidget(compTypeGroup);
 
-    leftLayout->addStretch();
+    layout->addWidget(m_stopAsmCheck);
+    layout->addWidget(m_stopBinCheck);
+    layout->addWidget(m_saveTempsCheck);
 
-    splitter->addWidget(leftPanel);
+    return group;
+}
 
-    // ---------- Right panel (log output) ----------
-    QWidget* rightPanel = new QWidget();
-    QVBoxLayout* rightLayout = new QVBoxLayout(rightPanel);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
+QWidget* MainWindow::CreateLogPanel()
+{
+    QWidget* panel = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(panel);
+    layout->setContentsMargins(0, 0, 0, 0);
 
-    QLabel* logLabel = new QLabel("Compilation Output");
-    QFont logFont = logLabel->font();
-    logFont.setBold(true);
-    logLabel->setFont(logFont);
-    rightLayout->addWidget(logLabel);
+    QLabel* heading = new QLabel("Compilation Output");
+    QFont headingFont = heading->font();
+    headingFont.setBold(true);
+    heading->setFont(headingFont);
+    layout->addWidget(heading);
 
     m_logOutput = new QTextEdit();
     m_logOutput->setReadOnly(true);
     m_logOutput->setFont(QFont("Consolas", 9));
-    rightLayout->addWidget(m_logOutput, 1);
+    layout->addWidget(m_logOutput, 1);
 
-    QHBoxLayout* logButtons = new QHBoxLayout();
+    QHBoxLayout* buttons = new QHBoxLayout();
     QPushButton* clearBtn = new QPushButton("Clear Log");
     connect(clearBtn, &QPushButton::clicked, this, &MainWindow::OnClearLog);
-    logButtons->addStretch();
-    logButtons->addWidget(clearBtn);
-    rightLayout->addLayout(logButtons);
+    buttons->addStretch();
+    buttons->addWidget(clearBtn);
+    layout->addLayout(buttons);
 
-    splitter->addWidget(rightPanel);
+    return panel;
+}
 
-    // Set initial splitter ratio (40% left, 60% right)
-    splitter->setSizes({350, 550});
-
-    // ============================
-    // Compile button at bottom
-    // ============================
+QPushButton* MainWindow::CreateCompileButton()
+{
     m_compileButton = new QPushButton("Compile");
     m_compileButton->setMinimumHeight(40);
+
     QFont btnFont = m_compileButton->font();
     btnFont.setPointSize(12);
     btnFont.setBold(true);
     m_compileButton->setFont(btnFont);
+
     connect(m_compileButton, &QPushButton::clicked, this, &MainWindow::OnCompile);
-    mainLayout->addWidget(m_compileButton);
+
+    return m_compileButton;
 }
 
 // =============================================
