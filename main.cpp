@@ -17,7 +17,7 @@ int main(int argc, const char* argv[])
     {
         CompilerOptions options = CLIParser::Parse(argc, argv);
 
-        // Handle standalone CLI commands before launching the pipeline
+        // handle standalone CLI commands before launching the pipeline
         if (options.displayHelp)
         {
             CLIParser::PrintUsage();

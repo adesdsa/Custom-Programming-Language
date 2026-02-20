@@ -23,18 +23,22 @@ namespace StringUtils
         return result;
     }
 
-    /// @brief Check if a string starts with a given prefix.
+    /// @brief Check if a string starts with a given prefix
     inline bool StartsWith(const std::string& str, const std::string& prefix)
     {
-        return str.size() >= prefix.size() &&
-               str.compare(0, prefix.size(), prefix) == 0;
+        return (
+            str.size() >= prefix.size() &&
+            str.compare(0, prefix.size(), prefix) == 0
+        );
     }
 
-    /// @brief Check if a string ends with a given suffix.
+    /// @brief Check if a string ends with a given suffix
     inline bool EndsWith(const std::string& str, const std::string& suffix)
     {
-        return str.size() >= suffix.size() &&
-               str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+        return (
+            str.size() >= suffix.size() &&
+            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0
+        );
     }
 }
 

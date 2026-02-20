@@ -6,36 +6,38 @@ CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
     m_options(std::move(options))
 {}
 
-void CompilerOrchestrator::MainFlow()
+void CompilerOrchestrator::Init()
 {
-    // ---- If -o contains a path (e.g. "koo/foo"), split into dir + name ----
+    // ---- if -o contains a path (e.g. "dir1/dir2"), split into dir + name ----
     {
         std::filesystem::path outputAsPath(m_options.outputFileName);
         if (outputAsPath.has_parent_path())
         {
             // merge the directory part into outputDir
             std::filesystem::path extraDir = outputAsPath.parent_path();
-            if (m_options.outputDir.empty())
+            if (this->m_options.outputDir.empty())
             {
-                m_options.outputDir = extraDir.wstring();
+                this->m_options.outputDir = extraDir.wstring();
             }
             else
             {
-                m_options.outputDir = (std::filesystem::path(m_options.outputDir) / extraDir).wstring();
+                this->m_options.outputDir = (
+                    std::filesystem::path(m_options.outputDir) / extraDir
+                ).wstring();
             }
             // keep only the bare file name
             m_options.outputFileName = outputAsPath.filename().wstring();
         }
     }
 
-    // ---- Resolve output directory once, so every downstream component uses it ----
-    if (m_options.outputDir.empty())
+    // ---- resolve output directory once, so every downstream component uses it ----
+    if (this->m_options.outputDir.empty())
     {
-        m_options.outputDir = std::filesystem::current_path().wstring();
+        this->m_options.outputDir = std::filesystem::current_path().wstring();
     }
     else
     {
-        // make sure the user-supplied dir is absolute
+        // make sure the user supplied dir is absolute
         std::filesystem::path dir(m_options.outputDir);
         if (dir.is_relative())
         {
@@ -46,11 +48,11 @@ void CompilerOrchestrator::MainFlow()
         m_options.outputDir = dir.wstring();
     }
 
+    // ---- configure the logger singleton ----
     Console& console = Console::GetInstance();
-    // Always set explicitly — Console is a singleton that persists across
-    // multiple compilations in the GUI, so we must reset every time.
     console.SetVerbosity(m_options.isVerbose ? Verbosity::VERBOSE : Verbosity::QUIET);
     console.SetWarningLevel(m_options.warningLevel);
+
     if (m_options.saveLogs)
     {
         std::filesystem::path logPath = std::filesystem::path(m_options.outputDir)
@@ -58,15 +60,24 @@ void CompilerOrchestrator::MainFlow()
         console.EnableFileLogging(logPath.string());
     }
 
-    // TODO: Support multi-file compilation; for now compile the first file
-    std::filesystem::path filePath(m_options.inputFilesPath[0]);
-
-    // resolve relative paths against the caller's working directory;
-    // absolute paths (e.g. C:\...) are used as-is.
-    if (filePath.is_relative())
+    // ---- resolve input file paths ----
+    for (auto& inputPath : this->m_options.inputFilesPath)
     {
-        filePath = std::filesystem::current_path() / filePath;
+        std::filesystem::path filePath(inputPath);
+        if (filePath.is_relative())
+        {
+            filePath = std::filesystem::current_path() / filePath;
+        }
+        inputPath = filePath.wstring();
     }
+}
+
+void CompilerOrchestrator::MainFlow()
+{
+    this->Init();
+
+    // TODO: Support multi-file compilation for now compile the first file
+    std::filesystem::path filePath(this->m_options.inputFilesPath[0]);
 
     ParserLogic parserComponent(filePath);
 
@@ -75,6 +86,6 @@ void CompilerOrchestrator::MainFlow()
     SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
 
-    CodeGenManager codeGenManager(decoratedAST, m_options);
+    CodeGenManager codeGenManager(decoratedAST, this->m_options);
     codeGenManager.MainFlow();
 }

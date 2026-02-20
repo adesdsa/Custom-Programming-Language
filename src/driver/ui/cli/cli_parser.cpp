@@ -9,7 +9,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-/// Hold boolean flags: flag string -> pointer-to-member
+/// Hold boolean flags: 
+///     key: flag name
+///     value: pointer to member
 static const std::unordered_map<std::string, bool CompilerOptions::*> BOOL_FLAGS = {
     {"--help",      &CompilerOptions::displayHelp},
     {"--version",   &CompilerOptions::displayVersion},
@@ -21,7 +23,9 @@ static const std::unordered_map<std::string, bool CompilerOptions::*> BOOL_FLAGS
     {"--save-temp", &CompilerOptions::saveTemps},
 };
 
-/// Warning level flags: flag string -> enum value
+/// Warning level flags: 
+///     key: flag name
+///     value: enum value
 static const std::unordered_map<std::string, WarningLevel> WARNING_FLAGS = {
     {"--warn-off", WarningLevel::OFF},
     {"--warn-all", WarningLevel::ALL},
@@ -30,13 +34,13 @@ static const std::unordered_map<std::string, WarningLevel> WARNING_FLAGS = {
 CompilerOptions CLIParser::Parse(int argc, const char* argv[])
 {
     CompilerOptions options;
-    std::unordered_set<std::string> seenFlags;
+    std::unordered_set<std::string> seenFlags;  // keep track on all used flags
 
-    // Helper: record a flag key and throw if it was already seen.
-    // For flags that share the same option slot (e.g. --warn-off / --warn-all)
-    // use a common canonical key so they conflict with each other.
-    auto requireUnique = [&seenFlags](const std::string& canonicalKey,
-                                      const std::string& displayFlag)
+    // disallow same flag to be multiple times
+    auto InsertUniqueFlags = [&seenFlags](
+        const std::string& canonicalKey,
+        const std::string& displayFlag
+    )
     {
         if (!seenFlags.insert(canonicalKey).second)
         {
@@ -53,7 +57,7 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         auto flagIterator = BOOL_FLAGS.find(arg);
         if (flagIterator != BOOL_FLAGS.end())
         {
-            requireUnique(arg, arg);
+            InsertUniqueFlags(arg, arg);
             // turn on the flag
             options.*(flagIterator->second) = true;
         }
@@ -62,14 +66,14 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         else if (auto warnIt = WARNING_FLAGS.find(arg); warnIt != WARNING_FLAGS.end())
         {
             // --warn-off and --warn-all set the same option; use a common key
-            requireUnique("--warn-level", arg);
+            InsertUniqueFlags("--warn-level", arg);
             options.warningLevel = warnIt->second;
         }
 
         // ---- output flag ----
         else if (arg == "-o")
         {
-            requireUnique("-o", "-o");
+            InsertUniqueFlags("-o", "-o");
 
             if (i + 1 >= argc)
             {
@@ -89,7 +93,7 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         // ---- output directory flag ----
         else if (arg == "--out-dir")
         {
-            requireUnique("--out-dir", "--out-dir");
+            InsertUniqueFlags("--out-dir", "--out-dir");
 
             if (i + 1 >= argc)
             {
@@ -109,7 +113,7 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         // ---- optimization level ----
         else if (StringUtils::StartsWith(arg, "-O"))
         {
-            requireUnique("-O", arg);
+            InsertUniqueFlags("-O", arg);
 
             std::string levelStr = arg.substr(2);
             if (levelStr.empty())
