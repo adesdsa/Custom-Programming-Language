@@ -8,6 +8,26 @@ CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
 
 void CompilerOrchestrator::MainFlow()
 {
+    // ---- If -o contains a path (e.g. "koo/foo"), split into dir + name ----
+    {
+        std::filesystem::path outputAsPath(m_options.outputFileName);
+        if (outputAsPath.has_parent_path())
+        {
+            // merge the directory part into outputDir
+            std::filesystem::path extraDir = outputAsPath.parent_path();
+            if (m_options.outputDir.empty())
+            {
+                m_options.outputDir = extraDir.wstring();
+            }
+            else
+            {
+                m_options.outputDir = (std::filesystem::path(m_options.outputDir) / extraDir).wstring();
+            }
+            // keep only the bare file name
+            m_options.outputFileName = outputAsPath.filename().wstring();
+        }
+    }
+
     // ---- Resolve output directory once, so every downstream component uses it ----
     if (m_options.outputDir.empty())
     {
