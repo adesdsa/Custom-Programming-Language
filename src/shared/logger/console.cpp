@@ -38,26 +38,26 @@ WarningLevel Console::GetWarningLevel() const noexcept
 void Console::EnableFileLogging(const std::string& logFilePath) noexcept
 {
     // close any previously open log file first
-    if (m_logFile.is_open())
+    if (this->m_logFile.is_open())
     {
-        m_logFile.close();
+        this->m_logFile.close();
     }
 
-    m_logFile.open(logFilePath, std::ios::out | std::ios::trunc);
+    this->m_logFile.open(logFilePath, std::ios::out | std::ios::trunc);
 }
 
 void Console::DisableFileLogging() noexcept
 {
-    if (m_logFile.is_open())
+    if (this->m_logFile.is_open())
     {
-        m_logFile.flush();
-        m_logFile.close();
+        this->m_logFile.flush();
+        this->m_logFile.close();
     }
 }
 
 void Console::SetLogCallback(LogCallback callback) noexcept
 {
-    m_logCallback = std::move(callback);
+    this->m_logCallback = std::move(callback);
 }
 
 void Console::BuildAndSendLogMessage(
@@ -75,19 +75,19 @@ void Console::BuildAndSendLogMessage(
     LogMessage logMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg);
 
     // always write to file when file logging is enabled
-    if (m_logFile.is_open())
+    if (this->m_logFile.is_open())
     {
         this->LogToFile(logMessage);
     }
 
     // only produce output when verbose
-    if (m_verbosity == Verbosity::VERBOSE)
+    if (this->m_verbosity == Verbosity::VERBOSE)
     {
         // stdout (CLI)
         this->Log(logMessage);
 
-        // external callback (GUI log panel, etc.) — plain text, no ANSI colors
-        if (m_logCallback)
+        // external callback (GUI log panel, etc.)
+        if (this->m_logCallback)
         {
             const size_t k_nEntityW = 22;
             const size_t k_nLevelW  = 10;
@@ -101,7 +101,7 @@ void Console::BuildAndSendLogMessage(
                 << std::left << std::setw(k_nLevelW)  << levelBracketed
                 << logMessage.sContent;
 
-            m_logCallback(oss.str());
+            this->m_logCallback(oss.str());
         }
     }
 }
@@ -114,7 +114,6 @@ void Console::Log(const LogMessage& logMessage) const noexcept
     const size_t k_nEntityWidth = 22;
     const size_t k_nLevelWidth  = 10;
 
-    // Build bracketed strings
     std::string entityBracketed = "[" + logMessage.entity.sName + "]";
     std::string levelBracketed = "[" + logMessage.debugLevel.sName + "]";
 
