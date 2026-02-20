@@ -21,6 +21,12 @@ find_package(GTest CONFIG REQUIRED)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/main.cpp")
 
+# Exclude GUI sources from the shared library (they have their own main & Qt deps)
+file(GLOB_RECURSE GUI_SRC_FILES CONFIGURE_DEPENDS src/driver/ui/gui/*.cpp)
+if(GUI_SRC_FILES)
+    list(REMOVE_ITEM SRC_FILES ${GUI_SRC_FILES})
+endif()
+
 # =============================
 # CPLib
 # =============================
@@ -113,6 +119,28 @@ if(BUILD_TESTS)
     )
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
+endif()
+
+# =============================
+# GUI (Qt)
+# =============================
+# Requires Qt 6 installed separately (https://www.qt.io/download-qt-installer).
+# Pass -DCMAKE_PREFIX_PATH=<Qt-install-dir> so CMake can find it.
+# Example: cmake .. -DBUILD_GUI=ON -DCMAKE_PREFIX_PATH="C:/Qt/6.x.x/msvc2022_64"
+option(BUILD_GUI "Build picoc-gui (requires Qt 6)" OFF)
+if(BUILD_GUI)
+    set(CMAKE_AUTOMOC ON)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
+    file(GLOB_RECURSE GUI_SOURCES CONFIGURE_DEPENDS src/driver/ui/gui/*.cpp)
+    file(GLOB_RECURSE GUI_HEADERS CONFIGURE_DEPENDS includes/driver/ui/gui/*.h)
+    add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS})
+    target_include_directories(picoc-gui PRIVATE ${CMAKE_SOURCE_DIR})
+    target_link_libraries(picoc-gui PRIVATE CPLib Qt6::Widgets)
+    set_target_properties(picoc-gui PROPERTIES
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED ON
+    )
 endif()
 
 # ==============================

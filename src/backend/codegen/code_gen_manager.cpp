@@ -19,8 +19,9 @@ void CodeGenManager::MainFlow()
     }
 
     std::string outputName = StringUtils::ToNarrow(m_options.outputFileName);
+    std::string outputDir  = StringUtils::ToNarrow(m_options.outputDir);
 
-    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable, outputName);
+    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable, outputName, outputDir);
     std::string asmFilePath = asmGenerator.MainFlow();
 
     if (m_options.stopAtAsm)
@@ -29,7 +30,7 @@ void CodeGenManager::MainFlow()
     }
 
     Assembler assembler;
-    std::string objectFilePath = assembler.Mainflow(asmFilePath, outputName);
+    std::string objectFilePath = assembler.Mainflow(asmFilePath, outputName, outputDir);
 
     if (m_options.stopAtBin)
     {

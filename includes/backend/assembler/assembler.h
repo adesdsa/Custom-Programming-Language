@@ -23,7 +23,8 @@ public:
     /// @param asmContents The ASM source code to assemble.
     /// @param programName A unique program name used for temporary file generation (without extension).
     /// @return Path to the resulting object file, or an empty path on error.
-    std::string Mainflow(const std::string& asmPath, const std::string& programName);
+    std::string Mainflow(const std::string& asmPath, const std::string& programName,
+                         const std::string& outputDir);
 
 private:
     EntityLogger m_assemblerLogger;

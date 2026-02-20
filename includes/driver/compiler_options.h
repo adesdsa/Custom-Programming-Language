@@ -29,6 +29,11 @@ struct CompilerOptions
     /// @struct -o <output_path>
     std::wstring outputFileName = DEFAULT_OUTPUT_PATH;
 
+    /// @brief directory where all output files (.asm, .obj, .exe, .log) are placed.
+    /// Empty string means "use the current working directory" (default).
+    /// @struct --out-dir <path>
+    std::wstring outputDir;
+
     // =======================
     // ==== COMMAND FLAGS ====
     // =======================

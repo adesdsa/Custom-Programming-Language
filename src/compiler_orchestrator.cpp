@@ -2,34 +2,40 @@
 #include "includes/shared/logger/console.h"
 #include "includes/shared/utils/string_utils.hpp"
 
-CompilerOrchestrator::CompilerOrchestrator(int argc, const char* argv[]) :
-    m_options(CLIParser::Parse(argc, argv))
+CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
+    m_options(std::move(options))
 {}
 
 void CompilerOrchestrator::MainFlow()
 {
-    // Handle standalone commands before compilation
-    if (m_options.displayHelp)
+    // ---- Resolve output directory once, so every downstream component uses it ----
+    if (m_options.outputDir.empty())
     {
-        CLIParser::PrintUsage();
-        return;
+        m_options.outputDir = std::filesystem::current_path().wstring();
     }
-
-    if (m_options.displayVersion)
+    else
     {
-        CLIParser::PrintVersion();
-        return;
+        // make sure the user-supplied dir is absolute
+        std::filesystem::path dir(m_options.outputDir);
+        if (dir.is_relative())
+        {
+            dir = std::filesystem::current_path() / dir;
+        }
+        // create the directory if it doesn't exist
+        std::filesystem::create_directories(dir);
+        m_options.outputDir = dir.wstring();
     }
 
     Console& console = Console::GetInstance();
-    if (m_options.isVerbose)
-    {
-        console.SetVerbosity(Verbosity::VERBOSE);
-    }
+    // Always set explicitly — Console is a singleton that persists across
+    // multiple compilations in the GUI, so we must reset every time.
+    console.SetVerbosity(m_options.isVerbose ? Verbosity::VERBOSE : Verbosity::QUIET);
     console.SetWarningLevel(m_options.warningLevel);
     if (m_options.saveLogs)
     {
-        console.EnableFileLogging(StringUtils::ToNarrow(m_options.outputFileName));
+        std::filesystem::path logPath = std::filesystem::path(m_options.outputDir)
+            / (StringUtils::ToNarrow(m_options.outputFileName) + ".log");
+        console.EnableFileLogging(logPath.string());
     }
 
     // TODO: Support multi-file compilation; for now compile the first file

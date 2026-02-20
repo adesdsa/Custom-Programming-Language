@@ -20,7 +20,8 @@
 class ASMGenerator
 {
 public:
-    ASMGenerator(const IRModule& program, const FuncTable& funcTable, const std::string& outputName);
+    ASMGenerator(const IRModule& program, const FuncTable& funcTable,
+                 const std::string& outputName, const std::string& outputDir);
     ~ASMGenerator() = default;
 
     /*****************************************************************************
@@ -38,6 +39,7 @@ private:
     const IRModule& m_irMoudle;
     const FuncTable& m_funcTable;
     std::string m_outputName;
+    std::string m_outputDir;
 
     EntityLogger m_ASMLogger;
     ErrorManager& m_errorManager;

@@ -66,6 +66,24 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
             options.outputFileName = StringUtils::ToWide(argv[++i]);
         }
 
+        // ---- output directory flag ----
+        else if (arg == "--out-dir")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("Flag '--out-dir' requires a directory path.");
+            }
+
+            std::string nextArg(argv[i + 1]);
+            if (StringUtils::StartsWith(nextArg, "-"))
+            {
+                throw std::runtime_error(
+                    "Flag '--out-dir' requires a directory path, but got flag '" + nextArg + "'.");
+            }
+
+            options.outputDir = StringUtils::ToWide(argv[++i]);
+        }
+
         // ---- optimization level ----
         else if (StringUtils::StartsWith(arg, "-O"))
         {
@@ -138,6 +156,7 @@ void CLIParser::PrintUsage()
         << "  --version       Print compiler version and exit\n"
         << "\n"
         << "  -o <name>       Set output executable name (default: output)\n"
+        << "  --out-dir <dir> Set output directory (default: current directory)\n"
         << "\n"
         << "  -O<level>       Set optimization level (0-" << MAX_OPTIMIATION_LEVEL << ", default: " << MAX_OPTIMIATION_LEVEL << ")\n"
         << "                    -O0  No optimizations\n"

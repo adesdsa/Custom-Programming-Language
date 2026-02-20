@@ -5,7 +5,6 @@
 #include <exception>
 
 #include "includes/driver/compiler_options.h"
-#include "includes/driver/ui/cli/cli_parser.h"
 #include "includes/shared/utils/system_utils.h"
 #include "includes/frontend/parser/parser_logic.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
@@ -21,8 +20,10 @@
 class CompilerOrchestrator
 {
 public:
-    // constructor using Command Line Arguments
-    CompilerOrchestrator(int argc, const char* argv[]);
+    /// @brief Construct the orchestrator with pre-parsed compiler options.
+    /// Any UI (CLI, GUI, etc.) should build a CompilerOptions, validate it,
+    /// and pass it here.
+    explicit CompilerOrchestrator(CompilerOptions options);
 
     /*****************************************************************************
      * @brief Runs Whole Compiler's Pipeline:                                    |
