@@ -130,13 +130,17 @@ endif()
 option(BUILD_GUI "Build picoc-gui (requires Qt 6)" OFF)
 if(BUILD_GUI)
     set(CMAKE_AUTOMOC ON)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+    set(CMAKE_AUTORCC ON)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets SvgWidgets)
 
     file(GLOB_RECURSE GUI_SOURCES CONFIGURE_DEPENDS src/driver/ui/gui/*.cpp)
     file(GLOB_RECURSE GUI_HEADERS CONFIGURE_DEPENDS includes/driver/ui/gui/*.h)
-    add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS})
+
+    set(GUI_RESOURCES "${CMAKE_SOURCE_DIR}/resources/gui_resources.qrc")
+
+    add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS} ${GUI_RESOURCES})
     target_include_directories(picoc-gui PRIVATE ${CMAKE_SOURCE_DIR})
-    target_link_libraries(picoc-gui PRIVATE CPLib Qt6::Widgets)
+    target_link_libraries(picoc-gui PRIVATE CPLib Qt6::Widgets Qt6::SvgWidgets)
     set_target_properties(picoc-gui PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON

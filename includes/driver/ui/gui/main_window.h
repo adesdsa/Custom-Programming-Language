@@ -8,7 +8,13 @@
 #include <QComboBox>
 #include <QTextEdit>
 #include <QPushButton>
+#include <QColor>
 
+/// @brief Main window for the picoc GUI compiler.
+///
+/// Features a modern dark theme, branded menu-bar header, split-pane layout
+/// with compiler settings on the left and a live log panel on the right,
+/// and a status bar with version info at the bottom.
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -18,40 +24,42 @@ public:
     ~MainWindow() override = default;
 
 private slots:
-    /// @brief Open file dialog to add .picoc input files.
     void OnAddFiles();
-
-    /// @brief Remove selected files from the input list.
     void OnRemoveFiles();
-
-    /// @brief Build CompilerOptions from UI, validate, and compile.
     void OnCompile();
-
-    /// @brief Clear the log output area.
     void OnClearLog();
-
-    /// @brief Open folder dialog to choose output directory.
     void OnBrowseOutputDir();
+    void OnShowUsage();
+    void OnShowTerminalSettings();
 
 private:
-    /// @brief Build the entire UI layout by composing the helper methods below.
+    // ---- setup ----
     void SetupUI();
+    void ApplyTheme();
 
     /// @brief Append a message to the log output area.
     void AppendLog(const QString& message);
 
-    // ---- UI builder helpers (each returns a self-contained widget) ----
-    QGroupBox* CreateInputFilesGroup();
-    QGroupBox* CreateOutputGroup();
-    QGroupBox* CreateOptimizationGroup();
-    QGroupBox* CreateWarningGroup();
-    QGroupBox* CreateLoggingGroup();
-    QGroupBox* CreateCompilationTypeGroup();
-    QWidget*   CreateLogPanel();
+    /// @brief Apply the current terminal colors to the log output (and usage dialog).
+    void ApplyTerminalColors();
+
+    // ---- returns the full QSS stylesheet string ----
+    static QString GetStyleSheet();
+
+    // ---- UI builder helpers ----
+    QWidget*     CreateMenuBar();
+    QGroupBox*   CreateInputFilesGroup();
+    QGroupBox*   CreateOutputGroup();
+    QGroupBox*   CreateOptimizationGroup();
+    QGroupBox*   CreateWarningGroup();
+    QGroupBox*   CreateLoggingGroup();
+    QGroupBox*   CreateCompilationTypeGroup();
+    QWidget*     CreateLogPanel();
     QPushButton* CreateCompileButton();
+    QWidget*     CreateStatusBar();
 
     // ---- Input/Output widgets ----
-    QListWidget* m_fileList      = nullptr;
+    QListWidget* m_fileList       = nullptr;
     QLineEdit*   m_outputNameEdit = nullptr;
     QLineEdit*   m_outputDirEdit  = nullptr;
 
@@ -68,4 +76,8 @@ private:
     // ---- Action widgets ----
     QPushButton* m_compileButton = nullptr;
     QTextEdit*   m_logOutput     = nullptr;
+
+    // ---- Terminal colour settings ----
+    QColor m_termTextColor = QColor("#4ade80");   // default green
+    QColor m_termBgColor   = QColor("#0d1117");   // default dark
 };
