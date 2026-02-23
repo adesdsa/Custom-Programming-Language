@@ -1,20 +1,15 @@
 #pragma once
 
-#include <QMainWindow>
-#include <QGroupBox>
-#include <QListWidget>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QTextEdit>
-#include <QPushButton>
-#include <QColor>
+#include "includes/driver/ui/gui/settings_panel.h"
+#include "includes/driver/ui/gui/log_panel.h"
+#include "includes/driver/ui/gui/compilation_handler.h"
 
-/// @brief Main window for the picoc GUI compiler.
-///
-/// Features a modern dark theme, branded menu-bar header, split-pane layout
-/// with compiler settings on the left and a live log panel on the right,
-/// and a status bar with version info at the bottom.
+#include <QMainWindow>
+#include <QPushButton>
+
+/// @brief Top-level window that composes SettingsPanel, LogPanel,
+///        and CompilationHandler.  All domain logic and widget details
+///        live in the sub-components; this class only wires them together.
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -24,60 +19,20 @@ public:
     ~MainWindow() override = default;
 
 private slots:
-    void OnAddFiles();
-    void OnRemoveFiles();
     void OnCompile();
-    void OnClearLog();
-    void OnBrowseOutputDir();
     void OnShowUsage();
     void OnShowTerminalSettings();
 
 private:
-    // ---- setup ----
     void SetupUI();
-    void ApplyTheme();
 
-    /// @brief Append a message to the log output area.
-    void AppendLog(const QString& message);
-
-    /// @brief Apply the current terminal colors to the log output (and usage dialog).
-    void ApplyTerminalColors();
-
-    // ---- returns the full QSS stylesheet string ----
-    static QString GetStyleSheet();
-
-    // ---- UI builder helpers ----
     QWidget*     CreateMenuBar();
-    QGroupBox*   CreateInputFilesGroup();
-    QGroupBox*   CreateOutputGroup();
-    QGroupBox*   CreateOptimizationGroup();
-    QGroupBox*   CreateWarningGroup();
-    QGroupBox*   CreateLoggingGroup();
-    QGroupBox*   CreateCompilationTypeGroup();
-    QWidget*     CreateLogPanel();
-    QPushButton* CreateCompileButton();
     QWidget*     CreateStatusBar();
+    QPushButton* CreateCompileButton();
 
-    // ---- Input/Output widgets ----
-    QListWidget* m_fileList       = nullptr;
-    QLineEdit*   m_outputNameEdit = nullptr;
-    QLineEdit*   m_outputDirEdit  = nullptr;
-
-    // ---- Flag widgets ----
-    QComboBox* m_optimizationCombo = nullptr;
-    QComboBox* m_warningCombo      = nullptr;
-    QCheckBox* m_verboseCheck      = nullptr;
-    QCheckBox* m_quietCheck        = nullptr;
-    QCheckBox* m_saveLogsCheck     = nullptr;
-    QCheckBox* m_stopAsmCheck      = nullptr;
-    QCheckBox* m_stopBinCheck      = nullptr;
-    QCheckBox* m_saveTempsCheck    = nullptr;
-
-    // ---- Action widgets ----
-    QPushButton* m_compileButton = nullptr;
-    QTextEdit*   m_logOutput     = nullptr;
-
-    // ---- Terminal colour settings ----
-    QColor m_termTextColor = QColor("#4ade80");   // default green
-    QColor m_termBgColor   = QColor("#0d1117");   // default dark
+    // ---- sub-components ----
+    SettingsPanel*      m_settingsPanel      = nullptr;
+    LogPanel*           m_logPanel           = nullptr;
+    CompilationHandler* m_compilationHandler = nullptr;
+    QPushButton*        m_compileButton      = nullptr;
 };
