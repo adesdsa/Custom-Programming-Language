@@ -24,7 +24,6 @@ std::string X86_64Emitter::EmitHeader() const
             header << "default rel\n";
             header << "global _start\n";
             header << "extern main\n";
-            header << "extern exit\n\n";
             break;
 
         case OS::Windows:
@@ -622,15 +621,54 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "    and rsp, -16\n";
 
         // call main()
-        out << "    ; call main() and pass its return value to exit\n";
+        out << "    ; call main() and pass its return value to sys_exit\n";
         out << "    call main\n";
 
-        // exit(main_return)
+        // sys_exit(main_return)
         out << "    mov rdi, rax\n";
-        out << "    call exit\n";
+        out << "    mov rax, 60\n";
+        out << "    syscall\n";
 
-        out << "    ; Halt if exit returns (should not)\n";
+        out << "    ; Halt after returning from main\n";
         out << "    hlt\n";
+
+        // ---- Built-in: println(value: int) -> void ----
+        // Minimal integer println using Linux write(1, buf, len)
+        out << "\n";
+        out << "println:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 32\n";
+        out << "    lea rsi, [rsp]\n";
+        out << "    mov r8, rsi\n";
+        out << "    add rsi, 20\n";
+        out << "    mov byte [rsi], 10\n";
+        out << "    mov rax, rdi\n";
+        out << "    cmp rax, 0\n";
+        out << "    jne .Lconvert\n";
+        out << "    dec rsi\n";
+        out << "    mov byte [rsi], '0'\n";
+        out << "    jmp .Lwrite\n";
+        out << ".Lconvert:\n";
+        out << "    xor rdx, rdx\n";
+        out << ".Lloop:\n";
+        out << "    xor rdx, rdx\n";
+        out << "    mov rcx, 10\n";
+        out << "    div rcx\n";
+        out << "    dec rsi\n";
+        out << "    add dl, '0'\n";
+        out << "    mov [rsi], dl\n";
+        out << "    test rax, rax\n";
+        out << "    jnz .Lloop\n";
+        out << ".Lwrite:\n";
+        out << "    lea rdx, [r8+21]\n";
+        out << "    sub rdx, rsi\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    mov rsp, rbp\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
     }
     else if (TargetArchitecture::GetOS() == OS::Windows)
     {

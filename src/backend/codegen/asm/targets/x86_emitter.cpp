@@ -414,6 +414,45 @@ void X86_Emitter::EmitStart(std::ostream& out)
             out << "    mov ebx, eax\n";  // exit code from main's return
             out << "    mov eax, 1\n";    // sys_exit syscall number
             out << "    int 0x80\n";      // interrupt to kernel
+
+            // ---- Built-in: println(value: int) -> void ----
+            // Minimal integer println using Linux write(1, buf, len)
+            out << "\n";
+            out << "println:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 32\n";
+            out << "    lea esi, [esp]\n";
+            out << "    mov edi, esi\n";
+            out << "    add esi, 20\n";
+            out << "    mov byte [esi], 10\n";
+            out << "    mov eax, [ebp+8]\n";
+            out << "    cmp eax, 0\n";
+            out << "    jne .Lconvert\n";
+            out << "    dec esi\n";
+            out << "    mov byte [esi], '0'\n";
+            out << "    jmp .Lwrite\n";
+            out << ".Lconvert:\n";
+            out << "    xor edx, edx\n";
+            out << ".Lloop:\n";
+            out << "    xor edx, edx\n";
+            out << "    mov ecx, 10\n";
+            out << "    div ecx\n";
+            out << "    dec esi\n";
+            out << "    add dl, '0'\n";
+            out << "    mov [esi], dl\n";
+            out << "    test eax, eax\n";
+            out << "    jnz .Lloop\n";
+            out << ".Lwrite:\n";
+            out << "    lea edx, [edi+21]\n";
+            out << "    sub edx, esi\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    mov ecx, esi\n";
+            out << "    int 0x80\n";
+            out << "    mov esp, ebp\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
             break;
         }
 
