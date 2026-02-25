@@ -1,6 +1,9 @@
 #include "includes/shared/logger/console.h"
 #include "includes/driver/compiler_options.h"
 
+#include <iomanip>
+#include <sstream>
+
 Console::Console() :
     m_supportsColor(DetectColorSupport()),
     m_warningLevel(WarningLevel::NORMAL)
@@ -32,10 +35,29 @@ WarningLevel Console::GetWarningLevel() const noexcept
     return m_warningLevel;
 }
 
-void Console::EnableFileLogging(const std::string& outputName) noexcept
+void Console::EnableFileLogging(const std::string& logFilePath) noexcept
 {
-    std::filesystem::path logPath = std::filesystem::current_path() / (outputName + ".log");
-    m_logFile.open(logPath, std::ios::out | std::ios::trunc);
+    // close any previously open log file first
+    if (this->m_logFile.is_open())
+    {
+        this->m_logFile.close();
+    }
+
+    this->m_logFile.open(logFilePath, std::ios::out | std::ios::trunc);
+}
+
+void Console::DisableFileLogging() noexcept
+{
+    if (this->m_logFile.is_open())
+    {
+        this->m_logFile.flush();
+        this->m_logFile.close();
+    }
+}
+
+void Console::SetLogCallback(LogCallback callback) noexcept
+{
+    this->m_logCallback = std::move(callback);
 }
 
 void Console::BuildAndSendLogMessage(
@@ -53,15 +75,34 @@ void Console::BuildAndSendLogMessage(
     LogMessage logMessage(entity, debugLevel, SystemUtils::GetFullCurrentTime(), msg);
 
     // always write to file when file logging is enabled
-    if (m_logFile.is_open())
+    if (this->m_logFile.is_open())
     {
         this->LogToFile(logMessage);
     }
 
-    // only write to stdout when verbose
-    if (m_verbosity == Verbosity::VERBOSE)
+    // only produce output when verbose
+    if (this->m_verbosity == Verbosity::VERBOSE)
     {
+        // stdout (CLI)
         this->Log(logMessage);
+
+        // external callback (GUI log panel, etc.)
+        if (this->m_logCallback)
+        {
+            const size_t k_nEntityW = 22;
+            const size_t k_nLevelW  = 10;
+
+            std::string entityBracketed = "[" + logMessage.entity.sName + "]";
+            std::string levelBracketed  = "[" + logMessage.debugLevel.sName + "]";
+
+            std::ostringstream oss;
+            oss << logMessage.sTimeStamp << "\t"
+                << std::left << std::setw(k_nEntityW) << entityBracketed
+                << std::left << std::setw(k_nLevelW)  << levelBracketed
+                << logMessage.sContent;
+
+            this->m_logCallback(oss.str());
+        }
     }
 }
 
@@ -73,7 +114,6 @@ void Console::Log(const LogMessage& logMessage) const noexcept
     const size_t k_nEntityWidth = 22;
     const size_t k_nLevelWidth  = 10;
 
-    // Build bracketed strings
     std::string entityBracketed = "[" + logMessage.entity.sName + "]";
     std::string levelBracketed = "[" + logMessage.debugLevel.sName + "]";
 
@@ -103,7 +143,7 @@ void Console::LogToFile(const LogMessage& logMessage) const noexcept
         << std::left << std::setw(k_nEntityWidth) << entityBracketed
         << std::left << std::setw(k_nLevelWidth) << levelBracketed
         << logMessage.sContent
-        << "\n";
+        << std::endl; // flush each line so file is written immediately
 }
 
 bool Console::DetectColorSupport() noexcept

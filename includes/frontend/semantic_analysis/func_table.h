@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "includes/shared/logger/entity_logger.h"
-
+    
 #include "func_metadata.h"
 
 /// @brief Holds all functions (signature + body) of certain file

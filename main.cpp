@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 
 #include "includes/compiler_orchestrator.h"
+#include "includes/driver/ui/cli/cli_parser.h"
 
 namespace ReturnCode
 {
@@ -14,7 +15,22 @@ int main(int argc, const char* argv[])
 
     try
     {
-        CompilerOrchestrator compilerOrchestrator(argc, argv);
+        CompilerOptions options = CLIParser::Parse(argc, argv);
+
+        // handle standalone CLI commands before launching the pipeline
+        if (options.displayHelp)
+        {
+            CLIParser::PrintUsage();
+            return ReturnCode::k_nSuccess;
+        }
+
+        if (options.displayVersion)
+        {
+            CLIParser::PrintVersion();
+            return ReturnCode::k_nSuccess;
+        }
+
+        CompilerOrchestrator compilerOrchestrator(std::move(options));
         compilerOrchestrator.MainFlow();
     }
     catch(const CompilationAbortException& abortError)

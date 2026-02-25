@@ -7,8 +7,11 @@
 #include <string>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
-/// Hold boolean flags: flag string -> pointer-to-member
+/// Hold boolean flags: 
+///     key: flag name
+///     value: pointer to member
 static const std::unordered_map<std::string, bool CompilerOptions::*> BOOL_FLAGS = {
     {"--help",      &CompilerOptions::displayHelp},
     {"--version",   &CompilerOptions::displayVersion},
@@ -20,7 +23,9 @@ static const std::unordered_map<std::string, bool CompilerOptions::*> BOOL_FLAGS
     {"--save-temp", &CompilerOptions::saveTemps},
 };
 
-/// Warning level flags: flag string -> enum value
+/// Warning level flags: 
+///     key: flag name
+///     value: enum value
 static const std::unordered_map<std::string, WarningLevel> WARNING_FLAGS = {
     {"--warn-off", WarningLevel::OFF},
     {"--warn-all", WarningLevel::ALL},
@@ -29,6 +34,20 @@ static const std::unordered_map<std::string, WarningLevel> WARNING_FLAGS = {
 CompilerOptions CLIParser::Parse(int argc, const char* argv[])
 {
     CompilerOptions options;
+    std::unordered_set<std::string> seenFlags;  // keep track on all used flags
+
+    // disallow same flag to be multiple times
+    auto InsertUniqueFlags = [&seenFlags](
+        const std::string& canonicalKey,
+        const std::string& displayFlag
+    )
+    {
+        if (!seenFlags.insert(canonicalKey).second)
+        {
+            throw std::runtime_error(
+                "Duplicate flag: '" + displayFlag + "' was already specified.");
+        }
+    };
 
     for (int i = 1; i < argc; i++)
     {
@@ -38,6 +57,7 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         auto flagIterator = BOOL_FLAGS.find(arg);
         if (flagIterator != BOOL_FLAGS.end())
         {
+            InsertUniqueFlags(arg, arg);
             // turn on the flag
             options.*(flagIterator->second) = true;
         }
@@ -45,12 +65,16 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
         // ---- warning level flags ----
         else if (auto warnIt = WARNING_FLAGS.find(arg); warnIt != WARNING_FLAGS.end())
         {
+            // --warn-off and --warn-all set the same option; use a common key
+            InsertUniqueFlags("--warn-level", arg);
             options.warningLevel = warnIt->second;
         }
 
         // ---- output flag ----
         else if (arg == "-o")
         {
+            InsertUniqueFlags("-o", "-o");
+
             if (i + 1 >= argc)
             {
                 throw std::runtime_error("Flag '-o' requires an output file name.");
@@ -66,9 +90,31 @@ CompilerOptions CLIParser::Parse(int argc, const char* argv[])
             options.outputFileName = StringUtils::ToWide(argv[++i]);
         }
 
+        // ---- output directory flag ----
+        else if (arg == "--out-dir")
+        {
+            InsertUniqueFlags("--out-dir", "--out-dir");
+
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("Flag '--out-dir' requires a directory path.");
+            }
+
+            std::string nextArg(argv[i + 1]);
+            if (StringUtils::StartsWith(nextArg, "-"))
+            {
+                throw std::runtime_error(
+                    "Flag '--out-dir' requires a directory path, but got flag '" + nextArg + "'.");
+            }
+
+            options.outputDir = StringUtils::ToWide(argv[++i]);
+        }
+
         // ---- optimization level ----
         else if (StringUtils::StartsWith(arg, "-O"))
         {
+            InsertUniqueFlags("-O", arg);
+
             std::string levelStr = arg.substr(2);
             if (levelStr.empty())
             {
@@ -137,9 +183,10 @@ void CLIParser::PrintUsage()
         << "  --help          Show this help message and exit\n"
         << "  --version       Print compiler version and exit\n"
         << "\n"
-        << "  -o <name>       Set output executable name (default: output)\n"
+        << "  -o <file>       Set output executable name (default: output)\n"
+        << "  --out-dir <dir> Set output directory (default: current directory)\n"
         << "\n"
-        << "  -O<level>       Set optimization level (0-" << MAX_OPTIMIATION_LEVEL << ", default: " << MAX_OPTIMIATION_LEVEL << ")\n"
+        << "  -O <level>       Set optimization level (0-" << MAX_OPTIMIATION_LEVEL << ", default: " << MAX_OPTIMIATION_LEVEL << ")\n"
         << "                    -O0  No optimizations\n"
         << "                    -O1  Basic optimizations\n"
         << "\n"
