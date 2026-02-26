@@ -1005,7 +1005,7 @@ IRInstruction* IRVisitor::ChooseOperation(
 Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
 {
     std::string value = token.GetValue();
-    if (value == "And")
+    if (value == "and")
     {
         return Operators::And;
     }
@@ -1052,6 +1052,18 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
     else if (value == "<")
     {
         return Operators::Lt;
+    }
+    else if (value == ">=")
+    {
+        return Operators::Ge;
+    }
+    else if (value == "<=")
+    {
+        return Operators::Le;
+    }
+    else if (value == "!=")
+    {
+        return Operators::Ne;
     }
     else return Operators::None;
 }
@@ -1300,7 +1312,9 @@ IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
         return nullptr;
     }
     if (notCnt % 2 == 0) return value;
-    return this->m_irbuilder.CreateAnd(this->m_irbuilder.GetBool(false), value);
+    // Logical NOT: value == 0  →  1, value != 0  →  0
+    // Works for both booleans (0/1) and integers (0 is false, nonzero is true).
+    return this->m_irbuilder.CreateICmpEQ(value, this->m_irbuilder.GetInt32(0));
 }
 
 void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initializer_list<Operators> ops)

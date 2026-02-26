@@ -357,17 +357,17 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
     {
         if (token.GetValue() == "and" ||
             token.GetValue() == "or" ||
-            token.GetValue() == "not")
-        {
-            return ExpressionType::BOOLEAN;
-        }
-        if (token.GetValue() == "xor")
+            token.GetValue() == "not" ||
+            token.GetValue() == "xor")
         {
             return ExpressionType::BITWISE_OPERATOR;
         }
         else if (token.GetValue() == "==" ||
+            token.GetValue() == "!=" ||
             token.GetValue() == "<" ||
-            token.GetValue() == ">")
+            token.GetValue() == ">" ||
+            token.GetValue() == "<=" ||
+            token.GetValue() == ">=")
         {
             return ExpressionType::COMPARRISON_OPERATOR;
         }
@@ -565,6 +565,9 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }
+        // Bitwise/logical operators (and, or, xor, not) adapt to operand type:
+        //   int op int   -> MATHEMATICAL (bitwise)
+        //   bool op bool -> BOOLEAN      (logical)
         else if (
                 expressionSet[i] == ExpressionType::BITWISE_OPERATOR &&
                 (
@@ -573,7 +576,17 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
                 )
             )
         {
-            // keep currExpressionType unchanged xor inherits from its operands
+            // keep currExpressionType unchanged – operator inherits from operands
+        }
+        else if (
+                currExpressionType == ExpressionType::BITWISE_OPERATOR &&
+                (
+                    expressionSet[i] == ExpressionType::MATHEMATICAL ||
+                    expressionSet[i] == ExpressionType::BOOLEAN
+                )
+            )
+        {
+            currExpressionType = expressionSet[i]; // adopt the operand's type
         }
         // Unknown behaviour.
         else

@@ -160,6 +160,8 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
             return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
         else if (IsValue(currToken, "pass"))
             return FinishAndAssignType(CommandTypes::PASS);
+        else if (IsValue(currToken, "not"))
+            return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         else return FoundUnknown(currToken);
     }
     else if (IsExpressionStart(currToken))
