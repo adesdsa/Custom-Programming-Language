@@ -43,5 +43,6 @@ enum class ExpressionType
     VOID_TYPE,
     PARANTHESES_OPEN,
     PARANTHESES_CLOSE,
-    COMPARRISON_OPERATOR
+    COMPARRISON_OPERATOR,
+    BITWISE_OPERATOR          // xor – adapts to operand types (int→int, bool→bool)
 };

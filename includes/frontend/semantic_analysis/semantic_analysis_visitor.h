@@ -66,6 +66,7 @@ private:
     |     Helper Fields    |
     \**********************/
     VarTableNode* m_currentScope;
+    VarTableNode* m_functionScopeRoot = nullptr;
     ExpressionType m_lastExpressionType;
 
     std::string m_lastIdentifierName;

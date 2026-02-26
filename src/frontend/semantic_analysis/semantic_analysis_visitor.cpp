@@ -59,9 +59,22 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
         varName, varType, varAccessRight, varScope
     );
 
-    VarTableNode* targetScope = (varScope == Scope::GLOBAL)
-        ? &this->m_varTable
-        : this->m_currentScope;
+    // `global` variables go to the root scope (visible from any function).
+    // `var` variables go to the function scope root (visible throughout the function).
+    // `let` variables go to the current block scope.
+    VarTableNode* targetScope;
+    if (varScope == Scope::GLOBAL)
+    {
+        targetScope = &this->m_varTable;
+    }
+    else if (varScope == Scope::VAR && this->m_functionScopeRoot != nullptr)
+    {
+        targetScope = this->m_functionScopeRoot;
+    }
+    else
+    {
+        targetScope = this->m_currentScope;
+    }
 
     if (!targetScope->InsertVar(var))
     {
@@ -443,6 +456,7 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
 
     // new var block starts now to save arguements.
     this->m_currentScope = this->m_currentScope->CreateBlock();
+    this->m_functionScopeRoot = this->m_currentScope;
 
     FuncMetaData* funcMeta = this->m_funcTable.FindFunctionByName(funcName);
     if (funcMeta != nullptr)

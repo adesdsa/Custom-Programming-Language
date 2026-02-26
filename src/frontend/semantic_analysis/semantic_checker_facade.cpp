@@ -357,10 +357,13 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
     {
         if (token.GetValue() == "and" ||
             token.GetValue() == "or" ||
-            token.GetValue() == "not" || 
-            token.GetValue() == "xor")
+            token.GetValue() == "not")
         {
             return ExpressionType::BOOLEAN;
+        }
+        if (token.GetValue() == "xor")
+        {
+            return ExpressionType::BITWISE_OPERATOR;
         }
         else if (token.GetValue() == "==" ||
             token.GetValue() == "<" ||
@@ -561,6 +564,16 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
             expressionSet[i] == ExpressionType::MATHEMATICAL)
         {
             currExpressionType = ExpressionType::BOOLEAN;
+        }
+        else if (
+                expressionSet[i] == ExpressionType::BITWISE_OPERATOR &&
+                (
+                    currExpressionType == ExpressionType::MATHEMATICAL ||
+                    currExpressionType == ExpressionType::BOOLEAN
+                )
+            )
+        {
+            // keep currExpressionType unchanged xor inherits from its operands
         }
         // Unknown behaviour.
         else
