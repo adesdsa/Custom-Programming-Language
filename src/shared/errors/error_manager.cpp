@@ -13,6 +13,11 @@ void ErrorManager::StoreError(const CompileTimeError& error)
     this->m_errorList.push_back(error);
 }
 
+void ErrorManager::Clear() noexcept
+{
+    this->m_errorList.clear();
+}
+
 bool ErrorManager::HasErrorsOccured() const noexcept
 {
     return this->m_errorList.size() > 0;

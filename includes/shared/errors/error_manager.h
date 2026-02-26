@@ -25,6 +25,9 @@ public:
     // Stores the given error for later handling
     void StoreError(const CompileTimeError& error);
 
+    // Remove all previously stored errors (call at the start of a new compilation)
+    void Clear() noexcept;
+
     // Display all errors that occured and abort program
     void HandleErrors() const;
 

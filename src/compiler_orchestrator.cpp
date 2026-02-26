@@ -1,5 +1,6 @@
 #include "includes/compiler_orchestrator.h"
 #include "includes/shared/logger/console.h"
+#include "includes/shared/logger/entity_logger.h"
 #include "includes/shared/utils/string_utils.hpp"
 
 CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
@@ -33,7 +34,46 @@ void CompilerOrchestrator::Init()
     // ---- resolve output directory once, so every downstream component uses it ----
     if (this->m_options.outputDir.empty())
     {
-        this->m_options.outputDir = std::filesystem::current_path().wstring();
+        std::filesystem::path defaultDir = std::filesystem::current_path();
+
+        if (SystemUtils::IsDirectoryWritable(defaultDir))
+        {
+            this->m_options.outputDir = defaultDir.wstring();
+        }
+        else if (!this->m_options.inputFilesPath.empty())
+        {
+            // CWD is not writable – try the input file's directory instead
+            std::filesystem::path inputDir =
+                std::filesystem::absolute(
+                    std::filesystem::path(this->m_options.inputFilesPath[0]).parent_path());
+
+            if (SystemUtils::IsDirectoryWritable(inputDir))
+            {
+                EntityLogger logger("GENERAL");
+                logger.Warn(
+                    "No write permission to default output directory \""
+                    + defaultDir.string()
+                    + "\". Falling back to input file directory \""
+                    + inputDir.string() + "\".");
+                this->m_options.outputDir = inputDir.wstring();
+            }
+            else
+            {
+                throw std::runtime_error(
+                    "Permission denied: cannot write to output directory \""
+                    + defaultDir.string()
+                    + "\" or input file directory \""
+                    + inputDir.string()
+                    + "\". Please run as administrator or choose a different output directory.");
+            }
+        }
+        else
+        {
+            throw std::runtime_error(
+                "Permission denied: cannot write to default output directory \""
+                + defaultDir.string()
+                + "\". Please run as administrator or choose a different output directory.");
+        }
     }
     else
     {
