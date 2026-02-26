@@ -744,7 +744,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     }
     else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
-        return globalVar->GetName();
+        return "[rel " + globalVar->GetName() + "]";
     }
     else if (auto* argVal = dynamic_cast<const IRArgument*>(operand))
     {

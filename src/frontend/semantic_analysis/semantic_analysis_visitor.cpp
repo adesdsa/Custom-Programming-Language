@@ -59,7 +59,11 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
         varName, varType, varAccessRight, varScope
     );
 
-    if (!this->m_currentScope->InsertVar(var))
+    VarTableNode* targetScope = (varScope == Scope::GLOBAL)
+        ? &this->m_varTable
+        : this->m_currentScope;
+
+    if (!targetScope->InsertVar(var))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
