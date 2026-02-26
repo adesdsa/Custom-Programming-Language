@@ -3,7 +3,7 @@
 
 Command::Command(): m_sType(CommandTypes::UNIDENTIFIED), m_uParameterIndex(0),
  m_bBuildingParam(false), m_bIgnoreCurrToken(false), m_bIgnoreEON(false),
- m_iParanthesesCounter(0), m_bFirstParanthesesEnter(false)
+ m_bExpression(false), m_iParanthesesCounter(0), m_bFirstParanthesesEnter(false)
 {
 }
 
@@ -376,6 +376,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
                 m_bBuildingParam = false;
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
+            return false;
         }
         else if (AddToCurrParam(currToken, nextToken)) 
         {
