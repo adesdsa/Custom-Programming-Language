@@ -167,6 +167,26 @@ void SemanticAnalysisVisitor::VisitIdentifierValue(ASTNode* node)
         );
     }
 
+    if (this->m_pendingForConditionCheck)
+    {
+        this->m_forExpressionCount++;
+
+        if (this->m_forExpressionCount == 2)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "for loop condition must be a boolean expression",
+                    this->m_forConditionLine,
+                    static_cast<uint16_t>(this->m_forConditionColumn),
+                    "Provide a boolean condition"
+                )
+            );
+            this->m_pendingForConditionCheck = false;
+            this->m_forExpressionCount = 0;
+        }
+    }
+
     HandleSingleCommandAssignement(node);
 }
 
