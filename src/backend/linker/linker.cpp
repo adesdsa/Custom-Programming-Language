@@ -51,7 +51,7 @@ std::string Linker::BuildLinkerCommand(
 {
     #if defined(_WIN32) || defined(_WIN64)
 
-        std::string golinkPath = std::filesystem::absolute(GOLINK_TOOL_PATH).string();
+        std::string golinkPath = SystemUtils::BuildRelativePath(L"tools/golink/GoLink.exe").string();
         std::string entryPoint;
 
         if constexpr (TargetArchitecture::Is64Bit())

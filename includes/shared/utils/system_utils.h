@@ -10,6 +10,7 @@
 #include <codecvt>
 #include <array>
 #include <cstdio>
+#include <fstream>
 
 namespace SystemUtils
 {
@@ -17,7 +18,13 @@ namespace SystemUtils
     // @return: string that hold current time in format: dd/mm/yyyy hh/mm/ss.
     std::string GetFullCurrentTime();
 
+    /// @brief Get the directory containing the currently running executable.
+    std::filesystem::path GetExecutableDir();
+
     const std::filesystem::path BuildRelativePath(const std::wstring& relativePath);
+
+    /// @brief Check whether a directory exists and is writable by creating a temp probe file.
+    bool IsDirectoryWritable(const std::filesystem::path& dir);
 
     /// @brief Execute an external command and capture its stdout + stderr.
     /// @param command The shell command to execute (stderr is redirected to stdout).
