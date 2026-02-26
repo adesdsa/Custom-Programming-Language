@@ -10,10 +10,51 @@ if(MSVC)
 endif()
 
 # =============================
-# Find Packages (installed by vcpkg)
+# Find Packages (installed by vcpkg when available)
 # =============================
-find_package(mio CONFIG REQUIRED)
-find_package(GTest CONFIG REQUIRED)
+
+# Try to find mio via a package manager (e.g., vcpkg). If unavailable, fall back
+# to fetching the header-only library directly so the project remains buildable
+# on systems without vcpkg.
+find_package(mio CONFIG QUIET)
+
+if(NOT mio_FOUND)
+    message(STATUS "mio package not found via CMake; fetching header-only mio from GitHub...")
+    include(FetchContent)
+    FetchContent_Declare(
+        mio_external
+        GIT_REPOSITORY https://github.com/mandreyel/mio.git
+        GIT_TAG master
+    )
+    FetchContent_MakeAvailable(mio_external)
+
+    # Ensure a mio::mio target exists, compatible with the vcpkg one.
+    if(NOT TARGET mio::mio)
+        if(TARGET mio)
+            add_library(mio::mio ALIAS mio)
+        else()
+            add_library(mio INTERFACE)
+            target_include_directories(mio INTERFACE ${mio_external_SOURCE_DIR}/include)
+            add_library(mio::mio ALIAS mio)
+        endif()
+    endif()
+endif()
+
+# Try to find GTest via a package manager; if unavailable, fetch googletest.
+find_package(GTest CONFIG QUIET)
+
+if(NOT GTest_FOUND)
+    message(STATUS "GTest package not found via CMake; fetching googletest from GitHub...")
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+    )
+    # Recommended by googletest for projects that use shared CRT on Windows; harmless elsewhere.
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
 
 # =============================
 # Source Files
