@@ -17,8 +17,8 @@ main(void) -> int
     # Local variable declarations with different access rights and scopes
     let a: int = 1;
     let b: int = 2;
-    const let c: int = 3;
-    readonly let d: int = 4;
+    let const c: int = 3;
+    let readonly d: int = 4;
     var localVar: int = 5;
 
     # sizeof on type, variable and expression
