@@ -185,7 +185,33 @@ bool Token::CheckSoloLetters(
 
 bool Token::IsCommentToken(const std::string &sToken) const
 {
-    return std::regex_match(sToken, RegexPatterns::k_TriviaComments());
+    // Line comments start with '#': they are comments until (but not including) '\n'.
+    if (!sToken.empty() && sToken[0] == '#')
+    {
+        return sToken.find('\n') == std::string::npos;
+    }
+
+    // Block comments start with '/*' and end with '*/', possibly spanning multiple lines.
+    // We consider ourselves "inside a comment" as long as:
+    //  - the token starts with '/*', and
+    //  - either we haven't seen '*/' yet,
+    //    or we have seen it but there is nothing after it (the next char will close the token).
+    if (sToken.size() >= 2 && sToken[0] == '/' && sToken[1] == '*')
+    {
+        const std::size_t endPos = sToken.find("*/", 2);
+        if (endPos == std::string::npos)
+        {
+            // No closing '*/' yet -> still inside block comment.
+            return true;
+        }
+
+        // We have a closing '*/'. Stay in the comment as long as there is
+        // nothing after it; once more characters are appended, we should
+        // stop treating it as a comment so the tokenizer can finish the token.
+        return (endPos + 2 == sToken.size());
+    }
+
+    return false;
 }
 
 bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const
