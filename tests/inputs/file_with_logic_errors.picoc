@@ -24,9 +24,9 @@ main(void) -> int
     let x: void;    #double declaration different type
     x = 2;  #legal
     y = 2;  #undeclared variable
-    const let y: int = 3;   #legal
+    let const y: int = 3;   #legal
     y = 5;  #cont mutating
-    readonly let z: int = 4;    #legal
+    let readonly z: int = 4;    #legal
     z = 5;  #readonly mutating
     x = 1 and true;     #undefined expressionType
     x = true;   #wrong assignment type

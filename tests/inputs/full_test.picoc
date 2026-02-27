@@ -1,0 +1,178 @@
+# Full feature test for the PicoC language.
+# This program is intended to exercise all legal keywords, operators,
+# and common syntax patterns used by the lexer, parser and semantic checker.
+
+# Global variables (test: global, bool/int/double, initialization)
+global g_counter: int = 0;
+global g_scale: double = 2.0;
+global g_flag: bool = false;
+
+# Forward declarations
+helper_bool_ops(a: bool, b: bool) -> bool;
+math_ops(x: int, y: unsigned int, z: double) -> int;
+loop_demo(limit: int) -> void;
+
+main(void) -> int
+{
+    # Local variable declarations with different access rights and scopes
+    let a: int = 1;
+    let b: int = 2;
+    const let c: int = 3;
+    readonly let d: int = 4;
+    var localVar: int = 5;
+
+    # sizeof on type, variable and expression
+    let s_type: int = sizeof(int);
+    let s_var: int = sizeof(a);
+    let s_expr: int = sizeof(a + b);
+
+    # builtin-style function call inside sizeof to match other tests
+    let s_call: int = sizeof(1 + get_int());
+
+    # call helper functions that exercise boolean and math logic
+    g_flag = helper_bool_ops(true, false);
+    let result: int = math_ops(a + c, 10, 2.5);
+
+    # Use loop constructs, break/continue/pass and global variables
+    loop_demo(10);
+
+    # Conditional chain (if / elif / else) using boolean expressions
+    if (g_flag and not (result == 0))
+    {
+        println(result + s_type + s_var + s_expr + s_call);
+    }
+    elif (g_counter > 0 or localVar < 0)
+    {
+        println(g_counter);
+    }
+    else
+    {
+        pass;
+        println(0);
+    }
+
+    return 0;
+}
+
+# Boolean logic, relational operators and bitwise/logical keywords (and/or/not/xor)
+helper_bool_ops(a: bool, b: bool) -> bool
+{
+    let both: bool = a and b;
+    let either: bool = a or b;
+    let xorResult: bool = a xor b;
+    let negatedA: bool = not a;
+
+    if (both and not xorResult)
+    {
+        return true;
+    }
+    elif (either and xorResult)
+    {
+        return true;
+    }
+    else
+    {
+        # use all comparison operators in boolean context
+        let cmp1: bool = (true == a);
+        let cmp2: bool = (false != b);
+        let cmp3: bool = (1 < 2);
+        let cmp4: bool = (2 > 1);
+        let cmp5: bool = (1 <= 1);
+        let cmp6: bool = (2 >= 1);
+
+        if (cmp1 and cmp2 and cmp3 and cmp4 and cmp5 and cmp6)
+        {
+            return negatedA;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+
+# Arithmetic operators, sizeof, unsigned and double usage.
+math_ops(x: int, y: unsigned int, z: double) -> int
+{
+    let result: int = 0;
+    let tempDouble: double = z * 2.0 / g_scale;
+
+    # basic arithmetic and integer division / modulo
+    result = x + y;
+    result = result - 1;
+    result = result * 2;
+    result = result / 2;
+    result = result % 3;
+    result = result + (y // 2);
+
+    # comparisons that affect result to ensure they are evaluated
+    if (x == y)
+    {
+        result = result + 1;
+    }
+    elif (x != y)
+    {
+        result = result + 2;
+    }
+
+    if (tempDouble > 0.0 and x <= y)
+    {
+        result = result + 3;
+    }
+    elif (tempDouble < 0.0 or x >= y)
+    {
+        result = result - 3;
+    }
+
+    # more sizeof variants
+    result = result + sizeof(int);
+    result = result + sizeof(x + y);
+
+    return result;
+}
+
+/* 
+ * Loop constructs, break/continue/pass and updates of global state.
+ */
+loop_demo(limit: int) -> void
+{
+    var i: int = 0;
+
+    # while loop with complex condition
+    while (i < limit and i < g_threshold)
+    {
+        if (i == 0)
+        {
+            pass;
+        }
+        elif (i == 1)
+        {
+            i = i + 1;
+            continue;
+        }
+        elif (i > 5)
+        {
+            break;
+        }
+        else
+        {
+            g_counter = g_counter + i;
+        }
+
+        i = i + 1;
+    }
+
+    # for loop with initializer, condition and increment
+    for(let j: int = 0; j < limit; j = j + 1)
+    {
+        g_counter = g_counter + j;
+
+        if (j == 3)
+        {
+            break;
+        }
+    }
+
+    return;
+}
+
