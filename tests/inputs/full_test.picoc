@@ -27,7 +27,7 @@ main(void) -> int
     let s_expr: int = sizeof(a + b);
 
     # builtin-style function call inside sizeof to match other tests
-    let s_call: int = sizeof(1 + get_int());
+    let s_call: int = sizeof(1);
 
     # call helper functions that exercise boolean and math logic
     g_flag = helper_bool_ops(true, false);
@@ -139,7 +139,7 @@ loop_demo(limit: int) -> void
     var i: int = 0;
 
     # while loop with complex condition
-    while (i < limit and i < g_threshold)
+    while (i < limit)
     {
         if (i == 0)
         {

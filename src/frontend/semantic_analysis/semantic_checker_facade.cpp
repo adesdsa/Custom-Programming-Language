@@ -589,6 +589,14 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }
+        // Incase we have boolean comparrison
+        else if (currExpressionType == ExpressionType::BOOLEAN &&
+            expressionSet[i] == ExpressionType::COMPARRISON_OPERATOR &&
+            i + 1 < expressionSet.size() &&
+            expressionSet[i + 1] == ExpressionType::BOOLEAN)
+        {
+            currExpressionType = ExpressionType::BOOLEAN;
+        }
         // Bitwise/logical operators (and, or, xor, not) adapt to operand type:
         //   int op int   -> MATHEMATICAL (bitwise)
         //   bool op bool -> BOOLEAN      (logical)
