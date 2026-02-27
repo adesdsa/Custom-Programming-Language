@@ -258,15 +258,15 @@ bool Command::ParseArrowFuncDeclaration(Token& currToken, Token& nextToken)
 
 bool Command::ParseAccessRights(Token& currToken, Token& nextToken)
 {
-    if (IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
-    else if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (IsType(currToken, TokenTypes::IDENTIFIER))
         return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseScope(Token& currToken, Token& nextToken)
 {
-    if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (IsAccessRights(currToken)) return NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
+    else if (IsType(currToken, TokenTypes::IDENTIFIER))
         return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown(currToken);
 }
