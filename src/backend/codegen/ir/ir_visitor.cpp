@@ -584,25 +584,37 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     }
 
     case BlockKind::forBlock:
-        // First we create the increment part of the for loop.
+    {
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
-        forCommand = forNode->command;
-        tempParams = forCommand.GetParams();
-        tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
-        VisitIdentifier(&tempNode);
-        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
-        VisitAssignment(&tempNode);
-        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
-        VisitExpression(&tempNode);
+
+        // Only emit the increment if the block is not already terminated
+        // (e.g. by break/continue/return). Instructions added to a terminated
+        // block are silently dropped, leaving dangling pointers.
+        BasicBlock* insertBlk = this->m_irbuilder.GetInsertBlock();
+        if (insertBlk && !insertBlk->HasTerminator())
+        {
+            forCommand = forNode->command;
+            tempParams = forCommand.GetParams();
+            tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
+            VisitIdentifier(&tempNode);
+            tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
+            VisitAssignment(&tempNode);
+            tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+            VisitExpression(&tempNode);
+        }
 
         this->m_varTableIndex.pop();
         this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
-
+    }
         /// @note not having break is intended
     case BlockKind::whileBlock:
-        // Jumping back to the loop.cond block.
-        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+    {
+        BasicBlock* loopInsertBlk = this->m_irbuilder.GetInsertBlock();
+        if (loopInsertBlk && !loopInsertBlk->HasTerminator())
+        {
+            this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+        }
         this->m_conditionBlocks.pop();
         this->m_afterLoopBlocks.pop(); // reset; no longer needed for break
 
@@ -611,6 +623,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
         break;
+    }
 
     case BlockKind::ifBlock:
     case BlockKind::elifBlock:
