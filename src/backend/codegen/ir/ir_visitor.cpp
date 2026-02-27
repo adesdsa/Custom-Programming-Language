@@ -23,7 +23,9 @@ IRVisitor::IRVisitor(
     m_currVarMetaData(std::nullopt),
     m_expectedReturnValue(false),
     m_expectedAssignment(false),
-    m_returnedAlready(false)
+    m_returnedAlready(false),
+    m_handledInsides(false),
+    m_insideFor(false)
 {
     this->InitializeHandlers();
     this->m_varTableIndex.push(0);
@@ -487,8 +489,28 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     switch (this->m_blockHistory.top())
     {
     case BlockKind::functionBlock:
+    {
         this->m_irbuilder.SetInsertPoint(this->m_currFunc->AddBasicBlock("entry"));
+        // global parameters, store the argument value into the global variable
+        FuncMetaData* funcMeta = this->m_decoratedAst.funcTable.FindFunctionByName(
+            this->m_currFunc->GetName());
+        if (funcMeta)
+        {
+            for (const auto& param : funcMeta->GetFuncParams())
+            {
+                if (param.scope == Scope::GLOBAL)
+                {
+                    IRBaseValue* arg = this->m_currFunc->GetArgument(param.sName);
+                    IRBaseValue* globalVar = this->m_currModule.GetVariable(param.sName);
+                    if (arg && globalVar)
+                    {
+                        this->m_irbuilder.CreateStore(arg, globalVar);
+                    }
+                }
+            }
+        }
         break;
+    }
 
     case BlockKind::elseBlock:
         break;

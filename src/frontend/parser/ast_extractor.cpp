@@ -82,12 +82,13 @@ const std::vector<VarMetaData> ASTExtractor::ExtractFuncParams(
             Type paramType = ExtractVarType(child);
             AccessRights paramAccess = ExtractVarAccessRight(child);
             
+            Scope paramScope = ExtractVarScope(child);
             params.push_back(
                 varFactory.CreateVarMetadata(
                     paramName,
                     paramType,
                     paramAccess,
-                    Scope::LET  // params are local
+                    paramScope
                 )
             );
         }
