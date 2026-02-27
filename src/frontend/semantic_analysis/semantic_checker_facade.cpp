@@ -224,12 +224,10 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
     
     case BlockKind::Else:
         if (ElseElifBlockEnter()) return false;
-        m_operationHistory.push(OperationKind::None); // Starting a new block.
         break;
     
     case BlockKind::Elif:
         if (ElseElifBlockEnter()) return false;
-        m_operationHistory.push(OperationKind::None); // Starting a new block.
         break;
 
     case BlockKind::Loop:
