@@ -24,14 +24,6 @@ const AST& ParserLogic::MainFlow()
         // building full-command
         while (!fullCommand.IsFinished())
         {
-            if (this->m_currentToken.GetLine() == 129)
-            {
-                if (this->m_currentToken.GetColumn() == 23)
-                {
-                    int x = 0;
-                }
-                int x = 0;
-            }
             fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
         }   
