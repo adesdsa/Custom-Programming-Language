@@ -102,7 +102,7 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(//|==|[+\-*/%=<>])",
+                    R"(//|==|!=|<=|>=|[+\-*/%=<>!])",
                     std::regex::optimize
                 );
             } 

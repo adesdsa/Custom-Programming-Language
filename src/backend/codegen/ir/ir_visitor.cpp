@@ -1070,7 +1070,10 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
 
 bool IRVisitor::CheckSignage(Token token)
 {
-    return token.GetValue().find('-') == std::string::npos;
+    // integer literals are always treated as signed
+    // unless variables explicitly declared as unsigned
+    (void)token;
+    return false;
 }
 
 bool IRVisitor::CheckFloatness(Token token)
