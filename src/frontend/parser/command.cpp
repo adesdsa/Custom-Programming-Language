@@ -418,7 +418,9 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     else if (IsValue(currToken, "not")) return false;
     else if (IsValue(currToken, "sizeof"))
     {
+        m_bIgnoreCurrToken = true;
         m_bBuildingParam = true;
+        m_iParanthesesCounter = 1;
         AddToCurrParam(currToken, nextToken);
         return false;
     }

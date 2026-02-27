@@ -18,11 +18,20 @@ const AST& ParserLogic::MainFlow()
 
     while (this->m_currentToken.GetType() != TokenTypes::EOF_TOKEN)
     {
+        this->m_entityLogger.Info(std::to_string(this->m_currentToken.GetLine()));
         FullCommand fullCommand(this->m_entityLogger);
 
         // building full-command
         while (!fullCommand.IsFinished())
         {
+            if (this->m_currentToken.GetLine() == 129)
+            {
+                if (this->m_currentToken.GetColumn() == 23)
+                {
+                    int x = 0;
+                }
+                int x = 0;
+            }
             fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
         }   
