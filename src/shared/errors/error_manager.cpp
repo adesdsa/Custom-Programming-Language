@@ -8,9 +8,18 @@ ErrorManager& ErrorManager::GetInstance() noexcept
     return instance;
 }
 
-void ErrorManager::StoreError(const CompileTimeError& error)
+void ErrorManager::SetCurrentFilePath(const std::string& filePath) noexcept
 {
-    this->m_errorList.push_back(error);
+    this->m_currentFilePath = filePath;
+}
+
+void ErrorManager::StoreError(CompileTimeError error)
+{
+    if (!this->m_currentFilePath.empty())
+    {
+        error.SetFilePath(this->m_currentFilePath);
+    }
+    this->m_errorList.push_back(std::move(error));
 }
 
 void ErrorManager::Clear() noexcept

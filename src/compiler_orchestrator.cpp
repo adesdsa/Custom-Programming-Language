@@ -1,6 +1,7 @@
 #include "includes/compiler_orchestrator.h"
 #include "includes/shared/logger/console.h"
 #include "includes/shared/logger/entity_logger.h"
+#include "includes/shared/errors/error_manager.h"
 #include "includes/shared/utils/string_utils.hpp"
 
 CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
@@ -118,6 +119,10 @@ void CompilerOrchestrator::MainFlow()
 
     // TODO: Support multi-file compilation for now compile the first file
     std::filesystem::path filePath(this->m_options.inputFilesPath[0]);
+
+    // Set the current file path on the error manager so all errors
+    // will display which file they occurred in.
+    ErrorManager::GetInstance().SetCurrentFilePath(filePath.string());
 
     ParserLogic parserComponent(filePath);
 

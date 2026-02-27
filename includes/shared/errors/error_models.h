@@ -24,7 +24,6 @@ namespace ErrorTypes
     inline constexpr std::string_view UNDEFINED_FUNCTION_ERROR = "function is not defined error";
 }
 
-// TODO: Add field of path to file in which the error occured
 class CompileTimeError
 {
 public:
@@ -38,12 +37,15 @@ public:
 
     std::string ToString() const noexcept;
 
+    void SetFilePath(const std::string& filePath);
+
 private:
     std::string_view m_type;
     std::string m_content;
     size_t m_line;
     size_t m_column;
     std::string m_hint;
+    std::string m_filePath;
 };
 
 class CompilationAbortException : public std::exception 
