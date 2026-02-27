@@ -311,6 +311,18 @@ void IRVisitor::VisitFor(ASTNode* node)
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
 
+    {
+        size_t currIdx = this->m_varTableIndex.top();
+        this->m_varTableIndex.pop();
+        this->m_varTableIndex.push(currIdx + 1);  // consumed one child
+        VarTableNode* forInitScope = this->m_currVarTableNode->GetBlock(static_cast<int>(currIdx));
+        if (forInitScope)
+        {
+            this->m_currVarTableNode = forInitScope;
+        }
+        this->m_varTableIndex.push(0);  // start indexing children of for-init scope
+    }
+
     // Building the first Command in the for loop which is Identifier/VarDeclaration + Assigment + Expression
     // That runs before the loop.
     if (node->command.GetParams()[FOR_PRE_COND_VAR_INDEX].GetType() == CommandTypes::VAR_DECLARATION)
@@ -583,6 +595,10 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         VisitAssignment(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
         VisitExpression(&tempNode);
+
+        this->m_varTableIndex.pop();
+        this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
+
         /// @note not having break is intended
     case BlockKind::whileBlock:
         // Jumping back to the loop.cond block.

@@ -596,7 +596,9 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
     this->m_forConditionLine = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetLine();
     this->m_forConditionColumn = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetColumn();
     this->m_forExpressionCount = 0;
-    
+    this->m_currentScope = this->m_currentScope->CreateBlock();
+    this->m_pendingForInitScope = true;
+
     // signal VisitBlockStart what kind of block is coming
     this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Loop;
     this->m_hasPendingBlock = true;
@@ -686,6 +688,8 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
     }
     
     bool calledEnteredBlock = false;
+    bool hasForInitScope = this->m_pendingForInitScope;
+    this->m_pendingForInitScope = false;
     
     // enter block in facade if a control structure set pending block kind
     if (this->m_hasPendingBlock)
@@ -696,17 +700,33 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
     
     // track whether this block level called EnteredBlock for matching ExitedBlock call
     this->m_blockEnteredStack.push(calledEnteredBlock);
+    this->m_forInitScopeStack.push(hasForInitScope);
 }
 
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 {
     if (!node) return;
     
-    // Exit scope - move to parent
     const auto& parent = this->m_currentScope->GetParent();
     if (parent != nullptr)
     {
         this->m_currentScope = parent;
+    }
+
+    // if this block had a for-init wrapper scope, pop it too
+    bool hadForInitScope = !this->m_forInitScopeStack.empty() &&
+                            this->m_forInitScopeStack.top();
+    if (!this->m_forInitScopeStack.empty())
+    {
+        this->m_forInitScopeStack.pop();
+    }
+    if (hadForInitScope)
+    {
+        const auto& forParent = this->m_currentScope->GetParent();
+        if (forParent != nullptr)
+        {
+            this->m_currentScope = forParent;
+        }
     }
 
     // Only call ExitedBlock if we called EnteredBlock for this block level
