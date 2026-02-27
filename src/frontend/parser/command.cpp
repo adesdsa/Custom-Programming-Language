@@ -160,6 +160,8 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
             return FinishAndAssignType(CommandTypes::CONTROL_STATEMENT);
         else if (IsValue(currToken, "pass"))
             return FinishAndAssignType(CommandTypes::PASS);
+        else if (IsValue(currToken, "not"))
+            return NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
         else return FoundUnknown(currToken);
     }
     else if (IsExpressionStart(currToken))
@@ -256,15 +258,15 @@ bool Command::ParseArrowFuncDeclaration(Token& currToken, Token& nextToken)
 
 bool Command::ParseAccessRights(Token& currToken, Token& nextToken)
 {
-    if (IsScope(currToken)) return NoFinishAndAssignType(CommandTypes::SCOPE);
-    else if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (IsType(currToken, TokenTypes::IDENTIFIER))
         return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown(currToken);
 }
 
 bool Command::ParseScope(Token& currToken, Token& nextToken)
 {
-    if (IsType(currToken, TokenTypes::IDENTIFIER))
+    if (IsAccessRights(currToken)) return NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
+    else if (IsType(currToken, TokenTypes::IDENTIFIER))
         return NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
     else return FoundUnknown(currToken);
 }
@@ -403,7 +405,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
         } 
-        else if (IsType(currToken, TokenTypes::VALUE)) 
+        else if (IsType(currToken, TokenTypes::VALUE) || IsType(currToken, TokenTypes::STRING_LITERAL)) 
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         else return FoundUnknown(currToken);
     }
@@ -496,6 +498,7 @@ bool Command::IsExpressionStart(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) ||
         IsType(token, TokenTypes::VALUE) ||
+        IsType(token, TokenTypes::STRING_LITERAL) ||
         IsValue(token, "-") ||
         IsValue(token, "not") ||
         IsValue(token, "(");
@@ -513,7 +516,8 @@ inline bool Command::IsOperator(Token& token)
 inline bool Command::IsValueToken(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) ||
-        IsType(token, TokenTypes::VALUE);
+        IsType(token, TokenTypes::VALUE) ||
+        IsType(token, TokenTypes::STRING_LITERAL);
 }
 
 inline bool Command::IsType(Token& token)

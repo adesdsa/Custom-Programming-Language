@@ -39,7 +39,8 @@ enum class EntranceKind
 {
     entry,
     exit,
-    condition
+    condition,
+    latch  // for loops jump here if continue is called
 };
 enum class BlockKind
 {
@@ -139,6 +140,7 @@ private:
     size_t m_bodyCnt;
     size_t m_exitCnt;
     size_t m_mergeCnt;
+    size_t m_latchCnt;
 
     /**********************\
     |  Control Flow Fields |
@@ -158,6 +160,10 @@ private:
     std::stack<std::unique_ptr<BasicBlock>> m_conditionMergeBlocks;
     /// @brief Saves the next exit block that is initialized at next '}' node.
     std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
+    /// @brief Target block for 'continue': for-loops latch (increment), while-loops, condition.
+    std::stack<BasicBlock*> m_continueTargets;
+    /// @brief For-loop latch blocks (hold the increment code); created in VisitFor, added to function in VisitBlockEnd.
+    std::stack<std::unique_ptr<BasicBlock>> m_forLatchBlocks;
     /// @brief The current index of the varTable.
     std::stack<size_t> m_varTableIndex;
 
@@ -268,6 +274,10 @@ private:
     /// @param notCnt Number of consecutive 'not' tokens seen immediately before value.
     /// @return New IRBaseValue* after applying the nots, or nullptr on error.
     IRBaseValue* ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt);
+
+    /// @brief Insert an implicit FPToSI or SIToFP conversion when the value
+    ///        type doesn't match the target variable type.
+    IRBaseValue* ConvertIfNeeded(IRBaseValue* value, std::shared_ptr<const IRType> targetType);
 
     /// @brief Collect tokens from a command into a flat vector of ExprItem.
     /// @details This routine handles parentheses recursively: when a '(' is

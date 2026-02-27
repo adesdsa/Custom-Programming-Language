@@ -1,4 +1,7 @@
 #include "includes/backend/codegen/asm/targets/x86_emitter.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+
+#include <cstring>
 
 X86_Emitter::X86_Emitter(const FuncTable& funcTable) : 
     X86BaseEmitter(funcTable)
@@ -25,7 +28,15 @@ std::string X86_Emitter::EmitHeader() const
             header << "BITS 32\n";
             header << "global _mainCRTStartup\n";
             header << "extern _main\n";
-            header << "extern _ExitProcess@4\n\n";
+            header << "extern _ExitProcess@4\n";
+            header << "extern _printf\n";
+            header << "extern _exit\n\n";
+
+            // built-in format strings (used by println and other built-ins)
+            header << "section .data\n";
+            header << "    __println_fmt_int db \"%d\", 10, 0\n";
+            header << "    __println_fmt_double db \"%g\", 10, 0\n";
+            header << "    __println_fmt_str db \"%s\", 10, 0\n\n";
             break;
 
         default:
@@ -316,6 +327,27 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         }
 
         // -----------------------
+        // Type conversion
+        // -----------------------
+        case IROpcode::FPToSI:
+        {
+            out << "    ; FPToSI: convert float to signed int\n";
+            out << "    movss xmm0, " << this->GetOperandAsm(op1, out) << "\n";
+            out << "    cvttss2si eax, xmm0\n";
+            out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
+            break;
+        }
+
+        case IROpcode::SIToFP:
+        {
+            out << "    ; SIToFP: convert signed int to float\n";
+            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
+            out << "    cvtsi2ss xmm0, eax\n";
+            out << "    movss " << this->slotOfInstr(instruction) << ", xmm0\n";
+            break;
+        }
+
+        // -----------------------
         // Control flow
         // -----------------------
         case IROpcode::Br:
@@ -461,9 +493,55 @@ void X86_Emitter::EmitStart(std::ostream& out)
             out << "_mainCRTStartup:\n";
             out << "    call _main\n";
 
-            // call ExitProcess with return value
+            // exit() flushes CRT stdio buffers
+            out << "    push eax\n";
+            out << "    call _exit\n";
+            out << "    add esp, 4\n";
+
+            // Halt if exit returns (should not)
             out << "    push eax\n";            // push exit code
             out << "    call _ExitProcess@4\n"; // stdcall: callee cleans stack
+
+            // ---- Built-in: println(value: int) -> void ----
+            // Wraps printf with a "%d\n" format string (cdecl).
+            out << "\n";
+            out << "_println:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    push dword [ebp+8]\n";  // arg: value
+            out << "    push __println_fmt_int\n"; // arg: fmt
+            out << "    call _printf\n";
+            out << "    add esp, 8\n"; // clean up 2 args
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: println_double(value: float bits) -> void ----
+            // Convert 32-bit float to 64-bit double for printf %g (cdecl).
+            out << "\n";
+            out << "_println_double:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    movss xmm0, dword [ebp+8]\n";   // load 32-bit float
+            out << "    cvtss2sd xmm0, xmm0\n";  // widen to double
+            out << "    sub esp, 8\n";
+            out << "    movsd qword [esp], xmm0\n";  // push double (8 bytes)
+            out << "    push __println_fmt_double\n";  // push fmt
+            out << "    call _printf\n";
+            out << "    add esp, 12\n";  // clean up (4 fmt + 8 double)
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: println_str(ptr: char*) -> void ----
+            out << "\n";
+            out << "_println_str:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    push dword [ebp+8]\n";           // arg: string ptr
+            out << "    push __println_fmt_str\n";        // arg: fmt
+            out << "    call _printf\n";
+            out << "    add esp, 8\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
             break;
         }
 
@@ -518,6 +596,19 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
         // store as 32-bit hex value
         out << "    mov dword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";
         return slot;
+    }
+
+    if (auto* strConst = dynamic_cast<const IRConstantString*>(operand))
+    {
+        // return the label of the string constant in the .data section
+        if (TargetArchitecture::GetOS() == OS::Windows)
+        {
+            return strConst->GetLabel();
+        }
+        else
+        {
+            return strConst->GetLabel();
+        }
     }
 
     if (auto* boolLiteral = dynamic_cast<const IRConstantBool*>(operand))

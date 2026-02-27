@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 IRVisitor::IRVisitor(
     const EntityLogger& entityLogger,
@@ -16,12 +17,15 @@ IRVisitor::IRVisitor(
     m_bodyCnt(0),
     m_exitCnt(0),
     m_mergeCnt(0),
+    m_latchCnt(0),
     m_nextControlEntryBlock(nullptr),
     m_lastSavedValue(nullptr),
     m_currVarMetaData(std::nullopt),
     m_expectedReturnValue(false),
     m_expectedAssignment(false),
-    m_returnedAlready(false)
+    m_returnedAlready(false),
+    m_handledInsides(false),
+    m_insideFor(false)
 {
     this->InitializeHandlers();
     this->m_varTableIndex.push(0);
@@ -135,10 +139,17 @@ void IRVisitor::VisitAssignment(ASTNode* node)
     // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
-        this->m_irbuilder.CreateStore(
-            this->m_lastSavedValue,
-            FindPointer(this->m_currVarMetaData.value().sName)
-        );
+        IRBaseValue* valueToStore = this->m_lastSavedValue;
+        IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
+
+        // Insert implicit type conversion when the value type differs from the target variable type
+        if (valueToStore && target)
+        {
+            auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
+            valueToStore = ConvertIfNeeded(valueToStore, targetType);
+        }
+
+        this->m_irbuilder.CreateStore(valueToStore, target);
         this->m_expectedAssignment = false;
         this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
@@ -277,6 +288,8 @@ void IRVisitor::VisitWhile(ASTNode* node)
     // First we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::condition));
     this->m_conditionBlocks.push(condBlock);
+    // For while-loops, continue jumps directly to the condition (no increment latch)
+    this->m_continueTargets.push(condBlock);
     this->m_irbuilder.CreateBr(condBlock);
     this->m_irbuilder.SetInsertPoint(condBlock);
 
@@ -310,6 +323,22 @@ void IRVisitor::VisitFor(ASTNode* node)
     /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
+
+    // Create the latch block for the increment (continue jumps here instead of for.cond)
+    this->m_forLatchBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::latch)));
+    this->m_continueTargets.push(this->m_forLatchBlocks.top().get());
+
+    {
+        size_t currIdx = this->m_varTableIndex.top();
+        this->m_varTableIndex.pop();
+        this->m_varTableIndex.push(currIdx + 1);  // consumed one child
+        VarTableNode* forInitScope = this->m_currVarTableNode->GetBlock(static_cast<int>(currIdx));
+        if (forInitScope)
+        {
+            this->m_currVarTableNode = forInitScope;
+        }
+        this->m_varTableIndex.push(0);  // start indexing children of for-init scope
+    }
 
     // Building the first Command in the for loop which is Identifier/VarDeclaration + Assigment + Expression
     // That runs before the loop.
@@ -386,8 +415,9 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
     if (statement.GetValue() == "continue")
     {
-        /// Jumping to the condition block of the loop.
-        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+        /// while-loops: jumps to the condition block.
+        /// for-loops: jumps to the latch block (increment then condition).
+        this->m_irbuilder.CreateBr(this->m_continueTargets.top());
     }
     else if (statement.GetValue() == "break")
     {
@@ -459,8 +489,28 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     switch (this->m_blockHistory.top())
     {
     case BlockKind::functionBlock:
+    {
         this->m_irbuilder.SetInsertPoint(this->m_currFunc->AddBasicBlock("entry"));
+        // global parameters, store the argument value into the global variable
+        FuncMetaData* funcMeta = this->m_decoratedAst.funcTable.FindFunctionByName(
+            this->m_currFunc->GetName());
+        if (funcMeta)
+        {
+            for (const auto& param : funcMeta->GetFuncParams())
+            {
+                if (param.scope == Scope::GLOBAL)
+                {
+                    IRBaseValue* arg = this->m_currFunc->GetArgument(param.sName);
+                    IRBaseValue* globalVar = this->m_currModule.GetVariable(param.sName);
+                    if (arg && globalVar)
+                    {
+                        this->m_irbuilder.CreateStore(arg, globalVar);
+                    }
+                }
+            }
+        }
         break;
+    }
 
     case BlockKind::elseBlock:
         break;
@@ -529,6 +579,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         this->m_bodyCnt = 0;
         this->m_exitCnt = 0;
         this->m_mergeCnt = 0;
+        this->m_latchCnt = 0;
 
         while (!this->m_blockHistory.empty())
         {
@@ -554,6 +605,14 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_conditionMergeBlocks.pop();
         }
+        while (!this->m_continueTargets.empty())
+        {
+            this->m_continueTargets.pop();
+        }
+        while (!this->m_forLatchBlocks.empty())
+        {
+            this->m_forLatchBlocks.pop();
+        }
         
         // Save the top-level function index before clearing (tells us which function we're at)
         size_t nextFuncIndex = this->m_varTableIndex.top();  // This is already incremented
@@ -572,9 +631,20 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     }
 
     case BlockKind::forBlock:
-        // First we create the increment part of the for loop.
+    {
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
+
+        // If the body is not already terminated (by break/return), branch to the latch block.
+        BasicBlock* bodyInsertBlk = this->m_irbuilder.GetInsertBlock();
+        if (bodyInsertBlk && !bodyInsertBlk->HasTerminator())
+        {
+            this->m_irbuilder.CreateBr(this->m_forLatchBlocks.top().get());
+        }
+        BasicBlock* latchBlk = this->m_currFunc->AddBasicBlock(std::move(this->m_forLatchBlocks.top()));
+        this->m_forLatchBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(latchBlk);
+
         forCommand = forNode->command;
         tempParams = forCommand.GetParams();
         tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
@@ -583,18 +653,43 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         VisitAssignment(&tempNode);
         tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
         VisitExpression(&tempNode);
-        /// @note not having break is intended
-    case BlockKind::whileBlock:
-        // Jumping back to the loop.cond block.
+
+        // Branch from latch back to the condition block
         this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+
+        this->m_varTableIndex.pop();
+        this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
+
+        this->m_continueTargets.pop();
+
         this->m_conditionBlocks.pop();
-        this->m_afterLoopBlocks.pop(); // reset; no longer needed for break
+        this->m_afterLoopBlocks.pop();
+
+        tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_nextExitBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+        break;
+    }
+
+    case BlockKind::whileBlock:
+    {
+        BasicBlock* loopInsertBlk = this->m_irbuilder.GetInsertBlock();
+        if (loopInsertBlk && !loopInsertBlk->HasTerminator())
+        {
+            this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+        }
+
+        this->m_continueTargets.pop();
+
+        this->m_conditionBlocks.pop();
+        this->m_afterLoopBlocks.pop();
 
         // Creating the loop exit block
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
         break;
+    }
 
     case BlockKind::ifBlock:
     case BlockKind::elifBlock:
@@ -780,6 +875,53 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
 {
     std::string value = token.GetValue();
+
+    if (token.GetType() == TokenTypes::STRING_LITERAL)
+    {
+        // remove quotes
+        std::string content = value.substr(1, value.size() - 2);
+
+        // process escape sequences (\n, \t)
+        std::string processed;
+        for (size_t i = 0; i < content.size(); i++)
+        {
+            if (content[i] == '\\' && i + 1 < content.size())
+            {
+                switch (content[i + 1])
+                {
+                    case 'n':  
+                        processed += '\n'; 
+                        i++;
+                        break;
+
+                    case 't':  
+                        processed += '\t';
+                        i++;
+                        break;
+                        
+                    case '\\':
+                        processed += '\\';
+                        i++;
+                        break;
+                        
+                    case '"':  
+                        processed += '"';
+                        i++;
+                        break;
+
+                    default:  
+                        processed += content[i];
+                        break;
+                }
+            }
+            else
+            {
+                processed += content[i];
+            }
+        }
+
+        return this->m_irbuilder.GetString(processed);
+    }
 
     if (value == "true")
     {
@@ -1005,7 +1147,7 @@ IRInstruction* IRVisitor::ChooseOperation(
 Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
 {
     std::string value = token.GetValue();
-    if (value == "And")
+    if (value == "and")
     {
         return Operators::And;
     }
@@ -1053,12 +1195,27 @@ Operators IRVisitor::TokenizerOperatorToIROperator(Token token)
     {
         return Operators::Lt;
     }
+    else if (value == ">=")
+    {
+        return Operators::Ge;
+    }
+    else if (value == "<=")
+    {
+        return Operators::Le;
+    }
+    else if (value == "!=")
+    {
+        return Operators::Ne;
+    }
     else return Operators::None;
 }
 
 bool IRVisitor::CheckSignage(Token token)
 {
-    return token.GetValue().find('-') == std::string::npos;
+    // integer literals are always treated as signed
+    // unless variables explicitly declared as unsigned
+    (void)token;
+    return false;
 }
 
 bool IRVisitor::CheckFloatness(Token token)
@@ -1113,9 +1270,29 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         }
     }
 
+    std::string targetFuncName = funcName;
+    if (funcName == "println" && !tempInstructionHolder.empty() && tempInstructionHolder[0])
+    {
+        auto argKind = tempInstructionHolder[0]->GetType()->GetKind();
+        if (argKind == IRTypeKind::Float64 || argKind == IRTypeKind::Float32)
+        {
+            targetFuncName = "println_double";
+        }
+        else if (dynamic_cast<IRConstantString*>(tempInstructionHolder[0]))
+        {
+            targetFuncName = "println_str";
+        }
+    }
+
+    // ensure the target function stub exists in the module
+    if (targetFuncName != funcName && !this->m_currModule.IsFuncExistByName(targetFuncName))
+    {
+        this->m_currModule.AddFunction(targetFuncName, IRType::GetVoid());
+    }
+
     // Creating the Call Instruction
     IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction(funcName),
+        this->m_currModule.GetFunction(targetFuncName),
         tempInstructionHolder
     );
 
@@ -1225,6 +1402,11 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
             this->m_condCnt++;
             return "for.cond" + std::to_string(this->m_condCnt - 1);
             break;
+
+        case EntranceKind::latch:
+            this->m_latchCnt++;
+            return "for.latch" + std::to_string(this->m_latchCnt - 1);
+            break;
         
         default:
             break;
@@ -1300,7 +1482,37 @@ IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
         return nullptr;
     }
     if (notCnt % 2 == 0) return value;
-    return this->m_irbuilder.CreateAnd(this->m_irbuilder.GetBool(false), value);
+    // Logical NOT: value == 0  →  1, value != 0  →  0
+    // Works for both booleans (0/1) and integers (0 is false, nonzero is true).
+    return this->m_irbuilder.CreateICmpEQ(value, this->m_irbuilder.GetInt32(0));
+}
+
+IRBaseValue* IRVisitor::ConvertIfNeeded(IRBaseValue* value, std::shared_ptr<const IRType> targetType)
+{
+    if (!value || !targetType) return value;
+
+    auto srcKind = value->GetType()->GetKind();
+    auto dstKind = targetType->GetKind();
+
+    if (srcKind == dstKind) return value; // no conversion needed
+
+    bool srcIsFloat = (srcKind == IRTypeKind::Float32 || srcKind == IRTypeKind::Float64);
+    bool dstIsFloat = (dstKind == IRTypeKind::Float32 || dstKind == IRTypeKind::Float64);
+    bool srcIsInt   = (srcKind == IRTypeKind::Int1 || srcKind == IRTypeKind::Int8 ||
+                       srcKind == IRTypeKind::Int32 || srcKind == IRTypeKind::Int64);
+    bool dstIsInt   = (dstKind == IRTypeKind::Int1 || dstKind == IRTypeKind::Int8 ||
+                       dstKind == IRTypeKind::Int32 || dstKind == IRTypeKind::Int64);
+
+    if (srcIsFloat && dstIsInt)
+    {
+        return this->m_irbuilder.CreateFPToSI(value, targetType);
+    }
+    else if (srcIsInt && dstIsFloat)
+    {
+        return this->m_irbuilder.CreateSIToFP(value, targetType);
+    }
+
+    return value; // same category, no conversion (e.g. Int32 → Int64 handled by mov)
 }
 
 void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initializer_list<Operators> ops)
@@ -1469,6 +1681,18 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             expr.push_back(it);
             continue;
         }
+        else if (token.GetType() == TokenTypes::STRING_LITERAL)
+        {
+            IRBaseValue* currExpressionValue = ValueToConstIR(token);
+
+            ExprItem it;
+            it.value = currExpressionValue;
+            it.signage = false;
+            it.floatness = false;
+            it.notCnt = 0;
+            expr.push_back(it);
+            continue;
+        }
         // VALUE token 
         else if (token.GetType() == TokenTypes::VALUE)
         {
@@ -1531,6 +1755,10 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     {
         ASTNode tempNode(command);
         return HandleIdentifierValue(&tempNode);
+    }
+    else if (command.GetType() == CommandTypes::SIZEOF)
+    {
+        return HandleSizeof(command);
     }
 
     const std::vector<Token> tokens = command.GetTokens();

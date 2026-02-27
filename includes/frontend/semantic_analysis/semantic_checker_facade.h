@@ -114,6 +114,10 @@ public:
     /// @brief The func turns a Type into ExpressionType
     static ExpressionType TypeToExpressionType(const Type& type);
 
+    /// @brief Suppress DefaultExpressionChecks so that condition evaluation
+    /// @note(if/elif/while headers) does not overwrite the operation history.
+    static void SetSuppressDefaultExprCheck(bool suppress);
+
 private:
     enum class OperationKind // This class repressends the last operation that happened in the block.
     {
@@ -134,6 +138,7 @@ private:
     static bool m_bFinishedBlock;                     // A flag that represents if we finished the current block (if there was a 100% return).
     static bool m_bIsReturnVoid;                     // A flag that represents if the function returns void.
     static bool m_bLoopFlag;                        // A flag that represents if we are inside a loop rn (if true no need to do control flow checks).
+    static bool m_bSuppressDefaultExprCheck;       // When true, DefaultExpressionChecks is a no-op (used during condition evaluation).
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.

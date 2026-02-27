@@ -6,6 +6,12 @@ std::stack<SemanticCheckerFacade::OperationKind> SemanticCheckerFacade::m_operat
 std::stack<SemanticCheckerFacade::BlockKind> SemanticCheckerFacade::m_entryHistory;
 bool SemanticCheckerFacade::m_bIsReturnVoid = false;
 bool SemanticCheckerFacade::m_bFinishedBlock = false;
+bool SemanticCheckerFacade::m_bSuppressDefaultExprCheck = false;
+
+void SemanticCheckerFacade::SetSuppressDefaultExprCheck(bool suppress)
+{
+    m_bSuppressDefaultExprCheck = suppress;
+}
 
 bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& varName)
 {
@@ -135,6 +141,18 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
     if (funcParams.size() == 0) return true; // No args no checks.
 
     if (funcParams[FIRST_PARAMETER_INDEX].type == Type::VOID_TYPE) return true; /// Void as a param is a hardcoded check inside the parser.
+
+    // built-in println accepts any printable type: int, double, bool, string.
+    if (sFuncName == "println" && paramTypes.size() == 1)
+    {
+        ExpressionType argType = paramTypes[0];
+        if (argType == ExpressionType::MATHEMATICAL ||
+            argType == ExpressionType::BOOLEAN ||
+            argType == ExpressionType::STRING)
+        {
+            return true;
+        }
+    }
 
     // Checking that all of the parameter types are the right function declared types.
     for (size_t i = 0; i < paramTypes.size(); i++)
@@ -344,6 +362,7 @@ ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
 {
     if (type == Type::BOOL_TYPE) return ExpressionType::BOOLEAN;
     else if (type == Type::VOID_TYPE) return ExpressionType::VOID_TYPE;
+    else if (type == Type::STRING_TYPE) return ExpressionType::STRING;
     else return ExpressionType::MATHEMATICAL;
 }
 
@@ -357,18 +376,25 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
     {
         if (token.GetValue() == "and" ||
             token.GetValue() == "or" ||
-            token.GetValue() == "not" || 
+            token.GetValue() == "not" ||
             token.GetValue() == "xor")
         {
-            return ExpressionType::BOOLEAN;
+            return ExpressionType::BITWISE_OPERATOR;
         }
         else if (token.GetValue() == "==" ||
+            token.GetValue() == "!=" ||
             token.GetValue() == "<" ||
-            token.GetValue() == ">")
+            token.GetValue() == ">" ||
+            token.GetValue() == "<=" ||
+            token.GetValue() == ">=")
         {
             return ExpressionType::COMPARRISON_OPERATOR;
         }
         else return ExpressionType::MATHEMATICAL;
+    }
+    else if (token.GetType() == TokenTypes::STRING_LITERAL)
+    {
+        return ExpressionType::STRING;
     }
     /// If it's a value
     else if (token.GetValue() == "true" || token.GetValue() == "false")
@@ -394,6 +420,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
+    if (m_bSuppressDefaultExprCheck) return;
     if (!m_bFinishedBlock && !m_entryHistory.empty())
     {
         SwitchTopOfOperationHistory(OperationKind::Expression);
@@ -561,6 +588,29 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
             expressionSet[i] == ExpressionType::MATHEMATICAL)
         {
             currExpressionType = ExpressionType::BOOLEAN;
+        }
+        // Bitwise/logical operators (and, or, xor, not) adapt to operand type:
+        //   int op int   -> MATHEMATICAL (bitwise)
+        //   bool op bool -> BOOLEAN      (logical)
+        else if (
+                expressionSet[i] == ExpressionType::BITWISE_OPERATOR &&
+                (
+                    currExpressionType == ExpressionType::MATHEMATICAL ||
+                    currExpressionType == ExpressionType::BOOLEAN
+                )
+            )
+        {
+            // keep currExpressionType unchanged – operator inherits from operands
+        }
+        else if (
+                currExpressionType == ExpressionType::BITWISE_OPERATOR &&
+                (
+                    expressionSet[i] == ExpressionType::MATHEMATICAL ||
+                    expressionSet[i] == ExpressionType::BOOLEAN
+                )
+            )
+        {
+            currExpressionType = expressionSet[i]; // adopt the operand's type
         }
         // Unknown behaviour.
         else

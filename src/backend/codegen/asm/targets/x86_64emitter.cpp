@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 #include <cstring>
 
@@ -35,7 +36,9 @@ std::string X86_64Emitter::EmitHeader() const
 
             // Built-in format strings (used by println and other built-ins)
             header << "section .data\n";
-            header << "    __println_fmt_int db \"%lld\", 10, 0\n\n";
+            header << "    __println_fmt_int db \"%lld\", 10, 0\n";
+            header << "    __println_fmt_double db \"%g\", 10, 0\n";
+            header << "    __println_fmt_str db \"%s\", 10, 0\n\n";
             break;
 
         default:
@@ -461,6 +464,35 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         }
 
         // -----------------------
+        // Type conversion
+        // -----------------------
+        case IROpcode::FPToSI:
+        {
+            // load the double from its memory slot directly into xmm0
+            // then convert to a signed 64-bit integer
+            out << "    ; FPToSI: convert double to signed int\n";
+            tempAsmValue = GetOperandAsm(source1, out);
+            out << "    movsd xmm0, qword " << tempAsmValue << "\n";
+            out << "    cvttsd2si rax, xmm0\n";
+            tempAsmValue = GetOperandAsm(instr, out);
+            out << "    mov " << tempAsmValue << ", rax\n";
+            break;
+        }
+
+        case IROpcode::SIToFP:
+        {
+            // load the integer into rax, convert to double in xmm0
+            // then store the double bits back via memory
+            out << "    ; SIToFP: convert signed int to double\n";
+            tempAsmValue = GetOperandAsm(source1, out);
+            out << "    mov rax, " << tempAsmValue << "\n";
+            out << "    cvtsi2sd xmm0, rax\n";
+            tempAsmValue = GetOperandAsm(instr, out);
+            out << "    movsd qword " << tempAsmValue << ", xmm0\n";
+            break;
+        }
+
+        // -----------------------
         // Control flow
         // -----------------------
         case IROpcode::Br:
@@ -705,6 +737,38 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "    add rsp, 32\n";
         out << "    pop rbp\n";
         out << "    ret\n";
+
+        // ---- Built-in: println_double(value: double) -> void ----
+        // Wraps printf with a "%g\n" format string.
+        // Caller passes double bits in rcx (standard int register ABI).
+        // printf variadic needs the double in BOTH rdx and xmm1.
+        out << "\n";
+        out << "println_double:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    mov [rbp+16], rcx\n";                     // store bits to shadow slot
+        out << "    movsd xmm1, qword [rbp+16]\n";            // load into xmm1 for %g
+        out << "    mov rdx, rcx\n";                           // also in rdx (variadic ABI)
+        out << "    lea rcx, [rel __println_fmt_double]\n";    // 1st printf arg = fmt
+        out << "    sub rsp, 32\n";
+        out << "    call printf\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
+        // ---- Built-in: println_str(ptr: char*) -> void ----
+        // Wraps printf with a "%s\n" format string.
+        out << "\n";
+        out << "println_str:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    mov rdx, rcx\n";                           // 2nd printf arg = string ptr
+        out << "    lea rcx, [rel __println_fmt_str]\n";       // 1st printf arg = fmt
+        out << "    sub rsp, 32\n";
+        out << "    call printf\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
     }
 }
 
@@ -731,9 +795,16 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
         double floatValue = floatConst->GetValue();   // 64-bit float
         uint64_t bits;
         std::memcpy(&bits, &floatValue, sizeof(double));
-        out << "    mov qword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";  // qword = 64-bit
+        out << "    mov rax, 0x" << std::hex << bits << std::dec << "\n";
+        out << "    mov " << slot << ", rax\n";
         // return the slot
         return slot;
+    }
+    else if (auto* strConst = dynamic_cast<const IRConstantString*>(operand))
+    {
+        // load effective address of the string label into r10
+        out << "    lea r10, [rel " << strConst->GetLabel() << "]\n";
+        return "r10";
     }
     else if (auto* boolConst = dynamic_cast<const IRConstantBool*>(operand))
     {
@@ -744,7 +815,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     }
     else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
-        return globalVar->GetName();
+        return "[rel " + globalVar->GetName() + "]";
     }
     else if (auto* argVal = dynamic_cast<const IRArgument*>(operand))
     {

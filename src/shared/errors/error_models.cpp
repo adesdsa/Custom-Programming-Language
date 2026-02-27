@@ -17,14 +17,23 @@ std::string CompileTimeError::ToString() const noexcept
 {
     std::ostringstream oss;
 
-    oss << 
-    "at file: " << 
+    oss << "at file: ";
+    if (!this->m_filePath.empty())
+    {
+        oss << this->m_filePath << " ";
+    }
+    oss <<
     "(" << this->m_line << "," << this->m_column << "): " <<
     this->m_type << ": " <<
     this->m_content << "\t" <<
     "PROPOSED FIX: " << this->m_hint;
 
     return oss.str();
+}
+
+void CompileTimeError::SetFilePath(const std::string& filePath)
+{
+    this->m_filePath = filePath;
 }
 
 const char* CompilationAbortException::what() const noexcept

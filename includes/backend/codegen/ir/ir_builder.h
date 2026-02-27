@@ -12,6 +12,7 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_float.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_bool.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/backend/codegen/ir/ir_common_types.h"
 #include "includes/shared/errors/error_manager.h"
@@ -41,6 +42,7 @@ public:
     IRConstantBool* GetBool(bool value);
     IRConstantFloat* GetFloat(double value);
     IRConstantFloat* GetDouble(double value);
+    IRConstantString* GetString(const std::string& value);
 
     // ===== INTEGER ARITHMETIC =====
     IRInstruction* CreateAdd(IRBaseValue* lhs, IRBaseValue* rhs, const std::string& name = "");
@@ -94,6 +96,10 @@ public:
     IRInstruction* CreateLoad(IRBaseValue* ptr, const std::string& name = "");
     IRInstruction* CreateStore(IRBaseValue* value, IRBaseValue* ptr);
 
+    // ===== TYPE CONVERSION =====
+    IRInstruction* CreateFPToSI(IRBaseValue* value, std::shared_ptr<const IRType> destType, const std::string& name = "");
+    IRInstruction* CreateSIToFP(IRBaseValue* value, std::shared_ptr<const IRType> destType, const std::string& name = "");
+
     // ===== CONTROL FLOW (Terminators) =====
     void CreateBr(BasicBlock* target);
     void CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* falseBB);
@@ -116,6 +122,7 @@ public:
 private:
     BasicBlock* m_insertBlock;   // Where new instructions go
     size_t m_tempCounter;        // For auto-generating names: t0, t1, t2...
+    size_t m_strLabelCounter = 0; // For auto-generating string labels: __str0, __str1...
     std::vector<std::unique_ptr<IRBaseValue>> m_constants; // After moving the values call ClearConstants().
     
     const EntityLogger& m_entitylogger;

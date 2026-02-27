@@ -59,7 +59,24 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
         varName, varType, varAccessRight, varScope
     );
 
-    if (!this->m_currentScope->InsertVar(var))
+    // `global` variables go to the root scope (visible from any function).
+    // `var` variables go to the function scope root (visible throughout the function).
+    // `let` variables go to the current block scope.
+    VarTableNode* targetScope;
+    if (varScope == Scope::GLOBAL)
+    {
+        targetScope = &this->m_varTable;
+    }
+    else if (varScope == Scope::VAR && this->m_functionScopeRoot != nullptr)
+    {
+        targetScope = this->m_functionScopeRoot;
+    }
+    else
+    {
+        targetScope = this->m_currentScope;
+    }
+
+    if (!targetScope->InsertVar(var))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -165,6 +182,26 @@ void SemanticAnalysisVisitor::VisitIdentifierValue(ASTNode* node)
                 "Declare the variable before using it"
             )
         );
+    }
+
+    if (this->m_pendingForConditionCheck)
+    {
+        this->m_forExpressionCount++;
+
+        if (this->m_forExpressionCount == 2)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "for loop condition must be a boolean expression",
+                    this->m_forConditionLine,
+                    static_cast<uint16_t>(this->m_forConditionColumn),
+                    "Provide a boolean condition"
+                )
+            );
+            this->m_pendingForConditionCheck = false;
+            this->m_forExpressionCount = 0;
+        }
     }
 
     HandleSingleCommandAssignement(node);
@@ -419,6 +456,7 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
 
     // new var block starts now to save arguements.
     this->m_currentScope = this->m_currentScope->CreateBlock();
+    this->m_functionScopeRoot = this->m_currentScope;
 
     FuncMetaData* funcMeta = this->m_funcTable.FindFunctionByName(funcName);
     if (funcMeta != nullptr)
@@ -558,7 +596,9 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
     this->m_forConditionLine = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetLine();
     this->m_forConditionColumn = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetColumn();
     this->m_forExpressionCount = 0;
-    
+    this->m_currentScope = this->m_currentScope->CreateBlock();
+    this->m_pendingForInitScope = true;
+
     // signal VisitBlockStart what kind of block is coming
     this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Loop;
     this->m_hasPendingBlock = true;
@@ -637,6 +677,10 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 {
     if (!node) return;
 
+    // clear condition evaluation suppression set by VisitIfOrElseIfOrWhile.
+    // at this point the AST walker has finished visiting all condition children.
+    SemanticCheckerFacade::SetSuppressDefaultExprCheck(false);
+
     // If we are in func definition the block was already created.
     if (!this->m_bStartedFuncDefinition)
     {
@@ -648,6 +692,8 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
     }
     
     bool calledEnteredBlock = false;
+    bool hasForInitScope = this->m_pendingForInitScope;
+    this->m_pendingForInitScope = false;
     
     // enter block in facade if a control structure set pending block kind
     if (this->m_hasPendingBlock)
@@ -658,17 +704,33 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
     
     // track whether this block level called EnteredBlock for matching ExitedBlock call
     this->m_blockEnteredStack.push(calledEnteredBlock);
+    this->m_forInitScopeStack.push(hasForInitScope);
 }
 
 void SemanticAnalysisVisitor::VisitBlockEnd(ASTNode* node)
 {
     if (!node) return;
     
-    // Exit scope - move to parent
     const auto& parent = this->m_currentScope->GetParent();
     if (parent != nullptr)
     {
         this->m_currentScope = parent;
+    }
+
+    // if this block had a for-init wrapper scope, pop it too
+    bool hadForInitScope = !this->m_forInitScopeStack.empty() &&
+                            this->m_forInitScopeStack.top();
+    if (!this->m_forInitScopeStack.empty())
+    {
+        this->m_forInitScopeStack.pop();
+    }
+    if (hadForInitScope)
+    {
+        const auto& forParent = this->m_currentScope->GetParent();
+        if (forParent != nullptr)
+        {
+            this->m_currentScope = forParent;
+        }
     }
 
     // Only call ExitedBlock if we called EnteredBlock for this block level
@@ -728,6 +790,8 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
     const auto& tokens = condition->command.GetTokens();
     if (tokens.empty()) return;
     const auto& conditionTokens = tokens[CONDITION_TOKEN_INDEX];
+
+    SemanticCheckerFacade::SetSuppressDefaultExprCheck(true);
 
     if (condition->command.GetType() == CommandTypes::EXPRESSION)
     {
@@ -790,7 +854,6 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
             "Invalid condition at line: " + std::to_string(conditionTokens.GetLine())
         );
     }
-
     // Determine block kind based on node type
     const auto& nodeType = node->command.GetType();
     SemanticCheckerFacade::BlockKind blockKind = SemanticCheckerFacade::BlockKind::If;
@@ -835,6 +898,7 @@ std::string SemanticAnalysisVisitor::TypeToString(
         case Type::DOUBLE_TYPE:          return "double";
         case Type::UNSIGNED_INT_TYPE:    return "unsigned int";
         case Type::VOID_TYPE:            return "void";
+        case Type::STRING_TYPE:          return "string";
         default:                         return "unknown";
     }
 }
@@ -847,6 +911,7 @@ std::string SemanticAnalysisVisitor::ExpressionTypeToString(
     {
         case ExpressionType::BOOLEAN:      return "boolean";
         case ExpressionType::MATHEMATICAL: return "numeric";
+        case ExpressionType::STRING:       return "string";
         case ExpressionType::VOID_TYPE:    return "void";
         default:                           return "unknown";
     }
@@ -904,6 +969,11 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
         }
 
         return SemanticCheckerFacade::TypeToExpressionType(func->GetRType());
+    }
+
+    else if (nodeType == CommandTypes::SIZEOF)
+    {
+        return ExpressionType::MATHEMATICAL; // sizeof always returns an int
     }
     
     return ExpressionType::UNKNOWN;

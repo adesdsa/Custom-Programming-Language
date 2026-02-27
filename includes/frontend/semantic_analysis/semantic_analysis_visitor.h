@@ -66,6 +66,7 @@ private:
     |     Helper Fields    |
     \**********************/
     VarTableNode* m_currentScope;
+    VarTableNode* m_functionScopeRoot = nullptr;
     ExpressionType m_lastExpressionType;
 
     std::string m_lastIdentifierName;
@@ -89,6 +90,10 @@ private:
     // stack to track which blocks called EnteredBlock and need ExitedBlock
     // Each bool represents: did this block level call EnteredBlock?
     std::stack<bool> m_blockEnteredStack;
+
+    // stack to track which blocks need an extra scope pop (for-loop init scope)
+    std::stack<bool> m_forInitScopeStack;
+    bool m_pendingForInitScope = false;
 
     // pending for loop condition check, consumed by VisitExpression
     // The condition can't be checked in VisitFor because the loop variable isn't in scope yet

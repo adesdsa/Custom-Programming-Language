@@ -25,7 +25,8 @@ enum class Type
     BOOL_TYPE,
     INT_TYPE,
     DOUBLE_TYPE, 
-    UNSIGNED_INT_TYPE
+    UNSIGNED_INT_TYPE,
+    STRING_TYPE  // string literal
 };
 
 enum class AccessRights
@@ -39,9 +40,11 @@ enum class ExpressionType
 {
     BOOLEAN,
     MATHEMATICAL,
+    STRING,               // string literal expression
     UNKNOWN,
     VOID_TYPE,
     PARANTHESES_OPEN,
     PARANTHESES_CLOSE,
-    COMPARRISON_OPERATOR
+    COMPARRISON_OPERATOR,
+    BITWISE_OPERATOR          // xor – adapts to operand types (int→int, bool→bool)
 };

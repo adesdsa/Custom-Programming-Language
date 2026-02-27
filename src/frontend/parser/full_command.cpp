@@ -297,9 +297,17 @@ void FullCommand::ReformCommand(Command& checkedCommand)
         // Size must be 4: #SIZEOF+(+EXPRESSION/VAR_TYPE+)#
         if (CheckConstSize(checkedCommand, 4)) return;
         else if (CheckParantheses(checkedCommand)) return;
-        else if (checkedCommand.GetParams()[0].GetType()
-            == CommandTypes::VAR_TYPE) return;
+        else if (
+            checkedCommand.GetParams()[0].GetType() == 
+            CommandTypes::VAR_TYPE
+        )
+        {
+            checkedCommand.SetExpression(true);
+            return;
+        }
         else CheckParamExpectedExpression(checkedCommand, 0);
+
+        if (m_bLegal) checkedCommand.SetExpression(true);
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {

@@ -22,8 +22,11 @@ public:
     // @return: Static instance of the console class.
     static ErrorManager& GetInstance() noexcept;
 
+    // Sets the current file path to stamp on all subsequent errors
+    void SetCurrentFilePath(const std::string& filePath) noexcept;
+
     // Stores the given error for later handling
-    void StoreError(const CompileTimeError& error);
+    void StoreError(CompileTimeError error);
 
     // Remove all previously stored errors (call at the start of a new compilation)
     void Clear() noexcept;
@@ -36,6 +39,7 @@ public:
 
 private:
     std::vector<CompileTimeError> m_errorList;
+    std::string m_currentFilePath;
     EntityLogger m_entityLogger;
 
     // TODO: For later versions - Make this method support both GUI & CLI

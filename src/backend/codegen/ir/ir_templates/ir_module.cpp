@@ -106,3 +106,8 @@ void IRModule::AddConstant(std::unique_ptr<IRBaseValue> constant)
 {
     this->m_constants.push_back(std::move(constant));
 }
+
+const std::vector<std::unique_ptr<IRBaseValue>>& IRModule::GetConstants() const noexcept
+{
+    return this->m_constants;
+}
