@@ -16,6 +16,7 @@ IRVisitor::IRVisitor(
     m_bodyCnt(0),
     m_exitCnt(0),
     m_mergeCnt(0),
+    m_latchCnt(0),
     m_nextControlEntryBlock(nullptr),
     m_lastSavedValue(nullptr),
     m_currVarMetaData(std::nullopt),
@@ -277,6 +278,8 @@ void IRVisitor::VisitWhile(ASTNode* node)
     // First we create the codition block and set it up in all the related places.
     auto condBlock = this->m_currFunc->AddBasicBlock(GetCorrespondingLabel(BlockKind::whileBlock, EntranceKind::condition));
     this->m_conditionBlocks.push(condBlock);
+    // For while-loops, continue jumps directly to the condition (no increment latch)
+    this->m_continueTargets.push(condBlock);
     this->m_irbuilder.CreateBr(condBlock);
     this->m_irbuilder.SetInsertPoint(condBlock);
 
@@ -310,6 +313,10 @@ void IRVisitor::VisitFor(ASTNode* node)
     /// @see Control Flow Fields docs for more info
     this->m_nextExitBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::exit)));
     this->m_afterLoopBlocks.push(this->m_nextExitBlocks.top().get());
+
+    // Create the latch block for the increment (continue jumps here instead of for.cond)
+    this->m_forLatchBlocks.push(std::make_unique<BasicBlock>(GetCorrespondingLabel(BlockKind::forBlock, EntranceKind::latch)));
+    this->m_continueTargets.push(this->m_forLatchBlocks.top().get());
 
     {
         size_t currIdx = this->m_varTableIndex.top();
@@ -398,8 +405,9 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
 
     if (statement.GetValue() == "continue")
     {
-        /// Jumping to the condition block of the loop.
-        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
+        /// while-loops: jumps to the condition block.
+        /// for-loops: jumps to the latch block (increment then condition).
+        this->m_irbuilder.CreateBr(this->m_continueTargets.top());
     }
     else if (statement.GetValue() == "break")
     {
@@ -541,6 +549,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         this->m_bodyCnt = 0;
         this->m_exitCnt = 0;
         this->m_mergeCnt = 0;
+        this->m_latchCnt = 0;
 
         while (!this->m_blockHistory.empty())
         {
@@ -566,6 +575,14 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_conditionMergeBlocks.pop();
         }
+        while (!this->m_continueTargets.empty())
+        {
+            this->m_continueTargets.pop();
+        }
+        while (!this->m_forLatchBlocks.empty())
+        {
+            this->m_forLatchBlocks.pop();
+        }
         
         // Save the top-level function index before clearing (tells us which function we're at)
         size_t nextFuncIndex = this->m_varTableIndex.top();  // This is already incremented
@@ -588,26 +605,42 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         forNode = this->m_forIncrements.top();
         this->m_forIncrements.pop();
 
-        // Only emit the increment if the block is not already terminated
-        // (e.g. by break/continue/return). Instructions added to a terminated
-        // block are silently dropped, leaving dangling pointers.
-        BasicBlock* insertBlk = this->m_irbuilder.GetInsertBlock();
-        if (insertBlk && !insertBlk->HasTerminator())
+        // If the body is not already terminated (by break/return), branch to the latch block.
+        BasicBlock* bodyInsertBlk = this->m_irbuilder.GetInsertBlock();
+        if (bodyInsertBlk && !bodyInsertBlk->HasTerminator())
         {
-            forCommand = forNode->command;
-            tempParams = forCommand.GetParams();
-            tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
-            VisitIdentifier(&tempNode);
-            tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
-            VisitAssignment(&tempNode);
-            tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
-            VisitExpression(&tempNode);
+            this->m_irbuilder.CreateBr(this->m_forLatchBlocks.top().get());
         }
+        BasicBlock* latchBlk = this->m_currFunc->AddBasicBlock(std::move(this->m_forLatchBlocks.top()));
+        this->m_forLatchBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(latchBlk);
+
+        forCommand = forNode->command;
+        tempParams = forCommand.GetParams();
+        tempNode = (forCommand.GetParams()[FOR_PRE_AFTER_COND_VAR_INDEX]);
+        VisitIdentifier(&tempNode);
+        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_ASSIGNMENT_INDEX]);
+        VisitAssignment(&tempNode);
+        tempNode = ASTNode(forCommand.GetParams()[FOR_PRE_AFTER_COND_EXPRESSION_INDEX]);
+        VisitExpression(&tempNode);
+
+        // Branch from latch back to the condition block
+        this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
 
         this->m_varTableIndex.pop();
         this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
+
+        this->m_continueTargets.pop();
+
+        this->m_conditionBlocks.pop();
+        this->m_afterLoopBlocks.pop();
+
+        tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
+        this->m_nextExitBlocks.pop();
+        this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
+        break;
     }
-        /// @note not having break is intended
+
     case BlockKind::whileBlock:
     {
         BasicBlock* loopInsertBlk = this->m_irbuilder.GetInsertBlock();
@@ -615,8 +648,11 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         {
             this->m_irbuilder.CreateBr(this->m_conditionBlocks.top());
         }
+
+        this->m_continueTargets.pop();
+
         this->m_conditionBlocks.pop();
-        this->m_afterLoopBlocks.pop(); // reset; no longer needed for break
+        this->m_afterLoopBlocks.pop();
 
         // Creating the loop exit block
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
@@ -1268,6 +1304,11 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
         case EntranceKind::condition:
             this->m_condCnt++;
             return "for.cond" + std::to_string(this->m_condCnt - 1);
+            break;
+
+        case EntranceKind::latch:
+            this->m_latchCnt++;
+            return "for.latch" + std::to_string(this->m_latchCnt - 1);
             break;
         
         default:
