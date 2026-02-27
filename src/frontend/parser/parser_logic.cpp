@@ -18,7 +18,6 @@ const AST& ParserLogic::MainFlow()
 
     while (this->m_currentToken.GetType() != TokenTypes::EOF_TOKEN)
     {
-        this->m_entityLogger.Info(std::to_string(this->m_currentToken.GetLine()));
         FullCommand fullCommand(this->m_entityLogger);
 
         // building full-command
