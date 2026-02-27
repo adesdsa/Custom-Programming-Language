@@ -677,6 +677,10 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 {
     if (!node) return;
 
+    // clear condition evaluation suppression set by VisitIfOrElseIfOrWhile.
+    // at this point the AST walker has finished visiting all condition children.
+    SemanticCheckerFacade::SetSuppressDefaultExprCheck(false);
+
     // If we are in func definition the block was already created.
     if (!this->m_bStartedFuncDefinition)
     {
@@ -787,6 +791,8 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
     if (tokens.empty()) return;
     const auto& conditionTokens = tokens[CONDITION_TOKEN_INDEX];
 
+    SemanticCheckerFacade::SetSuppressDefaultExprCheck(true);
+
     if (condition->command.GetType() == CommandTypes::EXPRESSION)
     {
         ExpressionType conditionType = EvaluateNodeType(condition);
@@ -848,7 +854,6 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
             "Invalid condition at line: " + std::to_string(conditionTokens.GetLine())
         );
     }
-
     // Determine block kind based on node type
     const auto& nodeType = node->command.GetType();
     SemanticCheckerFacade::BlockKind blockKind = SemanticCheckerFacade::BlockKind::If;

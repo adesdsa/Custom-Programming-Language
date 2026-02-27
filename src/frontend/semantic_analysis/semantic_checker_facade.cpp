@@ -6,6 +6,12 @@ std::stack<SemanticCheckerFacade::OperationKind> SemanticCheckerFacade::m_operat
 std::stack<SemanticCheckerFacade::BlockKind> SemanticCheckerFacade::m_entryHistory;
 bool SemanticCheckerFacade::m_bIsReturnVoid = false;
 bool SemanticCheckerFacade::m_bFinishedBlock = false;
+bool SemanticCheckerFacade::m_bSuppressDefaultExprCheck = false;
+
+void SemanticCheckerFacade::SetSuppressDefaultExprCheck(bool suppress)
+{
+    m_bSuppressDefaultExprCheck = suppress;
+}
 
 bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& varName)
 {
@@ -397,6 +403,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
+    if (m_bSuppressDefaultExprCheck) return;
     if (!m_bFinishedBlock && !m_entryHistory.empty())
     {
         SwitchTopOfOperationHistory(OperationKind::Expression);
