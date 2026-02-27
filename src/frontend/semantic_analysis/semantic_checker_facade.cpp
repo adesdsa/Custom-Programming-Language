@@ -142,6 +142,18 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
 
     if (funcParams[FIRST_PARAMETER_INDEX].type == Type::VOID_TYPE) return true; /// Void as a param is a hardcoded check inside the parser.
 
+    // built-in println accepts any printable type: int, double, bool, string.
+    if (sFuncName == "println" && paramTypes.size() == 1)
+    {
+        ExpressionType argType = paramTypes[0];
+        if (argType == ExpressionType::MATHEMATICAL ||
+            argType == ExpressionType::BOOLEAN ||
+            argType == ExpressionType::STRING)
+        {
+            return true;
+        }
+    }
+
     // Checking that all of the parameter types are the right function declared types.
     for (size_t i = 0; i < paramTypes.size(); i++)
     {
@@ -350,6 +362,7 @@ ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
 {
     if (type == Type::BOOL_TYPE) return ExpressionType::BOOLEAN;
     else if (type == Type::VOID_TYPE) return ExpressionType::VOID_TYPE;
+    else if (type == Type::STRING_TYPE) return ExpressionType::STRING;
     else return ExpressionType::MATHEMATICAL;
 }
 
@@ -378,6 +391,10 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
             return ExpressionType::COMPARRISON_OPERATOR;
         }
         else return ExpressionType::MATHEMATICAL;
+    }
+    else if (token.GetType() == TokenTypes::STRING_LITERAL)
+    {
+        return ExpressionType::STRING;
     }
     /// If it's a value
     else if (token.GetValue() == "true" || token.GetValue() == "false")

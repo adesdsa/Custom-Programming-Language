@@ -92,6 +92,18 @@ IRConstantFloat* IRBuilder::GetDouble(double value)
     return static_cast<IRConstantFloat*>(m_constants.back().get());
 }
 
+IRConstantString* IRBuilder::GetString(const std::string& value)
+{
+    this->m_constants.push_back(
+        std::make_unique<IRConstantString>(value, IRType::GetInt64())
+    );
+    
+    auto* strConst = static_cast<IRConstantString*>(m_constants.back().get());
+    strConst->SetLabel("__str" + std::to_string(m_strLabelCounter++));
+
+    return strConst;
+}
+
 // ===== INTEGER ARITHMETIC =====
 IRInstruction* IRBuilder::CreateAdd(
     IRBaseValue* lhs,
@@ -1208,6 +1220,66 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
     );
 
     m_entitylogger.Info("Created a new Store instruction");
+    return Insert(std::move(inst));
+}
+
+IRInstruction* IRBuilder::CreateFPToSI(
+    IRBaseValue* value,
+    std::shared_ptr<const IRType> destType,
+    const std::string& name)
+{
+    if (!value)
+    {
+        StoreInternalError("IRBuilder::CreateFPToSI: value is null");
+        return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
+
+    std::string instName = name.empty() ? NextTemp() : name;
+
+    auto inst = std::make_unique<IRInstruction>(
+        instName,
+        destType,
+        IROpcode::FPToSI,
+        std::vector<IRBaseValue*>{value},
+        this->m_insertBlock
+    );
+
+    m_entitylogger.Info("Created a new FPToSI instruction");
+    return Insert(std::move(inst));
+}
+
+IRInstruction* IRBuilder::CreateSIToFP(
+    IRBaseValue* value,
+    std::shared_ptr<const IRType> destType,
+    const std::string& name)
+{
+    if (!value)
+    {
+        StoreInternalError("IRBuilder::CreateSIToFP: value is null");
+        return nullptr;
+    }
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
+
+    std::string instName = name.empty() ? NextTemp() : name;
+
+    auto inst = std::make_unique<IRInstruction>(
+        instName,
+        destType,
+        IROpcode::SIToFP,
+        std::vector<IRBaseValue*>{value},
+        this->m_insertBlock
+    );
+
+    m_entitylogger.Info("Created a new SIToFP instruction");
     return Insert(std::move(inst));
 }
 

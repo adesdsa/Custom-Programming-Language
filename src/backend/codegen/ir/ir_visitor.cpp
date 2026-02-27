@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 IRVisitor::IRVisitor(
     const EntityLogger& entityLogger,
@@ -136,10 +137,17 @@ void IRVisitor::VisitAssignment(ASTNode* node)
     // If this flag is up it means the expression/func_call/idenitifierValue already finished.
     if (this->m_expectedAssignment)
     {
-        this->m_irbuilder.CreateStore(
-            this->m_lastSavedValue,
-            FindPointer(this->m_currVarMetaData.value().sName)
-        );
+        IRBaseValue* valueToStore = this->m_lastSavedValue;
+        IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
+
+        // Insert implicit type conversion when the value type differs from the target variable type
+        if (valueToStore && target)
+        {
+            auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
+            valueToStore = ConvertIfNeeded(valueToStore, targetType);
+        }
+
+        this->m_irbuilder.CreateStore(valueToStore, target);
         this->m_expectedAssignment = false;
         this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
@@ -846,6 +854,53 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
 {
     std::string value = token.GetValue();
 
+    if (token.GetType() == TokenTypes::STRING_LITERAL)
+    {
+        // remove quotes
+        std::string content = value.substr(1, value.size() - 2);
+
+        // process escape sequences (\n, \t)
+        std::string processed;
+        for (size_t i = 0; i < content.size(); i++)
+        {
+            if (content[i] == '\\' && i + 1 < content.size())
+            {
+                switch (content[i + 1])
+                {
+                    case 'n':  
+                        processed += '\n'; 
+                        i++;
+                        break;
+
+                    case 't':  
+                        processed += '\t';
+                        i++;
+                        break;
+                        
+                    case '\\':
+                        processed += '\\';
+                        i++;
+                        break;
+                        
+                    case '"':  
+                        processed += '"';
+                        i++;
+                        break;
+
+                    default:  
+                        processed += content[i];
+                        break;
+                }
+            }
+            else
+            {
+                processed += content[i];
+            }
+        }
+
+        return this->m_irbuilder.GetString(processed);
+    }
+
     if (value == "true")
     {
         return this->m_irbuilder.GetBool(true);
@@ -1193,9 +1248,29 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         }
     }
 
+    std::string targetFuncName = funcName;
+    if (funcName == "println" && !tempInstructionHolder.empty() && tempInstructionHolder[0])
+    {
+        auto argKind = tempInstructionHolder[0]->GetType()->GetKind();
+        if (argKind == IRTypeKind::Float64 || argKind == IRTypeKind::Float32)
+        {
+            targetFuncName = "println_double";
+        }
+        else if (dynamic_cast<IRConstantString*>(tempInstructionHolder[0]))
+        {
+            targetFuncName = "println_str";
+        }
+    }
+
+    // ensure the target function stub exists in the module
+    if (targetFuncName != funcName && !this->m_currModule.IsFuncExistByName(targetFuncName))
+    {
+        this->m_currModule.AddFunction(targetFuncName, IRType::GetVoid());
+    }
+
     // Creating the Call Instruction
     IRBaseValue* funcCallValue = this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction(funcName),
+        this->m_currModule.GetFunction(targetFuncName),
         tempInstructionHolder
     );
 
@@ -1390,6 +1465,34 @@ IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
     return this->m_irbuilder.CreateICmpEQ(value, this->m_irbuilder.GetInt32(0));
 }
 
+IRBaseValue* IRVisitor::ConvertIfNeeded(IRBaseValue* value, std::shared_ptr<const IRType> targetType)
+{
+    if (!value || !targetType) return value;
+
+    auto srcKind = value->GetType()->GetKind();
+    auto dstKind = targetType->GetKind();
+
+    if (srcKind == dstKind) return value; // no conversion needed
+
+    bool srcIsFloat = (srcKind == IRTypeKind::Float32 || srcKind == IRTypeKind::Float64);
+    bool dstIsFloat = (dstKind == IRTypeKind::Float32 || dstKind == IRTypeKind::Float64);
+    bool srcIsInt   = (srcKind == IRTypeKind::Int1 || srcKind == IRTypeKind::Int8 ||
+                       srcKind == IRTypeKind::Int32 || srcKind == IRTypeKind::Int64);
+    bool dstIsInt   = (dstKind == IRTypeKind::Int1 || dstKind == IRTypeKind::Int8 ||
+                       dstKind == IRTypeKind::Int32 || dstKind == IRTypeKind::Int64);
+
+    if (srcIsFloat && dstIsInt)
+    {
+        return this->m_irbuilder.CreateFPToSI(value, targetType);
+    }
+    else if (srcIsInt && dstIsFloat)
+    {
+        return this->m_irbuilder.CreateSIToFP(value, targetType);
+    }
+
+    return value; // same category, no conversion (e.g. Int32 → Int64 handled by mov)
+}
+
 void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initializer_list<Operators> ops)
 {
     if (expr.size() < 2) return;
@@ -1556,6 +1659,18 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             expr.push_back(it);
             continue;
         }
+        else if (token.GetType() == TokenTypes::STRING_LITERAL)
+        {
+            IRBaseValue* currExpressionValue = ValueToConstIR(token);
+
+            ExprItem it;
+            it.value = currExpressionValue;
+            it.signage = false;
+            it.floatness = false;
+            it.notCnt = 0;
+            expr.push_back(it);
+            continue;
+        }
         // VALUE token 
         else if (token.GetType() == TokenTypes::VALUE)
         {
@@ -1618,6 +1733,10 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     {
         ASTNode tempNode(command);
         return HandleIdentifierValue(&tempNode);
+    }
+    else if (command.GetType() == CommandTypes::SIZEOF)
+    {
+        return HandleSizeof(command);
     }
 
     const std::vector<Token> tokens = command.GetTokens();

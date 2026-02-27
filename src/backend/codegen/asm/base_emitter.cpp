@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
     m_funcTable(funcTable),
@@ -32,6 +33,32 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
             out << globalVar->GetInitializerString() << "\n";
         }
     }
+
+    for (const auto& constant : module.GetConstants())
+    {
+        if (auto* stringLiteral = dynamic_cast<const IRConstantString*>(constant.get()))
+        {
+            out << Indent() << stringLiteral->GetLabel() << " db ";
+            const std::string& val = stringLiteral->GetValue();
+            for (size_t i = 0; i < val.size(); ++i)
+            {
+                if (i > 0) out << ", ";
+                unsigned char ch = static_cast<unsigned char>(val[i]);
+                if (ch >= 32 && ch < 127 && ch != '"' && ch != '\\')
+                {
+                    // printable ASCII
+                    out << "'" << val[i] << "'";
+                }
+                else
+                {
+                    // emit as numeric byte (handles \n, \t, etc.)
+                    out << static_cast<int>(ch);
+                }
+            }
+            out << ", 0\n"; // null terminator
+        }
+    }
+
     out << "\n";
     out << "\n";
 }

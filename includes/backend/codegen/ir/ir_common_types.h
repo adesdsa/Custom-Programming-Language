@@ -46,6 +46,10 @@ enum class IROpcode
     FCmpGt,     // %r = fcmp gt float %a, %b  (>)
     FCmpGe,     // %r = fcmp ge float %a, %b  (>=)
 
+    // Type conversion
+    FPToSI,     // %r = fptosi double %a to i64  (float → signed int)
+    SIToFP,     // %r = sitofp i64 %a to double  (signed int → float)
+
     // Memory
     Alloca,     // %ptr = alloca i32         (allocate stack space)
     Load,       // %val = load i32, i32* %ptr (read from memory)

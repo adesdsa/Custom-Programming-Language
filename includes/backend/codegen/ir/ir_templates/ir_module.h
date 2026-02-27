@@ -45,6 +45,7 @@ public:
 
     void RemoveVariable(IRGlobalVariable* globalVar);
     void AddConstant(std::unique_ptr<IRBaseValue> constant);
+    const std::vector<std::unique_ptr<IRBaseValue>>& GetConstants() const noexcept;
 
 private:
     const std::string m_name;

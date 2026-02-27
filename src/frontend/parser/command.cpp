@@ -405,7 +405,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
                 return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
             }
         } 
-        else if (IsType(currToken, TokenTypes::VALUE)) 
+        else if (IsType(currToken, TokenTypes::VALUE) || IsType(currToken, TokenTypes::STRING_LITERAL)) 
             return NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         else return FoundUnknown(currToken);
     }
@@ -498,6 +498,7 @@ bool Command::IsExpressionStart(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) ||
         IsType(token, TokenTypes::VALUE) ||
+        IsType(token, TokenTypes::STRING_LITERAL) ||
         IsValue(token, "-") ||
         IsValue(token, "not") ||
         IsValue(token, "(");
@@ -515,7 +516,8 @@ inline bool Command::IsOperator(Token& token)
 inline bool Command::IsValueToken(Token& token)
 {
     return IsType(token, TokenTypes::IDENTIFIER) ||
-        IsType(token, TokenTypes::VALUE);
+        IsType(token, TokenTypes::VALUE) ||
+        IsType(token, TokenTypes::STRING_LITERAL);
 }
 
 inline bool Command::IsType(Token& token)

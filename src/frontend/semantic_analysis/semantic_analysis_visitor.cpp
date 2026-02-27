@@ -898,6 +898,7 @@ std::string SemanticAnalysisVisitor::TypeToString(
         case Type::DOUBLE_TYPE:          return "double";
         case Type::UNSIGNED_INT_TYPE:    return "unsigned int";
         case Type::VOID_TYPE:            return "void";
+        case Type::STRING_TYPE:          return "string";
         default:                         return "unknown";
     }
 }
@@ -910,6 +911,7 @@ std::string SemanticAnalysisVisitor::ExpressionTypeToString(
     {
         case ExpressionType::BOOLEAN:      return "boolean";
         case ExpressionType::MATHEMATICAL: return "numeric";
+        case ExpressionType::STRING:       return "string";
         case ExpressionType::VOID_TYPE:    return "void";
         default:                           return "unknown";
     }
@@ -967,6 +969,11 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
         }
 
         return SemanticCheckerFacade::TypeToExpressionType(func->GetRType());
+    }
+
+    else if (nodeType == CommandTypes::SIZEOF)
+    {
+        return ExpressionType::MATHEMATICAL; // sizeof always returns an int
     }
     
     return ExpressionType::UNKNOWN;

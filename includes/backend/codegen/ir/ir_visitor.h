@@ -275,6 +275,10 @@ private:
     /// @return New IRBaseValue* after applying the nots, or nullptr on error.
     IRBaseValue* ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt);
 
+    /// @brief Insert an implicit FPToSI or SIToFP conversion when the value
+    ///        type doesn't match the target variable type.
+    IRBaseValue* ConvertIfNeeded(IRBaseValue* value, std::shared_ptr<const IRType> targetType);
+
     /// @brief Collect tokens from a command into a flat vector of ExprItem.
     /// @details This routine handles parentheses recursively: when a '(' is
     ///          encountered it will recurse and return a single ExprItem that
