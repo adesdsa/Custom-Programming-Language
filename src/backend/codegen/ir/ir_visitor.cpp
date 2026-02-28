@@ -22,7 +22,6 @@ IRVisitor::IRVisitor(
     m_lastSavedValue(nullptr),
     m_currFunc(nullptr),
     m_currVarMetaData(std::nullopt),
-    m_currFunc(nullptr),
     m_expectedReturnValue(false),
     m_expectedAssignment(false),
     m_returnedAlready(false),
@@ -420,7 +419,15 @@ void IRVisitor::VisitReturn(ASTNode* node)
     if (this->m_expectedReturnValue)
     {
         this->m_expectedReturnValue = false;
-        this->m_irbuilder.CreateRet(this->m_lastSavedValue);
+
+        // convert return value to match the function's declared return type
+        IRBaseValue* retVal = this->m_lastSavedValue;
+        if (retVal && this->m_currFunc)
+        {
+            retVal = ConvertIfNeeded(retVal, this->m_currFunc->GetReturnType());
+        }
+
+        this->m_irbuilder.CreateRet(retVal);
         this->m_returnedAlready = true;  // Set AFTER return is complete
     }
     else if (m_currFunc->GetReturnType() == IRType::GetVoid())
@@ -1292,10 +1299,20 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     // Only if the func has arguements we add them
     if (params.size() != 0 && params[0].type != Type::VOID_TYPE)
     {
-        // Going through all the given func call arguements turning them into Isntructions and saving them.
-        for (auto expression : command.GetParams())
+        const auto& argExprs = command.GetParams();
+        for (size_t i = 0; i < argExprs.size(); i++)
         {
-            tempInstructionHolder.push_back(HandleExpression(expression));
+            IRBaseValue* argValue = HandleExpression(argExprs[i]);
+
+            // insert implicit type 
+            // conversion to match the expected parameter type
+            if (argValue && i < params.size())
+            {
+                auto expectedType = TypeToIRType(params[i].type);
+                argValue = ConvertIfNeeded(argValue, expectedType);
+            }
+
+            tempInstructionHolder.push_back(argValue);
         }
     }
 

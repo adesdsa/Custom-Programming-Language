@@ -433,6 +433,31 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
     FuncMetaData* existingFunc = this->m_funcTable.FindFunctionByName(funcName);
     if (existingFunc != nullptr)
     {
+        // verify the definition's signature matches the declaration's
+        Type returnType = ASTExtractor::ExtractFuncReturnType(node);
+        const std::vector<VarMetaData>& defParams = ASTExtractor::ExtractFuncParams(node, this->m_varFactory);
+        FuncMetaData defMeta = this->m_funcFactory.CreateFuncMetadata(
+            funcName, returnType, defParams,
+            tokens[FIRST_TOKEN_INDEX].GetLine(),
+            tokens[FIRST_TOKEN_INDEX].GetColumn()
+        );
+
+        if (!existingFunc->HasSameSignature(defMeta))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "Definition of function '" + funcName +
+                        "' does not match its declaration",
+                    tokens[FIRST_TOKEN_INDEX].GetLine(),
+                    tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                    "Ensure the parameter types and return type match the declaration at line "
+                        + std::to_string(existingFunc->GetDeclarationLine())
+                )
+            );
+            return;
+        }
+
         existingFunc->SetDefined();
     }
     else
