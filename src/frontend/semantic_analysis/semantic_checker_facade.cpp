@@ -224,12 +224,10 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
     
     case BlockKind::Else:
         if (ElseElifBlockEnter()) return false;
-        m_operationHistory.push(OperationKind::None); // Starting a new block.
         break;
     
     case BlockKind::Elif:
         if (ElseElifBlockEnter()) return false;
-        m_operationHistory.push(OperationKind::None); // Starting a new block.
         break;
 
     case BlockKind::Loop:
@@ -586,6 +584,14 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         // Incase we started a comparrison we check if it's ending is legal.
         else if (currExpressionType == ExpressionType::COMPARRISON_OPERATOR && 
             expressionSet[i] == ExpressionType::MATHEMATICAL)
+        {
+            currExpressionType = ExpressionType::BOOLEAN;
+        }
+        // Incase we have boolean comparrison
+        else if (currExpressionType == ExpressionType::BOOLEAN &&
+            expressionSet[i] == ExpressionType::COMPARRISON_OPERATOR &&
+            i + 1 < expressionSet.size() &&
+            expressionSet[i + 1] == ExpressionType::BOOLEAN)
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }

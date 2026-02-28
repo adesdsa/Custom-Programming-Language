@@ -20,6 +20,7 @@ IRVisitor::IRVisitor(
     m_latchCnt(0),
     m_nextControlEntryBlock(nullptr),
     m_lastSavedValue(nullptr),
+    m_currFunc(nullptr),
     m_currVarMetaData(std::nullopt),
     m_currFunc(nullptr),
     m_expectedReturnValue(false),
@@ -163,6 +164,12 @@ void IRVisitor::VisitAssignment(ASTNode* node)
         }
 
         IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
+
+        if (this->m_currVarMetaData.value().scope == Scope::GLOBAL)
+        {
+            this->m_expectedAssignment = false;
+            return;
+        }
 
         // Insert implicit type conversion when the value type differs from the target variable type
         if (valueToStore && target)
