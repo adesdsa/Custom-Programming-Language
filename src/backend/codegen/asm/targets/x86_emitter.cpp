@@ -21,6 +21,10 @@ std::string X86_Emitter::EmitHeader() const
             header << "BITS 32\n";
             header << "global _start\n";
             header << "extern main\n\n";
+
+            header << "section .data\n";
+            header << "    __println_bool_true db \"true\", 10, 0\n";
+            header << "    __println_bool_false db \"false\", 10, 0\n\n";
             break;
 
         case OS::Windows:
@@ -36,7 +40,9 @@ std::string X86_Emitter::EmitHeader() const
             header << "section .data\n";
             header << "    __println_fmt_int db \"%d\", 10, 0\n";
             header << "    __println_fmt_double db \"%g\", 10, 0\n";
-            header << "    __println_fmt_str db \"%s\", 10, 0\n\n";
+            header << "    __println_fmt_str db \"%s\", 10, 0\n";
+            header << "    __println_bool_true db \"true\", 0\n";
+            header << "    __println_bool_false db \"false\", 0\n\n";
             break;
 
         default:
@@ -48,19 +54,33 @@ std::string X86_Emitter::EmitHeader() const
 
 void X86_Emitter::EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out)
 {
+    // The semantic analysis frame size may undercount when sibling scopes
+    // reuse offsets, but the IR gives every variable its own alloca.
+    // Use the actual alloca count so temp slots never overlap var slots.
+    int numAllocas = 0;
+    if (func->GetEntryBlock())
+    {
+        for (const auto& instr : func->GetEntryBlock()->GetInstructions())
+        {
+            if (instr->GetOpcode() == IROpcode::Alloca) numAllocas++;
+        }
+    }
+    int allocaFrameSize = numAllocas * x86_32::STACK_SLOT_SIZE;
+    int actualFrameSize = std::max(frameSize, allocaFrameSize);
+
     // reset stack tracking for this function
     this->m_nextVarStackOffset = x86_32::STACK_SLOT_SIZE;  // start after saved ebp
-    this->m_nextTempStackOffset = frameSize + x86_32::STACK_SLOT_SIZE;
+    this->m_nextTempStackOffset = actualFrameSize + x86_32::STACK_SLOT_SIZE;
     this->m_valueToStackOffset.clear();
 
     // save caller's base pointer
     out << "    push ebp\n";
     out << "    mov ebp, esp\n";
 
-    if (frameSize > 0)
+    if (actualFrameSize > 0)
     {
         // reserve memory in stack for stack frame (align to 4 bytes)
-        int alignedSize = (frameSize + x86_32::STACK_ALIGNMENT_BIT_WISE) & ~x86_32::STACK_ALIGNMENT_BIT_WISE;
+        int alignedSize = (actualFrameSize + x86_32::STACK_ALIGNMENT_BIT_WISE) & ~x86_32::STACK_ALIGNMENT_BIT_WISE;
         out << "    sub esp, " << alignedSize << "\n";
     }
 }
@@ -485,6 +505,27 @@ void X86_Emitter::EmitStart(std::ostream& out)
             out << "    mov esp, ebp\n";
             out << "    pop ebp\n";
             out << "    ret\n";
+
+            // ---- Built-in: println_bool(value: bool) -> void ----
+            // Prints "true\n" or "false\n" via write(1, ...).
+            out << "\n";
+            out << "println_bool:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    cmp dword [ebp+8], 0\n";
+            out << "    je .Lbool_false\n";
+            out << "    mov ecx, __println_bool_true\n";
+            out << "    mov edx, 5\n";
+            out << "    jmp .Lbool_write\n";
+            out << ".Lbool_false:\n";
+            out << "    mov ecx, __println_bool_false\n";
+            out << "    mov edx, 6\n";
+            out << ".Lbool_write:\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
             break;
         }
 
@@ -538,6 +579,25 @@ void X86_Emitter::EmitStart(std::ostream& out)
             out << "    mov ebp, esp\n";
             out << "    push dword [ebp+8]\n";           // arg: string ptr
             out << "    push __println_fmt_str\n";        // arg: fmt
+            out << "    call _printf\n";
+            out << "    add esp, 8\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: println_bool(value: bool) -> void ----
+            // Prints "true" or "false" via printf("%s\n", ...).
+            out << "\n";
+            out << "_println_bool:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    cmp dword [ebp+8], 0\n";
+            out << "    je ._println_bool_false\n";
+            out << "    push __println_bool_true\n";
+            out << "    jmp ._println_bool_out\n";
+            out << "._println_bool_false:\n";
+            out << "    push __println_bool_false\n";
+            out << "._println_bool_out:\n";
+            out << "    push __println_fmt_str\n";
             out << "    call _printf\n";
             out << "    add esp, 8\n";
             out << "    pop ebp\n";

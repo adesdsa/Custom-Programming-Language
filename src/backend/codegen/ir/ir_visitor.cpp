@@ -1304,9 +1304,10 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         {
             IRBaseValue* argValue = HandleExpression(argExprs[i]);
 
-            // insert implicit type 
-            // conversion to match the expected parameter type
-            if (argValue && i < params.size())
+            // For println, skip implicit type conversion because we
+            // dispatch to a specialized variant based on the original
+            // argument type (println_double, println_bool, println_str).
+            if (argValue && i < params.size() && funcName != "println")
             {
                 auto expectedType = TypeToIRType(params[i].type);
                 argValue = ConvertIfNeeded(argValue, expectedType);
@@ -1323,6 +1324,10 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         if (argKind == IRTypeKind::Float64 || argKind == IRTypeKind::Float32)
         {
             targetFuncName = "println_double";
+        }
+        else if (argKind == IRTypeKind::Int1)
+        {
+            targetFuncName = "println_bool";
         }
         else if (dynamic_cast<IRConstantString*>(tempInstructionHolder[0]))
         {

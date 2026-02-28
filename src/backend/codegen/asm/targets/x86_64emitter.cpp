@@ -24,7 +24,11 @@ std::string X86_64Emitter::EmitHeader() const
         case OS::Linux:
             header << "default rel\n";
             header << "global _start\n";
-            header << "extern main\n";
+            header << "extern main\n\n";
+
+            header << "section .data\n";
+            header << "    __println_bool_true db \"true\", 10, 0\n";
+            header << "    __println_bool_false db \"false\", 10, 0\n\n";
             break;
 
         case OS::Windows:
@@ -38,7 +42,9 @@ std::string X86_64Emitter::EmitHeader() const
             header << "section .data\n";
             header << "    __println_fmt_int db \"%lld\", 10, 0\n";
             header << "    __println_fmt_double db \"%g\", 10, 0\n";
-            header << "    __println_fmt_str db \"%s\", 10, 0\n\n";
+            header << "    __println_fmt_str db \"%s\", 10, 0\n";
+            header << "    __println_bool_true db \"true\", 0\n";
+            header << "    __println_bool_false db \"false\", 0\n\n";
             break;
 
         default:
@@ -71,9 +77,23 @@ void X86_64Emitter::EmitPrologue(
         argSpillSize = regArgs * x86_64::STACK_SLOT_SIZE;
     }
 
+    // The semantic analysis frame size may undercount when sibling scopes
+    // reuse offsets, but the IR gives every variable its own alloca.
+    // Use the actual alloca count so temp slots never overlap var slots.
+    int numAllocas = 0;
+    if (func->GetEntryBlock())
+    {
+        for (const auto& instr : func->GetEntryBlock()->GetInstructions())
+        {
+            if (instr->GetOpcode() == IROpcode::Alloca) numAllocas++;
+        }
+    }
+    int allocaFrameSize = numAllocas * x86_64::STACK_SLOT_SIZE;
+    int actualFrameSize = std::max(frameSize, allocaFrameSize);
+
     // Calculate total frame = aligned frameSize
     int bufferedTempSize = (temporaryVarSize + argSpillSize + 15) & ~15;
-    int bufferedFrameSize = (frameSize + 15) & ~15;
+    int bufferedFrameSize = (actualFrameSize + 15) & ~15;
     int totalFrame = (bufferedTempSize + bufferedFrameSize + 15) & ~15;
     if (TargetArchitecture::GetOS() == OS::Windows)
     {
@@ -701,6 +721,27 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "    mov rsp, rbp\n";
         out << "    pop rbp\n";
         out << "    ret\n";
+
+        // ---- Built-in: println_bool(value: bool) -> void ----
+        // Prints "true\n" or "false\n" via write(1, ...).
+        out << "\n";
+        out << "println_bool:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    cmp rdi, 0\n";
+        out << "    je .Lbool_false\n";
+        out << "    lea rsi, [rel __println_bool_true]\n";
+        out << "    mov rdx, 5\n";
+        out << "    jmp .Lbool_write\n";
+        out << ".Lbool_false:\n";
+        out << "    lea rsi, [rel __println_bool_false]\n";
+        out << "    mov rdx, 6\n";
+        out << ".Lbool_write:\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
     }
     else if (TargetArchitecture::GetOS() == OS::Windows)
     {
@@ -763,6 +804,26 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "    push rbp\n";
         out << "    mov rbp, rsp\n";
         out << "    mov rdx, rcx\n";                           // 2nd printf arg = string ptr
+        out << "    lea rcx, [rel __println_fmt_str]\n";       // 1st printf arg = fmt
+        out << "    sub rsp, 32\n";
+        out << "    call printf\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
+        // ---- Built-in: println_bool(value: bool) -> void ----
+        // Prints "true" or "false" via printf("%s\n", ...).
+        out << "\n";
+        out << "println_bool:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    cmp rcx, 0\n";
+        out << "    je .println_bool_false\n";
+        out << "    lea rdx, [rel __println_bool_true]\n";
+        out << "    jmp .println_bool_out\n";
+        out << ".println_bool_false:\n";
+        out << "    lea rdx, [rel __println_bool_false]\n";
+        out << ".println_bool_out:\n";
         out << "    lea rcx, [rel __println_fmt_str]\n";       // 1st printf arg = fmt
         out << "    sub rsp, 32\n";
         out << "    call printf\n";
