@@ -366,7 +366,11 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     {
         m_bIgnoreCurrToken = true;
 
-        if (IsValue(currToken, ")"))
+        if (IsValue(currToken, "("))
+        {
+            m_iParanthesesCounter++;
+        }
+        else if (IsValue(currToken, ")"))
         {
             m_iParanthesesCounter--;
         }
@@ -395,7 +399,6 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
             {
                 m_bIgnoreCurrToken = true;
                 m_bBuildingParam = true;
-                m_iParanthesesCounter = 1;
                 AddToCurrParam(currToken, nextToken);
                 return false;
             }

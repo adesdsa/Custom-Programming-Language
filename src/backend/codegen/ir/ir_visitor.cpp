@@ -21,6 +21,7 @@ IRVisitor::IRVisitor(
     m_nextControlEntryBlock(nullptr),
     m_lastSavedValue(nullptr),
     m_currVarMetaData(std::nullopt),
+    m_currFunc(nullptr),
     m_expectedReturnValue(false),
     m_expectedAssignment(false),
     m_returnedAlready(false),
@@ -60,7 +61,9 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     this->m_currVarMetaData = varMetaData; // Saving it incase there will be assigmnet later on
 
     // The var is saved differently if it is global or local.
-    if (varMetaData.value().scope == Scope::GLOBAL)
+    // variable declared at the top level (outside any function) is always
+    // global
+    if (varMetaData.value().scope == Scope::GLOBAL || !this->m_currFunc)
     {
         this->m_currModule.AddVariable(
             varMetaData.value().sName,
@@ -73,7 +76,7 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
     {
         // If entry block doesnt exist yet, this is a function parameter
         // parameters are already handled as IRArguments, no alloca needed
-        if (this->m_currFunc && this->m_currFunc->GetEntryBlock() == nullptr)
+        if (this->m_currFunc->GetEntryBlock() == nullptr)
         {
             this->m_entityLogger.Info("Added VarDeclaration IR handling.\nAt line: "
                 + std::to_string(node->command[0].GetLine()));
@@ -140,6 +143,25 @@ void IRVisitor::VisitAssignment(ASTNode* node)
     if (this->m_expectedAssignment)
     {
         IRBaseValue* valueToStore = this->m_lastSavedValue;
+
+        // outside any function set the global variable's
+        // initializer instead of emitting a runtime store instruction.
+        if (!this->m_currFunc)
+        {
+            IRGlobalVariable* globalVar = this->m_currModule.GetVariable(
+                this->m_currVarMetaData.value().sName);
+            if (globalVar && valueToStore)
+            {
+                auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
+                valueToStore = ConvertIfNeeded(valueToStore, targetType);
+                globalVar->SetInitializer(valueToStore);
+            }
+            this->m_expectedAssignment = false;
+            this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
+            return;
+        }
+
         IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
 
         // Insert implicit type conversion when the value type differs from the target variable type
@@ -1804,9 +1826,9 @@ inline IRInstruction* IRVisitor::GetLastIsntruction()
 
 IRBaseValue* IRVisitor::FindPointer(const std::string& name)
 {
-    auto searchVar = this->m_currFunc->FindAllocatedVar(name);
+    IRBaseValue* searchVar = this->m_currFunc ? this->m_currFunc->FindAllocatedVar(name) : nullptr;
     auto searchGlobal = this->m_currModule.GetVariable(name);
-    auto searchArg = this->m_currFunc->GetArgument(name);
+    IRBaseValue* searchArg = this->m_currFunc ? this->m_currFunc->GetArgument(name) : nullptr;
     if (searchVar)
     {
         return searchVar;
