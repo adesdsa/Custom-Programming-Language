@@ -222,6 +222,7 @@ bool Command::ParseFuncStart(Token& currToken, Token& nextToken)
         if(LowerParanthesesCounter(currToken)) return true;
         else if (m_iParanthesesCounter == 0)
         {
+            this->m_bBuildingParam = false;
             m_bIgnoreCurrToken = false;
             if (IsValue(nextToken, "->"))
                 return NoFinishAndAssignType(CommandTypes::FILLED_FUNC_DECLARATION);
@@ -421,9 +422,7 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
     else if (IsValue(currToken, "not")) return false;
     else if (IsValue(currToken, "sizeof"))
     {
-        m_bIgnoreCurrToken = true;
         m_bBuildingParam = true;
-        m_iParanthesesCounter = 1;
         AddToCurrParam(currToken, nextToken);
         return false;
     }
