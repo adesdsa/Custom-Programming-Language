@@ -1,7 +1,7 @@
 {
   "name": "picoc",
   "displayName": "PicoC Language Support",
-  "publisher": "picoc-dev-team",
+  "publisher": "picocDevelopers",
   "description": "Syntax highlighting and compile support for the PicoC programming language",
   "version": "0.1.0",
   "engines": { "vscode": "^1.75.0" },
