@@ -2,10 +2,21 @@
   "name": "picoc",
   "displayName": "PicoC Language Support",
   "publisher": "picoc-dev-team",
-  "description": "Syntax highlighting for the PicoC programming language",
+  "description": "Syntax highlighting and compile support for the PicoC programming language",
   "version": "0.1.0",
   "engines": { "vscode": "^1.75.0" },
   "categories": ["Programming Languages"],
+  "main": "./out/extension.js",
+  "activationEvents": ["onLanguage:picoc"],
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  },
   "contributes": {
     "languages": [
       {
@@ -21,6 +32,27 @@
         "scopeName": "source.picoc",
         "path": "./syntaxes/picoc.tmLanguage.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "picoc.compile",
+        "title": "PicoC: Compile Current File"
+      }
+    ],
+    "configuration": {
+      "title": "PicoC",
+      "properties": {
+        "picoc.compilerPath": {
+          "type": "string",
+          "default": "picoc",
+          "description": "Path to the PicoC compiler executable"
+        },
+        "picoc.compileOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically compile when a .picoc file is saved"
+        }
+      }
+    }
   }
 }
