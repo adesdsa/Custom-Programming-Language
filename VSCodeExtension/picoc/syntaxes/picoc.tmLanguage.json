@@ -4,13 +4,18 @@
   "scopeName": "source.picoc",
   "patterns": [
     { "include": "#comments" },
-    { "include": "#keywords" },
-    { "include": "#types" },
-    { "include": "#constants" },
     { "include": "#strings" },
+    { "include": "#control_keywords" },
+    { "include": "#sizeof" },
+    { "include": "#storage_modifiers" },
+    { "include": "#variable_declarators" },
+    { "include": "#primitive_types" },
+    { "include": "#constants" },
     { "include": "#numbers" },
+    { "include": "#punctuation" },
+    { "include": "#operators" },
     { "include": "#functions" },
-    { "include": "#operators" }
+    { "include": "#variables" }
   ],
   "repository": {
     "comments": {
@@ -26,30 +31,54 @@
         }
       ]
     },
-    "keywords": {
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.picoc",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "name": "constant.character.escape.picoc", "match": "\\\\." }
+          ]
+        }
+      ]
+    },
+    "control_keywords": {
       "patterns": [
         {
           "name": "keyword.control.picoc",
-          "match": "\\b(if|elif|else|for|while|break|continue|return|pass)\\b"
-        },
+          "match": "\\b(if|elif|else|for|while|break|continue|return|pass|and|or|not|xor)\\b"
+        }
+      ]
+    },
+    "sizeof": {
+      "patterns": [
         {
-          "name": "keyword.operator.logical.picoc",
-          "match": "\\b(and|or|not|xor)\\b"
-        },
+          "name": "keyword.other.sizeof.picoc",
+          "match": "\\bsizeof\\b"
+        }
+      ]
+    },
+    "storage_modifiers": {
+      "patterns": [
         {
           "name": "storage.modifier.picoc",
           "match": "\\b(const|readonly|global)\\b"
-        },
+        }
+      ]
+    },
+    "variable_declarators": {
+      "patterns": [
         {
           "name": "storage.type.picoc",
           "match": "\\b(var|let)\\b"
         }
       ]
     },
-    "types": {
+    "primitive_types": {
       "patterns": [
         {
-          "name": "support.type.picoc",
+          "name": "storage.type.primitive.picoc",
           "match": "\\b(void|bool|unsigned|int|double)\\b"
         }
       ]
@@ -59,21 +88,6 @@
         {
           "name": "constant.language.picoc",
           "match": "\\b(true|false)\\b"
-        }
-      ]
-    },
-    "strings": {
-      "patterns": [
-        {
-          "name": "string.quoted.double.picoc",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [
-            {
-              "name": "constant.character.escape.picoc",
-              "match": "\\\\."
-            }
-          ]
         }
       ]
     },
@@ -89,6 +103,26 @@
         }
       ]
     },
+    "punctuation": {
+      "patterns": [
+        { "name": "punctuation.accessor.picoc", "match": "->" },
+        { "name": "punctuation.terminator.picoc", "match": ";" },
+        { "name": "punctuation.separator.colon.picoc", "match": ":" },
+        { "name": "punctuation.separator.comma.picoc", "match": "," },
+        { "name": "punctuation.section.parens.open.picoc", "match": "\\(" },
+        { "name": "punctuation.section.parens.close.picoc", "match": "\\)" },
+        { "name": "punctuation.section.braces.open.picoc", "match": "\\{" },
+        { "name": "punctuation.section.braces.close.picoc", "match": "\\}" }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        { "name": "keyword.operator.comparison.picoc", "match": "==|!=|<=|>=|<|>" },
+        { "name": "keyword.operator.arithmetic.picoc", "match": "//|[+\\-*/%]" },
+        { "name": "keyword.operator.assignment.picoc", "match": "=" },
+        { "name": "keyword.operator.logical.picoc", "match": "!" }
+      ]
+    },
     "functions": {
       "patterns": [
         {
@@ -97,27 +131,11 @@
         }
       ]
     },
-    "operators": {
+    "variables": {
       "patterns": [
         {
-          "name": "keyword.operator.arrow.picoc",
-          "match": "->"
-        },
-        {
-          "name": "keyword.operator.comparison.picoc",
-          "match": "==|!=|<=|>=|<|>"
-        },
-        {
-          "name": "keyword.operator.arithmetic.picoc",
-          "match": "//|[+\\-*/%]"
-        },
-        {
-          "name": "keyword.operator.assignment.picoc",
-          "match": "="
-        },
-        {
-          "name": "keyword.operator.logical.picoc",
-          "match": "!"
+          "name": "variable.other.picoc",
+          "match": "\\b[a-zA-Z_]\\w*\\b"
         }
       ]
     }
