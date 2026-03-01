@@ -38,6 +38,9 @@ public:
     std::string ToString() const noexcept;
 
     void SetFilePath(const std::string& filePath);
+    void SetReporter(const std::string& reporter);
+
+    const std::string& GetReporter() const noexcept;
 
 private:
     std::string_view m_type;
@@ -46,6 +49,7 @@ private:
     size_t m_column;
     std::string m_hint;
     std::string m_filePath;
+    std::string m_reporter;
 };
 
 class CompilationAbortException : public std::exception 
