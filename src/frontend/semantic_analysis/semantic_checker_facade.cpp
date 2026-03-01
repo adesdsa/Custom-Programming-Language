@@ -162,7 +162,7 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
     return true;
 }
 
-inline bool SemanticCheckerFacade::CheckReturnInsideFunc()
+bool SemanticCheckerFacade::CheckReturnInsideFunc()
 {
     return !m_operationHistory.empty();
 }
@@ -553,7 +553,7 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
 {
     ExpressionType currExpressionType = ExpressionType::UNKNOWN;
 
-    for (int i = 0; i < expressionSet.size(); i++)
+    for (size_t i = 0; i < expressionSet.size(); i++)
     {
         // Incase we see math but actually the next operator is a comparrison 
         // operator so we started a comparrison expression => boolean and not math.

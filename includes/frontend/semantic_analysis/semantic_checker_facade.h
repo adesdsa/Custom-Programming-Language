@@ -71,7 +71,7 @@ public:
     /// @brief The func is used to check that the return is inside a func.
     /// @note The func must be checked before calling CheckFunctionReturnType.
     /// @return bool: True-> The return is inside a func, False-> Otherwise.
-    static inline bool CheckReturnInsideFunc();
+    static bool CheckReturnInsideFunc();
 
     /// @brief The func is used to check if the assignment is legal.
     /// @param sAssignedVarName The var that is being assigned a new value.

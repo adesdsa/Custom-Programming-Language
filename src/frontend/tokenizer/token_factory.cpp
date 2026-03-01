@@ -7,7 +7,8 @@ TokenFactory::TokenFactory(
     m_mappedSRC(filePath),
     m_ulLineCounter(1), 
     m_ulColumnCounter(1),
-    m_entityLogger(entityLogger) {}
+    m_entityLogger(entityLogger) 
+{}
 
 Token TokenFactory::CreateToken()
 {

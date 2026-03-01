@@ -156,21 +156,18 @@ private:
 
     // The func parses an ACCESS_RIGHTS CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseAccessRights(Token& currToken, Token& nextToken);
+    bool ParseAccessRights(Token& currToken);
 
     // The func parses a SCOPE CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseScope(Token& currToken, Token& nextToken);
+    bool ParseScope(Token& currToken);
 
     // The func parses an IDENTIFIER CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseIdentifier(Token& currToken, Token& nextToken);
+    bool ParseIdentifier(Token& currToken);
 
     // The func parses a FUNC_START CommandType.
     // @param currToken: The current Token we are adding.
@@ -180,9 +177,8 @@ private:
 
     // The func parses an FILLED_FUNC_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseFilledFuncDeclaration(Token& currToken, Token& nextToken);
+    bool ParseFilledFuncDeclaration(Token& currToken);
 
     // The func parses an ARROW_FUNC_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
@@ -198,9 +194,8 @@ private:
 
     // The func parses an ELIF_CALL, IF_CALL, WHILE_CALL or FOR_CALL CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseParameterKeywordCall(Token& currToken, Token& nextToken);
+    bool ParseParameterKeywordCall(Token& currToken);
 
     // The func parses an ELIF_START, IF_START etc CommandType.
     // @param currToken: The current Token we are adding.
@@ -210,9 +205,8 @@ private:
 
     // The func parses an EXPRESSION_VALUE CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseExpressionValue(Token& currToken, Token& nextToken);
+    bool ParseExpressionValue(Token& currToken);
 
     // The func parses an EXPRESSION_OPERATOR CommandType.
     // @param currToken: The current Token we are adding.
@@ -224,7 +218,7 @@ private:
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseNotFuncIdentifier(Token& currToken, Token& nextToken);
+    bool ParseNotFuncIdentifier(Token& currToken);
 
     // The func parses an ARRAY_ACCESS_START CommandType.
     // @param currToken: The current Token we are adding.

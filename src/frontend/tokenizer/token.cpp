@@ -4,7 +4,8 @@ Token::Token(size_t ulLine, size_t ulColumn) :
     m_sValue(""), 
     m_sType(TokenTypes::UNKNOWN), 
     m_ulLine(ulLine),
-    m_ulColumn(ulColumn) {}
+    m_ulColumn(ulColumn) 
+{}
 
 Token::Token(std::string_view sTokenType, size_t ulLine, size_t ulColumn) :
     m_sValue(""), 

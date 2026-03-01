@@ -1,7 +1,8 @@
 #include "includes/frontend/tokenizer/token_handler.h"
 
 TokenHandler::TokenHandler(const EntityLogger& entityLogger) : 
-    m_entityLogger(entityLogger) {}
+    m_entityLogger(entityLogger) 
+{}
 
 std::optional<Token> TokenHandler::HandleToken(const Token& token) noexcept
 {
