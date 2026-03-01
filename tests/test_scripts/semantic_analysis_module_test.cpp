@@ -171,13 +171,15 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
     testLogger.Info("HappyFlowFullProgram PASSED");
 }
 
-// TEST: Negative Flow - Semantic errors
 TEST(SemanticAnalysisTest, NegativeFlowSemanticErrors) 
 {
-    // Setup: Parse and run semantic analysis
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/file_with_logic_errors.picoc"));
-    const AST& ast = parser.MainFlow();
-    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
-    
-    EXPECT_THROW(semanticAnalysisComponent.MainFlow(), CompilationAbortException);
+    EXPECT_THROW(
+        {
+            ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/file_with_logic_errors.picoc"));
+            const AST& ast = parser.MainFlow();
+            SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+            semanticAnalysisComponent.MainFlow();
+        },
+        CompilationAbortException
+    );
 }
