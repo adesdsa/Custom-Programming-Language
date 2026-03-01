@@ -79,10 +79,10 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                 if (m_uBlockCloseCnt > m_uBlockStartCnt)
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-                        "Tried closing a block without being in one",
+                        "Unexpected '}' — no matching opening block",
                         m_line[m_uLineIndex][0].GetLine(),
                         m_line[m_uLineIndex][0].GetColumn(),
-                        "");
+                        "Check for a missing '{' or an extra '}'");
                     m_errors.push_back(error);
                 }
                 else if (m_uBlockCloseCnt == m_uBlockStartCnt) // Resetting.
@@ -102,16 +102,16 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                         "Not all code blocks were closed at the end of the program",
                         m_line[m_uLineIndex][0].GetLine(),
                         m_line[m_uLineIndex][0].GetColumn(),
-                        "");
+                        "Check for missing '}'");
                     m_errors.push_back(error);
                 }
                 // Incase EOF reached before the last line was finished.
                 if (m_line.size() != 0)
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-                        "EOF detected before code was finished",
+                        "Unexpected end of file — code is incomplete",
                         m_line[0][0].GetLine(), m_line[0][0].GetColumn(),
-                        "Probably forgot to end the line or the code block-try adding ; or }");
+                        "Possibly missing ';' at end of statement or '}' to close a block");
                     m_errors.push_back(error);
                 }
             }
@@ -265,9 +265,9 @@ void FullCommand::CheckLine()
         m_entityLogger.Info("Found and illegal FullCommand");
         m_bLegal = false;
         CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-            "Couldn't parse the commands into a legal code line",
+            "Invalid syntax — could not parse this line",
             m_line[0][0].GetLine(), m_line[0][0].GetColumn(),
-            "");
+            "Check for typos, missing operators, or incorrect statement structure");
         m_errors.push_back(error);
     } else m_entityLogger.Info("Found a legal FullCommand");
 }
@@ -494,13 +494,12 @@ bool FullCommand::CheckConstSize(Command& checkedCommand, int iSize)
     {
         FoundIllegal(
             checkedCommand,
-            "Expected the command (" +
-            std::string(checkedCommand.GetType()) +
-            ") to have the next size " +
+            "'" + std::string(checkedCommand.GetType()) +
+            "' statement has wrong number of tokens (expected " +
             std::to_string(iSize) +
-            " but the size is " +
-            std::to_string(checkedCommand.GetTokens().size()),
-            "", 
+            ", got " +
+            std::to_string(checkedCommand.GetTokens().size()) + ")",
+            "Check for missing or extra tokens in this statement", 
             0);
         return true;
     }
@@ -513,10 +512,10 @@ bool FullCommand::CheckParantheses(Command& checkedCommand)
     {
         FoundIllegal(
             checkedCommand,
-            "The command has too many open (and unclosed) parantheses",
-            "There are " +
+            "Unmatched parentheses — " +
             std::to_string(checkedCommand.GetParanthesesCounter())
-            + " open parantheses",
+            + " opening '(' never closed",
+            "Check for missing closing ')'",
             0);
         return true;
     }
@@ -532,12 +531,12 @@ bool FullCommand::CheckParamExpectedExpression(
     {
         FoundIllegal(
             checkedCommand,
-            "Expected the command here: [" +
+            "Expected an expression at (" +
             std::to_string(checkedCommand.GetParams()[iParamIndex][0].GetLine()) +
-            ", " +
+            "," +
             std::to_string(checkedCommand.GetParams()[iParamIndex][0].GetColumn()) +
-            "] to be an expression but it's " + std::string(checkedCommand.GetType()),
-            "",
+            ") but found '" + std::string(checkedCommand.GetType()) + "' instead",
+            "Provide a valid expression here",
             0);
         return true;
     }
@@ -564,15 +563,13 @@ bool FullCommand::CheckParamExpectedTypes(
         }
         FoundIllegal(
             checkedCommand,
-            "The type of the command at [" +
+            "Expected " + sTypes +
+            " at (" +
             std::to_string(checkedCommand.GetParams()[iParamIndex][0].GetLine()) +
-            ", " +
+            "," +
             std::to_string(checkedCommand.GetParams()[iParamIndex][0].GetColumn()) +
-            "] should be: " +
-            sTypes +
-            ". But the type is: "
-            + std::string(innerCommand.GetType()),
-            "",
+            ") but found '" + std::string(innerCommand.GetType()) + "'",
+            "Check for the correct token type here",
             0);
         return true;
     }
@@ -588,8 +585,8 @@ bool FullCommand::CheckLastFuncParamComa(
     {
         FoundIllegal(
             checkedCommand,
-            "The last thing in the parameters was a seperator ',' but the parameters should end with a parameter and not a seperator",
-            "most likely forgot to add a parameter or removal of the seperator is needed",
+            "Trailing ',' in parameter list — expected another argument after ','",
+            "Add the missing argument or remove the trailing ','",
             checkedCommand.GetTokens().size() - iBackSteps);
         return true;
     }
@@ -636,9 +633,9 @@ void FullCommand::HandleFuncLikeExpressions(
                 continue; // If t's not/*/& we skip.
         else if (!CheckValue(checkedCommand[i], ","))
             FoundIllegal(checkedCommand,
-            "Expected to get a parameter seperator",
-            "Check if ',' was forgotten between two parameters",
-            i); // Right here we should have a seperator, if not it's an error
+            "Missing ',' between function arguments",
+            "Add ',' to separate the arguments",
+            i);
         bExpectingExpression = !bExpectingExpression;
     }
 
@@ -656,8 +653,8 @@ inline bool FullCommand::CheckLastExpressionOperator(Command& checkedCommand)
     {
         FoundIllegal(
             checkedCommand,
-            "The expression was finished with an operator which is illegal",
-            "most likely forgot to add a value or removal of the operator is needed",
+            "Expression ends with an operator — expected a value after it",
+            "Add a value after the operator or remove the trailing operator",
             0);
         return true;
     }

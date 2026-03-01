@@ -57,7 +57,7 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
 
     if (!this->m_currVarTableNode)
     {
-        StoreInternalError("IRVisitor::VisitVarDeclaration m_currVarTableNode is null", node->command);
+        StoreInternalError("Variable declaration failed symbol table is unavailable", node->command);
         return;
     }
     
@@ -127,7 +127,7 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
     std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData)
     {
-        StoreInternalError("IRVisitor::VisitIdentifier unknown var", node->command);
+        StoreInternalError("Unknown variable encountered", node->command);
         return;
     }
     this->m_currVarMetaData = varMetaData;
@@ -209,7 +209,7 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(funcName);
     if (!funcMetaData)
     {
-        StoreInternalError("IRVisitor::VisitFuncDeclaration unknown func", node->command);
+        StoreInternalError("Unknown function encountered", node->command);
         return;
     }
 
@@ -790,7 +790,7 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
     IRFunction* foundFunc = this->m_currModule.GetFunction(node->command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!foundFunc)
     {
-        StoreInternalError("IRVisitor::VisitFuncDefinition unknown func", node->command);
+        StoreInternalError("Unknown function encountered", node->command);
         return;
     }
     this->m_currFunc = foundFunc;
@@ -878,7 +878,7 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         break;
     
     default:
-        StoreInternalError("IRVisitor::TypeToIRType got an illegal type", Command());
+        StoreInternalError("Unsupported or invalid type encountered", Command());
         return IRType::GetVoid();
         break;
     }
@@ -908,7 +908,7 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
         return IRType::GetVoid();
     }
 
-    StoreInternalError("IRVisitor::TypeToIRType got an illegal type", Command());
+    StoreInternalError("Unsupported or invalid type encountered", Command());
     return IRType::GetVoid();
 }
 
@@ -1178,7 +1178,7 @@ IRInstruction* IRVisitor::ChooseOperation(
         break;
     
     default:
-        StoreInternalError("IRVisitor::ChooseOperation got an illegal Operator", Command());
+        StoreInternalError("Unsupported operator encountered", Command());
         return nullptr;
         break;
     }
@@ -1269,7 +1269,7 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
     const std::optional<VarMetaData>& varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData)
     {
-        StoreInternalError("IRVisitor::HandleIdentifierValue unknown var", node->command);
+        StoreInternalError("Unknown variable encountered while evaluating expression", node->command);
         return nullptr;
     }
 
@@ -1284,7 +1284,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(command[FUNC_IDENTIFIER_INDEX].GetValue());
     if (!funcMetaData)
     {
-        StoreInternalError("IRVisitor::HandleFuncCall unknown func", command);
+        StoreInternalError("Unknown function encountered", command);
         return nullptr;
     }
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
@@ -1400,7 +1400,7 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     }
     else
     {
-        StoreInternalError("IRVisitor::HandleSizeof Couldn't find valid type", command);
+        StoreInternalError("sizeof: could not determine the type", command);
         return(nullptr);
     }
 }
@@ -1519,7 +1519,7 @@ std::string IRVisitor::GetCorrespondingLabel(BlockKind blockKind, EntranceKind e
 
     this->m_mergeCnt++;
     std::string tempLabelHolder = "merge" + std::to_string(this->m_mergeCnt - 1);
-    StoreInternalError("IRVisitor::GetCorrespondingLabel couldn't create a label created a default: " + tempLabelHolder, Command());
+    StoreInternalError("Could not create expected label using default: " + tempLabelHolder, Command());
     return tempLabelHolder;
 }
 
@@ -1533,7 +1533,7 @@ IRBaseValue* IRVisitor::ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt)
 {
     if (!value)
     {
-        StoreInternalError("IRVisitor::ApplyNotIfNeeded value somehow is null", Command());
+        StoreInternalError("Null value encountered when applying 'not' operator", Command());
         return nullptr;
     }
     if (notCnt % 2 == 0) return value;
@@ -1691,7 +1691,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
         {
             if (paramIndex >= command.GetParams().size())
             {
-                StoreInternalError("IRVisitor::CollectExprItems paramIndex overflow", command);
+                StoreInternalError("Expression has more parameters than expected", command);
             }
             Command innerCommand = command.GetParams()[paramIndex++];
 
@@ -1724,7 +1724,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             }
             else
             {
-                StoreInternalError("IRVisitor::CollectExprItems unknown param", command);
+                StoreInternalError("Unknown parameter type in expression", command);
             }
 
             ExprItem it;
@@ -1792,7 +1792,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
         }
         else
         {
-            StoreInternalError("IRVisitor::CollectExprItems unknown expression token", command);
+            StoreInternalError("Unknown token in expression", command);
         }
     }
 
@@ -1824,7 +1824,7 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     std::vector<ExprItem> expr = CollectExprItems(command, tokens, tokenIndex, paramIndex);
     if (expr.empty())
     {
-        StoreInternalError("IRVisitor::HandleExpression somehow expression is null after flattening", command);
+        StoreInternalError("Expression evaluated to null could not generate code for this expression", command);
         return nullptr;
     }
 
@@ -1876,7 +1876,7 @@ IRBaseValue* IRVisitor::FindPointer(const std::string& name)
     }
     else
     {
-        StoreInternalError("IRVisitor::FindPointer Couldn't find stored var: " + name, Command());
+        StoreInternalError("Variable '" + name + "' not found", Command());
         return nullptr;
     }
 }
