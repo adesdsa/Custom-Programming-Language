@@ -20,7 +20,7 @@ std::string X86_Emitter::EmitHeader() const
             header << "; Target: x86 Linux (32-bit)\n\n";
             header << "BITS 32\n";
             header << "global _start\n";
-            header << "extern main\n\n";
+            header << "global main\n\n";
 
             header << "section .data\n";
             header << "    __println_bool_true db \"true\", 10, 0\n";
@@ -31,7 +31,7 @@ std::string X86_Emitter::EmitHeader() const
             header << "; Target: x86 Windows (32-bit)\n\n";
             header << "BITS 32\n";
             header << "global _mainCRTStartup\n";
-            header << "extern _main\n";
+            header << "global _main\n";
             header << "extern _ExitProcess@4\n";
             header << "extern _printf\n";
             header << "extern _exit\n\n";
@@ -373,7 +373,7 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::Br:
         {
             const auto& successors = instruction->GetParent()->GetSuccessors();
-            out << "    jmp ." << successors[0]->GetLabel() << "\n";
+            out << "    jmp " << this->MangledName(this->m_currentFunc->GetName()) << "." << successors[0]->GetLabel() << "\n";
             break;
         }
 
@@ -382,8 +382,8 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             const auto& successors = instruction->GetParent()->GetSuccessors();
             out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
             out << "    cmp eax, 0\n";
-            out << "    jne ." << successors[0]->GetLabel() << "\n";
-            out << "    jmp ." << successors[1]->GetLabel() << "\n";
+            out << "    jne " << this->MangledName(this->m_currentFunc->GetName()) << "." << successors[0]->GetLabel() << "\n";
+            out << "    jmp " << this->MangledName(this->m_currentFunc->GetName()) << "." << successors[1]->GetLabel() << "\n";
             break;
         }
 
@@ -392,7 +392,7 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             {
                 out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
             }
-            out << "    jmp ." << this->m_currentFunc->GetName() << "_epilogue\n";
+            out << "    jmp " << this->MangledName(this->m_currentFunc->GetName()) << ".func_epilogue\n";
             break;
 
         case IROpcode::Call:
@@ -406,16 +406,8 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
                 out << "    push dword " << this->GetOperandAsm(operands[i], out) << "\n";
             }
 
-            std::string funcName = instruction->GetCalledFunction()->GetName();
-
-            if (TargetArchitecture::GetOS() == OS::Windows)
-            {
-                out << "    call _" << funcName << "\n";
-            }
-            else
-            {
-                out << "    call " << funcName << "\n";
-            }
+            std::string funcName = this->MangledName(instruction->GetCalledFunction()->GetName());
+            out << "    call " << funcName << "\n";
 
             // caller cleans up stack in cdecl
             if (numOperands > 0)
@@ -610,19 +602,18 @@ void X86_Emitter::EmitStart(std::ostream& out)
     }
 }
 
+std::string X86_Emitter::MangledName(const std::string& name) const
+{
+    if (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        return "_" + name;
+    }
+    return name;
+}
+
 std::string X86_Emitter::GetGlobalDirective(const std::string& symbol) const
 {
-    switch (TargetArchitecture::GetOS())
-    {
-        case OS::Linux:
-            return "global " + symbol + "\n";
-
-        case OS::Windows:
-            return "global _" + symbol + "\n";
-
-        default:
-            return "global " + symbol + "\n";
-    }
+    return "global " + this->MangledName(symbol) + "\n";
 }
 
 std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream& out)
@@ -678,14 +669,7 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
 
     if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
-        if (TargetArchitecture::GetOS() == OS::Windows)
-        {
-            return "dword [_" + globalVar->GetName() + "]";
-        }
-        else
-        {
-            return "dword [" + globalVar->GetName() + "]";
-        }
+        return "dword [" + this->MangledName(globalVar->GetName()) + "]";
     }
 
     // operand is a function argument

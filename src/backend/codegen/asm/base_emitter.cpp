@@ -18,6 +18,11 @@ std::string BaseEmitter::Emit(const IRModule& module)
     return out.str();
 }
 
+std::string BaseEmitter::MangledName(const std::string& name) const
+{
+    return name; // default: no mangling
+}
+
 void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
 {
     out << GetSectionDirective(SectionType::DATA);
@@ -28,7 +33,7 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
         if (globalVar.get()->GetInitializer())
         {
             int varSize = GetTypeSize(globalVar->GetType());
-            out << Indent() << globalVar->GetName() << ": ";
+            out << Indent() << MangledName(globalVar->GetName()) << ": ";
             out << GetDataDirective(varSize) << " ";
             out << globalVar->GetInitializerString() << "\n";
         }
@@ -73,7 +78,7 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
         if (!global.get()->GetInitializer())
         {
             int size = GetTypeSize(global->GetType());
-            out << Indent() << global->GetName() << ": ";
+            out << Indent() << MangledName(global->GetName()) << ": ";
             /// @note we only save scalar (no arrays) so only 1 count is needed
             out << GetReserveDirective(size) << " 1\n";
         }
@@ -108,8 +113,8 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
     if (func->GetNumBasicBlocks() == 0) return;
     this->m_currentFunc = func;
 
-    // function label
-    out << func->GetName() << ":\n";
+    // function label (mangled for the target platform)
+    out << MangledName(func->GetName()) << ":\n";
 
     int frameSize = funcMetadata->ComputeFrameSize();
     EmitPrologue(func, frameSize, out);
@@ -119,7 +124,7 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
         EmitBasicBlock(block.get(), out);
     }
     
-    out << this->m_currentFunc->GetName() << ".func_epilogue:\n";
+    out << MangledName(this->m_currentFunc->GetName()) << ".func_epilogue:\n";
     EmitEpilogue(out);
     this->m_currentFunc = nullptr;
     out << "\n";
@@ -128,7 +133,7 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 
 void BaseEmitter::EmitBasicBlock(const BasicBlock* block, std::ostream& out)
 {
-    out << this->m_currentFunc->GetName() << "." << block->GetLabel() << ":\n";
+    out << MangledName(this->m_currentFunc->GetName()) << "." << block->GetLabel() << ":\n";
 
     for (const auto& instr : block->GetInstructions())
     {

@@ -78,9 +78,17 @@ std::string Linker::BuildLinkerCommand(
             + " /console"
             + " /entry " + entryPoint
             + " /fo \"" + exePath + "\""
-            + " \"" + objPath + "\""
-            + " kernel32.dll"
-            + " msvcrt.dll";
+            + " \"" + objPath + "\"";
+
+        // 32-bit cdecl adds '_' prefix to C symbols, but DLL exports
+        // use undecorated names; /mix tells GoLink to resolve both
+        if constexpr (TargetArchitecture::Is32Bit())
+        {
+            inner += " /mix";
+        }
+
+        inner += " kernel32.dll"
+              +  std::string(" msvcrt.dll");
 
         return "cmd /C \"" + inner + "\"";
 
