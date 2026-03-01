@@ -1,0 +1,26 @@
+{
+  "name": "picoc",
+  "displayName": "PicoC Language Support",
+  "publisher": "picoc-dev-team",
+  "description": "Syntax highlighting for the PicoC programming language",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "picoc",
+        "aliases": ["PicoC", "picoc"],
+        "extensions": [".picoc"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "picoc",
+        "scopeName": "source.picoc",
+        "path": "./syntaxes/picoc.tmLanguage.json"
+      }
+    ]
+  }
+}
