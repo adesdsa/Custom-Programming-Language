@@ -11,7 +11,8 @@ IRGenerator::IRGenerator(const DecoratedAST& decoratedAST) :
 }
 
 IRModule& IRGenerator::MainFlow()
-{    
+{
+    this->m_errorManager.SetCurrentReporter("IR GENERATOR");
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();

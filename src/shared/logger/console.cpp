@@ -117,6 +117,9 @@ void Console::Log(const LogMessage& logMessage) const noexcept
     std::string entityBracketed = "[" + logMessage.entity.sName + "]";
     std::string levelBracketed = "[" + logMessage.debugLevel.sName + "]";
 
+    const std::string& k_sContentColor =
+        (logMessage.debugLevel.sName == "ERROR") ? k_sLevelColor : k_sEntityColor;
+
     std::cout
         << k_sEntityColor
         << logMessage.sTimeStamp << "\t"
@@ -125,7 +128,7 @@ void Console::Log(const LogMessage& logMessage) const noexcept
         << k_sLevelColor
         << std::left << std::setw(k_nLevelWidth) << levelBracketed
         << k_sReset
-        << k_sEntityColor
+        << k_sContentColor
         << logMessage.sContent
         << k_sReset << std::endl;
 }

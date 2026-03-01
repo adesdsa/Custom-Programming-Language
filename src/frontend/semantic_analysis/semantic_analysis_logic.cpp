@@ -1,5 +1,6 @@
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
 #include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
+#include "includes/frontend/parser/ast_extractor.h"
 #include "includes/shared/errors/error_manager.h"
 
 SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
@@ -20,6 +21,9 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
 
 const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 {
+    this->m_errorManager.SetCurrentReporter("SEMANTIC_ANALYSIS");
+    this->CollectGlobalVariables();
+
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();
@@ -35,6 +39,39 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 
     this->m_semanticAnalysisLogger.Info("Finished semantically analyze file");
     return this->m_decoratedAST;
+}
+
+void SemanticAnalysisLogicComponent::CollectGlobalVariables()
+{
+    ASTIterator prePass(this->m_decoratedAST.ast);
+    VarFactory varFactory(this->m_semanticAnalysisLogger);
+
+    while (prePass.HasNext())
+    {
+        ASTNode* node = prePass.GetCurrent();
+
+        if (node && node->command.GetType() == CommandTypes::VAR_DECLARATION)
+        {
+            Scope scope = ASTExtractor::ExtractVarScope(node);
+            if (scope == Scope::GLOBAL)
+            {
+                const std::string& varName = ASTExtractor::ExtractVarName(node);
+
+                if (!this->m_decoratedAST.varTable.FindVar(varName))
+                {
+                    Type varType = ASTExtractor::ExtractVarType(node);
+                    AccessRights varAccess = ASTExtractor::ExtractVarAccessRight(node);
+
+                    VarMetaData var = varFactory.CreateVarMetadata(
+                        varName, varType, varAccess, Scope::GLOBAL
+                    );
+                    this->m_decoratedAST.varTable.InsertVar(var);
+                }
+            }
+        }
+
+        (void)prePass.Next();
+    }
 }
 
 void SemanticAnalysisLogicComponent::HandleUndefinedFunctions()

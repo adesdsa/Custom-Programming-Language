@@ -25,6 +25,9 @@ public:
     // Sets the current file path to stamp on all subsequent errors
     void SetCurrentFilePath(const std::string& filePath) noexcept;
 
+    // Sets the current reporter component name to stamp on all subsequent errors
+    void SetCurrentReporter(const std::string& reporter) noexcept;
+
     // Stores the given error for later handling
     void StoreError(CompileTimeError error);
 
@@ -40,6 +43,7 @@ public:
 private:
     std::vector<CompileTimeError> m_errorList;
     std::string m_currentFilePath;
+    std::string m_currentReporter;
     EntityLogger m_entityLogger;
 
     // TODO: For later versions - Make this method support both GUI & CLI

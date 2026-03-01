@@ -36,6 +36,16 @@ void CompileTimeError::SetFilePath(const std::string& filePath)
     this->m_filePath = filePath;
 }
 
+void CompileTimeError::SetReporter(const std::string& reporter)
+{
+    this->m_reporter = reporter;
+}
+
+const std::string& CompileTimeError::GetReporter() const noexcept
+{
+    return this->m_reporter;
+}
+
 const char* CompilationAbortException::what() const noexcept
 {
     return "Compilation Aborted";

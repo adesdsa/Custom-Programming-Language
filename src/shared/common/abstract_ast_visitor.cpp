@@ -25,6 +25,8 @@ void IASTVisitor::InitializeHandlers()
     
     this->m_handlers.emplace(CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); });
     this->m_handlers.emplace(CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); });
+    this->m_handlers.emplace(CommandTypes::EXPRESSION_VALUE,         [this](ASTNode* n) { VisitExpression(n); });
+    this->m_handlers.emplace(CommandTypes::EXPRESSION_OPERATOR,      [this](ASTNode* n) { VisitExpression(n); });
     this->m_handlers.emplace(CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); });
     this->m_handlers.emplace(CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); });
     this->m_handlers.emplace(CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); });

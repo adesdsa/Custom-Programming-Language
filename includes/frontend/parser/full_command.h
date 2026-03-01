@@ -139,9 +139,10 @@ private:
     // The content of the error that will be added to the CompileTimeError.
     // @param sHint: The hint that will be added to the CompileTimeError.
     // @param uTokenIndex: The index of the problematic Token.
-    void FoundIllegal(Command& command,
+    void FoundIllegal(
+        Command& command,
         std::string sErrorContent,
         std::string sHint,
-        unsigned int uTokenIndex);
-
+        size_t uTokenIndex
+);
 };

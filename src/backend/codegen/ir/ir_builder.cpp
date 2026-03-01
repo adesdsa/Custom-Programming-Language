@@ -112,12 +112,12 @@ IRInstruction* IRBuilder::CreateAdd(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateAdd: lhs is nullptr");
+        StoreInternalError("Code generation: CreateAdd: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateAdd: rhs is nullptr");
+        StoreInternalError("Code generation: CreateAdd: right operand is null");
         return nullptr;
     }
 
@@ -138,12 +138,12 @@ IRInstruction* IRBuilder::CreateSub(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateSub: lhs is nullptr");
+        StoreInternalError("Code generation: CreateSub: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateSub: rhs is nullptr");
+        StoreInternalError("Code generation: CreateSub: right operand is null");
         return nullptr;
     }
 
@@ -164,12 +164,12 @@ IRInstruction* IRBuilder::CreateMul(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateMul: lhs is nullptr");
+        StoreInternalError("Code generation: CreateMul: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateMul: rhs is nullptr");
+        StoreInternalError("Code generation: CreateMul: right operand is null");
         return nullptr;
     }
 
@@ -190,12 +190,12 @@ IRInstruction* IRBuilder::CreateSDiv(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateSDiv: lhs is nullptr");
+        StoreInternalError("Code generation: CreateSDiv: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateSDiv: rhs is nullptr");
+        StoreInternalError("Code generation: CreateSDiv: right operand is null");
         return nullptr;
     }
 
@@ -216,12 +216,12 @@ IRInstruction* IRBuilder::CreateSFloorDiv(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFloorDiv: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFloorDiv: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFloorDiv: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFloorDiv: right operand is null");
         return nullptr;
     }
 
@@ -280,12 +280,12 @@ IRInstruction* IRBuilder::CreateSRem(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateSRem: lhs is nullptr");
+        StoreInternalError("Code generation: CreateSRem: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateSRem: rhs is nullptr");
+        StoreInternalError("Code generation: CreateSRem: right operand is null");
         return nullptr;
     }
 
@@ -306,12 +306,12 @@ IRInstruction* IRBuilder::CreateUDiv(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateUDiv: lhs is nullptr");
+        StoreInternalError("Code generation: CreateUDiv: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateUDiv: rhs is nullptr");
+        StoreInternalError("Code generation: CreateUDiv: right operand is null");
         return nullptr;
     }
 
@@ -332,12 +332,12 @@ IRInstruction* IRBuilder::CreateUFloorDiv(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFloorDiv: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFloorDiv: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFloorDiv: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFloorDiv: right operand is null");
         return nullptr;
     }
 
@@ -352,12 +352,12 @@ IRInstruction* IRBuilder::CreateURem(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateURem: lhs is nullptr");
+        StoreInternalError("Code generation: CreateURem: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateURem: rhs is nullptr");
+        StoreInternalError("Code generation: CreateURem: right operand is null");
         return nullptr;
     }
 
@@ -378,12 +378,12 @@ IRInstruction* IRBuilder::CreateFAdd(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFAdd: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFAdd: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFAdd: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFAdd: right operand is null");
         return nullptr;
     }
 
@@ -404,12 +404,12 @@ IRInstruction* IRBuilder::CreateFSub(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFSub: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFSub: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFSub: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFSub: right operand is null");
         return nullptr;
     }
 
@@ -430,12 +430,12 @@ IRInstruction* IRBuilder::CreateFMul(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFMul: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFMul: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFMul: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFMul: right operand is null");
         return nullptr;
     }
 
@@ -456,12 +456,12 @@ IRInstruction* IRBuilder::CreateFDiv(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFDiv: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFDiv: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFDiv: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFDiv: right operand is null");
         return nullptr;
     }
 
@@ -482,12 +482,12 @@ IRInstruction* IRBuilder::CreateFFloorDiv(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFloorDiv: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFloorDiv: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFloorDiv: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFloorDiv: right operand is null");
         return nullptr;
     }
 
@@ -536,12 +536,12 @@ IRInstruction* IRBuilder::CreateFRem(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFRem: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFRem: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFRem: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFRem: right operand is null");
         return nullptr;
     }
 
@@ -562,12 +562,12 @@ IRInstruction* IRBuilder::CreateICmpEQ(
 {   
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpEQ: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpEQ: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpEQ: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpEQ: right operand is null");
         return nullptr;
     }
 
@@ -588,12 +588,12 @@ IRInstruction* IRBuilder::CreateICmpNE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpNE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpNE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpNE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpNE: right operand is null");
         return nullptr;
     }
 
@@ -614,12 +614,12 @@ IRInstruction* IRBuilder::CreateICmpSLT(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSLT: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSLT: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSLT: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSLT: right operand is null");
         return nullptr;
     }
 
@@ -640,12 +640,12 @@ IRInstruction* IRBuilder::CreateICmpSLE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSLE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSLE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSLE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSLE: right operand is null");
         return nullptr;
     }
 
@@ -666,12 +666,12 @@ IRInstruction* IRBuilder::CreateICmpSGT(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSGT: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSGT: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSGT: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSGT: right operand is null");
         return nullptr;
     }
 
@@ -692,12 +692,12 @@ IRInstruction* IRBuilder::CreateICmpSGE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSGE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSGE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpSGE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpSGE: right operand is null");
         return nullptr;
     }
 
@@ -718,12 +718,12 @@ IRInstruction* IRBuilder::CreateICmpULT(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpULT: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpULT: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpULT: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpULT: right operand is null");
         return nullptr;
     }
 
@@ -744,12 +744,12 @@ IRInstruction* IRBuilder::CreateICmpULE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpULE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpULE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpULE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpULE: right operand is null");
         return nullptr;
     }
 
@@ -770,12 +770,12 @@ IRInstruction* IRBuilder::CreateICmpUGT(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpUGT: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpUGT: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpUGT: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpUGT: right operand is null");
         return nullptr;
     }
 
@@ -796,12 +796,12 @@ IRInstruction* IRBuilder::CreateICmpUGE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpUGE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpUGE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateICmpUGE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateICmpUGE: right operand is null");
         return nullptr;
     }
 
@@ -822,12 +822,12 @@ IRInstruction* IRBuilder::CreateFCmpEQ(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpEQ: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpEQ: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpEQ: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpEQ: right operand is null");
         return nullptr;
     }
 
@@ -848,12 +848,12 @@ IRInstruction* IRBuilder::CreateFCmpNE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpNE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpNE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpNE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpNE: right operand is null");
         return nullptr;
     }
 
@@ -874,12 +874,12 @@ IRInstruction* IRBuilder::CreateFCmpLT(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpLT: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpLT: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpLT: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpLT: right operand is null");
         return nullptr;
     }
 
@@ -900,12 +900,12 @@ IRInstruction* IRBuilder::CreateFCmpLE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpLE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpLE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpLE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpLE: right operand is null");
         return nullptr;
     }
 
@@ -926,12 +926,12 @@ IRInstruction* IRBuilder::CreateFCmpGT(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpGT: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpGT: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpGT: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpGT: right operand is null");
         return nullptr;
     }
 
@@ -952,12 +952,12 @@ IRInstruction* IRBuilder::CreateFCmpGE(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpGE: lhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpGE: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateFCmpGE: rhs is nullptr");
+        StoreInternalError("Code generation: CreateFCmpGE: right operand is null");
         return nullptr;
     }
 
@@ -978,12 +978,12 @@ IRInstruction* IRBuilder::CreateAnd(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateAnd: lhs is nullptr");
+        StoreInternalError("Code generation: CreateAnd: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateAnd: rhs is nullptr");
+        StoreInternalError("Code generation: CreateAnd: right operand is null");
         return nullptr;
     }
 
@@ -1004,12 +1004,12 @@ IRInstruction* IRBuilder::CreateOr(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateOr: lhs is nullptr");
+        StoreInternalError("Code generation: CreateOr: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateOr: rhs is nullptr");
+        StoreInternalError("Code generation: CreateOr: right operand is null");
         return nullptr;
     }
 
@@ -1030,12 +1030,12 @@ IRInstruction* IRBuilder::CreateXor(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateXor: lhs is nullptr");
+        StoreInternalError("Code generation: CreateXor: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateXor: rhs is nullptr");
+        StoreInternalError("Code generation: CreateXor: right operand is null");
         return nullptr;
     }
 
@@ -1056,12 +1056,12 @@ IRInstruction* IRBuilder::CreateShl(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateShl: lhs is nullptr");
+        StoreInternalError("Code generation: CreateShl: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateShl: rhs is nullptr");
+        StoreInternalError("Code generation: CreateShl: right operand is null");
         return nullptr;
     }
 
@@ -1082,12 +1082,12 @@ IRInstruction* IRBuilder::CreateAShr(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateAShr: lhs is nullptr");
+        StoreInternalError("Code generation: CreateAShr: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateAShr: rhs is nullptr");
+        StoreInternalError("Code generation: CreateAShr: right operand is null");
         return nullptr;
     }
 
@@ -1108,12 +1108,12 @@ IRInstruction* IRBuilder::CreateLShr(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateLShr: lhs is nullptr");
+        StoreInternalError("Code generation: CreateLShr: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateLShr: rhs is nullptr");
+        StoreInternalError("Code generation: CreateLShr: right operand is null");
         return nullptr;
     }
 
@@ -1148,7 +1148,7 @@ IRInstruction* IRBuilder::CreateAlloca(
 
     if (!inst.get())
     {
-        StoreInternalError("IRBuilder::Insert: inst is nullptr");
+        StoreInternalError("Code generation: cannot insert a null instruction");
         return nullptr;
     }
     if (!this->m_insertBlock) 
@@ -1174,7 +1174,7 @@ IRInstruction* IRBuilder::CreateLoad(
     }
     if (!ptr)
     {
-        StoreInternalError("IRBuilder::CreateLoad: ptr is null");
+        StoreInternalError("Code generation: cannot load from a null pointer");
         return nullptr;
     }
 
@@ -1196,12 +1196,12 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
 {
     if (!value)
     {
-        StoreInternalError("IRBuilder::CreateStore: value is null");
+        StoreInternalError("Code generation: CreateStore: value is null");
         return nullptr;
     }
     if (!ptr)
     {
-        StoreInternalError("IRBuilder::CreateStore: ptr is null");
+        StoreInternalError("Code generation: cannot store to a null pointer");
         return nullptr;
     }
     if (!this->m_insertBlock)
@@ -1230,7 +1230,7 @@ IRInstruction* IRBuilder::CreateFPToSI(
 {
     if (!value)
     {
-        StoreInternalError("IRBuilder::CreateFPToSI: value is null");
+        StoreInternalError("Code generation: CreateFPToSI: value is null");
         return nullptr;
     }
     if (!this->m_insertBlock)
@@ -1260,7 +1260,7 @@ IRInstruction* IRBuilder::CreateSIToFP(
 {
     if (!value)
     {
-        StoreInternalError("IRBuilder::CreateSIToFP: value is null");
+        StoreInternalError("Code generation: CreateSIToFP: value is null");
         return nullptr;
     }
     if (!this->m_insertBlock)
@@ -1292,7 +1292,7 @@ void IRBuilder::CreateBr(BasicBlock* target)
     }
     if (!target)
     {
-        StoreInternalError("IRBuilder::CreateBr: target is null");
+        StoreInternalError("Code generation: CreateBr: target is null");
         return;
     }
 
@@ -1316,17 +1316,17 @@ void IRBuilder::CreateCondBr(IRBaseValue* cond, BasicBlock* trueBB, BasicBlock* 
 {
     if (!cond)
     {
-        StoreInternalError("IRBuilder::CreateCondBr: cond is null");
+        StoreInternalError("Code generation: CreateCondBr: cond is null");
         return;
     }
     if (!trueBB)
     {
-        StoreInternalError("IRBuilder::CreateCondBr: trueBB is null");
+        StoreInternalError("Code generation: CreateCondBr: trueBB is null");
         return;
     }
     if (!falseBB)
     {
-        StoreInternalError("IRBuilder::CreateCondBr: falseBB is null");
+        StoreInternalError("Code generation: CreateCondBr: falseBB is null");
         return;
     }
     if (!this->m_insertBlock)
@@ -1358,7 +1358,7 @@ void IRBuilder::CreateRet(IRBaseValue* value)
 {
     if (!value)
     {
-        StoreInternalError("IRBuilder::CreateRet: value is null");
+        StoreInternalError("Code generation: CreateRet: value is null");
         return;
     }
     if (!this->m_insertBlock)
@@ -1406,7 +1406,7 @@ IRInstruction* IRBuilder::CreateCall(
 {
     if (!func)
     {
-        StoreInternalError("IRBuilder::CreateCall: func is null");
+        StoreInternalError("Code generation: CreateCall: func is null");
         return nullptr;
     }
     if (!this->m_insertBlock)
@@ -1460,13 +1460,13 @@ IRInstruction* IRBuilder::CreateSelect(
 {
     if (!cond || !trueVal || !falseVal)
     {
-        StoreInternalError("IRBuilder::CreateSelect: nullptr operand");
+        StoreInternalError("Code generation: CreateSelect: nullptr operand");
         return nullptr;
     }
 
     if (!m_insertBlock)
     {
-        StoreInternalError("IRBuilder::CreateSelect: No insert block set");
+        StoreInternalError("Code generation: CreateSelect: No insert block set");
         return nullptr;
     }
 
@@ -1511,12 +1511,12 @@ IRInstruction* IRBuilder::CreateBinaryOp(
 {
     if (!lhs)
     {
-        StoreInternalError("IRBuilder::CreateBinaryOp: lhs is nullptr");
+        StoreInternalError("Code generation: CreateBinaryOp: left operand is null");
         return nullptr;
     }
     if (!rhs)
     {
-        StoreInternalError("IRBuilder::CreateBinaryOp: rhs is nullptr");
+        StoreInternalError("Code generation: CreateBinaryOp: right operand is null");
         return nullptr;
     }
     if (!this->m_insertBlock)
@@ -1542,7 +1542,7 @@ IRInstruction* IRBuilder::Insert(std::unique_ptr<IRInstruction> inst)
 {
     if (!inst.get())
     {
-        StoreInternalError("IRBuilder::Insert: inst is nullptr");
+        StoreInternalError("Code generation: cannot insert a null instruction");
         return nullptr;
     }
     if (!this->m_insertBlock) 
@@ -1560,7 +1560,7 @@ IRInstruction* IRBuilder::InsertPhi(std::unique_ptr<IRInstruction> inst)
 {
     if (!inst.get())
     {
-        StoreInternalError("IRBuilder::Insert: inst is nullptr");
+        StoreInternalError("Code generation: cannot insert a null instruction");
         return nullptr;
     }
     if (!this->m_insertBlock)

@@ -77,6 +77,11 @@ private:
 
     void EmitBasicBlock(const BasicBlock* block, std::ostream& out);
 
+    /// @brief Returns the platform-mangled version of a symbol name.
+    /// For example, 32-bit Windows prefixes C symbols with '_'.
+    /// Override in target emitters that need name mangling.
+    virtual std::string MangledName(const std::string& name) const;
+
     //------------------------//
     //                        //
     //    Helper Functions    //

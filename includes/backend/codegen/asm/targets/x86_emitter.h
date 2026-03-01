@@ -53,6 +53,8 @@ private:
 
     void EmitStart(std::ostream& out) override final;
 
+    std::string MangledName(const std::string& name) const override final;
+
     std::string GetGlobalDirective(const std::string& symbol) const override final;
 
     std::string GetOperandAsm(const IRBaseValue* operand, std::ostream& out) override final;

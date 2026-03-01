@@ -49,6 +49,10 @@ private:
     DecoratedAST m_decoratedAST;
     SemanticAnalysisVisitor m_semanticAnalysisVisitor;
 
+    /// @brief Pre-pass: scan AST for global variable declarations and
+    /// register them in the root var table so they are visible to all functions.
+    void CollectGlobalVariables();
+
     /// @brief Check that all declared functions have matching defination
     void HandleUndefinedFunctions();
 };

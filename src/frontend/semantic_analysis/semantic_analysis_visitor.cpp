@@ -40,13 +40,15 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
     if (SemanticCheckerFacade::CheckVarExistence(*this->m_currentScope, varName))
     {
+        if (varScope == Scope::GLOBAL) return;
+
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
                 "Variable '" + varName + "' is already declared in this scope",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
-                "Check if variable already declared, remember no shadowing allowed!"
+                "Variable is already declared in this scope (shadowing is not allowed)"
             )
         );
 
@@ -282,7 +284,7 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Invalid expression: type mismatch or undefined identifier/function",
+                "Cannot evaluate expression — possible type mismatch or use of an undefined variable/function",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"
@@ -433,6 +435,31 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
     FuncMetaData* existingFunc = this->m_funcTable.FindFunctionByName(funcName);
     if (existingFunc != nullptr)
     {
+        // verify the definition's signature matches the declaration's
+        Type returnType = ASTExtractor::ExtractFuncReturnType(node);
+        const std::vector<VarMetaData>& defParams = ASTExtractor::ExtractFuncParams(node, this->m_varFactory);
+        FuncMetaData defMeta = this->m_funcFactory.CreateFuncMetadata(
+            funcName, returnType, defParams,
+            tokens[FIRST_TOKEN_INDEX].GetLine(),
+            tokens[FIRST_TOKEN_INDEX].GetColumn()
+        );
+
+        if (!existingFunc->HasSameSignature(defMeta))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "Definition of function '" + funcName +
+                        "' does not match its declaration",
+                    tokens[FIRST_TOKEN_INDEX].GetLine(),
+                    tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                    "Ensure the parameter types and return type match the declaration at line "
+                        + std::to_string(existingFunc->GetDeclarationLine())
+                )
+            );
+            return;
+        }
+
         existingFunc->SetDefined();
     }
     else
@@ -508,10 +535,10 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::ARGUMENT_ERROR,
-                "Invalid arguments for function '" + funcName + "'",
+                "Wrong number or types of arguments in call to '" + funcName + "'",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
-                "Check the number and types of arguments"
+                "Check that the argument count and types match the function declaration"
             )
         );
     }
@@ -639,10 +666,11 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "return type mismatch in function '" + this->m_currentFunctionName + "'",
+                "Return type mismatch in function '" + this->m_currentFunctionName +
+                    "' — returned value does not match declared return type",
                 line,
                 column,
-                "Ensure return type matches function declaration"
+                "Ensure the returned value type matches the function's declared return type"
             )
         );
     }
@@ -801,10 +829,10 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
             this->m_errorManager.StoreError(
                 CompileTimeError(
                     ErrorTypes::TYPE_ERROR,
-                    "Condition must be boolean. Following expression is not a boolean",
+                    "Condition must be a boolean expression",
                     conditionTokens.GetLine(),
                     conditionTokens.GetColumn(),
-                    "Provide valid boolean inside the brackets"
+                    "Provide a boolean expression inside the parentheses"
                 )
             );
         }
@@ -820,10 +848,10 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
             this->m_errorManager.StoreError(
                 CompileTimeError(
                     ErrorTypes::TYPE_ERROR,
-                    "Condition must be boolean. Following variable is not a boolean",
+                    "Condition must be boolean, but the given variable is not of type 'bool'",
                     conditionTokens.GetLine(),
                     conditionTokens.GetColumn(),
-                    "Provide valid boolean inside the if brackets"
+                    "Provide a boolean expression inside the parentheses"
                 )
             );
         }
@@ -839,10 +867,10 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
             this->m_errorManager.StoreError(
                 CompileTimeError(
                     ErrorTypes::TYPE_ERROR,
-                    "Condition must be boolean. Following function call do not return a boolean",
+                    "Condition must be boolean, but the function call does not return 'bool'",
                     conditionTokens.GetLine(),
                     conditionTokens.GetColumn(),
-                    "Provide valid boolean inside the if brackets"
+                    "Provide a boolean expression inside the parentheses"
                 )
             );
         }
@@ -1036,9 +1064,9 @@ void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
             CompileTimeError(
                 ErrorTypes::FUNC_MISSING_RETURN_ERROR,
 
-                "Not all paths of non void function " + 
+                "Not all code paths in non-void function '" + 
                 this->m_currentFunctionName + 
-                " have a return statement",
+                "' return a value",
 
                 errorTokens.GetLine(),
                 errorTokens.GetColumn(),
@@ -1065,7 +1093,7 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Invalid expression: type mismatch or undefined identifier/function",
+                "Cannot evaluate expression — possible type mismatch or use of an undefined variable/function",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"
