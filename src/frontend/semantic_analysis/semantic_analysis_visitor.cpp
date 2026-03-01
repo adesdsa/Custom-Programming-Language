@@ -40,6 +40,8 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
     if (SemanticCheckerFacade::CheckVarExistence(*this->m_currentScope, varName))
     {
+        if (varScope == Scope::GLOBAL) return;
+
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,

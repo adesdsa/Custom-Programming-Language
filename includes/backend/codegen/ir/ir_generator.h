@@ -62,5 +62,5 @@ private:
     /**********************\
     |        Output        |
     \**********************/
-    IRModule m_irMoudle;  // the entire ir program
+    IRModule m_irMoudle;  // the entire ir program (must be declared before m_irVisitor)
 };

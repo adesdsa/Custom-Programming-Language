@@ -31,6 +31,16 @@ IRVisitor::IRVisitor(
     this->InitializeHandlers();
     this->m_varTableIndex.push(0);
     this->m_currVarTableNode = &this->m_decoratedAst.varTable;
+
+    // pre register all global variables in the IR module so they are
+    // available before their declaration node is visited
+    for (const auto& [name, varMeta] : this->m_decoratedAst.varTable.GetVars())
+    {
+        if (varMeta.scope == Scope::GLOBAL)
+        {
+            this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+        }
+    }
 }
 
 std::vector<std::unique_ptr<IRBaseValue>> IRVisitor::DumpConstants() noexcept
@@ -163,12 +173,6 @@ void IRVisitor::VisitAssignment(ASTNode* node)
         }
 
         IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
-
-        if (this->m_currVarMetaData.value().scope == Scope::GLOBAL)
-        {
-            this->m_expectedAssignment = false;
-            return;
-        }
 
         // Insert implicit type conversion when the value type differs from the target variable type
         if (valueToStore && target)
