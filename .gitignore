@@ -453,3 +453,8 @@ FodyWeavers.xsd
 vcpkg_installed/
 .vcpkg_cache/
 CMakeUserPresets.json
+
+### Installer build artifacts ###
+installer/linux/output/
+build-deb/
+build-deb-*/

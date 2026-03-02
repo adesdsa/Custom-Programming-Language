@@ -587,6 +587,13 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }
+        // Arithmetic after a comparison is part of the right-hand side
+        // due to operator precedence (e.g. j < height - i - 1).
+        else if (currExpressionType == ExpressionType::BOOLEAN &&
+            expressionSet[i] == ExpressionType::MATHEMATICAL)
+        {
+            // stay BOOLEAN
+        }
         // Incase we have boolean comparrison
         else if (currExpressionType == ExpressionType::BOOLEAN &&
             expressionSet[i] == ExpressionType::COMPARRISON_OPERATOR &&

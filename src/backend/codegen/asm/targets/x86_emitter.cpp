@@ -24,7 +24,10 @@ std::string X86_Emitter::EmitHeader() const
 
             header << "section .data\n";
             header << "    __println_bool_true db \"true\", 10, 0\n";
-            header << "    __println_bool_false db \"false\", 10, 0\n\n";
+            header << "    __println_bool_false db \"false\", 10, 0\n";
+            header << "    __println_newline db 10, 0\n";
+            header << "    __println_minus db \"-\", 0\n";
+            header << "    __println_dot db \".\", 0\n\n";
             break;
 
         case OS::Windows:
@@ -516,6 +519,134 @@ void X86_Emitter::EmitStart(std::ostream& out)
             out << "    mov eax, 4\n";
             out << "    mov ebx, 1\n";
             out << "    int 0x80\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: println_str(ptr: char*) -> void ----
+            // Prints a null-terminated string followed by a newline via write(1, ...).
+            out << "\n";
+            out << "println_str:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    xor edx, edx\n";
+            out << ".Lstr_len:\n";
+            out << "    cmp byte [ecx + edx], 0\n";
+            out << "    je .Lstr_write\n";
+            out << "    inc edx\n";
+            out << "    jmp .Lstr_len\n";
+            out << ".Lstr_write:\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            out << "    mov ecx, __println_newline\n";
+            out << "    mov edx, 1\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: println_double(value: float32) -> void ----
+            // Prints a 32-bit float as "<int>.<frac6>\n" via write(1, ...).
+            out << "\n";
+            out << "println_double:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 64\n";
+            out << "    movss xmm0, dword [ebp+8]\n";
+            // Check sign
+            out << "    xorps xmm1, xmm1\n";
+            out << "    ucomiss xmm0, xmm1\n";
+            out << "    jae .Ldbl_positive\n";
+            // Print minus sign
+            out << "    mov ecx, __println_minus\n";
+            out << "    mov edx, 1\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            // Negate: flip sign bit
+            out << "    movss xmm0, dword [ebp+8]\n";
+            out << "    mov dword [ebp-4], 0x80000000\n";
+            out << "    xorps xmm0, [ebp-4]\n";
+            out << ".Ldbl_positive:\n";
+            // Extract integer part
+            out << "    cvttss2si eax, xmm0\n";
+            out << "    mov [ebp-8], eax\n";
+            // Convert integer part to string
+            out << "    lea esi, [ebp-32]\n";
+            out << "    add esi, 20\n";
+            out << "    mov byte [esi], 0\n";
+            out << "    test eax, eax\n";
+            out << "    jnz .Ldbl_iconv\n";
+            out << "    dec esi\n";
+            out << "    mov byte [esi], '0'\n";
+            out << "    jmp .Ldbl_iwrite\n";
+            out << ".Ldbl_iconv:\n";
+            out << ".Ldbl_iloop:\n";
+            out << "    xor edx, edx\n";
+            out << "    mov ecx, 10\n";
+            out << "    div ecx\n";
+            out << "    add dl, '0'\n";
+            out << "    dec esi\n";
+            out << "    mov [esi], dl\n";
+            out << "    test eax, eax\n";
+            out << "    jnz .Ldbl_iloop\n";
+            out << ".Ldbl_iwrite:\n";
+            // Calculate length and write integer part
+            out << "    lea edx, [ebp-32]\n";
+            out << "    add edx, 20\n";
+            out << "    sub edx, esi\n";
+            out << "    mov ecx, esi\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            // Print decimal point
+            out << "    mov ecx, __println_dot\n";
+            out << "    mov edx, 1\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            // Extract fractional part: frac = (value - int_part) * 1000000
+            out << "    cvtsi2ss xmm1, dword [ebp-8]\n";
+            out << "    movss xmm0, dword [ebp+8]\n";
+            // Abs in case of negative
+            out << "    mov dword [ebp-4], 0x7FFFFFFF\n";
+            out << "    andps xmm0, [ebp-4]\n";
+            out << "    subss xmm0, xmm1\n";
+            out << "    mov eax, 1000000\n";
+            out << "    cvtsi2ss xmm1, eax\n";
+            out << "    mulss xmm0, xmm1\n";
+            out << "    cvttss2si eax, xmm0\n";
+            // Convert 6-digit fractional part (with leading zeros)
+            out << "    lea esi, [ebp-32]\n";
+            out << "    add esi, 20\n";
+            out << "    mov byte [esi], 0\n";
+            out << "    mov ecx, 6\n";
+            out << ".Ldbl_floop:\n";
+            out << "    xor edx, edx\n";
+            out << "    push ecx\n";
+            out << "    mov ecx, 10\n";
+            out << "    div ecx\n";
+            out << "    pop ecx\n";
+            out << "    add dl, '0'\n";
+            out << "    dec esi\n";
+            out << "    mov [esi], dl\n";
+            out << "    dec ecx\n";
+            out << "    jnz .Ldbl_floop\n";
+            // Write fractional digits
+            out << "    mov ecx, esi\n";
+            out << "    mov edx, 6\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            // Write newline
+            out << "    mov ecx, __println_newline\n";
+            out << "    mov edx, 1\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            out << "    add esp, 64\n";
             out << "    pop ebp\n";
             out << "    ret\n";
             break;
