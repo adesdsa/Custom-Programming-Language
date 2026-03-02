@@ -461,9 +461,9 @@ void IRVisitor::VisitControlStatement(ASTNode* node)
     }
     else if (statement.GetValue() == "break")
     {
-        // Jumping to the exit block
         this->m_irbuilder.CreateBr(this->m_afterLoopBlocks.top());
     }
+    this->m_returnedAlready = true;
     this->m_entityLogger.Info("Added ControlStatement IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
 }
@@ -733,8 +733,12 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
 
     case BlockKind::ifBlock:
     case BlockKind::elifBlock:
-        // Creating a jump to the merge block.
-        this->m_irbuilder.CreateBr(this->m_conditionMergeBlocks.top().get());
+    {
+        BasicBlock* ifInsertBlk = this->m_irbuilder.GetInsertBlock();
+        if (ifInsertBlk && !ifInsertBlk->HasTerminator())
+        {
+            this->m_irbuilder.CreateBr(this->m_conditionMergeBlocks.top().get());
+        }
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
@@ -750,15 +754,21 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
             this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
         }
         break;
+    }
 
     case BlockKind::elseBlock:
-        // Creating the jump to the exit block
-        this->m_irbuilder.CreateBr(this->m_nextExitBlocks.top().get());
+    {
+        BasicBlock* elseInsertBlk = this->m_irbuilder.GetInsertBlock();
+        if (elseInsertBlk && !elseInsertBlk->HasTerminator())
+        {
+            this->m_irbuilder.CreateBr(this->m_nextExitBlocks.top().get());
+        }
         tempExitBlockHolder = this->m_currFunc->AddBasicBlock(std::move(this->m_nextExitBlocks.top()));
         this->m_nextExitBlocks.pop();
         this->m_conditionMergeBlocks.pop();
         this->m_irbuilder.SetInsertPoint(tempExitBlockHolder);
         break;
+    }
     
     default:
         break;

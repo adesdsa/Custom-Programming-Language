@@ -28,7 +28,10 @@ std::string X86_64Emitter::EmitHeader() const
 
             header << "section .data\n";
             header << "    __println_bool_true db \"true\", 10, 0\n";
-            header << "    __println_bool_false db \"false\", 10, 0\n\n";
+            header << "    __println_bool_false db \"false\", 10, 0\n";
+            header << "    __println_newline db 10, 0\n";
+            header << "    __println_minus db \"-\", 0\n";
+            header << "    __println_dot db \".\", 0\n\n";
             break;
 
         case OS::Windows:
@@ -740,6 +743,141 @@ void X86_64Emitter::EmitStart(std::ostream& out)
         out << "    mov rax, 1\n";
         out << "    mov rdi, 1\n";
         out << "    syscall\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
+        // ---- Built-in: println_str(ptr: char*) -> void ----
+        // Prints a null-terminated string followed by a newline via write(1, ...).
+        out << "\n";
+        out << "println_str:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    mov rsi, rdi\n";
+        out << "    xor rdx, rdx\n";
+        out << ".Lstr_len:\n";
+        out << "    cmp byte [rsi + rdx], 0\n";
+        out << "    je .Lstr_write\n";
+        out << "    inc rdx\n";
+        out << "    jmp .Lstr_len\n";
+        out << ".Lstr_write:\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    lea rsi, [rel __println_newline]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
+        // ---- Built-in: println_double(value: double) -> void ----
+        // Prints a 64-bit double as "<int>.<frac6>\n" via write(1, ...).
+        // rdi contains the raw double bits (SysV integer ABI for this calling convention).
+        out << "\n";
+        out << "println_double:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 64\n";
+        out << "    mov [rbp-8], rdi\n";
+        out << "    movsd xmm0, qword [rbp-8]\n";
+        // Check sign
+        out << "    xorpd xmm1, xmm1\n";
+        out << "    ucomisd xmm0, xmm1\n";
+        out << "    jae .Ldbl_positive\n";
+        // Print minus sign
+        out << "    push rdi\n";
+        out << "    lea rsi, [rel __println_minus]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    pop rdi\n";
+        // Negate: xmm0 = -xmm0
+        out << "    movsd xmm0, qword [rbp-8]\n";
+        out << "    mov rax, 0x8000000000000000\n";
+        out << "    mov [rbp-16], rax\n";
+        out << "    xorpd xmm0, [rbp-16]\n";
+        out << ".Ldbl_positive:\n";
+        // Extract integer part
+        out << "    cvttsd2si rax, xmm0\n";
+        out << "    mov [rbp-24], rax\n";
+        // Convert integer part via println (reuse int conversion), but inline here
+        out << "    lea rsi, [rbp-48]\n";
+        out << "    add rsi, 20\n";
+        out << "    mov byte [rsi], 0\n";
+        out << "    mov rax, [rbp-24]\n";
+        out << "    test rax, rax\n";
+        out << "    jnz .Ldbl_iconv\n";
+        out << "    dec rsi\n";
+        out << "    mov byte [rsi], '0'\n";
+        out << "    jmp .Ldbl_iwrite\n";
+        out << ".Ldbl_iconv:\n";
+        out << ".Ldbl_iloop:\n";
+        out << "    xor rdx, rdx\n";
+        out << "    mov rcx, 10\n";
+        out << "    div rcx\n";
+        out << "    add dl, '0'\n";
+        out << "    dec rsi\n";
+        out << "    mov [rsi], dl\n";
+        out << "    test rax, rax\n";
+        out << "    jnz .Ldbl_iloop\n";
+        out << ".Ldbl_iwrite:\n";
+        // Calculate length for integer part
+        out << "    lea rdx, [rbp-48]\n";
+        out << "    add rdx, 20\n";
+        out << "    sub rdx, rsi\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        // Print decimal point
+        out << "    lea rsi, [rel __println_dot]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        // Extract fractional part: frac = (value - int_part) * 1000000
+        out << "    cvtsi2sd xmm1, qword [rbp-24]\n";
+        out << "    movsd xmm0, qword [rbp-8]\n";
+        // Abs again in case of negative
+        out << "    mov rax, 0x7FFFFFFFFFFFFFFF\n";
+        out << "    mov [rbp-16], rax\n";
+        out << "    andpd xmm0, [rbp-16]\n";
+        out << "    subsd xmm0, xmm1\n";
+        out << "    mov rax, 1000000\n";
+        out << "    cvtsi2sd xmm1, rax\n";
+        out << "    mulsd xmm0, xmm1\n";
+        // Round to nearest
+        out << "    roundsd xmm0, xmm0, 0\n";
+        out << "    cvttsd2si rax, xmm0\n";
+        // Convert 6-digit fractional part (with leading zeros)
+        out << "    lea rsi, [rbp-48]\n";
+        out << "    add rsi, 20\n";
+        out << "    mov byte [rsi], 0\n";
+        out << "    mov rcx, 6\n";
+        out << ".Ldbl_floop:\n";
+        out << "    xor rdx, rdx\n";
+        out << "    push rcx\n";
+        out << "    mov rcx, 10\n";
+        out << "    div rcx\n";
+        out << "    pop rcx\n";
+        out << "    add dl, '0'\n";
+        out << "    dec rsi\n";
+        out << "    mov [rsi], dl\n";
+        out << "    dec rcx\n";
+        out << "    jnz .Ldbl_floop\n";
+        // Write fractional digits
+        out << "    mov rdx, 6\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        // Write newline
+        out << "    lea rsi, [rel __println_newline]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    add rsp, 64\n";
         out << "    pop rbp\n";
         out << "    ret\n";
     }
