@@ -26,7 +26,7 @@ const AST& ParserLogic::MainFlow()
         {
             fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
-        }   
+        }
 
         this->HandleFullCommand(fullCommand);
     }
