@@ -66,6 +66,7 @@ void Console::BuildAndSendLogMessage(
     const std::string msg
 ) const noexcept
 {
+    std::lock_guard<std::mutex> lock(this->m_consoleMutex);
     // --warn-off suppresses warnings everywhere
     if (debugLevel.sName == "WARN" && m_warningLevel == WarningLevel::OFF)
     {
