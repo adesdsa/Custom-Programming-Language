@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <mutex>
 
 #include "error_models.h"
 
@@ -45,11 +46,13 @@ private:
     std::string m_currentFilePath;
     std::string m_currentReporter;
     EntityLogger m_entityLogger;
+    mutable std::mutex m_errorManagerMutex;
 
-    // TODO: For later versions - Make this method support both GUI & CLI
-    // Display all the errors that occur through out the compilation in the UI
-    void DisplayErrorsInUI() const noexcept;
+    // Internal helpers that assume m_errorManagerMutex is already held
+    bool HasErrorsOccured_NoLock() const noexcept;
+
+    void DisplayErrorsInUI_NoLock() const noexcept;
 
     // Safely stops the compilation proccess
-    void AbortCompilation() const;
+    void AbortCompilation_NoLock() const;
 };

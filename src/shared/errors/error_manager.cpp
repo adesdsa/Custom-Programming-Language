@@ -10,16 +10,19 @@ ErrorManager& ErrorManager::GetInstance() noexcept
 
 void ErrorManager::SetCurrentFilePath(const std::string& filePath) noexcept
 {
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
     this->m_currentFilePath = filePath;
 }
 
 void ErrorManager::SetCurrentReporter(const std::string& reporter) noexcept
 {
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
     this->m_currentReporter = reporter;
 }
 
 void ErrorManager::StoreError(CompileTimeError error)
 {
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
     if (!this->m_currentFilePath.empty())
     {
         error.SetFilePath(this->m_currentFilePath);
@@ -33,23 +36,31 @@ void ErrorManager::StoreError(CompileTimeError error)
 
 void ErrorManager::Clear() noexcept
 {
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
     this->m_errorList.clear();
 }
 
 bool ErrorManager::HasErrorsOccured() const noexcept
 {
-    return this->m_errorList.size() > 0;
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
+    return this->HasErrorsOccured_NoLock();
+}
+
+bool ErrorManager::HasErrorsOccured_NoLock() const noexcept
+{
+    return !this->m_errorList.empty();
 }
 
 void ErrorManager::HandleErrors() const
 {
-    if (!this->HasErrorsOccured()) return;
-    
-    this->DisplayErrorsInUI();
-    this->AbortCompilation();
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
+    if (!this->HasErrorsOccured_NoLock()) return;
+
+    this->DisplayErrorsInUI_NoLock();
+    this->AbortCompilation_NoLock();
 }
 
-void ErrorManager::DisplayErrorsInUI() const noexcept
+void ErrorManager::DisplayErrorsInUI_NoLock() const noexcept
 {
     if (this->m_errorList.empty()) return;
 
@@ -70,7 +81,7 @@ void ErrorManager::DisplayErrorsInUI() const noexcept
     }
 }
 
-void ErrorManager::AbortCompilation() const
+void ErrorManager::AbortCompilation_NoLock() const
 {
     throw CompilationAbortException();  // will be caught by main
 }
