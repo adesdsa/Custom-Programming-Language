@@ -16,7 +16,8 @@ enum class Scope
 {
     GLOBAL,
     VAR,
-    LET
+    LET,
+    EXPORT
 };
 
 enum class Type

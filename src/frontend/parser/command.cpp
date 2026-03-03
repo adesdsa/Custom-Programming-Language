@@ -731,6 +731,7 @@ bool Command::IsAccessRights(Token& token)
 bool Command::IsScope(Token& token)
 {
     return this->IsValue(token, "global") ||
+           this->IsValue(token, "export") ||
            this->IsValue(token, "var")    || 
            this->IsValue(token, "let");
 }
