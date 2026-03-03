@@ -42,6 +42,7 @@ private:
     const EntityLogger& m_entityLogger;
     bool m_bFinished;
     bool m_bLegal;
+    bool m_importLegal;     // False-> already in the middle of the code(import is only legal at the top), True-> import still legal
     std::vector<Command> m_line;
     size_t m_uLineIndex;
     static unsigned int m_uBlockStartCnt;

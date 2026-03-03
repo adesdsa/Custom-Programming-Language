@@ -161,6 +161,18 @@ bool Command::Append(Token& currToken, Token& nextToken)
     {
         bReturnValue = this->ParseArrayValueStart(currToken, nextToken);
     }
+    else if (this->m_sType == CommandTypes::IMPORT_START)
+    {
+        bReturnValue = this->ParseImportStart(currToken, nextToken);
+    }
+    else if (this->m_sType == CommandTypes::IMPORT_IDENTIFIER)
+    {
+        bReturnValue = this->ParseImportIdentifer(currToken, nextToken);
+    }
+    else if (this->m_sType == CommandTypes::IMPORT_FROM)
+    {
+        bReturnValue = this->ParseImportFrom(currToken, nextToken);
+    }
     else
     {
         return this->FoundUnknown(currToken);
@@ -174,7 +186,7 @@ bool Command::Append(Token& currToken, Token& nextToken)
     {
         bReturnValue = true;
     }
-    if (this->IsValue(nextToken, "{") || this->IsValue(nextToken, "}"))
+    if ((this->IsValue(nextToken, "{") || this->IsValue(nextToken, "}")) && !this->m_bIgnoreEON)
     {
         bReturnValue = true;
     }
@@ -253,6 +265,10 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
         else if (this->IsValue(currToken, "not"))
         {
             return this->NoFinishAndAssignType(CommandTypes::EXPRESSION_OPERATOR);
+        }
+        else if (this->IsValue(currToken, "import"))
+        {
+            return this->NoFinishAndAssignType(CommandTypes::IMPORT_START);
         }
         else
         {
@@ -696,6 +712,56 @@ bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
 {
     return this->HandleArrayParanthesesParams(
         currToken, nextToken, CommandTypes::ARRAY_VALUE);
+}
+
+bool Command::ParseImportStart(Token& currToken, Token& nextToken)
+{
+    if (IsValue(currToken, "/{")) 
+    {
+        this->m_bIgnoreEON = true;
+        return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
+    }
+    else return this->FoundUnknown(currToken);
+}
+
+bool Command::ParseImportIdentifer(Token& currToken, Token& nextToken)
+{
+    if (
+        (
+            IsValue(this->m_tokens.back(), "/{") ||
+            IsValue(this->m_tokens.back(), "\,")
+        ) &&
+            IsType(currToken, TokenTypes::IDENTIFIER)
+    ) 
+    {
+        this->m_bIgnoreEON = true;
+        return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
+    }
+    else if (
+        IsType(this->m_tokens.back(), TokenTypes::IDENTIFIER) &&
+        IsValue(currToken, "\,")
+    ) return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
+    else if (
+        IsType(this->m_tokens.back(), TokenTypes::IDENTIFIER) &&
+        IsValue(currToken, "\}")
+    ) 
+    {
+        this->m_bIgnoreEON = true;
+        return this->NoFinishAndAssignType(CommandTypes::IMPORT_FROM);
+    }
+    else return this->FoundUnknown(currToken);
+}
+
+bool Command::ParseImportFrom(Token& currToken, Token& nextToken)
+{
+    if (IsValue(currToken, "from")) return this->NoFinishAndAssignType(CommandTypes::IMPORT_FINISH);
+    else return this->FoundUnknown(currToken);
+}
+
+bool Command::ParseImportFinish(Token& currToken, Token& nextToken)
+{
+    if (currToken.GetType() == TokenTypes::STRING_LITERAL) return this->FinishAndAssignType(CommandTypes::IMPORT_STATEMENT);
+    else return this->FoundUnknown(currToken);
 }
 
 

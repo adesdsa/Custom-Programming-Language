@@ -7,6 +7,7 @@ FullCommand::FullCommand(const EntityLogger& entityLogger) :
     m_entityLogger(entityLogger), 
     m_bFinished(false), 
     m_bLegal(true),
+    m_importLegal(false),
     m_uLineIndex(0)
 {}
 
@@ -15,6 +16,7 @@ FullCommand::FullCommand(const FullCommand& other):
     m_bFinished(other.m_bFinished),
     m_bLegal(other.m_bLegal),
     m_line(other.m_line),
+    m_importLegal(other.m_importLegal),
     m_uLineIndex(other.m_uLineIndex),
     m_errors(other.m_errors)
 {}
@@ -72,10 +74,33 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
         {
             this->m_entityLogger.Info("Finished creating a new Command");
 
+            if (this->m_importLegal && 
+                (this->m_line[this->m_uLineIndex].GetType() != CommandTypes::IMPORT_STATEMENT && 
+                this->m_line[this->m_uLineIndex].GetType() != CommandTypes::UNKNOWN)
+            )
+            {
+                this->m_importLegal = false;
+            }
             // Checking if the line is finished.
             if (this->m_line[this->m_uLineIndex].GetType() == CommandTypes::END_OF_COMMAND)
             {
                 this->m_bFinished = true;
+            }
+            else if (this->m_line[this->m_uLineIndex].GetType() == CommandTypes::IMPORT_STATEMENT)
+            {
+                if (this->m_importLegal)
+                {
+                    this->m_bFinished = true;
+                }
+                else
+                {
+                    FoundIllegal(this->m_line[this->m_uLineIndex],
+                        "Import found at the middle of the code",
+                        "Move the Import to the top of the code",
+                        0
+                    );
+                    this->m_bFinished = true;
+                }
             }
             else if (this->m_line[this->m_uLineIndex].GetType() == CommandTypes::BLOCK_START)
             {
@@ -179,6 +204,10 @@ void FullCommand::CheckLine()
                     }
                 }
             }
+        }
+        else if (this->m_line.at(0).GetType() == CommandTypes::IMPORT_STATEMENT)
+        {
+            bLegalLine = true;
         }
         else if (this->m_line.at(0).GetType() == CommandTypes::ELSE)
         {
