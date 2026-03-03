@@ -853,6 +853,12 @@ void IRVisitor::VisitPass(ASTNode* node)
     return;
 }
 
+void IRVisitor::VisitImportStatement(ASTNode* node)
+{
+    // Function does nothing
+    return;
+}
+
 void IRVisitor::VisitEof(ASTNode* node)
 {
     this->m_entityLogger.Info("Added Eof IR handling.\nAt line: "

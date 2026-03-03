@@ -21,3 +21,24 @@ FuncMetaData FuncFactory::CreateFuncMetadata(
         funcBody
     );
 }
+
+FuncMetaData FuncFactory::CreateFuncMetadata(const ExportedFunc& exportedFunc) const
+{
+    std::vector<VarMetaData> funcParams;
+    VarFactory varFactory(this->m_entityLogger);
+    for (auto funcParam : exportedFunc.params)
+    {
+        funcParams.push_back(varFactory.CreateVarMetadata(funcParam));
+    }
+
+    return FuncMetaData(
+        this->m_entityLogger,
+        exportedFunc.name,
+        exportedFunc.returnType,
+        funcParams,
+        -1,
+        -1,
+        nullptr,
+        true
+    );
+}

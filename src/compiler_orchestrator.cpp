@@ -128,7 +128,8 @@ void CompilerOrchestrator::MainFlow()
 
     const AST& ast = parserComponent.MainFlow();
 
-    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+    ProjectSymbolTable temp;
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast, temp);
     const DecoratedAST& decoratedAST = semanticAnalysisComponent.MainFlow();
 
     CodeGenManager codeGenManager(decoratedAST, this->m_options);

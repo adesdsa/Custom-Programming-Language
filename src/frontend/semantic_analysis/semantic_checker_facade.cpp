@@ -347,7 +347,7 @@ std::vector<FuncMetaData*> SemanticCheckerFacade::AreAllFunctionsDefined(
 
     for (const auto& [funcName, funcMetadata] : funcTable.GetAllFunctions())
     {
-        if (!funcMetadata->IsFuncDefined())
+        if (!funcMetadata->IsExtern() && !funcMetadata->IsFuncDefined())
         {
             undefinedFunctions.push_back(funcMetadata.get());
         }

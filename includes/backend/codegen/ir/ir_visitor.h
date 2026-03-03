@@ -104,6 +104,7 @@ class IRVisitor : public IASTVisitor
     void VisitEndOfCommand(ASTNode* node) override;
     void VisitSizeof(ASTNode* node) override;
     void VisitVoidCommand(ASTNode* node) override;
+    void VisitImportStatement(ASTNode* node) override;
     void VisitPass(ASTNode* node) override;
     void VisitEof(ASTNode* node) override;
 

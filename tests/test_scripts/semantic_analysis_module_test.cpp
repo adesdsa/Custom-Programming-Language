@@ -12,7 +12,8 @@ TEST(SemanticAnalysisTest, HappyFlowSmallCodeExample)
     // Setup: Parse and run semantic analysis
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.picoc"));
     const AST& ast = parser.MainFlow();
-    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+    ProjectSymbolTable emptyProjectSymbolTable;
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast, emptyProjectSymbolTable);
 
     EntityLogger testLogger("GENERAL");
     testLogger.Info("Running Semantic Analysis MainFlow");
@@ -81,7 +82,8 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
     // Setup: Parse and run semantic analysis
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.picoc"));
     const AST& ast = parser.MainFlow();
-    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+    ProjectSymbolTable emptyProjectSymbolTable;
+    SemanticAnalysisLogicComponent semanticAnalysisComponent(ast, emptyProjectSymbolTable);
 
     EntityLogger testLogger("GENERAL");
     testLogger.Info("Running Semantic Analysis MainFlow on full program");
@@ -173,11 +175,12 @@ TEST(SemanticAnalysisTest, HappyFlowFullProgram)
 
 TEST(SemanticAnalysisTest, NegativeFlowSemanticErrors) 
 {
+    ProjectSymbolTable emptyProjectSymbolTable;
     EXPECT_THROW(
         {
             ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/file_with_logic_errors.picoc"));
             const AST& ast = parser.MainFlow();
-            SemanticAnalysisLogicComponent semanticAnalysisComponent(ast);
+            SemanticAnalysisLogicComponent semanticAnalysisComponent(ast, emptyProjectSymbolTable);
             semanticAnalysisComponent.MainFlow();
         },
         CompilationAbortException

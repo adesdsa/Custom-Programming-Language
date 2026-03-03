@@ -10,6 +10,7 @@ struct ExportedVar
 {
     std::string name;
     Type type;
+    AccessRights accessRights;
 };
 
 struct ExportedFunc 
@@ -33,5 +34,6 @@ class ProjectSymbolTable
 {
     std::unordered_map<std::string, FileExportTable> files;
 
+public:
     const FileExportTable* Resolve(const std::string& fileName) const;
 };

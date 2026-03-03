@@ -735,6 +735,7 @@ bool Command::ParseImportIdentifer(Token& currToken, Token& nextToken)
     ) 
     {
         this->m_bIgnoreEON = true;
+        this->AddToCurrParam(currToken, nextToken);
         return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
     }
     else if (

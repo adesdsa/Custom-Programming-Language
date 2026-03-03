@@ -58,6 +58,7 @@ protected:
     virtual void VisitEndOfCommand(ASTNode* node) = 0;
     virtual void VisitSizeof(ASTNode* node) = 0;
     virtual void VisitVoidCommand(ASTNode* node) = 0;
+    virtual void VisitImportStatement(ASTNode* node) = 0;
     virtual void VisitPass(ASTNode* node) = 0;
     virtual void VisitEof(ASTNode* node) = 0;
 

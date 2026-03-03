@@ -3,7 +3,7 @@
 #include "includes/frontend/parser/ast_extractor.h"
 #include "includes/shared/errors/error_manager.h"
 
-SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
+SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast, const ProjectSymbolTable& projectSymbolTable) :
     m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),
     m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(ast),
@@ -11,7 +11,8 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
     m_semanticAnalysisVisitor(
         this->m_semanticAnalysisLogger,
         this->m_decoratedAST.varTable,
-        this->m_decoratedAST.funcTable
+        this->m_decoratedAST.funcTable,
+        projectSymbolTable
     )
 {
     this->m_semanticAnalysisLogger.Info(
@@ -53,7 +54,7 @@ void SemanticAnalysisLogicComponent::CollectGlobalVariables()
         if (node && node->command.GetType() == CommandTypes::VAR_DECLARATION)
         {
             Scope scope = ASTExtractor::ExtractVarScope(node);
-            if (scope == Scope::GLOBAL)
+            if (scope == Scope::GLOBAL || scope == Scope::EXPORT)
             {
                 const std::string& varName = ASTExtractor::ExtractVarName(node);
 

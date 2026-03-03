@@ -3,11 +3,12 @@
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 #include "includes/shared/common/ast_helpers/ast_iterator.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
+#include "includes/frontend/common/project_symbol_table.h"
 
 class SemanticAnalysisLogicComponent
 {
 public:
-    SemanticAnalysisLogicComponent(const AST& ast);
+    SemanticAnalysisLogicComponent(const AST& ast, const ProjectSymbolTable& projectSymbolTable);
     ~SemanticAnalysisLogicComponent() = default;
 
     /*****************************************************************************

@@ -3,8 +3,10 @@
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,
     VarTableNode& varTable,
-    FuncTable& functable
+    FuncTable& functable,
+    const ProjectSymbolTable& projectSymbolTable
 ) :
+    m_projectSymbolTable(projectSymbolTable),
     m_facade(),
     m_entityLogger(entityLogger),
     m_errorManager(ErrorManager::GetInstance()),
@@ -783,6 +785,63 @@ void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
     if (this->m_bStartedFuncDeclaration)
     {
         this->m_bStartedFuncDeclaration = false; // Flag reset.
+    }
+}
+
+void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
+{
+    auto importFile = node->command.GetTokens().back().GetValue().substr(1, node->command.GetTokens().back().GetValue().size() - 2); // Getting rid of the "" for string literals
+    auto fileExports = this->m_projectSymbolTable.Resolve(importFile);
+    if (fileExports == nullptr)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::UNPROCESSED_FILE_IMPORTED,
+                "The file " + importFile + " wasn't parsed",
+                node->command.GetTokens()[0].GetLine(),
+                node->command.GetTokens()[0].GetColumn(),
+                "Add the file as input"
+            )
+        );
+        return;
+    }    
+
+    auto imports = node->command.GetParams();
+
+    for (auto import : imports)
+    {
+        bool found = false;
+
+        for (auto function : fileExports->functions)
+        {
+            if (function.name == import.GetTokens()[0].GetValue())
+            {
+                found = true;
+                this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function));
+            }
+        }
+
+        for (auto variable : fileExports->exportedVars)
+        {
+            if (variable.name == import.GetTokens()[0].GetValue())
+            {
+                found = true;
+                this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable));
+            }
+        }
+
+        if (!found)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "The file " + importFile + " doesn't export: " + import.GetTokens()[0].GetValue(),
+                    node->command.GetTokens()[0].GetLine(),
+                    node->command.GetTokens()[0].GetColumn(),
+                    "Maybe you forgot to add export to the function/variable"
+                )
+            );
+        }
     }
 }
 

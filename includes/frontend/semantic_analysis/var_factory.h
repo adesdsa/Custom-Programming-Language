@@ -3,6 +3,7 @@
 #include "var_metadata.h"
 #include "var_table_node.h"
 #include "includes/shared/common/target_architecture.h"
+#include "includes/frontend/common/project_symbol_table.h"
 
 constexpr int NORMAL_32BIT_TYPE_SIZE = 4;
 constexpr int NORMAL_64BIT_TYPE_SIZE = 8;
@@ -25,6 +26,8 @@ public:
         AccessRights varAccessRights,
         Scope varScope
     ) const;
+
+    VarMetaData CreateVarMetadata(const ExportedVar& exportedVar) const;
 
 private:
     const EntityLogger& m_entityLogger;
