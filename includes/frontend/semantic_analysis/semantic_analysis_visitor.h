@@ -102,6 +102,8 @@ private:
     size_t m_forConditionColumn = 0;
     int m_forExpressionCount = 0;  // 0=init value, 1=condition, 2+=increment
 
+    SemanticCheckerFacade m_facade;
+
     /**********************\
     |    Helper Methods    |
     \**********************/
@@ -140,7 +142,7 @@ private:
     /// @brief Evaluate given node into an `ExpressionType enum`
     /// @param node `ASTNode*`: node that passed as agrument to function call 
     /// @return `ExpressionType enum`: infered type of the node's expression
-    ExpressionType EvaluateNodeType(ASTNode* node) const noexcept;
+    ExpressionType EvaluateNodeType(ASTNode* node) noexcept;
 
     /// @brief Following methods cover facade checks that are shared between Visits ||
     //                                                                              \/
@@ -152,7 +154,7 @@ private:
         SemanticCheckerFacade::BlockKind blockkind
     );
 
-    void HandleExitedBlockCheck(ASTNode* node) const;
+    void HandleExitedBlockCheck(ASTNode* node);
 
     /// @brief The func is used to handle single Command assignments
     /// which means either identifier_value or finished_func_call

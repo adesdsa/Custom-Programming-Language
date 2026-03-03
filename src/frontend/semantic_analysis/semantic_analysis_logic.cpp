@@ -76,7 +76,8 @@ void SemanticAnalysisLogicComponent::CollectGlobalVariables()
 
 void SemanticAnalysisLogicComponent::HandleUndefinedFunctions()
 {
-    const std::vector<FuncMetaData*> undefinedFunctions = SemanticCheckerFacade::AreAllFunctionsDefined(
+    SemanticCheckerFacade tempFacade;
+    const std::vector<FuncMetaData*> undefinedFunctions = tempFacade.AreAllFunctionsDefined(
         this->m_decoratedAST.funcTable
     );
 
