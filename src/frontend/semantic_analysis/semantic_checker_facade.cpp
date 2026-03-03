@@ -1,16 +1,16 @@
 #include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
 
-bool SemanticCheckerFacade::m_bLoopFlag = false;
-size_t SemanticCheckerFacade::m_uLoopBlockCnt = 0;
-std::stack<SemanticCheckerFacade::OperationKind> SemanticCheckerFacade::m_operationHistory;
-std::stack<SemanticCheckerFacade::BlockKind> SemanticCheckerFacade::m_entryHistory;
-bool SemanticCheckerFacade::m_bIsReturnVoid = false;
-bool SemanticCheckerFacade::m_bFinishedBlock = false;
-bool SemanticCheckerFacade::m_bSuppressDefaultExprCheck = false;
+SemanticCheckerFacade::SemanticCheckerFacade() :
+    m_bLoopFlag(false),
+    m_bIsReturnVoid(false),
+    m_bFinishedBlock(false),
+    m_bSuppressDefaultExprCheck(false),
+    m_uLoopBlockCnt(0)
+{}
 
 void SemanticCheckerFacade::SetSuppressDefaultExprCheck(bool suppress)
 {
-    m_bSuppressDefaultExprCheck = suppress;
+    this->m_bSuppressDefaultExprCheck = suppress;
 }
 
 bool SemanticCheckerFacade::CheckVarExistence(const VarTableNode& currVarTableNode, const std::string& varName)
@@ -164,16 +164,16 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
 
 bool SemanticCheckerFacade::CheckReturnInsideFunc()
 {
-    return !m_operationHistory.empty();
+    return !this->m_operationHistory.empty();
 }
 
 bool SemanticCheckerFacade::CheckFunctionReturnType(const ExpressionType& returnExpressionType, const std::string& sFuncName, const FuncTable& funcTable)
 {
     if (!CheckReturnInsideFunc()) return false;
-    if (!m_bFinishedBlock)
+    if (!this->m_bFinishedBlock)
     {
         SwitchTopOfOperationHistory(OperationKind::Return);
-        m_bFinishedBlock = true;
+        this->m_bFinishedBlock = true;
     }
     const FuncMetaData* func = funcTable.FindFunctionByName(sFuncName);
     if (!func) return false;
@@ -192,34 +192,34 @@ bool SemanticCheckerFacade::CheckControlStatement()
 {
     // Use m_bLoopFlag to check if we're inside any loop, not just if the current block is a loop.
     // This correctly handles nested blocks (e.g., if inside for).
-    return m_bLoopFlag;
+    return this->m_bLoopFlag;
 }
 
 bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsReturnVoid)
 {
-    if (m_bLoopFlag)
+    if (this->m_bLoopFlag)
     {
-        m_uLoopBlockCnt++;
+        this->m_uLoopBlockCnt++;
     }
 
-    m_entryHistory.push(entryKind);
+    this->m_entryHistory.push(entryKind);
 
     switch (entryKind)
     {
     case BlockKind::Function:
         // Resetting for a new func.
-        m_operationHistory = std::stack<OperationKind>();
-        m_entryHistory = std::stack<BlockKind>();
-        m_entryHistory.push(entryKind); // Reenter value.
-        m_uLoopBlockCnt = 0;
-        m_operationHistory.push(OperationKind::None);
-        m_bIsReturnVoid = bIsReturnVoid;
-        m_bLoopFlag = false;
-        m_bFinishedBlock = false;
+        this->m_operationHistory = std::stack<OperationKind>();
+        this->m_entryHistory = std::stack<BlockKind>();
+        this->m_entryHistory.push(entryKind); // Reenter value.
+        this->m_uLoopBlockCnt = 0;
+        this->m_operationHistory.push(OperationKind::None);
+        this->m_bIsReturnVoid = bIsReturnVoid;
+        this->m_bLoopFlag = false;
+        this->m_bFinishedBlock = false;
         break;
     
     case BlockKind::If:
-        m_operationHistory.push(OperationKind::None); // Starting a new block.
+        this->m_operationHistory.push(OperationKind::None); // Starting a new block.
         break;
     
     case BlockKind::Else:
@@ -231,10 +231,10 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
         break;
 
     case BlockKind::Loop:
-        if (!m_bLoopFlag)
+        if (!this->m_bLoopFlag)
         {
-            m_bLoopFlag = true;
-            ++m_uLoopBlockCnt;
+            this->m_bLoopFlag = true;
+            ++this->m_uLoopBlockCnt;
         }
         break;
 
@@ -247,22 +247,22 @@ bool SemanticCheckerFacade::EnteredBlock(const BlockKind& entryKind, bool bIsRet
 
 bool SemanticCheckerFacade::ExitedBlock()
 {
-    if (m_bLoopFlag)
+    if (this->m_bLoopFlag)
     {
-        m_uLoopBlockCnt--;
+        this->m_uLoopBlockCnt--;
     }
     
-    if (m_operationHistory.empty() || m_entryHistory.empty())
+    if (this->m_operationHistory.empty() || this->m_entryHistory.empty())
     {
         return true;
     }
     
-    OperationKind lastOperation = m_operationHistory.top();
+    OperationKind lastOperation = this->m_operationHistory.top();
 
-    switch (m_entryHistory.top())
+    switch (this->m_entryHistory.top())
     {
     case BlockKind::Function:
-        if (!m_bIsReturnVoid)
+        if (!this->m_bIsReturnVoid)
         {
             switch (lastOperation)
             {
@@ -273,31 +273,31 @@ bool SemanticCheckerFacade::ExitedBlock()
                 break;
             // The function stopped without a return.
             default:
-                m_operationHistory.pop();
-                m_bFinishedBlock = false;
-                m_bIsReturnVoid = true;
+                this->m_operationHistory.pop();
+                this->m_bFinishedBlock = false;
+                this->m_bIsReturnVoid = true;
                 return false; // non void func didnt return.
                 break;
             }
         }
-        m_bFinishedBlock = false;
-        m_bIsReturnVoid = true;
-        m_operationHistory.pop();
+        this->m_bFinishedBlock = false;
+        this->m_bIsReturnVoid = true;
+        this->m_operationHistory.pop();
         break;
     
     case BlockKind::If:
-        m_operationHistory.pop();
+        this->m_operationHistory.pop();
         // If The block ended with a return.
         if (lastOperation == OperationKind::Return ||
             lastOperation == OperationKind::ElseReturn)
         {
             SwitchTopOfOperationHistory(OperationKind::IfReturn);
-            m_bFinishedBlock = false;
+            this->m_bFinishedBlock = false;
         }
         else
         {
             SwitchTopOfOperationHistory(OperationKind::If);
-            m_bFinishedBlock = false;
+            this->m_bFinishedBlock = false;
         }
         break;
 
@@ -310,8 +310,8 @@ bool SemanticCheckerFacade::ExitedBlock()
         break;
 
     case BlockKind::Loop:
-        if (m_uLoopBlockCnt == 0) m_bLoopFlag = false;
-        m_operationHistory.pop();
+        if (this->m_uLoopBlockCnt == 0) this->m_bLoopFlag = false;
+        this->m_operationHistory.pop();
         // If The block ended with a return.
         if (lastOperation == OperationKind::Return ||
             lastOperation == OperationKind::ElseReturn)
@@ -328,15 +328,15 @@ bool SemanticCheckerFacade::ExitedBlock()
         break;
     }
 
-    m_entryHistory.pop();
+    this->m_entryHistory.pop();
     return true;
 }
 
 bool SemanticCheckerFacade::IsBlockFinished()
 {
-    return !m_operationHistory.empty() &&
-        (m_operationHistory.top() == OperationKind::Return ||
-        m_operationHistory.top() == OperationKind::ElseReturn);
+    return !this->m_operationHistory.empty() &&
+        (this->m_operationHistory.top() == OperationKind::Return ||
+        this->m_operationHistory.top() == OperationKind::ElseReturn);
 }
 
 std::vector<FuncMetaData*> SemanticCheckerFacade::AreAllFunctionsDefined(
@@ -418,8 +418,8 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
 
 inline void SemanticCheckerFacade::DefaultExpressionChecks()
 {
-    if (m_bSuppressDefaultExprCheck) return;
-    if (!m_bFinishedBlock && !m_entryHistory.empty())
+    if (this->m_bSuppressDefaultExprCheck) return;
+    if (!this->m_bFinishedBlock && !this->m_entryHistory.empty())
     {
         SwitchTopOfOperationHistory(OperationKind::Expression);
     }
@@ -427,33 +427,33 @@ inline void SemanticCheckerFacade::DefaultExpressionChecks()
 
 bool SemanticCheckerFacade::ElseElifBlockEnter()
 {
-    if (m_operationHistory.empty())
+    if (this->m_operationHistory.empty())
     {
         return true;
     }
     
-    if (m_operationHistory.top() != OperationKind::If &&
-        m_operationHistory.top() != OperationKind::IfReturn &&
-        m_operationHistory.top() != OperationKind::Elif &&
-        m_operationHistory.top() != OperationKind::ElifReturn)
+    if (this->m_operationHistory.top() != OperationKind::If &&
+        this->m_operationHistory.top() != OperationKind::IfReturn &&
+        this->m_operationHistory.top() != OperationKind::Elif &&
+        this->m_operationHistory.top() != OperationKind::ElifReturn)
     {
         return true; // else not after if or elif
     }
-    m_operationHistory.push(OperationKind::None);
+    this->m_operationHistory.push(OperationKind::None);
     return false;
 }
 
 void SemanticCheckerFacade::ElseElifBlockExit(OperationKind kind)
 {
-    if (m_operationHistory.empty())
+    if (this->m_operationHistory.empty())
     {
         return;
     }
     
-    OperationKind lastOperation = m_operationHistory.top();
-    m_operationHistory.pop();
+    OperationKind lastOperation = this->m_operationHistory.top();
+    this->m_operationHistory.pop();
     
-    if (m_operationHistory.empty())
+    if (this->m_operationHistory.empty())
     {
         return;
     }
@@ -463,20 +463,20 @@ void SemanticCheckerFacade::ElseElifBlockExit(OperationKind kind)
         (lastOperation == OperationKind::Return ||
         lastOperation == OperationKind::ElseReturn)
         &&
-        (m_operationHistory.top() == OperationKind::IfReturn ||
-        m_operationHistory.top() == OperationKind::ElifReturn)
+        (this->m_operationHistory.top() == OperationKind::IfReturn ||
+        this->m_operationHistory.top() == OperationKind::ElifReturn)
     )
     {
         switch (kind)
         {
         case OperationKind::Elif:
             SwitchTopOfOperationHistory(OperationKind::ElifReturn);
-            m_bFinishedBlock = false;
+            this->m_bFinishedBlock = false;
             break;
         
         case OperationKind::Else:
             SwitchTopOfOperationHistory(OperationKind::ElseReturn);
-            m_bFinishedBlock = true;
+            this->m_bFinishedBlock = true;
             break;
         default:
             break;
@@ -484,21 +484,21 @@ void SemanticCheckerFacade::ElseElifBlockExit(OperationKind kind)
     }
     else
     {
-        m_bFinishedBlock = false;
+        this->m_bFinishedBlock = false;
         SwitchTopOfOperationHistory(kind);
     }
 }
 
 inline void SemanticCheckerFacade::SwitchTopOfOperationHistory(OperationKind operationKind)
 {
-    if (!m_operationHistory.empty())
+    if (!this->m_operationHistory.empty())
     {
-        m_operationHistory.pop();
-        m_operationHistory.push(operationKind);
+        this->m_operationHistory.pop();
+        this->m_operationHistory.push(operationKind);
     }
     else
     {
-        m_operationHistory.push(operationKind);
+        this->m_operationHistory.push(operationKind);
     }
 }
 
