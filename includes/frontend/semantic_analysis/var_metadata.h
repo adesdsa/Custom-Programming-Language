@@ -18,13 +18,15 @@ struct VarMetaData
         Type type,
         AccessRights access,
         Scope scope,
-        int offset
+        int offset,
+        bool isExtern = false
     ): 
         sName(name),
         type(type),
         accessRights(access),
         scope(scope),
-        offsetInsideFrame(offset)
+        offsetInsideFrame(offset),
+        isExtern(isExtern)
     {}
 
     bool operator==(const VarMetaData& other) const
@@ -33,7 +35,8 @@ struct VarMetaData
                type == other.type &&
                accessRights == other.accessRights &&
                scope == other.scope &&
-               offsetInsideFrame == other.offsetInsideFrame;
+               offsetInsideFrame == other.offsetInsideFrame &&
+               isExtern == other.isExtern;
     }
 
     std::string sName;
@@ -41,4 +44,5 @@ struct VarMetaData
     AccessRights accessRights;
     Scope scope;
     int offsetInsideFrame;
+    bool isExtern;
 };
