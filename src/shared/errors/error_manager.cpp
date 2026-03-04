@@ -1,5 +1,8 @@
 #include "includes/shared/errors/error_manager.h"
 
+thread_local std::string ErrorManager::tl_currentFilePath;
+thread_local std::string ErrorManager::tl_currentReporter;
+
 ErrorManager::ErrorManager() : m_entityLogger("ERROR-MANAGER") {}
 
 ErrorManager& ErrorManager::GetInstance() noexcept
@@ -10,27 +13,27 @@ ErrorManager& ErrorManager::GetInstance() noexcept
 
 void ErrorManager::SetCurrentFilePath(const std::string& filePath) noexcept
 {
-    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
-    this->m_currentFilePath = filePath;
+    tl_currentFilePath = filePath;
 }
 
 void ErrorManager::SetCurrentReporter(const std::string& reporter) noexcept
 {
-    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
-    this->m_currentReporter = reporter;
+    tl_currentReporter = reporter;
 }
 
 void ErrorManager::StoreError(CompileTimeError error)
 {
     std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
-    if (!this->m_currentFilePath.empty())
+
+    if (!tl_currentFilePath.empty())
     {
-        error.SetFilePath(this->m_currentFilePath);
+        error.SetFilePath(tl_currentFilePath);
     }
-    if (!this->m_currentReporter.empty())
+    if (!tl_currentReporter.empty())
     {
-        error.SetReporter(this->m_currentReporter);
+        error.SetReporter(tl_currentReporter);
     }
+
     this->m_errorList.push_back(std::move(error));
 }
 
@@ -54,10 +57,19 @@ bool ErrorManager::HasErrorsOccured_NoLock() const noexcept
 void ErrorManager::HandleErrors() const
 {
     std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
+
+    if (this->m_deferredMode) return;
+
     if (!this->HasErrorsOccured_NoLock()) return;
 
     this->DisplayErrorsInUI_NoLock();
     this->AbortCompilation_NoLock();
+}
+
+void ErrorManager::SetDeferredMode(bool deferred) noexcept
+{
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
+    this->m_deferredMode = deferred;
 }
 
 void ErrorManager::DisplayErrorsInUI_NoLock() const noexcept

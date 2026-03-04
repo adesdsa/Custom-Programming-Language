@@ -117,12 +117,19 @@ void CompilerOrchestrator::MainFlow()
 {
     this->Init();
 
-    // Step 1: Parse all source files (sequential — lexer/parser is fast)
+    ErrorManager& errorManager = ErrorManager::GetInstance();
+    errorManager.Clear();
+    errorManager.SetDeferredMode(true);
+
+    // Step 1: Parse all source files (sequential)
     std::vector<std::unique_ptr<ParserLogic>> parsers;
     std::vector<const AST*> asts;
 
     for (const auto& filePath : this->m_options.inputFilesPath)
     {
+        std::filesystem::path fsPath(filePath);
+        ErrorManager::SetCurrentFilePath(fsPath.string());
+
         auto parser = std::make_unique<ParserLogic>(filePath);
         const AST& ast = parser->MainFlow();
         asts.push_back(&ast);
@@ -141,41 +148,32 @@ void CompilerOrchestrator::MainFlow()
         projectSymbols.Register(fileName, std::move(exports));
     }
 
-    // Step 3: Parallel semantic analysis + code generation
-    size_t hwThreads = std::thread::hardware_concurrency();
-    size_t maxThreads = std::min(parsers.size(), hwThreads);
-    ThreadPool pool(maxThreads);
-
-    std::vector<std::future<std::string>> futures;
+    // Step 3: Semantic analysis + code generation (sequential)
+    std::vector<std::string> artifactPaths;
     for (size_t i = 0; i < parsers.size(); i++)
     {
-        futures.push_back(pool.Enqueue([this, i, &asts, &projectSymbols]() -> std::string
-        {
-            std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
-            std::string perFileName = inputPath.stem().string();
+        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
+        std::string perFileName = inputPath.stem().string();
 
-            SemanticAnalysisLogicComponent semantic(*asts[i], projectSymbols);
-            const DecoratedAST& decorated = semantic.MainFlow();
+        ErrorManager::SetCurrentFilePath(inputPath.string());
 
-            CompilerOptions perFileOptions = this->m_options;
-            perFileOptions.outputFileName = std::wstring(perFileName.begin(), perFileName.end());
+        SemanticAnalysisLogicComponent semantic(*asts[i], projectSymbols);
+        const DecoratedAST& decorated = semantic.MainFlow();
 
-            CodeGenManager codegen(decorated, perFileOptions);
-            return codegen.MainFlow();
-        }));
+        CompilerOptions perFileOptions = this->m_options;
+        perFileOptions.outputFileName = std::wstring(perFileName.begin(), perFileName.end());
+
+        CodeGenManager codegen(decorated, perFileOptions);
+        artifactPaths.push_back(codegen.MainFlow());
     }
 
-    // Step 4: Collect all artifact paths (blocks until each job completes)
-    std::vector<std::string> artifactPaths;
-    for (auto& future : futures)
-    {
-        artifactPaths.push_back(future.get());
-    }
+    // Step 4:
 
-    // Step 5: Check for errors accumulated across all threads
-    if (ErrorManager::GetInstance().HasErrorsOccured())
+    // Step 5: Disable deferred mode, then display all errors at once and abort if any
+    errorManager.SetDeferredMode(false);
+    if (errorManager.HasErrorsOccured())
     {
-        ErrorManager::GetInstance().HandleErrors();
+        errorManager.HandleErrors();
     }
 
     // Step 6: Link all object files into the final executable

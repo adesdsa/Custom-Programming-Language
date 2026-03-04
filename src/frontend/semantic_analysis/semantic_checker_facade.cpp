@@ -183,7 +183,9 @@ bool SemanticCheckerFacade::CheckFunctionReturnType(const ExpressionType& return
 bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
 {
     DefaultExpressionChecks();
-    VarMetaData varData = *currVarTableNode.FindVar(sAssignedVarName);
+    auto found = currVarTableNode.FindVar(sAssignedVarName);
+    if (!found.has_value()) return false;
+    VarMetaData varData = *found;
     if (varData.accessRights == AccessRights::CONST_ACCESS || varData.accessRights == AccessRights::READ_ONLY_ACCESS) return false;
     return CompareTypes(varData.type, assigmentExpressionType);
 }

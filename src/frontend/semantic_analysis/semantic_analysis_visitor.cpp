@@ -1,5 +1,7 @@
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
 
+#include <filesystem>
+
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,
     VarTableNode& varTable,
@@ -790,57 +792,75 @@ void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
 {
-    auto importFile = node->command.GetTokens().back().GetValue().substr(1, node->command.GetTokens().back().GetValue().size() - 2); // Getting rid of the "" for string literals
-    auto fileExports = this->m_projectSymbolTable.Resolve(importFile);
+    const auto& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+    const auto& pathToken = tokens.back();
+    std::string importPath = pathToken.GetValue();
+    if (importPath.size() >= 2 && importPath.front() == '"' && importPath.back() == '"')
+        importPath = importPath.substr(1, importPath.size() - 2);
+    std::string moduleName = std::filesystem::path(importPath).stem().string(); // resolve by stem to match ProjectSymbolTable registration
+    auto fileExports = this->m_projectSymbolTable.Resolve(moduleName);
     if (fileExports == nullptr)
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::UNPROCESSED_FILE_IMPORTED,
-                "The file " + importFile + " wasn't parsed",
-                node->command.GetTokens()[0].GetLine(),
-                node->command.GetTokens()[0].GetColumn(),
+                "The file " + importPath + " wasn't parsed",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
                 "Add the file as input"
             )
         );
         return;
-    }    
+    }
 
     auto imports = node->command.GetParams();
 
     for (auto import : imports)
     {
-        bool found = false;
-
-        for (auto function : fileExports->functions)
+        const auto& importTokens = import.GetTokens();
+        // Each param may contain multiple identifiers (e.g. { Add, Multiply } in one param)
+        for (const auto& tok : importTokens)
         {
-            if (function.name == import.GetTokens()[0].GetValue())
+            if (tok.GetType() != TokenTypes::IDENTIFIER) continue;
+            std::string symbolName = tok.GetValue();
+            bool found = false;
+
+            for (auto function : fileExports->functions)
             {
-                found = true;
-                this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function));
+                if (function.name == symbolName)
+                {
+                    found = true;
+                    this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function));
+                    break;
+                }
             }
-        }
 
-        for (auto variable : fileExports->exportedVars)
-        {
-            if (variable.name == import.GetTokens()[0].GetValue())
+            if (!found)
             {
-                found = true;
-                this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable));
+                for (auto variable : fileExports->exportedVars)
+                {
+                    if (variable.name == symbolName)
+                    {
+                        found = true;
+                        this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable));
+                        break;
+                    }
+                }
             }
-        }
 
-        if (!found)
-        {
-            this->m_errorManager.StoreError(
-                CompileTimeError(
-                    ErrorTypes::NAME_ERROR,
-                    "The file " + importFile + " doesn't export: " + import.GetTokens()[0].GetValue(),
-                    node->command.GetTokens()[0].GetLine(),
-                    node->command.GetTokens()[0].GetColumn(),
-                    "Maybe you forgot to add export to the function/variable"
-                )
-            );
+            if (!found)
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::NAME_ERROR,
+                        "The file " + importPath + " doesn't export: " + symbolName,
+                        tok.GetLine(),
+                        tok.GetColumn(),
+                        "Maybe you forgot to add export to the function/variable"
+                    )
+                );
+            }
         }
     }
 }

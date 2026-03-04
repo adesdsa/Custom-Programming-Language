@@ -13,8 +13,7 @@ ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
 
 const AST& ParserLogic::MainFlow()
 {
-    this->m_errorManager.Clear();  // Reset errors from any previous compilation
-    this->m_errorManager.SetCurrentReporter("PARSER");
+    ErrorManager::SetCurrentReporter("PARSER");
     this->m_entityLogger.Info("Start parsing file");
 
     while (this->m_currentToken.GetType() != TokenTypes::EOF_TOKEN)

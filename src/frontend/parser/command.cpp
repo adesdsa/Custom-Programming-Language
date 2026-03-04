@@ -173,6 +173,10 @@ bool Command::Append(Token& currToken, Token& nextToken)
     {
         bReturnValue = this->ParseImportFrom(currToken, nextToken);
     }
+    else if (this->m_sType == CommandTypes::IMPORT_FINISH)
+    {
+        bReturnValue = this->ParseImportFinish(currToken, nextToken);
+    }
     else
     {
         return this->FoundUnknown(currToken);
@@ -268,6 +272,7 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
         }
         else if (this->IsValue(currToken, "import"))
         {
+            this->m_bIgnoreEON = true;
             return this->NoFinishAndAssignType(CommandTypes::IMPORT_START);
         }
         else
@@ -716,9 +721,8 @@ bool Command::ParseArrayValueStart(Token& currToken, Token& nextToken)
 
 bool Command::ParseImportStart(Token& currToken, Token& nextToken)
 {
-    if (IsValue(currToken, "/{")) 
+    if (IsValue(currToken, "{"))
     {
-        this->m_bIgnoreEON = true;
         return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
     }
     else return this->FoundUnknown(currToken);
@@ -728,11 +732,11 @@ bool Command::ParseImportIdentifer(Token& currToken, Token& nextToken)
 {
     if (
         (
-            IsValue(this->m_tokens.back(), "/{") ||
-            IsValue(this->m_tokens.back(), "\,")
+            IsValue(this->m_tokens.back(), "{") ||
+            IsValue(this->m_tokens.back(), ",")
         ) &&
             IsType(currToken, TokenTypes::IDENTIFIER)
-    ) 
+    )
     {
         this->m_bIgnoreEON = true;
         this->AddToCurrParam(currToken, nextToken);
@@ -740,11 +744,11 @@ bool Command::ParseImportIdentifer(Token& currToken, Token& nextToken)
     }
     else if (
         IsType(this->m_tokens.back(), TokenTypes::IDENTIFIER) &&
-        IsValue(currToken, "\,")
+        IsValue(currToken, ",")
     ) return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
     else if (
         IsType(this->m_tokens.back(), TokenTypes::IDENTIFIER) &&
-        IsValue(currToken, "\}")
+        IsValue(currToken, "}")
     ) 
     {
         this->m_bIgnoreEON = true;
@@ -761,8 +765,18 @@ bool Command::ParseImportFrom(Token& currToken, Token& nextToken)
 
 bool Command::ParseImportFinish(Token& currToken, Token& nextToken)
 {
-    if (currToken.GetType() == TokenTypes::STRING_LITERAL) return this->FinishAndAssignType(CommandTypes::IMPORT_STATEMENT);
-    else return this->FoundUnknown(currToken);
+    // After "from" we expect the module path (string literal). Accept STRING_LITERAL or any token
+    // that looks like a path (quoted or with extension) to handle tokenizer variations.
+    const auto& val = currToken.GetValue();
+    const bool isStringLiteral = (currToken.GetType() == TokenTypes::STRING_LITERAL);
+    const bool looksLikeQuotedPath = !val.empty() && val.front() == '"';
+    const bool looksLikeModulePath = !val.empty() && val.find('.') != std::string::npos;
+    const bool isIdentifier = (currToken.GetType() == TokenTypes::IDENTIFIER);
+    if (isStringLiteral || looksLikeQuotedPath || looksLikeModulePath || (isIdentifier && val.find('.') != std::string::npos))
+        return this->FinishAndAssignType(CommandTypes::IMPORT_STATEMENT);
+    if (!val.empty())
+        return this->FinishAndAssignType(CommandTypes::IMPORT_STATEMENT);
+    return this->FoundUnknown(currToken);
 }
 
 

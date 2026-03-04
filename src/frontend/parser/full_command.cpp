@@ -7,7 +7,7 @@ FullCommand::FullCommand(const EntityLogger& entityLogger) :
     m_entityLogger(entityLogger), 
     m_bFinished(false), 
     m_bLegal(true),
-    m_importLegal(false),
+    m_importLegal(true),
     m_uLineIndex(0)
 {}
 

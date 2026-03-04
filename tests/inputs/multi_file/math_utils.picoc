@@ -1,0 +1,11 @@
+# math_utils.picoc — helper functions imported by main
+
+Add(a: int, b: int) -> int
+{
+    return a + b;
+}
+
+Multiply(a: int, b: int) -> int
+{
+    return a * b;
+}

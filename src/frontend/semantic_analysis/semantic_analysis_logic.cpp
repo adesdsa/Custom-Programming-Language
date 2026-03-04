@@ -22,7 +22,7 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast, c
 
 const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 {
-    this->m_errorManager.SetCurrentReporter("SEMANTIC_ANALYSIS");
+    ErrorManager::SetCurrentReporter("SEMANTIC_ANALYSIS");
     this->CollectGlobalVariables();
 
     while (this->m_astIterator.HasNext())

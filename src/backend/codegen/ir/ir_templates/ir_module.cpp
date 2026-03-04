@@ -2,7 +2,8 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
 
 IRModule::IRModule(const std::string& moduleName) :
-    m_name(moduleName)
+    m_name(moduleName),
+    m_isPrimaryModule(false)
 {}
 
 const std::string& IRModule::GetName() const noexcept
