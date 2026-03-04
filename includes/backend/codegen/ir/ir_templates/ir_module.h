@@ -40,7 +40,7 @@ public:
     /// @return m_globals size
     size_t GetNumVariables() const noexcept;
     /// @return nullptr -> Var with this name already exists. otherwise -> success.
-    IRGlobalVariable* AddVariable(const std::string& name, std::shared_ptr<const IRType> type);
+    IRGlobalVariable* AddVariable(const std::string& name, std::shared_ptr<const IRType> type, bool isExtern = false);
     bool IsVarExistByName(const std::string& name) const;
 
     void RemoveVariable(IRGlobalVariable* globalVar);

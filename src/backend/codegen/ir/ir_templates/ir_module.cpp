@@ -61,13 +61,14 @@ size_t IRModule::GetNumVariables() const noexcept
     return this->m_globals.size();
 }
 
-IRGlobalVariable* IRModule::AddVariable(const std::string& name, std::shared_ptr<const IRType> type)
+IRGlobalVariable* IRModule::AddVariable(const std::string& name, std::shared_ptr<const IRType> type, bool isExtern)
 {
     if (this->m_globalMap.find(name) != this->m_globalMap.end()) return nullptr;
 
     this->m_globals.push_back(std::make_unique<IRGlobalVariable>(
         name,
-        type
+        type,
+        isExtern
     ));
     this->m_globalMap[name] = this->m_globals.back().get();
     this->m_globalMap[name]->SetParent(this);

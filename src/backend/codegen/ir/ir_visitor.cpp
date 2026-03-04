@@ -38,15 +38,20 @@ IRVisitor::IRVisitor(
     {
         if (varMeta.scope == Scope::GLOBAL)
         {
-            this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+            if (varMeta.isExtern)
+            {
+                this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type), true);
+                this->m_currModule.AddImport(name);
+            }
+            else
+            {
+                this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+            }
         }
         else if (varMeta.scope == Scope::EXPORT)
         {
+            this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
             this->m_currModule.AddExport(name);
-        }
-        else if (varMeta.isExtern)
-        {
-            this->m_currModule.AddImport(name);
         }
     }
 

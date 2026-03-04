@@ -100,7 +100,7 @@ VarMetaData VarFactory::CreateVarMetadata(const ExportedVar& exportedVar) const
         exportedVar.name,
         exportedVar.type,
         exportedVar.accessRights,
-        Scope::EXPORT,
+        Scope::GLOBAL,
         varOffsetInsideFrame,
         true
     );
