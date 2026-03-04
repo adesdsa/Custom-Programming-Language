@@ -28,10 +28,6 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
     while (this->m_astIterator.HasNext())
     {
         ASTNode* curr = this->m_astIterator.GetCurrent();
-        if (curr->command[0].GetLine() == 10)
-        {
-            int x = 0;
-        }
         this->m_semanticAnalysisVisitor.Visit(curr);
         (void)this->m_astIterator.Next();
     }

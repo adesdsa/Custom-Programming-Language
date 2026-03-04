@@ -484,26 +484,6 @@ void IRVisitor::VisitFor(ASTNode* node)
 
 void IRVisitor::VisitReturn(ASTNode* node)
 {
-    // Recover m_currFunc if null (can happen when AST traversal visits body before FUNC_DEF)
-    if (!this->m_currFunc)
-    {
-        // Prefer function with blocks; else main (user entry); else last function
-        const auto& funcs = this->m_currModule.GetFunctions();
-        for (auto it = funcs.rbegin(); it != funcs.rend(); ++it)
-        {
-            if (!(*it)->GetBasicBlocks().empty())
-            {
-                this->m_currFunc = it->get();
-                break;
-            }
-        }
-        if (!this->m_currFunc)
-        {
-            IRFunction* mainFunc = this->m_currModule.GetFunction("main");
-            if (mainFunc) this->m_currFunc = mainFunc;
-            else if (!funcs.empty()) this->m_currFunc = funcs.back().get();
-        }
-    }
     if (!this->m_currFunc)
     {
         this->m_entityLogger.Error("VisitReturn: m_currFunc is null");
@@ -620,20 +600,6 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     {
     case BlockKind::functionBlock:
     {
-        // If m_currFunc is null (e.g. AST traversal visited body before FUNC_DEF), recover from
-        // the last function we're building (the one with an entry block we're about to add)
-        if (!this->m_currFunc)
-        {
-            const auto& funcs = this->m_currModule.GetFunctions();
-            for (auto it = funcs.rbegin(); it != funcs.rend(); ++it)
-            {
-                if ((*it)->GetEntryBlock() == nullptr)
-                {
-                    this->m_currFunc = it->get();
-                    break;
-                }
-            }
-        }
         if (!this->m_currFunc) break;
         this->m_irbuilder.SetInsertPoint(this->m_currFunc->AddBasicBlock("entry"));
         // global parameters, store the argument value into the global variable
