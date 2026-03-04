@@ -111,3 +111,23 @@ const std::vector<std::unique_ptr<IRBaseValue>>& IRModule::GetConstants() const 
 {
     return this->m_constants;
 }
+
+const std::vector<std::string>& IRModule::GetExports() const
+{
+    return this->m_exportedSymbols;
+}
+
+const std::vector<std::string>& IRModule::GetImports() const
+{
+    return this->m_externSymbols;
+}
+
+void IRModule::AddExport(const std::string& exportable)
+{
+    this->m_exportedSymbols.push_back(exportable);
+}
+
+void IRModule::AddImport(const std::string& importable)
+{
+    this->m_externSymbols.push_back(importable);
+}

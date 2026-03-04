@@ -47,9 +47,21 @@ public:
     void AddConstant(std::unique_ptr<IRBaseValue> constant);
     const std::vector<std::unique_ptr<IRBaseValue>>& GetConstants() const noexcept;
 
+    // <======= Import/Export Related Functions =======>
+    const std::vector<std::string>& GetExports() const;
+    const std::vector<std::string>& GetImports() const;
+    void AddExport(const std::string& exportable);
+    void AddImport(const std::string& importable);
+
 private:
     const std::string m_name;
     std::vector<std::unique_ptr<IRBaseValue>> m_constants;
+
+    // Names of symbols imported from other files
+    std::vector<std::string> m_externSymbols;
+
+    // names of symbols this file exports
+    std::vector<std::string> m_exportedSymbols;
     
     /// @note: Following code contains both vector and map for better time complexity
                             

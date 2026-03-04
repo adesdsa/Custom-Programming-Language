@@ -2,11 +2,13 @@
 
 IRGlobalVariable::IRGlobalVariable(
     const std::string& name, 
-    std::shared_ptr<const IRType> type
+    std::shared_ptr<const IRType> type,
+    bool isExtern
 ) : 
     IRBaseValue(name, type), 
     m_parent(nullptr), 
-    m_initializer(nullptr)
+    m_initializer(nullptr),
+    m_isExtern(isExtern)
 {}
 
 IRModule* IRGlobalVariable::GetParent() const noexcept
@@ -19,6 +21,11 @@ IRBaseValue* IRGlobalVariable::GetInitializer() const
     return this->m_initializer;
 }
 
+bool IRGlobalVariable::IsExtern() const
+{
+    return this->m_isExtern;
+}
+
 void IRGlobalVariable::SetParent(IRModule* module) noexcept
 {
     this->m_parent = module;
@@ -27,6 +34,11 @@ void IRGlobalVariable::SetParent(IRModule* module) noexcept
 void IRGlobalVariable::SetInitializer(IRBaseValue* init)
 {
     this->m_initializer = init;
+}
+
+void IRGlobalVariable::SetIsExtern(bool isExtern)
+{
+
 }
 
 std::string IRGlobalVariable::ToString() const

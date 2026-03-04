@@ -40,6 +40,26 @@ IRVisitor::IRVisitor(
         {
             this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
         }
+        else if (varMeta.scope == Scope::EXPORT)
+        {
+            this->m_currModule.AddExport(name);
+        }
+        else if (varMeta.isExtern)
+        {
+            this->m_currModule.AddImport(name);
+        }
+    }
+
+    for (const auto& [name, funcMetaData] : this->m_decoratedAst.funcTable.GetAllFunctions())
+    {
+        if (funcMetaData->IsExtern())
+        {
+            this->m_currModule.AddImport(name);
+        }
+        else
+        {
+            this->m_currModule.AddImport(name);
+        }
     }
 }
 
