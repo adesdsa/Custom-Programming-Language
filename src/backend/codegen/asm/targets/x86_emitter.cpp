@@ -7,7 +7,7 @@ X86_Emitter::X86_Emitter(const FuncTable& funcTable) :
     X86BaseEmitter(funcTable)
 {}
 
-std::string X86_Emitter::EmitHeader() const
+std::string X86_Emitter::EmitHeader(const IRModule& module) const
 {
     std::ostringstream header;
 
@@ -19,33 +19,88 @@ std::string X86_Emitter::EmitHeader() const
         case OS::Linux:
             header << "; Target: x86 Linux (32-bit)\n\n";
             header << "BITS 32\n";
-            header << "global _start\n";
-            header << "global main\n\n";
 
-            header << "section .data\n";
-            header << "    __println_bool_true db \"true\", 10, 0\n";
-            header << "    __println_bool_false db \"false\", 10, 0\n";
-            header << "    __println_newline db 10, 0\n";
-            header << "    __println_minus db \"-\", 0\n";
-            header << "    __println_dot db \".\", 0\n\n";
+            if (module.IsPrimaryModule())
+            {
+                header << "global _start\n";
+                header << "global main\n\n";
+
+                header << "global println\n";
+                header << "global println_bool\n";
+                header << "global println_str\n";
+                header << "global println_double\n\n";
+
+                header << "global __println_bool_true\n";
+                header << "global __println_bool_false\n";
+                header << "global __println_newline\n";
+                header << "global __println_minus\n";
+                header << "global __println_dot\n\n";
+
+                header << "section .data\n";
+                header << "    __println_bool_true db \"true\", 10, 0\n";
+                header << "    __println_bool_false db \"false\", 10, 0\n";
+                header << "    __println_newline db 10, 0\n";
+                header << "    __println_minus db \"-\", 0\n";
+                header << "    __println_dot db \".\", 0\n\n";
+            }
+            else
+            {
+                header << "extern println\n";
+                header << "extern println_bool\n";
+                header << "extern println_str\n";
+                header << "extern println_double\n\n";
+
+                header << "extern __println_bool_true\n";
+                header << "extern __println_bool_false\n";
+                header << "extern __println_newline\n";
+                header << "extern __println_minus\n";
+                header << "extern __println_dot\n\n";
+            }
             break;
 
         case OS::Windows:
             header << "; Target: x86 Windows (32-bit)\n\n";
             header << "BITS 32\n";
-            header << "global _mainCRTStartup\n";
-            header << "global _main\n";
-            header << "extern _ExitProcess@4\n";
-            header << "extern _printf\n";
-            header << "extern _exit\n\n";
 
-            // built-in format strings (used by println and other built-ins)
-            header << "section .data\n";
-            header << "    __println_fmt_int db \"%d\", 10, 0\n";
-            header << "    __println_fmt_double db \"%g\", 10, 0\n";
-            header << "    __println_fmt_str db \"%s\", 10, 0\n";
-            header << "    __println_bool_true db \"true\", 0\n";
-            header << "    __println_bool_false db \"false\", 0\n\n";
+            if (module.IsPrimaryModule())
+            {
+                header << "global _mainCRTStartup\n";
+                header << "global _main\n";
+                header << "extern _ExitProcess@4\n";
+                header << "extern _printf\n";
+                header << "extern _exit\n\n";
+
+                header << "global _println\n";
+                header << "global _println_double\n";
+                header << "global _println_str\n";
+                header << "global _println_bool\n\n";
+
+                header << "global __println_fmt_int\n";
+                header << "global __println_fmt_double\n";
+                header << "global __println_fmt_str\n";
+                header << "global __println_bool_true\n";
+                header << "global __println_bool_false\n\n";
+
+                header << "section .data\n";
+                header << "    __println_fmt_int db \"%d\", 10, 0\n";
+                header << "    __println_fmt_double db \"%g\", 10, 0\n";
+                header << "    __println_fmt_str db \"%s\", 10, 0\n";
+                header << "    __println_bool_true db \"true\", 0\n";
+                header << "    __println_bool_false db \"false\", 0\n\n";
+            }
+            else
+            {
+                header << "extern _println\n";
+                header << "extern _println_double\n";
+                header << "extern _println_str\n";
+                header << "extern _println_bool\n\n";
+
+                header << "extern __println_fmt_int\n";
+                header << "extern __println_fmt_double\n";
+                header << "extern __println_fmt_str\n";
+                header << "extern __println_bool_true\n";
+                header << "extern __println_bool_false\n\n";
+            }
             break;
 
         default:
@@ -448,8 +503,10 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
     }
 }
 
-void X86_Emitter::EmitStart(std::ostream& out)
+void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
 {
+    if (!module.IsPrimaryModule()) return;
+
     switch (TargetArchitecture::GetOS())
     {
         case OS::Linux:

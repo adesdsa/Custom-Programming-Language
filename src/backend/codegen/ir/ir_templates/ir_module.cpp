@@ -132,3 +132,13 @@ void IRModule::AddImport(const std::string& importable)
 {
     this->m_externSymbols.push_back(importable);
 }
+
+void IRModule::SetPrimaryModule()
+{
+    this->m_isPrimaryModule = true;
+}
+
+bool IRModule::IsPrimaryModule() const
+{
+    return this->m_isPrimaryModule;
+}

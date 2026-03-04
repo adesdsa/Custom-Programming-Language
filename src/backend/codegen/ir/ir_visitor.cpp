@@ -57,6 +57,11 @@ IRVisitor::IRVisitor(
 
     for (const auto& [name, funcMetaData] : this->m_decoratedAst.funcTable.GetAllFunctions())
     {
+        if (name == "main")
+        {
+            this->m_currModule.SetPrimaryModule();
+        }
+
         if (funcMetaData->IsExtern())
         {
             this->m_currModule.AddImport(name);

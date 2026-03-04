@@ -53,9 +53,13 @@ public:
     void AddExport(const std::string& exportable);
     void AddImport(const std::string& importable);
 
+    void SetPrimaryModule();
+    bool IsPrimaryModule() const;
+
 private:
     const std::string m_name;
     std::vector<std::unique_ptr<IRBaseValue>> m_constants;
+    bool m_isPrimaryModule; // True-> If main is defined here, False-> Otherwise
 
     // Names of symbols imported from other files
     std::vector<std::string> m_externSymbols;

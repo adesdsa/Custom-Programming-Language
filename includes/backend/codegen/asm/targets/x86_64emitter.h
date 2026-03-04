@@ -53,7 +53,7 @@ public:
 
 private:
     // header signature for the file
-    std::string EmitHeader() const override final;
+    std::string EmitHeader(const IRModule& module) const override final;
 
     /** 
       * my_function:
@@ -73,7 +73,7 @@ private:
     void EmitInstruction(const IRInstruction* instruction, std::ostream& out) override final;
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
-    void EmitStart(std::ostream& out) override final;
+    void EmitStart(const IRModule& module, std::ostream& out) override final;
 
     // Get global section for linker, will be available between all files
     std::string GetGlobalDirective(const std::string& symbol) const override final;

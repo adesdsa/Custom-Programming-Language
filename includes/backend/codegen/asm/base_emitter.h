@@ -20,7 +20,7 @@ protected:
     const IRFunction* m_currentFunc;
     
     // header signature for the file
-    virtual std::string EmitHeader() const = 0;
+    virtual std::string EmitHeader(const IRModule& module) const = 0;
 
     /** 
       * my_function:
@@ -41,7 +41,8 @@ protected:
     virtual void EmitInstruction(const IRInstruction* instruction, std::ostream& out) = 0;
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
-    virtual void EmitStart(std::ostream& out) = 0;
+    /// Only the primary module (the one containing main) should emit entry-point code and built-in bodies.
+    virtual void EmitStart(const IRModule& module, std::ostream& out) = 0;
 
     // Gets sections name as a string e.g., section .text
     virtual std::string GetSectionDirective(SectionType sectionType) const = 0;
@@ -64,10 +65,17 @@ protected:
     virtual std::string GetReserveDirective(int bytes) const = 0;
 
 private:
-    /// @brief Emits .data section (initialized globals)
+    /** 
+     * Emits global/extern directives for cross-module linking:
+     *  1. For each exported function/variable: emit  global _funcname
+     *  2. For each imported function/variable: emit  extern _funcname
+     */
+    void EmitExternAndGlobalDirectives(const IRModule& module, std::ostream& out);
+
+    /// @brief Emits .data section (initialized globals). Skips extern variables.
     void EmitDataSection(const IRModule& module, std::ostream& out);
     
-    /// @brief Emits .bss section (uninitialized globals)
+    /// @brief Emits .bss section (uninitialized globals). Skips extern variables.
     void EmitBssSection(const IRModule& module, std::ostream& out);
     
     /// @brief emits .text section (all functions)
