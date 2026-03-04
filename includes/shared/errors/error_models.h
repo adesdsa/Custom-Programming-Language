@@ -23,6 +23,7 @@ namespace ErrorTypes
     inline constexpr std::string_view STATEMENT_OUT_OF_BLOCK_ERROR = "statement out of block error";
     inline constexpr std::string_view UNDEFINED_FUNCTION_ERROR = "function is not defined error";
     inline constexpr std::string_view UNPROCESSED_FILE_IMPORTED = "imported file wasnt processed";
+    inline constexpr std::string_view CIRCULAR_IMPORT = "circular import";
 }
 
 class CompileTimeError

@@ -2,7 +2,12 @@
 #include "includes/shared/logger/console.h"
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/shared/errors/error_manager.h"
+#include "includes/shared/errors/error_models.h"
 #include "includes/shared/utils/string_utils.hpp"
+
+#include <algorithm>
+#include <unordered_map>
+#include <unordered_set>
 
 CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
     m_options(std::move(options))
@@ -134,6 +139,73 @@ void CompilerOrchestrator::MainFlow()
         const AST& ast = parser->MainFlow();
         asts.push_back(&ast);
         parsers.push_back(std::move(parser));
+    }
+
+    // Step 1.5: Check for circular imports
+    bool hasCircularImport = false;
+    {
+        std::unordered_map<std::string, std::vector<std::string>> importGraph;
+        std::unordered_set<std::string> fileStems;
+        for (size_t i = 0; i < parsers.size(); i++)
+        {
+            std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
+            std::string stem = inputPath.stem().string();
+            fileStems.insert(stem);
+            importGraph[stem] = CollectImports(*asts[i]);
+        }
+        // DFS to detect cycles
+        std::unordered_map<std::string, int> color; // 0=white, 1=gray (in stack), 2=black
+        std::vector<std::string> stack;
+        std::string cycleStart;
+        auto dfs = [&](const std::string& node, auto& self) -> bool {
+            if (color[node] == 1) { cycleStart = node; return true; }
+            if (color[node] == 2) return false;
+            color[node] = 1;
+            stack.push_back(node);
+            for (const auto& imp : importGraph[node])
+            {
+                if (fileStems.count(imp) == 0) continue;
+                if (self(imp, self)) return true;
+            }
+            stack.pop_back();
+            color[node] = 2;
+            return false;
+        };
+        for (const auto& [stem, _] : importGraph)
+        {
+            if (color[stem] != 0) continue;
+            stack.clear();
+            if (dfs(stem, dfs))
+            {
+                auto it = std::find(stack.begin(), stack.end(), cycleStart);
+                std::string cyclePath;
+                for (; it != stack.end(); ++it)
+                {
+                    if (!cyclePath.empty()) cyclePath += " -> ";
+                    cyclePath += *it;
+                }
+                cyclePath += " -> " + cycleStart;
+                ErrorManager::SetCurrentFilePath(StringUtils::ToNarrow(this->m_options.inputFilesPath[0]));
+                ErrorManager::GetInstance().StoreError(CompileTimeError(
+                    ErrorTypes::CIRCULAR_IMPORT,
+                    "Circular import detected: " + cyclePath,
+                    0, 0,
+                    "Remove the circular dependency between these files"
+                ));
+                hasCircularImport = true;
+                break;
+            }
+        }
+    }
+
+    if (hasCircularImport)
+    {
+        errorManager.SetDeferredMode(false);
+        if (errorManager.HasErrorsOccured())
+        {
+            errorManager.HandleErrors();
+        }
+        return;
     }
 
     // Step 2: Collect exports from each AST into the project-wide symbol table (sequential)

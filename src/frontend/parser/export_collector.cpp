@@ -1,5 +1,44 @@
 #include "includes/frontend/parser/export_collector.h"
 
+std::vector<std::string> CollectImports(const AST& ast)
+{
+    std::vector<std::string> imports;
+    ASTNode* cursor = ast.GetRoot();
+
+    while (cursor != nullptr)
+    {
+        std::string_view type = cursor->command.GetType();
+
+        if (type == CommandTypes::IMPORT_STATEMENT)
+        {
+            const auto& tokens = cursor->command.GetTokens();
+            if (!tokens.empty())
+            {
+                std::string importPath = tokens.back().GetValue();
+                if (importPath.size() >= 2 && importPath.front() == '"' && importPath.back() == '"')
+                    importPath = importPath.substr(1, importPath.size() - 2);
+                std::string moduleName = std::filesystem::path(importPath).stem().string();
+                imports.push_back(moduleName);
+            }
+        }
+
+        if (type == CommandTypes::BLOCK_START)
+        {
+            int depth = 1;
+            while (cursor->nodeNextSibling && depth > 0)
+            {
+                cursor = cursor->nodeNextSibling;
+                if (cursor->command.GetType() == CommandTypes::BLOCK_START) depth++;
+                if (cursor->command.GetType() == CommandTypes::BLOCK_END) depth--;
+            }
+        }
+
+        cursor = cursor->nodeNextSibling;
+    }
+
+    return imports;
+}
+
 FileExportTable CollectExports(const AST& ast, const std::string& filePath)
 {
     FileExportTable table;

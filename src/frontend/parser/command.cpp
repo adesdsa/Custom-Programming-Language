@@ -730,6 +730,7 @@ bool Command::ParseImportStart(Token& currToken, Token& nextToken)
 
 bool Command::ParseImportIdentifer(Token& currToken, Token& nextToken)
 {
+    this->m_bIgnoreEON = true;
     if (
         (
             IsValue(this->m_tokens.back(), "{") ||
@@ -738,20 +739,28 @@ bool Command::ParseImportIdentifer(Token& currToken, Token& nextToken)
             IsType(currToken, TokenTypes::IDENTIFIER)
     )
     {
-        this->m_bIgnoreEON = true;
-        this->AddToCurrParam(currToken, nextToken);
+        this->m_bIgnoreCurrToken = true;
+        this->m_tokens.push_back(Token(
+            TokenTypes::HAS_PARAM,
+            currToken.GetLine(), currToken.GetColumn()));
+        this->m_parameters.push_back(Command());
+        this->m_parameters[this->m_uParameterIndex].m_tokens.push_back(currToken);
+        this->m_parameters[this->m_uParameterIndex].m_sType = CommandTypes::IDENTIFIER;
+        this->m_bIgnoreCurrToken = true;
+        this->m_uParameterIndex++;
         return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
     }
     else if (
-        IsType(this->m_tokens.back(), TokenTypes::IDENTIFIER) &&
+        IsType(this->m_tokens.back(), TokenTypes::HAS_PARAM) &&
+        IsType(this->m_parameters.back()[0], TokenTypes::IDENTIFIER) &&
         IsValue(currToken, ",")
     ) return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
     else if (
-        IsType(this->m_tokens.back(), TokenTypes::IDENTIFIER) &&
+        IsType(this->m_tokens.back(), TokenTypes::HAS_PARAM) &&
+        IsType(this->m_parameters.back()[0], TokenTypes::IDENTIFIER) &&
         IsValue(currToken, "}")
     ) 
     {
-        this->m_bIgnoreEON = true;
         return this->NoFinishAndAssignType(CommandTypes::IMPORT_FROM);
     }
     else return this->FoundUnknown(currToken);

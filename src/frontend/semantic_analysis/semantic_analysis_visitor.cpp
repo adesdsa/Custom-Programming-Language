@@ -512,7 +512,8 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
         this->m_funcTable.RegisterBuiltins();
 
         // Re-check after registering built-ins
-        if (!this->m_facade.CheckFuncDeclaration(this->m_funcTable, funcName))
+        if (!this->m_facade.CheckFuncDeclaration(this->m_funcTable, funcName) &&
+            this->m_funcTable.FindFunctionByName(funcName))
         {
             this->m_errorManager.StoreError(
                 CompileTimeError(
@@ -818,49 +819,64 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
 
     for (auto import : imports)
     {
-        const auto& importTokens = import.GetTokens();
-        // Each param may contain multiple identifiers (e.g. { Add, Multiply } in one param)
-        for (const auto& tok : importTokens)
+        bool found = false;
+        const std::string& symbolName = import.GetTokens()[0].GetValue();
+        const int line = static_cast<int>(import.GetTokens()[0].GetLine());
+        const int column = static_cast<int>(import.GetTokens()[0].GetColumn());
+
+        for (auto function : fileExports->functions)
         {
-            if (tok.GetType() != TokenTypes::IDENTIFIER) continue;
-            std::string symbolName = tok.GetValue();
-            bool found = false;
-
-            for (auto function : fileExports->functions)
+            if (function.name == symbolName)
             {
-                if (function.name == symbolName)
+                found = true;
+                if (!this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function)))
                 {
-                    found = true;
-                    this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function));
-                    break;
+                    this->m_errorManager.StoreError(
+                        CompileTimeError(
+                            ErrorTypes::NAME_ERROR,
+                            "Duplicate import: '" + symbolName + "' was already imported",
+                            line,
+                            column,
+                            "Remove the duplicate import"
+                        )
+                    );
                 }
+                break;
             }
+        }
 
-            if (!found)
+        for (auto variable : fileExports->exportedVars)
+        {
+            if (variable.name == symbolName)
             {
-                for (auto variable : fileExports->exportedVars)
+                found = true;
+                if (!this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable)))
                 {
-                    if (variable.name == symbolName)
-                    {
-                        found = true;
-                        this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable));
-                        break;
-                    }
+                    this->m_errorManager.StoreError(
+                        CompileTimeError(
+                            ErrorTypes::NAME_ERROR,
+                            "Duplicate import: '" + symbolName + "' was already imported",
+                            line,
+                            column,
+                            "Remove the duplicate import"
+                        )
+                    );
                 }
+                break;
             }
+        }
 
-            if (!found)
-            {
-                this->m_errorManager.StoreError(
-                    CompileTimeError(
-                        ErrorTypes::NAME_ERROR,
-                        "The file " + importPath + " doesn't export: " + symbolName,
-                        tok.GetLine(),
-                        tok.GetColumn(),
-                        "Maybe you forgot to add export to the function/variable"
-                    )
-                );
-            }
+        if (!found)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "The file " + importPath + " doesn't export: " + symbolName,
+                    node->command.GetTokens()[0].GetLine(),
+                    node->command.GetTokens()[0].GetColumn(),
+                    "Maybe you forgot to add export to the function/variable"
+                )
+            );
         }
     }
 }

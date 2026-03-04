@@ -12,7 +12,7 @@
 //  Line = the sequence of the Commands.
 class FullCommand{
 public:
-    FullCommand(const EntityLogger& entityLogger);
+    FullCommand(const EntityLogger& entityLogger, bool importLegal = true);
     FullCommand(const FullCommand& other);
     
     FullCommand& operator=(const FullCommand& other);

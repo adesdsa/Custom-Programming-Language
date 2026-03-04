@@ -3,11 +3,11 @@
 unsigned int FullCommand::m_uBlockStartCnt = 0;
 unsigned int FullCommand::m_uBlockCloseCnt = 0;
 
-FullCommand::FullCommand(const EntityLogger& entityLogger) : 
+FullCommand::FullCommand(const EntityLogger& entityLogger, bool importLegal) : 
     m_entityLogger(entityLogger), 
     m_bFinished(false), 
     m_bLegal(true),
-    m_importLegal(true),
+    m_importLegal(importLegal),
     m_uLineIndex(0)
 {}
 
@@ -366,6 +366,20 @@ void FullCommand::ReformCommand(Command& checkedCommand)
     else if (checkedCommand.GetType() == CommandTypes::WHILE)
     {
         this->HandleSingleParamKeyword(checkedCommand);
+    }
+    else if (checkedCommand.GetType() == CommandTypes::IMPORT_STATEMENT)
+    {
+        for(auto imports : checkedCommand.GetParams())
+        {
+            if (imports.GetType() != CommandTypes::IDENTIFIER)
+            {
+                FoundIllegal(imports,
+                    "Found illegal command isnside import",
+                    "",
+                    0
+                );
+            }
+        }
     }
     else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
     {
