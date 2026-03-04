@@ -38,16 +38,7 @@ bool Token::Append(char cAddedChar) noexcept
         return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
     }
 
-    if (cAddedChar == '"')
-    {
-        if (!m_sValue.empty())
-        {
-            return TokenStatus::k_bFinished;
-        }
-        return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
-    }
-
-    // check #1: Comments
+    // check #1: Comments (must run before " check so quotes inside comments don't start strings)
     if (this->IsCommentToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
 
@@ -55,6 +46,15 @@ bool Token::Append(char cAddedChar) noexcept
     {
         this->m_sType = TokenTypes::TRIVIA;
         return TokenStatus::k_bFinished;
+    }
+
+    if (cAddedChar == '"')
+    {
+        if (!m_sValue.empty())
+        {
+            return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
     }
 
     // check #2: Whitespace
