@@ -41,7 +41,6 @@ protected:
     virtual void EmitInstruction(const IRInstruction* instruction, std::ostream& out) = 0;
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
-    /// Only the primary module (the one containing main) should emit entry-point code and built-in bodies.
     virtual void EmitStart(const IRModule& module, std::ostream& out) = 0;
 
     // Gets sections name as a string e.g., section .text

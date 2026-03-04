@@ -42,7 +42,13 @@ void CodeGenManager::MainFlow()
     }
 
     Linker linker;
-    std::string executableFilePath = linker.MainFlow(objectFilePath);
+    std::string exeName = outputName;
+    if constexpr (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        exeName += ".exe";
+    }
+    std::string outputExePath = (std::filesystem::path(outputDir) / exeName).string();
+    std::string executableFilePath = linker.MainFlow({objectFilePath}, outputExePath);
 
     // clean up intermediate files unless --save-temp
     if (!this->m_options.saveTemps)

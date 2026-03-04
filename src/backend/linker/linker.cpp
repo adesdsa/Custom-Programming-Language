@@ -6,18 +6,27 @@ Linker::Linker() :
     this->m_logger.Info("Linker component initialized successfully");
 }
 
-std::string Linker::MainFlow(const std::string& objFilePath)
+std::string Linker::MainFlow(
+    const std::vector<std::string>& objFilePaths,
+    const std::string& outputExePath)
 {
-    // verify the object file exists
-    if (!std::filesystem::exists(objFilePath))
+    if (objFilePaths.empty())
     {
-        this->m_logger.Error("Object file not found: " + objFilePath);
-        throw std::runtime_error("Linker failed: object file not found");
+        this->m_logger.Error("No object files provided");
+        throw std::runtime_error("Linker failed: no object files provided");
     }
 
-    std::string exePath = this->DeriveOutputPath(objFilePath);
-    exePath = std::filesystem::absolute(exePath).string();
-    std::string command = this->BuildLinkerCommand(objFilePath, exePath);
+    for (const auto& objPath : objFilePaths)
+    {
+        if (!std::filesystem::exists(objPath))
+        {
+            this->m_logger.Error("Object file not found: " + objPath);
+            throw std::runtime_error("Linker failed: object file not found: " + objPath);
+        }
+    }
+
+    std::string exePath = std::filesystem::absolute(outputExePath).string();
+    std::string command = this->BuildLinkerCommand(objFilePaths, exePath);
 
     this->m_logger.Info("Linking: " + command);
 
@@ -46,7 +55,7 @@ std::string Linker::MainFlow(const std::string& objFilePath)
 }
 
 std::string Linker::BuildLinkerCommand(
-    const std::string& objPath,
+    const std::vector<std::string>& objPaths,
     const std::string& exePath) const
 {
     #if defined(_WIN32) || defined(_WIN64)
@@ -77,11 +86,13 @@ std::string Linker::BuildLinkerCommand(
             "\"" + golinkPath + "\""
             + " /console"
             + " /entry " + entryPoint
-            + " /fo \"" + exePath + "\""
-            + " \"" + objPath + "\"";
+            + " /fo \"" + exePath + "\"";
 
-        // 32-bit cdecl adds '_' prefix to C symbols, but DLL exports
-        // use undecorated names; /mix tells GoLink to resolve both
+        for (const auto& objPath : objPaths)
+        {
+            inner += " \"" + objPath + "\"";
+        }
+
         if constexpr (TargetArchitecture::Is32Bit())
         {
             inner += " /mix";
@@ -94,31 +105,25 @@ std::string Linker::BuildLinkerCommand(
 
     #elif defined(__linux__)
 
+        std::string cmd;
+
         if constexpr (TargetArchitecture::Is64Bit())
         {
-            return "ld -o \"" + exePath + "\" \"" + objPath + "\"";
+            cmd = "ld -o \"" + exePath + "\"";
         }
         else
         {
-            return "ld -m elf_i386 -o \"" + exePath + "\" \"" + objPath + "\"";
+            cmd = "ld -m elf_i386 -o \"" + exePath + "\"";
         }
+
+        for (const auto& objPath : objPaths)
+        {
+            cmd += " \"" + objPath + "\"";
+        }
+
+        return cmd;
 
     #else
         throw std::runtime_error("Unsupported OS for linking");
     #endif
-}
-
-std::string Linker::DeriveOutputPath(const std::string& objPath) const
-{
-    std::filesystem::path path(objPath);
-
-    if constexpr (TargetArchitecture::GetOS() == OS::Windows)
-    {
-        return (path.parent_path() / path.stem()).string() + ".exe";
-    }
-    else
-    {
-        // linux has no extension for executables
-        return (path.parent_path() / path.stem()).string();
-    }
 }

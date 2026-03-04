@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/shared/common/target_architecture.h"
@@ -21,7 +22,7 @@ constexpr int OK_EXIT_CODE = 0;
  *
  * Usage:
  *   Linker linker;
- *   std::string exePath = linker.MainFlow("build/program.obj");
+ *   std::string exePath = linker.MainFlow({"build/main.obj", "build/utils.obj"}, "build/program.exe");
  * 
  * References:
  *  GoLink:
@@ -35,25 +36,24 @@ public:
     Linker();
     ~Linker() = default;
 
-    /// @brief Links the given object file into a native executable.
-    /// @param objFilePath  Path to the .obj (Windows) or .o (Linux) file.
+    /// @brief Links the given object files into a native executable.
+    /// @param objFilePaths  Paths to the .obj (Windows) or .o (Linux) files.
+    /// @param outputExePath Path to the output executable.
     /// @return Path to the produced executable.
-    std::string MainFlow(const std::string& objFilePath);
+    std::string MainFlow(
+        const std::vector<std::string>& objFilePaths,
+        const std::string& outputExePath
+    );
 
 private:
     EntityLogger m_logger;
 
     /// @brief Build the platform-specific linker command line.
-    /// @param objPath Path to the input object file.
-    /// @param exePath Path to the output executable.
+    /// @param objPaths Paths to the input object files.
+    /// @param exePath  Path to the output executable.
     /// @return The full shell command to invoke the linker.
     std::string BuildLinkerCommand(
-        const std::string& objPath,
+        const std::vector<std::string>& objPaths,
         const std::string& exePath
     ) const;
-
-    /// @brief Derive the output executable path from the object file path.
-    /// @param objPath Path to the input object file.
-    /// @return Path with the correct executable extension (.exe / none).
-    std::string DeriveOutputPath(const std::string& objPath) const;
 };
