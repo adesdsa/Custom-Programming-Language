@@ -22,7 +22,7 @@ constexpr int OK_EXIT_CODE = 0;
  *
  * Usage:
  *   Linker linker;
- *   std::string exePath = linker.MainFlow({"build/main.obj", "build/utils.obj"}, "build/program.exe");
+ *   std::string exePath = linker.MainFlow({"build/main.obj", "build/utils.obj"}, "program", "build/");
  * 
  * References:
  *  GoLink:
@@ -37,23 +37,28 @@ public:
     ~Linker() = default;
 
     /// @brief Links the given object files into a native executable.
-    /// @param objFilePaths  Paths to the .obj (Windows) or .o (Linux) files.
-    /// @param outputExePath Path to the output executable.
+    /// @param objFilePaths Paths to the .obj (Windows) or .o (Linux) files.
+    /// @param outputName   Base name of the executable (without extension).
+    /// @param outputDir    Directory where the executable is placed.
     /// @return Path to the produced executable.
     std::string MainFlow(
         const std::vector<std::string>& objFilePaths,
-        const std::string& outputExePath
+        const std::string& outputName,
+        const std::string& outputDir
     );
 
 private:
     EntityLogger m_logger;
 
     /// @brief Build the platform-specific linker command line.
-    /// @param objPaths Paths to the input object files.
-    /// @param exePath  Path to the output executable.
-    /// @return The full shell command to invoke the linker.
     std::string BuildLinkerCommand(
         const std::vector<std::string>& objPaths,
         const std::string& exePath
+    ) const;
+
+    /// @brief Derive the full executable path from a base name and directory.
+    std::string DeriveOutputPath(
+        const std::string& outputName,
+        const std::string& outputDir
     ) const;
 };

@@ -7,7 +7,7 @@ CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST, const CompilerO
     m_errorManager(ErrorManager::GetInstance())
 {}
 
-void CodeGenManager::MainFlow()
+std::string CodeGenManager::MainFlow()
 {
     IRGenerator irGenerator(this->m_decoratedAST);
     IRModule& irProgram = irGenerator.MainFlow();
@@ -26,34 +26,16 @@ void CodeGenManager::MainFlow()
 
     if (this->m_options.stopAtAsm)
     {
-        return;
+        return asmFilePath;
     }
 
     Assembler assembler;
     std::string objectFilePath = assembler.Mainflow(asmFilePath, outputName, outputDir);
 
-    if (this->m_options.stopAtBin)
-    {
-        if (!this->m_options.saveTemps)
-        {
-            std::filesystem::remove(asmFilePath);
-        }
-        return;
-    }
-
-    Linker linker;
-    std::string exeName = outputName;
-    if constexpr (TargetArchitecture::GetOS() == OS::Windows)
-    {
-        exeName += ".exe";
-    }
-    std::string outputExePath = (std::filesystem::path(outputDir) / exeName).string();
-    std::string executableFilePath = linker.MainFlow({objectFilePath}, outputExePath);
-
-    // clean up intermediate files unless --save-temp
     if (!this->m_options.saveTemps)
     {
         std::filesystem::remove(asmFilePath);
-        std::filesystem::remove(objectFilePath);
     }
+
+    return objectFilePath;
 }

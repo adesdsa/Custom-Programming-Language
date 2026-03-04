@@ -8,7 +8,8 @@ Linker::Linker() :
 
 std::string Linker::MainFlow(
     const std::vector<std::string>& objFilePaths,
-    const std::string& outputExePath)
+    const std::string& outputName,
+    const std::string& outputDir)
 {
     if (objFilePaths.empty())
     {
@@ -25,7 +26,7 @@ std::string Linker::MainFlow(
         }
     }
 
-    std::string exePath = std::filesystem::absolute(outputExePath).string();
+    std::string exePath = this->DeriveOutputPath(outputName, outputDir);
     std::string command = this->BuildLinkerCommand(objFilePaths, exePath);
 
     this->m_logger.Info("Linking: " + command);
@@ -126,4 +127,23 @@ std::string Linker::BuildLinkerCommand(
     #else
         throw std::runtime_error("Unsupported OS for linking");
     #endif
+}
+
+std::string Linker::DeriveOutputPath(
+    const std::string& outputName,
+    const std::string& outputDir) const
+{
+    std::filesystem::path dir(outputDir);
+    std::filesystem::path exePath;
+
+    if constexpr (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        exePath = dir / (outputName + ".exe");
+    }
+    else
+    {
+        exePath = dir / outputName;
+    }
+
+    return std::filesystem::absolute(exePath).string();
 }

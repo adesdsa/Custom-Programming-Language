@@ -35,5 +35,6 @@ class ProjectSymbolTable
     std::unordered_map<std::string, FileExportTable> files;
 
 public:
+    void Register(const std::string& fileName, FileExportTable table);
     const FileExportTable* Resolve(const std::string& fileName) const;
 };
