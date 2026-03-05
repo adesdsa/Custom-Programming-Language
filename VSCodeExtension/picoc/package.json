@@ -2,8 +2,8 @@
   "name": "picoc",
   "displayName": "PicoC Language Support",
   "publisher": "picocDevelopers",
-  "description": "Full language support for PicoC — syntax highlighting, IntelliSense, Go to Definition, snippets, doc comments, compiler integration, and more",
-  "version": "0.2.0",
+  "description": "Full language support for PicoC — syntax highlighting, IntelliSense, Go to Definition, snippets, doc comments, and more",
+  "version": "0.3.0",
   "icon": "images/logo.png",
   "repository": {
     "type": "git",
@@ -162,27 +162,6 @@
         "language": "picoc",
         "path": "./snippets/picoc.json"
       }
-    ],
-    "commands": [
-      {
-        "command": "picoc.compile",
-        "title": "PicoC: Compile Current File"
-      }
-    ],
-    "configuration": {
-      "title": "PicoC",
-      "properties": {
-        "picoc.compilerPath": {
-          "type": "string",
-          "default": "picoc",
-          "description": "Path to the PicoC compiler executable"
-        },
-        "picoc.compileOnSave": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically compile when a .picoc file is saved"
-        }
-      }
-    }
+    ]
   }
 }

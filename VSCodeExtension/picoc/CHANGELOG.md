@@ -2,6 +2,12 @@
 
 All notable changes to the PicoC extension will be documented in this file.
 
+## [0.3.0] - 2026-03-05
+
+### Removed
+- Compile command and compile-on-save functionality
+- Compiler path and compile-on-save settings
+
 ## [0.2.0] - 2026-03-05
 
 ### Added
