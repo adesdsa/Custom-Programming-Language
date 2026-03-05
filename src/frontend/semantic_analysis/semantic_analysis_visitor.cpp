@@ -816,6 +816,44 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
     }
 
     auto imports = node->command.GetParams();
+    const int importLine = static_cast<int>(tokens[0].GetLine());
+    const int importColumn = static_cast<int>(tokens[0].GetColumn());
+
+    if (imports.empty())
+    {
+        // Wildcard import: import * from "file.picoc"
+        for (const auto& function : fileExports->functions)
+        {
+            if (!this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function)))
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::NAME_ERROR,
+                        "Duplicate import: '" + function.name + "' was already imported",
+                        importLine,
+                        importColumn,
+                        "Remove the duplicate import"
+                    )
+                );
+            }
+        }
+        for (const auto& variable : fileExports->exportedVars)
+        {
+            if (!this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable)))
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::NAME_ERROR,
+                        "Duplicate import: '" + variable.name + "' was already imported",
+                        importLine,
+                        importColumn,
+                        "Remove the duplicate import"
+                    )
+                );
+            }
+        }
+        return;
+    }
 
     for (auto import : imports)
     {

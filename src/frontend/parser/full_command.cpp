@@ -380,6 +380,7 @@ void FullCommand::ReformCommand(Command& checkedCommand)
                 );
             }
         }
+        // wildcard import (import * from "...") has zero params — valid
     }
     else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
     {
