@@ -725,6 +725,11 @@ bool Command::ParseImportStart(Token& currToken, Token& nextToken)
     {
         return this->NoFinishAndAssignType(CommandTypes::IMPORT_IDENTIFIER);
     }
+    else if (IsValue(currToken, "*"))
+    {
+        this->m_bIgnoreCurrToken = true;
+        return this->NoFinishAndAssignType(CommandTypes::IMPORT_FROM);
+    }
     else return this->FoundUnknown(currToken);
 }
 
