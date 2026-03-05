@@ -172,7 +172,12 @@ if(BUILD_GUI)
 
     set(GUI_RESOURCES "${CMAKE_SOURCE_DIR}/resources/gui_resources.qrc")
 
-    add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS} ${GUI_RESOURCES})
+    set(GUI_RC "")
+    if(WIN32)
+        set(GUI_RC "${CMAKE_SOURCE_DIR}/resources/app.rc")
+    endif()
+
+    add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS} ${GUI_RESOURCES} ${GUI_RC})
     target_include_directories(picoc-gui PRIVATE ${CMAKE_SOURCE_DIR})
     target_link_libraries(picoc-gui PRIVATE CPLib Qt6::Widgets Qt6::SvgWidgets)
     set_target_properties(picoc-gui PROPERTIES
