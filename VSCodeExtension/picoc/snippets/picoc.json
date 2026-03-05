@@ -168,5 +168,26 @@
       " */"
     ],
     "description": "Full documentation comment"
+  },
+  "Import (named)": {
+    "prefix": "import",
+    "body": [
+      "import { ${1:symbol} } from \"${2:file}.picoc\""
+    ],
+    "description": "Import named symbols from another file"
+  },
+  "Import (wildcard)": {
+    "prefix": "importall",
+    "body": [
+      "import * from \"${1:file}.picoc\""
+    ],
+    "description": "Import all exports from another file"
+  },
+  "Export Const": {
+    "prefix": "export",
+    "body": [
+      "export const ${1:name}: ${2:int} = ${3:0};"
+    ],
+    "description": "Export a constant variable"
   }
 }

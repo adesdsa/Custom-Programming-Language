@@ -5,6 +5,7 @@
   "patterns": [
     { "include": "#comments" },
     { "include": "#strings" },
+    { "include": "#import_export" },
     { "include": "#control_keywords" },
     { "include": "#sizeof" },
     { "include": "#storage_modifiers" },
@@ -40,6 +41,18 @@
           "patterns": [
             { "name": "constant.character.escape.picoc", "match": "\\\\." }
           ]
+        }
+      ]
+    },
+    "import_export": {
+      "patterns": [
+        {
+          "name": "keyword.control.import.picoc",
+          "match": "\\b(import|from|export)\\b"
+        },
+        {
+          "name": "constant.language.wildcard.picoc",
+          "match": "(?<=\\bimport\\s)\\*"
         }
       ]
     },

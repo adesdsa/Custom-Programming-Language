@@ -14,25 +14,29 @@ Rich, accurate token coloring for all PicoC language constructs — keywords, ty
 
 ### IntelliSense & Auto-Completion
 
-- **Keywords** — `if`, `while`, `for`, `return`, `and`, `or`, `not`, `xor`, and more
+- **Keywords** — `if`, `while`, `for`, `return`, `import`, `export`, `from`, `and`, `or`, `not`, `xor`, and more
 - **Types** — `int`, `bool`, `double`, `void`, `unsigned`
-- **Modifiers** — `let`, `var`, `const`, `readonly`, `global`
+- **Modifiers** — `let`, `var`, `const`, `readonly`, `global`, `export`
 - **Built-in functions** — `println`, `sizeof`
-- **File symbols** — auto-completes function names, variable names, and parameter names from the current file with type information
+- **File symbols** — auto-completes function names, variable names, and parameter names from the current file
+- **Cross-file symbols** — auto-completes functions and exported variables from imported files, with source file shown in the detail
 
 ### Go to Definition
 
 **Ctrl+Click** or **F12** to jump to:
 - Function definitions (prefers body over forward declarations)
-- Variable declarations (`let`, `var`, `global`)
+- Variable declarations (`let`, `var`, `global`, `export`)
+- **Cross-file navigation** — jump directly to function definitions and exported variables in other `.picoc` files via `import` statements
+- Smart file resolution — finds imported files even when they're in parent or sibling directories
 
 ### Hover Information
 
-Hover over any function to see:
+Hover over any function or variable to see:
 - Full signature
 - Parameter list with types
 - Return type
 - Documentation from `@`-tag comments (see below)
+- Works across files — hover over an imported symbol to see its docs from the source file
 
 ### Code Snippets
 
@@ -54,6 +58,9 @@ Type a prefix and press **Tab** to expand:
 | `var` | Var variable declaration |
 | `global` | Global variable declaration |
 | `println` | println call |
+| `import` | Named import from file |
+| `importall` | Wildcard import (`import *`) |
+| `export` | Export const variable |
 | `comment` | Block comment |
 | `doc` / `/**` | Documentation comment |
 | `docfull` | Full documentation comment |
@@ -182,6 +189,35 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
     }
 }
 ```
+
+### Multi-File Support
+
+PicoC supports multi-file projects with `import` / `export`:
+
+**math.picoc:**
+```picoc
+export const pi: double = 3.14;
+
+Add(let a: int, let b: int) -> int
+{
+    return a + b;
+}
+```
+
+**main.picoc:**
+```picoc
+import { pi, Add } from "math.picoc"
+# or: import * from "math.picoc"
+
+main(void) -> int
+{
+    println(Add(67, 69));
+    println(pi);
+    return 0;
+}
+```
+
+The extension provides full IntelliSense, hover docs, and Go to Definition across imported files.
 
 ---
 

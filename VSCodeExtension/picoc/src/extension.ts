@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
 
 // --- Comment tag decoration types ---
 
@@ -218,6 +220,52 @@ function provideHover(
     candidates.push({ name, signature, params, returnType, doc });
   }
 
+  // Also look for variable declarations in the current file
+  if (candidates.length === 0) {
+    const varHoverRegex = new RegExp(
+      `\\b(?:export(?:\\s+const)?|let(?:\\s+(?:const|readonly))?|var|global)\\s+(${escapeRegex(word)})\\s*:\\s*([a-zA-Z_][a-zA-Z0-9_ ]*)`,
+      "g"
+    );
+    while ((match = varHoverRegex.exec(text)) !== null) {
+      const varType = match[2].trim();
+      const modifier = match[0].substring(0, match[0].indexOf(word)).trim();
+      const sig = `${modifier} ${word}: ${varType}`;
+      const beforeMatch = text.substring(0, match.index);
+      const lineIndex = (beforeMatch.match(/\n/g) || []).length;
+      const doc = getDocAbove(lines, lineIndex);
+
+      candidates.push({ name: word, signature: sig, params: "", returnType: varType, doc });
+    }
+  }
+
+  // If no candidates in the current file, check imported files
+  if (candidates.length === 0) {
+    const importedSymbols = getImportedSymbols(document);
+    for (const sym of importedSymbols) {
+      if (sym.name === word) {
+        if (sym.kind === "function") {
+          const paramStr = sym.signature.match(/\(([^)]*)\)/)?.[1] ?? "";
+          const retType = sym.signature.match(/->\s*(.+)/)?.[1]?.trim() ?? "void";
+          candidates.push({
+            name: sym.name,
+            signature: sym.signature,
+            params: paramStr,
+            returnType: retType,
+            doc: sym.doc,
+          });
+        } else {
+          candidates.push({
+            name: sym.name,
+            signature: sym.signature,
+            params: "",
+            returnType: "",
+            doc: sym.doc,
+          });
+        }
+      }
+    }
+  }
+
   const found = candidates.length === 0
     ? null
     : candidates.find((c) => c.doc.length > 0) ?? candidates[0];
@@ -373,12 +421,13 @@ function escapeRegex(s: string): string {
 function getDocAbove(lines: string[], functionLineIndex: number): string {
   const docLines: string[] = [];
   let i = functionLineIndex - 1;
+  let inBlockComment = false;
 
   while (i >= 0) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Block comment end: /* ... */ on same line - take content
+    // Single-line block comment: /* ... */
     const blockMatch = trimmed.match(/\/\*\s*(.*?)\s*\*\/\s*$/);
     if (blockMatch) {
       docLines.unshift(blockMatch[1].trim());
@@ -387,25 +436,33 @@ function getDocAbove(lines: string[], functionLineIndex: number): string {
     }
 
     // Line comment: # ...
-    if (trimmed.startsWith("#")) {
+    if (!inBlockComment && trimmed.startsWith("#")) {
       docLines.unshift(trimmed.slice(1).trim());
       i--;
       continue;
     }
 
-    // Continuation of block comment: ... */
-    if (trimmed.endsWith("*/")) {
-      const content = trimmed.slice(0, -2).trim();
+    // Block comment end (scanning upward, so */ is the first thing we hit)
+    if (!inBlockComment && trimmed.endsWith("*/")) {
+      inBlockComment = true;
+      const content = trimmed.slice(0, -2).replace(/^\*\s?/, "").trim();
       if (content) docLines.unshift(content);
       i--;
       continue;
     }
 
-    // Start of block comment: /* ...
-    if (trimmed.startsWith("/*")) {
-      docLines.unshift(trimmed.slice(2).trim());
+    // Inside a block comment: collect lines until we find /*
+    if (inBlockComment) {
+      if (trimmed.startsWith("/*")) {
+        const content = trimmed.slice(2).replace(/^\*?\s?/, "").trim();
+        if (content) docLines.unshift(content);
+        break; // found the opening — done
+      }
+      // Strip leading * (common comment formatting)
+      const content = trimmed.replace(/^\*\s?/, "").trim();
+      if (content) docLines.unshift(content);
       i--;
-      break;
+      continue;
     }
 
     // Empty line: still part of doc block
@@ -421,11 +478,198 @@ function getDocAbove(lines: string[], functionLineIndex: number): string {
   return docLines.filter((s) => s.length > 0).join("\n");
 }
 
+// --- Cross-file symbol resolution ---
+
+interface ImportStatement {
+  symbols: string[];  // empty = wildcard (import *)
+  filePath: string;   // resolved absolute path
+  rawPath: string;    // original path string from import
+}
+
+interface ExternalSymbol {
+  name: string;
+  kind: "function" | "variable";
+  signature: string;
+  detail: string;
+  doc: string;
+  filePath: string;
+  line: number;
+  column: number;
+}
+
+function resolveFilePath(rawPath: string, currentFileDir: string): string | null {
+  // 1. Try relative to current file
+  const relative = path.resolve(currentFileDir, rawPath);
+  if (fs.existsSync(relative)) return relative;
+
+  // 2. Try parent directory
+  const parent = path.resolve(currentFileDir, "..", rawPath);
+  if (fs.existsSync(parent)) return parent;
+
+  // 3. Search workspace folders
+  const fileName = path.basename(rawPath);
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (workspaceFolders) {
+    for (const folder of workspaceFolders) {
+      const found = findFileRecursive(folder.uri.fsPath, fileName, 4);
+      if (found) return found;
+    }
+  }
+
+  // 4. Search sibling directories of current file
+  try {
+    const parentDir = path.dirname(currentFileDir);
+    const siblings = fs.readdirSync(parentDir, { withFileTypes: true });
+    for (const entry of siblings) {
+      if (entry.isDirectory()) {
+        const candidate = path.join(parentDir, entry.name, fileName);
+        if (fs.existsSync(candidate)) return candidate;
+      }
+    }
+  } catch { /* ignore */ }
+
+  return null;
+}
+
+function findFileRecursive(dir: string, fileName: string, maxDepth: number): string | null {
+  if (maxDepth <= 0) return null;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name === fileName) {
+        return path.join(dir, entry.name);
+      }
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules") {
+        const found = findFileRecursive(path.join(dir, entry.name), fileName, maxDepth - 1);
+        if (found) return found;
+      }
+    }
+  } catch { /* ignore permission errors etc */ }
+  return null;
+}
+
+function parseImports(document: vscode.TextDocument): ImportStatement[] {
+  const text = document.getText();
+  const imports: ImportStatement[] = [];
+  const dir = path.dirname(document.uri.fsPath);
+
+  // import { sym1, sym2 } from "file.picoc"
+  const namedRe = /\bimport\s*\{([^}]+)\}\s*from\s*"([^"]+)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = namedRe.exec(text)) !== null) {
+    const symbols = m[1].split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+    const rawPath = m[2];
+    const filePath = resolveFilePath(rawPath, dir) ?? path.resolve(dir, rawPath);
+    imports.push({ symbols, filePath, rawPath });
+  }
+
+  // import * from "file.picoc"
+  const wildcardRe = /\bimport\s*\*\s*from\s*"([^"]+)"/g;
+  while ((m = wildcardRe.exec(text)) !== null) {
+    const rawPath = m[1];
+    const filePath = resolveFilePath(rawPath, dir) ?? path.resolve(dir, rawPath);
+    imports.push({ symbols: [], filePath, rawPath });
+  }
+
+  return imports;
+}
+
+const RESERVED_WORDS = new Set([
+  "if", "elif", "else", "for", "while", "break", "continue", "return", "pass",
+  "and", "or", "not", "xor", "sizeof", "import", "export", "from",
+  "let", "var", "const", "readonly", "global", "println",
+]);
+
+function extractSymbolsFromFile(filePath: string): ExternalSymbol[] {
+  if (!fs.existsSync(filePath)) return [];
+
+  let content: string;
+  try {
+    content = fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return [];
+  }
+
+  const lines = content.split(/\r?\n/);
+  const symbols: ExternalSymbol[] = [];
+
+  // Functions: name(params) -> returnType (skip keywords and calls inside function bodies)
+  const funcRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*->\s*([^;{\n]+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = funcRegex.exec(content)) !== null) {
+    const name = m[1];
+    if (RESERVED_WORDS.has(name)) continue;
+    const params = m[2].trim();
+    const returnType = m[3].trim().replace(/\s*[;{]\s*$/, "").trim();
+    const before = content.substring(0, m.index);
+    const lineIndex = (before.match(/\n/g) || []).length;
+    const col = m.index - (before.lastIndexOf("\n") + 1);
+    const doc = getDocAbove(lines, lineIndex);
+
+    symbols.push({
+      name,
+      kind: "function",
+      signature: `${name}(${params}) -> ${returnType}`,
+      detail: `(${params}) -> ${returnType}`,
+      doc,
+      filePath,
+      line: lineIndex,
+      column: col,
+    });
+  }
+
+  // Exported variables: export [const] name: type = ...
+  const exportVarRegex = /\bexport\s+(?:const\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([a-zA-Z_][a-zA-Z0-9_ ]*)/g;
+  while ((m = exportVarRegex.exec(content)) !== null) {
+    const name = m[1];
+    const varType = m[2].trim();
+    const before = content.substring(0, m.index);
+    const lineIndex = (before.match(/\n/g) || []).length;
+    const col = m.index - (before.lastIndexOf("\n") + 1);
+    const doc = getDocAbove(lines, lineIndex);
+
+    symbols.push({
+      name,
+      kind: "variable",
+      signature: `export const ${name}: ${varType}`,
+      detail: `${varType} (exported constant)`,
+      doc,
+      filePath,
+      line: lineIndex,
+      column: col,
+    });
+  }
+
+  return symbols;
+}
+
+function getImportedSymbols(document: vscode.TextDocument): ExternalSymbol[] {
+  const imports = parseImports(document);
+  const result: ExternalSymbol[] = [];
+  const seen = new Set<string>();
+
+  for (const imp of imports) {
+    const fileSymbols = extractSymbolsFromFile(imp.filePath);
+
+    for (const sym of fileSymbols) {
+      if (seen.has(sym.name)) continue;
+      if (imp.symbols.length === 0 || imp.symbols.includes(sym.name)) {
+        seen.add(sym.name);
+        result.push(sym);
+      }
+    }
+  }
+
+  return result;
+}
+
 // --- Auto-completion provider ---
 
 const KEYWORD_COMPLETIONS = [
   "if", "elif", "else", "for", "while", "break", "continue", "return", "pass",
-  "and", "or", "not", "xor", "sizeof",
+  "and", "or", "not", "xor", "sizeof", "import", "export", "from",
 ].map((kw) => {
   const item = new vscode.CompletionItem(kw, vscode.CompletionItemKind.Keyword);
   item.detail = "keyword";
@@ -441,7 +685,7 @@ const TYPE_COMPLETIONS = [
 });
 
 const MODIFIER_COMPLETIONS = [
-  "let", "var", "const", "readonly", "global",
+  "let", "var", "const", "readonly", "global", "export",
 ].map((m) => {
   const item = new vscode.CompletionItem(m, vscode.CompletionItemKind.Keyword);
   item.detail = "modifier";
@@ -495,8 +739,8 @@ function provideCompletionItems(
     items.push(item);
   }
 
-  // Collect variable names from let/var/global declarations
-  const varRegex = /\b(?:let(?:\s+(?:const|readonly))?|var|global)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([a-zA-Z_][a-zA-Z0-9_ ]*)/g;
+  // Collect variable names from let/var/global/export declarations
+  const varRegex = /\b(?:export(?:\s+const)?|let(?:\s+(?:const|readonly))?|var|global)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([a-zA-Z_][a-zA-Z0-9_ ]*)/g;
   const seenVars = new Set<string>();
   while ((m = varRegex.exec(text)) !== null) {
     const name = m[1];
@@ -522,6 +766,26 @@ function provideCompletionItems(
         item.detail = pm[2].trim() + " (parameter)";
         items.push(item);
       }
+    }
+  }
+
+  // Cross-file symbols from imported files
+  const importedSymbols = getImportedSymbols(document);
+  for (const sym of importedSymbols) {
+    if (sym.kind === "function" && !seenFunctions.has(sym.name)) {
+      seenFunctions.add(sym.name);
+      const item = new vscode.CompletionItem(sym.name, vscode.CompletionItemKind.Function);
+      item.detail = sym.detail + " — " + path.basename(sym.filePath);
+      if (sym.doc) {
+        item.documentation = new vscode.MarkdownString(sym.doc);
+      }
+      item.insertText = new vscode.SnippetString(`${sym.name}(\${1})`);
+      items.push(item);
+    } else if (sym.kind === "variable" && !seenVars.has(sym.name)) {
+      seenVars.add(sym.name);
+      const item = new vscode.CompletionItem(sym.name, vscode.CompletionItemKind.Variable);
+      item.detail = sym.detail + " — " + path.basename(sym.filePath);
+      items.push(item);
     }
   }
 
@@ -584,39 +848,42 @@ function provideDefinition(
   document: vscode.TextDocument,
   position: vscode.Position
 ): vscode.ProviderResult<vscode.Definition> {
-  const wordRange = document.getWordRangeAtPosition(position);
-  if (!wordRange) return null;
+  try {
+    const wordRange = document.getWordRangeAtPosition(position);
+    if (!wordRange) return null;
 
-  const word = document.getText(wordRange);
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(word)) return null;
+    const word = document.getText(wordRange);
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(word)) return null;
 
-  const text = document.getText();
-  const lines = text.split(/\r?\n/);
-  const locations: vscode.Location[] = [];
+    const text = document.getText();
+    const locations: vscode.Location[] = [];
 
-  // Look for function definitions (with a body `{`, not just forward declarations ending in `;`)
-  const funcDefRegex = new RegExp(
-    `\\b(${escapeRegex(word)})\\s*\\([^)]*\\)\\s*->\\s*[^;{\\n]+\\s*\\{`,
-    "g"
-  );
-  let m: RegExpExecArray | null;
-  while ((m = funcDefRegex.exec(text)) !== null) {
-    const before = text.substring(0, m.index);
-    const line = (before.match(/\n/g) || []).length;
-    const col = m.index - (before.lastIndexOf("\n") + 1);
-    locations.push(new vscode.Location(
-      document.uri,
-      new vscode.Position(line, col)
-    ));
-  }
+    // Check if this symbol is imported — if so, go straight to the source file
+    const importedSymbols = getImportedSymbols(document);
 
-  // If no definition with body found, fall back to forward declarations
-  if (locations.length === 0) {
-    const funcDeclRegex = new RegExp(
-      `\\b(${escapeRegex(word)})\\s*\\([^)]*\\)\\s*->\\s*[^;{\\n]+;`,
+    for (const sym of importedSymbols) {
+      if (sym.name === word) {
+        const uri = vscode.Uri.file(sym.filePath);
+        locations.push(new vscode.Location(
+          uri,
+          new vscode.Position(sym.line, sym.column)
+        ));
+      }
+    }
+
+    if (locations.length > 0) {
+      return locations.length === 1 ? locations[0] : locations;
+    }
+
+    // Not an imported symbol — search the current file
+    let m: RegExpExecArray | null;
+
+    // Function definitions (with body `{`)
+    const funcDefRegex = new RegExp(
+      `\\b(${escapeRegex(word)})\\s*\\([^)]*\\)\\s*->\\s*[^;{\\n]+\\s*\\{`,
       "g"
     );
-    while ((m = funcDeclRegex.exec(text)) !== null) {
+    while ((m = funcDefRegex.exec(text)) !== null) {
       const before = text.substring(0, m.index);
       const line = (before.match(/\n/g) || []).length;
       const col = m.index - (before.lastIndexOf("\n") + 1);
@@ -625,25 +892,46 @@ function provideDefinition(
         new vscode.Position(line, col)
       ));
     }
-  }
 
-  // Look for variable declarations: let/var/global <word>
-  const varDeclRegex = new RegExp(
-    `\\b(?:let(?:\\s+(?:const|readonly))?|var|global)\\s+(${escapeRegex(word)})\\s*:`,
-    "g"
-  );
-  while ((m = varDeclRegex.exec(text)) !== null) {
-    const before = text.substring(0, m.index + m[0].indexOf(word));
-    const line = (before.match(/\n/g) || []).length;
-    const col = before.length - (before.lastIndexOf("\n") + 1);
-    locations.push(new vscode.Location(
-      document.uri,
-      new vscode.Position(line, col)
-    ));
-  }
+    // Forward declarations (ending in `;`)
+    if (locations.length === 0) {
+      const funcDeclRegex = new RegExp(
+        `\\b(${escapeRegex(word)})\\s*\\([^)]*\\)\\s*->\\s*[^;{\\n]+;`,
+        "g"
+      );
+      while ((m = funcDeclRegex.exec(text)) !== null) {
+        const before = text.substring(0, m.index);
+        const line = (before.match(/\n/g) || []).length;
+        const col = m.index - (before.lastIndexOf("\n") + 1);
+        locations.push(new vscode.Location(
+          document.uri,
+          new vscode.Position(line, col)
+        ));
+      }
+    }
 
-  if (locations.length === 0) return null;
-  return locations.length === 1 ? locations[0] : locations;
+    // Variable declarations: let/var/global/export const <word>
+    if (locations.length === 0) {
+      const varDeclRegex = new RegExp(
+        `\\b(?:export(?:\\s+const)?|let(?:\\s+(?:const|readonly))?|var|global)\\s+(${escapeRegex(word)})\\s*:`,
+        "g"
+      );
+      while ((m = varDeclRegex.exec(text)) !== null) {
+        const before = text.substring(0, m.index + m[0].indexOf(word));
+        const line = (before.match(/\n/g) || []).length;
+        const col = before.length - (before.lastIndexOf("\n") + 1);
+        locations.push(new vscode.Location(
+          document.uri,
+          new vscode.Position(line, col)
+        ));
+      }
+    }
+
+    if (locations.length === 0) return null;
+    return locations.length === 1 ? locations[0] : locations;
+  } catch {
+    return null;
+  }
 }
 
 export function deactivate(): void {}
