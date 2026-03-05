@@ -5,6 +5,15 @@
   "description": "Full language support for PicoC — syntax highlighting, IntelliSense, Go to Definition, snippets, doc comments, compiler integration, and more",
   "version": "0.2.0",
   "icon": "images/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/adesdsa/Custom-Programming-Language"
+  },
+  "bugs": {
+    "url": "https://gitlab.com/adesdsa/Custom-Programming-Language/-/issues",
+    "email": "picocdevelopers@gmail.com"
+  },
+  "homepage": "https://gitlab.com/adesdsa/Custom-Programming-Language",
   "engines": { "vscode": "^1.75.0" },
   "categories": ["Programming Languages"],
   "main": "./out/extension.js",

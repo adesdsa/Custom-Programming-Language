@@ -182,3 +182,11 @@ displayAllPrimeNumbersInRange(low: int, high: int) -> void
     }
 }
 ```
+
+---
+
+## Contact & Links
+
+- **Email:** [picocdevelopers@gmail.com](mailto:picocdevelopers@gmail.com)
+- **Repository:** [GitLab — Custom-Programming-Language](https://gitlab.com/adesdsa/Custom-Programming-Language/)
+- **Issues:** [Report a bug or request a feature](https://gitlab.com/adesdsa/Custom-Programming-Language/-/issues)
