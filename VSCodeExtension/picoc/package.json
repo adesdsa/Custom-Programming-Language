@@ -2,8 +2,9 @@
   "name": "picoc",
   "displayName": "PicoC Language Support",
   "publisher": "picocDevelopers",
-  "description": "Syntax highlighting and compile support for the PicoC programming language",
-  "version": "0.1.0",
+  "description": "Full language support for PicoC — syntax highlighting, IntelliSense, Go to Definition, snippets, doc comments, compiler integration, and more",
+  "version": "0.2.0",
+  "icon": "images/logo.png",
   "engines": { "vscode": "^1.75.0" },
   "categories": ["Programming Languages"],
   "main": "./out/extension.js",
@@ -133,6 +134,10 @@
         "id": "picoc",
         "aliases": ["PicoC", "picoc"],
         "extensions": [".picoc"],
+        "icon": {
+          "light": "./images/file-icon.png",
+          "dark": "./images/file-icon.png"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
@@ -141,6 +146,12 @@
         "language": "picoc",
         "scopeName": "source.picoc",
         "path": "./syntaxes/picoc.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "picoc",
+        "path": "./snippets/picoc.json"
       }
     ],
     "commands": [
