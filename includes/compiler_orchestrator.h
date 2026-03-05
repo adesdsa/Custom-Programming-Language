@@ -3,12 +3,16 @@
 #include <vector>
 #include <string>
 #include <exception>
+#include <thread>
 
 #include "includes/driver/compiler_options.h"
 #include "includes/shared/utils/system_utils.h"
+#include "includes/shared/utils/thread_pool.h"
 #include "includes/frontend/parser/parser_logic.h"
+#include "includes/frontend/parser/export_collector.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
 #include "includes/backend/codegen/code_gen_manager.h"
+#include "includes/backend/linker/linker.h"
 
 // Manager of all compilers components.
 // performs the complete compiling process.             

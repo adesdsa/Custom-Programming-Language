@@ -35,6 +35,7 @@ Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)
         if (val == "var") return Scope::VAR;
         if (val == "let") return Scope::LET;
         if (val == "global") return Scope::GLOBAL;
+        if (val == "export") return Scope::EXPORT;
     }
     
     return Scope::LET;  // Default scope

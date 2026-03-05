@@ -59,3 +59,49 @@ VarMetaData VarFactory::CreateVarMetadata(
         varOffsetInsideFrame
     );
 }
+
+VarMetaData VarFactory::CreateVarMetadata(const ExportedVar& exportedVar) const
+{
+    int varOffsetInsideFrame = 0;
+    switch (exportedVar.type)
+    {
+    case Type::BOOL_TYPE:
+        varOffsetInsideFrame = 1;
+        break;
+    
+    case Type::DOUBLE_TYPE:
+        if (TargetArchitecture::Is32Bit())
+        {
+            varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
+        }
+        else
+        {
+            varOffsetInsideFrame = NORMAL_64BIT_TYPE_SIZE;
+        }
+        break;
+
+    case Type::INT_TYPE:
+    case Type::UNSIGNED_INT_TYPE:
+        if (TargetArchitecture::Is32Bit())
+        {
+            varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
+        }
+        else
+        {
+            varOffsetInsideFrame = NORMAL_64BIT_TYPE_SIZE;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return VarMetaData(
+        exportedVar.name,
+        exportedVar.type,
+        exportedVar.accessRights,
+        Scope::GLOBAL,
+        varOffsetInsideFrame,
+        true
+    );
+}

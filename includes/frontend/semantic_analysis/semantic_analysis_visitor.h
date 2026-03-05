@@ -9,6 +9,7 @@
 #include "includes/frontend/semantic_analysis/func_factory.h"
 #include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
 #include "includes/frontend/semantic_analysis/var_metadata.h"
+#include "includes/frontend/common/project_symbol_table.h"
 
 class SemanticAnalysisVisitor : public IASTVisitor
 {
@@ -16,7 +17,8 @@ public:
     SemanticAnalysisVisitor(
         const EntityLogger& entityLogger, 
         VarTableNode& varTable,
-        FuncTable& functable
+        FuncTable& functable,
+        const ProjectSymbolTable& projectSymbolTable
     );
     ~SemanticAnalysisVisitor() = default;
 
@@ -40,6 +42,7 @@ public:
     virtual void VisitEndOfCommand(ASTNode* node) override;
     virtual void VisitSizeof(ASTNode* node) override;
     virtual void VisitVoidCommand(ASTNode* node) override;
+    virtual void VisitImportStatement(ASTNode* node) override;
     virtual void VisitPass(ASTNode* node) override;
     virtual void VisitEof(ASTNode* node) override;
 
@@ -68,6 +71,7 @@ private:
     VarTableNode* m_currentScope;
     VarTableNode* m_functionScopeRoot = nullptr;
     ExpressionType m_lastExpressionType;
+    const ProjectSymbolTable& m_projectSymbolTable;
 
     std::string m_lastIdentifierName;
     bool m_identifierError = false;
@@ -101,6 +105,8 @@ private:
     size_t m_forConditionLine = 0;
     size_t m_forConditionColumn = 0;
     int m_forExpressionCount = 0;  // 0=init value, 1=condition, 2+=increment
+
+    SemanticCheckerFacade m_facade;
 
     /**********************\
     |    Helper Methods    |
@@ -140,7 +146,7 @@ private:
     /// @brief Evaluate given node into an `ExpressionType enum`
     /// @param node `ASTNode*`: node that passed as agrument to function call 
     /// @return `ExpressionType enum`: infered type of the node's expression
-    ExpressionType EvaluateNodeType(ASTNode* node) const noexcept;
+    ExpressionType EvaluateNodeType(ASTNode* node) noexcept;
 
     /// @brief Following methods cover facade checks that are shared between Visits ||
     //                                                                              \/
@@ -152,7 +158,7 @@ private:
         SemanticCheckerFacade::BlockKind blockkind
     );
 
-    void HandleExitedBlockCheck(ASTNode* node) const;
+    void HandleExitedBlockCheck(ASTNode* node);
 
     /// @brief The func is used to handle single Command assignments
     /// which means either identifier_value or finished_func_call

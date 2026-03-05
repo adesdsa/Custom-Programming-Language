@@ -13,22 +13,36 @@ ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
 
 const AST& ParserLogic::MainFlow()
 {
-    this->m_errorManager.Clear();  // Reset errors from any previous compilation
-    this->m_errorManager.SetCurrentReporter("PARSER");
+    ErrorManager::SetCurrentReporter("PARSER");
     this->m_entityLogger.Info("Start parsing file");
 
+    bool importStillLegal = true;
     while (this->m_currentToken.GetType() != TokenTypes::EOF_TOKEN)
     {
-        FullCommand fullCommand(this->m_entityLogger);
+        FullCommand fullCommand(this->m_entityLogger, importStillLegal);
 
         // building full-command
         while (!fullCommand.IsFinished())
         {
             fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
-        }   
+        }
 
         this->HandleFullCommand(fullCommand);
+
+        // After a non-import top-level command, imports are no longer legal
+        if (fullCommand.IsLegal())
+        {
+            for (const auto& cmd : fullCommand.GetLine())
+            {
+                if (cmd.GetType() != CommandTypes::IMPORT_STATEMENT &&
+                    cmd.GetType() != CommandTypes::UNKNOWN)
+                {
+                    importStillLegal = false;
+                    break;
+                }
+            }
+        }
     }
 
     if (this->m_errorManager.HasErrorsOccured())

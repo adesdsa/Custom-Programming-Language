@@ -1,10 +1,15 @@
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
 
+#include <filesystem>
+
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,
     VarTableNode& varTable,
-    FuncTable& functable
+    FuncTable& functable,
+    const ProjectSymbolTable& projectSymbolTable
 ) :
+    m_projectSymbolTable(projectSymbolTable),
+    m_facade(),
     m_entityLogger(entityLogger),
     m_errorManager(ErrorManager::GetInstance()),
     m_varTable(varTable),
@@ -38,9 +43,9 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     AccessRights varAccessRight = ASTExtractor::ExtractVarAccessRight(node);
     Scope varScope = ASTExtractor::ExtractVarScope(node);
 
-    if (SemanticCheckerFacade::CheckVarExistence(*this->m_currentScope, varName))
+    if (this->m_facade.CheckVarExistence(*this->m_currentScope, varName))
     {
-        if (varScope == Scope::GLOBAL) return;
+        if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT) return;
 
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -65,7 +70,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     // `var` variables go to the function scope root (visible throughout the function).
     // `let` variables go to the current block scope.
     VarTableNode* targetScope;
-    if (varScope == Scope::GLOBAL)
+    if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT)
     {
         targetScope = &this->m_varTable;
     }
@@ -94,7 +99,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished())
+    if (!node || this->m_facade.IsBlockFinished())
     {
         this->m_identifierError = true;
         return;
@@ -109,7 +114,7 @@ void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
     
     const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
     
-    if (!SemanticCheckerFacade::CheckVarExistence(*this->m_currentScope, identifierName))
+    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -166,14 +171,14 @@ void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitIdentifierValue(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
     
     const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
     
-    if (!SemanticCheckerFacade::CheckVarExistence(*this->m_currentScope, identifierName))
+    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -223,7 +228,7 @@ So we just set checks for VisitExpression to do later
 */
 void SemanticAnalysisVisitor::VisitAssignment(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished())
+    if (!node || this->m_facade.IsBlockFinished())
     {
         ResetAssignmentState();
         return;
@@ -250,7 +255,7 @@ void SemanticAnalysisVisitor::VisitAssignment(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished())
+    if (!node || this->m_facade.IsBlockFinished())
     {
         // if VisitAssignment method set checks and we dont have expression node
         if (this->m_pendingAssignment && !this->m_lastIdentifierName.empty())
@@ -273,7 +278,7 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
     
-    ExpressionType expressionType = SemanticCheckerFacade::CheckExpression(
+    ExpressionType expressionType = this->m_facade.CheckExpression(
         node->command,
         this->m_funcTable,
         *this->m_currentScope
@@ -322,7 +327,7 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
     /// complete assignment check, @see VisitAssignment docs
     if (
         expressionType != ExpressionType::UNKNOWN &&
-        !SemanticCheckerFacade::CheckAssignment(
+        !this->m_facade.CheckAssignment(
             this->m_lastIdentifierName,
             expressionType,
             *this->m_currentScope)
@@ -362,7 +367,7 @@ void SemanticAnalysisVisitor::VisitFuncDeclaration(ASTNode* node)
     
     const std::string& funcName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
     
-    if (SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
+    if (this->m_facade.CheckFuncDeclaration(this->m_funcTable, funcName))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -417,7 +422,7 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
     
     const std::string& funcName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
     
-    if (SemanticCheckerFacade::CheckFuncDefinition(this->m_funcTable, funcName))
+    if (this->m_facade.CheckFuncDefinition(this->m_funcTable, funcName))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -494,20 +499,21 @@ void SemanticAnalysisVisitor::VisitFuncDefinition(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
     
     const std::string& funcName = tokens[FUNCTION_NAME_TOKEN_INDEX].GetValue();
     
-    if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
+    if (!this->m_facade.CheckFuncDeclaration(this->m_funcTable, funcName))
     {
         // Lazily register built-in functions on first use
         this->m_funcTable.RegisterBuiltins();
 
         // Re-check after registering built-ins
-        if (!SemanticCheckerFacade::CheckFuncDeclaration(this->m_funcTable, funcName))
+        if (!this->m_facade.CheckFuncDeclaration(this->m_funcTable, funcName) &&
+            this->m_funcTable.FindFunctionByName(funcName))
         {
             this->m_errorManager.StoreError(
                 CompileTimeError(
@@ -530,7 +536,7 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
         argTypes.push_back(this->EvaluateNodeType(arg));
     }
     
-    if (!SemanticCheckerFacade::CheckFuncArguments(argTypes, funcName, this->m_funcTable))
+    if (!this->m_facade.CheckFuncArguments(argTypes, funcName, this->m_funcTable))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -558,7 +564,7 @@ void SemanticAnalysisVisitor::VisitElif(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitElse(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
     // signal VisitBlockStart what kind of block is coming
     this->m_pendingBlockKind = SemanticCheckerFacade::BlockKind::Else;
@@ -572,7 +578,7 @@ void SemanticAnalysisVisitor::VisitWhile(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     
@@ -633,13 +639,13 @@ void SemanticAnalysisVisitor::VisitFor(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
     const std::vector<Token>& tokens = node->command.GetTokens();
     size_t line = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetLine();
     size_t column = tokens.empty() ? 0 : tokens[FIRST_TOKEN_INDEX].GetColumn();
     
-    if (!SemanticCheckerFacade::CheckReturnInsideFunc())
+    if (!this->m_facade.CheckReturnInsideFunc())
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -656,7 +662,7 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
     if (exprType == ExpressionType::UNKNOWN) return;
 
     if (
-        !SemanticCheckerFacade::CheckFunctionReturnType(
+        !this->m_facade.CheckFunctionReturnType(
             exprType,
             this->m_currentFunctionName,
             this->m_funcTable
@@ -678,9 +684,9 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitControlStatement(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
-    if (!SemanticCheckerFacade::CheckControlStatement())
+    if (!this->m_facade.CheckControlStatement())
     {    
         const auto& tokens = node->command.GetTokens();
         if (tokens.empty()) return;
@@ -707,7 +713,7 @@ void SemanticAnalysisVisitor::VisitBlockStart(ASTNode* node)
 
     // clear condition evaluation suppression set by VisitIfOrElseIfOrWhile.
     // at this point the AST walker has finished visiting all condition children.
-    SemanticCheckerFacade::SetSuppressDefaultExprCheck(false);
+    this->m_facade.SetSuppressDefaultExprCheck(false);
 
     // If we are in func definition the block was already created.
     if (!this->m_bStartedFuncDefinition)
@@ -785,6 +791,96 @@ void SemanticAnalysisVisitor::VisitEndOfCommand(ASTNode* node)
     }
 }
 
+void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
+{
+    const auto& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+    const auto& pathToken = tokens.back();
+    std::string importPath = pathToken.GetValue();
+    if (importPath.size() >= 2 && importPath.front() == '"' && importPath.back() == '"')
+        importPath = importPath.substr(1, importPath.size() - 2);
+    std::string moduleName = std::filesystem::path(importPath).stem().string(); // resolve by stem to match ProjectSymbolTable registration
+    auto fileExports = this->m_projectSymbolTable.Resolve(moduleName);
+    if (fileExports == nullptr)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::UNPROCESSED_FILE_IMPORTED,
+                "The file " + importPath + " wasn't parsed",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
+                "Add the file as input"
+            )
+        );
+        return;
+    }
+
+    auto imports = node->command.GetParams();
+
+    for (auto import : imports)
+    {
+        bool found = false;
+        const std::string& symbolName = import.GetTokens()[0].GetValue();
+        const int line = static_cast<int>(import.GetTokens()[0].GetLine());
+        const int column = static_cast<int>(import.GetTokens()[0].GetColumn());
+
+        for (auto function : fileExports->functions)
+        {
+            if (function.name == symbolName)
+            {
+                found = true;
+                if (!this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function)))
+                {
+                    this->m_errorManager.StoreError(
+                        CompileTimeError(
+                            ErrorTypes::NAME_ERROR,
+                            "Duplicate import: '" + symbolName + "' was already imported",
+                            line,
+                            column,
+                            "Remove the duplicate import"
+                        )
+                    );
+                }
+                break;
+            }
+        }
+
+        for (auto variable : fileExports->exportedVars)
+        {
+            if (variable.name == symbolName)
+            {
+                found = true;
+                if (!this->m_varTable.InsertVar(this->m_varFactory.CreateVarMetadata(variable)))
+                {
+                    this->m_errorManager.StoreError(
+                        CompileTimeError(
+                            ErrorTypes::NAME_ERROR,
+                            "Duplicate import: '" + symbolName + "' was already imported",
+                            line,
+                            column,
+                            "Remove the duplicate import"
+                        )
+                    );
+                }
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "The file " + importPath + " doesn't export: " + symbolName,
+                    node->command.GetTokens()[0].GetLine(),
+                    node->command.GetTokens()[0].GetColumn(),
+                    "Maybe you forgot to add export to the function/variable"
+                )
+            );
+        }
+    }
+}
+
 void SemanticAnalysisVisitor::VisitSizeof(ASTNode* node)
 {
     // skip, no logic needed
@@ -807,7 +903,7 @@ void SemanticAnalysisVisitor::VisitEof(ASTNode* node)
 
 void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 {
-    if (!node || SemanticCheckerFacade::IsBlockFinished()) return;
+    if (!node || this->m_facade.IsBlockFinished()) return;
     
     // IF/ELSE IF/WHILE ()
     //  condition() <-------- node->nodeFirstChild
@@ -819,7 +915,7 @@ void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
     if (tokens.empty()) return;
     const auto& conditionTokens = tokens[CONDITION_TOKEN_INDEX];
 
-    SemanticCheckerFacade::SetSuppressDefaultExprCheck(true);
+    this->m_facade.SetSuppressDefaultExprCheck(true);
 
     if (condition->command.GetType() == CommandTypes::EXPRESSION)
     {
@@ -945,7 +1041,7 @@ std::string SemanticAnalysisVisitor::ExpressionTypeToString(
     }
 }
 
-ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const noexcept
+ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
 {
     if (!node) return ExpressionType::UNKNOWN;
     
@@ -964,7 +1060,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
 
         if (var.has_value()) 
         {
-            return SemanticCheckerFacade::TypeToExpressionType(var->type);
+            return this->m_facade.TypeToExpressionType(var->type);
         }
         else
         {
@@ -974,7 +1070,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
     
     else if (nodeType == CommandTypes::EXPRESSION)
     {
-        return SemanticCheckerFacade::CheckExpression(
+        return this->m_facade.CheckExpression(
             node->command, 
             this->m_funcTable, 
             *this->m_currentScope
@@ -996,7 +1092,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) const no
             return ExpressionType::UNKNOWN;
         }
 
-        return SemanticCheckerFacade::TypeToExpressionType(func->GetRType());
+        return this->m_facade.TypeToExpressionType(func->GetRType());
     }
 
     else if (nodeType == CommandTypes::SIZEOF)
@@ -1028,7 +1124,7 @@ bool SemanticAnalysisVisitor::HandleEnteredBlockCheck(
     }
     
     // Call EnteredBlock for ALL block types (Function, If, Else, Elif, Loop)
-    if (!SemanticCheckerFacade::EnteredBlock(blockkind, isVoidReturnType))
+    if (!this->m_facade.EnteredBlock(blockkind, isVoidReturnType))
     {
         const auto& tokens = node->command.GetTokens();
         if (!tokens.empty())
@@ -1052,9 +1148,9 @@ bool SemanticAnalysisVisitor::HandleEnteredBlockCheck(
     return true;  // EnteredBlock was called
 }
 
-void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node) const
+void SemanticAnalysisVisitor::HandleExitedBlockCheck(ASTNode* node)
 {
-    if (!SemanticCheckerFacade::ExitedBlock())
+    if (!this->m_facade.ExitedBlock())
     {
         const auto& tokens = node->command.GetTokens();
         if (tokens.empty()) return;
@@ -1082,7 +1178,7 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
 
-    ExpressionType expressionType = SemanticCheckerFacade::CheckExpression(
+    ExpressionType expressionType = this->m_facade.CheckExpression(
         node->command,
         this->m_funcTable,
         *this->m_currentScope
@@ -1108,7 +1204,7 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
     /// complete assignment check, @see VisitAssignment docs
     if (
         expressionType != ExpressionType::UNKNOWN &&
-        !SemanticCheckerFacade::CheckAssignment(
+        !this->m_facade.CheckAssignment(
             this->m_lastIdentifierName,
             expressionType,
             *this->m_currentScope)

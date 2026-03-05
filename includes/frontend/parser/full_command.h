@@ -12,7 +12,7 @@
 //  Line = the sequence of the Commands.
 class FullCommand{
 public:
-    FullCommand(const EntityLogger& entityLogger);
+    FullCommand(const EntityLogger& entityLogger, bool importLegal = true);
     FullCommand(const FullCommand& other);
     
     FullCommand& operator=(const FullCommand& other);
@@ -42,6 +42,7 @@ private:
     const EntityLogger& m_entityLogger;
     bool m_bFinished;
     bool m_bLegal;
+    bool m_importLegal;     // False-> already in the middle of the code(import is only legal at the top), True-> import still legal
     std::vector<Command> m_line;
     size_t m_uLineIndex;
     static unsigned int m_uBlockStartCnt;

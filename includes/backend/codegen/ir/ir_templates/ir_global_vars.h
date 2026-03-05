@@ -19,15 +19,17 @@ class IRModule;
 class IRGlobalVariable : public IRBaseValue 
 {
 public:
-    IRGlobalVariable(const std::string& name, std::shared_ptr<const IRType> type);
+    IRGlobalVariable(const std::string& name, std::shared_ptr<const IRType> type, bool isExtern = false);
 
     // <======= Getters =======>
     IRModule* GetParent() const noexcept;
     IRBaseValue* GetInitializer() const;
+    bool IsExtern() const;
 
     // <======= Setters =======>
     void SetParent(IRModule* module) noexcept;
     void SetInitializer(IRBaseValue* init);
+    void SetIsExtern(bool isExtern);
 
     std::string ToString() const override;
 
@@ -36,4 +38,5 @@ public:
 private:
     IRModule* m_parent;
     IRBaseValue* m_initializer;  // initial value (optional)
+    bool m_isExtern; // Extern globals should NOT be emitted in .data/.bss sections
 };

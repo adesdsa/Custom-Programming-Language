@@ -25,7 +25,9 @@ public:
     CodeGenManager(const DecoratedAST& decoratedAST, const CompilerOptions& options);
     ~CodeGenManager() = default;
 
-    void MainFlow();
+    /// @brief Runs IR generation, ASM emission, and assembly.
+    /// @return Path to the produced artifact (.asm if stopAtAsm, .obj/.o otherwise).
+    std::string MainFlow();
 
 private:
     const DecoratedAST& m_decoratedAST;

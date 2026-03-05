@@ -30,6 +30,7 @@ namespace CommandTypes
     inline constexpr std::string_view ARRAY_VALUE                   = "ARRAY_VALUE";
     inline constexpr std::string_view IDENTIFIER_VALUE              = "IDENTIFIER_VALUE";   // IDENTIFIER call where the values is used
     inline constexpr std::string_view FINISHED_FUNC_DEFINITION      = "FINISHED_FUNC_DEFINITION";
+    inline constexpr std::string_view IMPORT_STATEMENT              = "IMPORT_STATEMENT";
 
 
     /// 
@@ -78,6 +79,10 @@ namespace CommandTypes
     inline constexpr std::string_view NOT_FUNC_IDENTIFIER           = "NOT_FUNC_IDENTIFIER";
     inline constexpr std::string_view ARRAY_DECLARATION_START       = "ARRAY_DECLARATION_START";
     inline constexpr std::string_view ARRAY_VALUE_START             = "ARRAY_VALUE_START";
+    inline constexpr std::string_view IMPORT_START                  = "IMPORT_START";
+    inline constexpr std::string_view IMPORT_IDENTIFIER             = "IMPORT_IDENTIFIER";
+    inline constexpr std::string_view IMPORT_FINISH                 = "IMPORT_FINISH";
+    inline constexpr std::string_view IMPORT_FROM                   = "IMPORT_FROM";
 }
 
 // The class represents a set of Tokens that create the most basic Command.
@@ -237,6 +242,30 @@ private:
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
     bool ParseArrayValueStart(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_START CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportStart(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_IDENTIFIER CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportIdentifer(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_FROM CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportFrom(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_FINISH CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportFinish(Token& currToken, Token& nextToken);
 
 
     ///

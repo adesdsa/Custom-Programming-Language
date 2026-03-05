@@ -38,7 +38,46 @@ IRVisitor::IRVisitor(
     {
         if (varMeta.scope == Scope::GLOBAL)
         {
+            if (varMeta.isExtern)
+            {
+                this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type), true);
+                this->m_currModule.AddImport(name);
+            }
+            else
+            {
+                this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+            }
+        }
+        else if (varMeta.scope == Scope::EXPORT)
+        {
             this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+            this->m_currModule.AddExport(name);
+        }
+    }
+
+    for (const auto& [name, funcMetaData] : this->m_decoratedAst.funcTable.GetAllFunctions())
+    {
+        if (name == "main")
+        {
+            this->m_currModule.SetPrimaryModule();
+        }
+
+        if (funcMetaData->IsExtern())
+        {
+            this->m_currModule.AddImport(name);
+        }
+        else
+        {
+            this->m_currModule.AddExport(name);
+        }
+        // Pre-add function stubs so m_currFunc can be recovered when AST visits body before FUNC_DEF
+        if (!this->m_currModule.IsFuncExistByName(name))
+        {
+            std::vector<std::shared_ptr<const IRType>> paramTypes;
+            for (const auto& p : funcMetaData->GetFuncParams())
+                paramTypes.push_back(TypeToIRType(p.type));
+            this->m_currModule.AddFunction(name,
+                IRType::GetFunction(TypeToIRType(funcMetaData->GetRType()), std::move(paramTypes)));
         }
     }
 }
@@ -181,7 +220,17 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             valueToStore = ConvertIfNeeded(valueToStore, targetType);
         }
 
-        this->m_irbuilder.CreateStore(valueToStore, target);
+        if (!valueToStore || !target)
+        {
+            if (!valueToStore)
+                StoreInternalError("Code generation: CreateStore: value is null", node->command);
+            else if (!target)
+                StoreInternalError("Code generation: CreateStore: target pointer is null", node->command);
+        }
+        else
+        {
+            this->m_irbuilder.CreateStore(valueToStore, target);
+        }
         this->m_expectedAssignment = false;
         this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
@@ -196,13 +245,29 @@ void IRVisitor::VisitFuncDeclaration(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
     
-    // Check if function already exists in IR module (already declared)
     std::string funcName = node->command[FUNC_IDENTIFIER_INDEX].GetValue();
-    if (this->m_currModule.IsFuncExistByName(funcName))
+    IRFunction* existingFunc = this->m_currModule.GetFunction(funcName);
+
+    // If function exists (e.g. pre-registered stub) but has no arguments, add them now
+    if (existingFunc && existingFunc->GetNumArguments() == 0)
+    {
+        FuncMetaData* funcMetaData = this->m_decoratedAst.funcTable.FindFunctionByName(funcName);
+        if (funcMetaData)
+        {
+            for (auto argMetaData : funcMetaData->GetFuncParams())
+            {
+                existingFunc->AddArgument(argMetaData.sName, TypeToIRType(argMetaData.type));
+            }
+        }
+        this->m_entityLogger.Info("Added FuncDeclaration IR handling.\nAt line: "
+            + std::to_string(node->command[0].GetLine()));
+        return;
+    }
+    if (existingFunc)
     {
         this->m_entityLogger.Info("Added FuncDeclaration IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
-        return;  // Function already declared, skip
+        return;  // Function already declared with args, skip
     }
     
     // Chking if the func is already defined.
@@ -419,6 +484,11 @@ void IRVisitor::VisitFor(ASTNode* node)
 
 void IRVisitor::VisitReturn(ASTNode* node)
 {
+    if (!this->m_currFunc)
+    {
+        this->m_entityLogger.Error("VisitReturn: m_currFunc is null");
+        return;
+    }
     // If we got the Instruction of the return expression
     if (this->m_expectedReturnValue)
     {
@@ -530,6 +600,7 @@ void IRVisitor::VisitBlockStart(ASTNode* node)
     {
     case BlockKind::functionBlock:
     {
+        if (!this->m_currFunc) break;
         this->m_irbuilder.SetInsertPoint(this->m_currFunc->AddBasicBlock("entry"));
         // global parameters, store the argument value into the global variable
         FuncMetaData* funcMeta = this->m_decoratedAst.funcTable.FindFunctionByName(
@@ -597,6 +668,29 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     ASTNode tempNode(node->command);
     std::vector<Command> tempParams;
 
+    // Defensive checks to avoid crashes on malformed state
+    Command errCmd;
+    if (node && !node->command.GetTokens().empty())
+        errCmd = node->command;
+    if (this->m_varTableIndex.empty())
+    {
+        this->m_entityLogger.Error("VisitBlockEnd: m_varTableIndex is empty");
+        StoreInternalError("VisitBlockEnd: var table index stack underflow", errCmd);
+        return;
+    }
+    if (this->m_blockHistory.empty())
+    {
+        this->m_entityLogger.Error("VisitBlockEnd: m_blockHistory is empty");
+        StoreInternalError("VisitBlockEnd: block history stack underflow", errCmd);
+        return;
+    }
+    if (!this->m_currVarTableNode)
+    {
+        this->m_entityLogger.Error("VisitBlockEnd: m_currVarTableNode is null");
+        StoreInternalError("VisitBlockEnd: var table node is null", errCmd);
+        return;
+    }
+
     // Moving the VarTable to the correct node.
     this->m_varTableIndex.pop();
     this->m_currVarTableNode = this->m_currVarTableNode->GetParent();
@@ -605,7 +699,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
     {
     case BlockKind::functionBlock:
     {
-        if (this->m_currFunc->GetReturnType() == IRType::GetVoid())
+        if (this->m_currFunc && this->m_currFunc->GetReturnType() == IRType::GetVoid())
         {
             this->m_irbuilder.CreateRetVoid();
         }
@@ -655,6 +749,12 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         }
         
         // Save the top-level function index before clearing (tells us which function we're at)
+        if (this->m_varTableIndex.empty())
+        {
+            this->m_entityLogger.Error("VisitBlockEnd functionBlock: m_varTableIndex empty before top");
+            StoreInternalError("VisitBlockEnd: var table index empty in function block end", errCmd);
+            return;
+        }
         size_t nextFuncIndex = this->m_varTableIndex.top();  // This is already incremented
         while (!this->m_varTableIndex.empty())
         {
@@ -666,7 +766,7 @@ void IRVisitor::VisitBlockEnd(ASTNode* node)
         this->m_currVarTableNode = &this->m_decoratedAst.varTable;  // Reset to root
         this->m_varTableIndex.push(nextFuncIndex);  // Preserve index for next function
         this->m_entityLogger.Info("Added BlockEnd IR handling.\nAt line: "
-            + std::to_string(node->command[0].GetLine()));
+            + std::to_string((node && !node->command.GetTokens().empty()) ? node->command[0].GetLine() : 0));
         return;  // Early return - blockHistory already emptied
     }
 
@@ -818,7 +918,7 @@ void IRVisitor::VisitFuncDefinition(ASTNode* node)
         this->m_currVarTableNode = nextNode;
     }
     this->m_varTableIndex.push(0);
-    
+
     this->m_entityLogger.Info("Added FuncDefinition IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
 }
@@ -850,6 +950,12 @@ void IRVisitor::VisitPass(ASTNode* node)
 {
     this->m_entityLogger.Info("Added Pass IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
+    return;
+}
+
+void IRVisitor::VisitImportStatement(ASTNode* node)
+{
+    // Function does nothing
     return;
 }
 
@@ -1304,7 +1410,11 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     const std::string& funcName = funcMetaData->GetName();
     if (!this->m_currModule.IsFuncExistByName(funcName))
     {
-        this->m_currModule.AddFunction(funcName, TypeToIRType(funcMetaData->GetRType()));
+        std::vector<std::shared_ptr<const IRType>> paramTypes;
+        for (const auto& p : params)
+            paramTypes.push_back(TypeToIRType(p.type));
+        this->m_currModule.AddFunction(funcName,
+            IRType::GetFunction(TypeToIRType(funcMetaData->GetRType()), std::move(paramTypes)));
     }
 
     // Setting up the temporary holder
@@ -1352,7 +1462,8 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     // ensure the target function stub exists in the module
     if (targetFuncName != funcName && !this->m_currModule.IsFuncExistByName(targetFuncName))
     {
-        this->m_currModule.AddFunction(targetFuncName, IRType::GetVoid());
+        this->m_currModule.AddFunction(targetFuncName,
+            IRType::GetFunction(IRType::GetVoid(), std::vector<std::shared_ptr<const IRType>>{}));
     }
 
     // Creating the Call Instruction
@@ -1849,6 +1960,12 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
 
 void IRVisitor::CheckValueNeededSomewhere(IRBaseValue* value, ASTNode* node)
 {
+    if (!value)
+    {
+        this->m_expectedAssignment = false;
+        this->m_expectedReturnValue = false;
+        return;
+    }
     if (this->m_expectedReturnValue)
     {
         this->m_lastSavedValue = value;

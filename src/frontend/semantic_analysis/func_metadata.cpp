@@ -7,7 +7,8 @@ FuncMetaData::FuncMetaData(
     const std::vector<VarMetaData>& funcParams,
     size_t declarationLine,
     size_t declarationColumn,
-    VarTableNode* functionScopeRoot
+    VarTableNode* functionScopeRoot,
+    bool isExtern
 ) :
     m_entityLogger(entityLogger),
     m_name(funcName),
@@ -15,7 +16,8 @@ FuncMetaData::FuncMetaData(
     m_params(funcParams),  // case of no params funcParams will be {}
     m_declarationLine(declarationLine),
     m_declarationColumn(declarationColumn),
-    m_functionScopeRoot(functionScopeRoot) 
+    m_functionScopeRoot(functionScopeRoot),
+    m_isExtern(isExtern)
 {
     // if there is body to the function, it definition
     if (this->m_functionScopeRoot)
@@ -49,6 +51,11 @@ bool FuncMetaData::IsFuncDefined() const noexcept
 bool FuncMetaData::IsFuncDeclared() const noexcept
 {
     return this->m_isDeclared;
+}
+
+bool FuncMetaData::IsExtern() const noexcept
+{
+    return this->m_isExtern;
 }
 
 size_t FuncMetaData::GetDeclarationLine() const noexcept

@@ -3,7 +3,7 @@
 #include "includes/frontend/parser/ast_extractor.h"
 #include "includes/shared/errors/error_manager.h"
 
-SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
+SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast, const ProjectSymbolTable& projectSymbolTable) :
     m_semanticAnalysisLogger("SEMANTIC_ANALYSIS"),
     m_errorManager(ErrorManager::GetInstance()),
     m_astIterator(ast),
@@ -11,7 +11,8 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
     m_semanticAnalysisVisitor(
         this->m_semanticAnalysisLogger,
         this->m_decoratedAST.varTable,
-        this->m_decoratedAST.funcTable
+        this->m_decoratedAST.funcTable,
+        projectSymbolTable
     )
 {
     this->m_semanticAnalysisLogger.Info(
@@ -21,7 +22,7 @@ SemanticAnalysisLogicComponent::SemanticAnalysisLogicComponent(const AST& ast) :
 
 const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
 {
-    this->m_errorManager.SetCurrentReporter("SEMANTIC_ANALYSIS");
+    ErrorManager::SetCurrentReporter("SEMANTIC_ANALYSIS");
     this->CollectGlobalVariables();
 
     while (this->m_astIterator.HasNext())
@@ -53,7 +54,7 @@ void SemanticAnalysisLogicComponent::CollectGlobalVariables()
         if (node && node->command.GetType() == CommandTypes::VAR_DECLARATION)
         {
             Scope scope = ASTExtractor::ExtractVarScope(node);
-            if (scope == Scope::GLOBAL)
+            if (scope == Scope::GLOBAL || scope == Scope::EXPORT)
             {
                 const std::string& varName = ASTExtractor::ExtractVarName(node);
 
@@ -63,7 +64,7 @@ void SemanticAnalysisLogicComponent::CollectGlobalVariables()
                     AccessRights varAccess = ASTExtractor::ExtractVarAccessRight(node);
 
                     VarMetaData var = varFactory.CreateVarMetadata(
-                        varName, varType, varAccess, Scope::GLOBAL
+                        varName, varType, varAccess, scope
                     );
                     this->m_decoratedAST.varTable.InsertVar(var);
                 }
@@ -76,13 +77,15 @@ void SemanticAnalysisLogicComponent::CollectGlobalVariables()
 
 void SemanticAnalysisLogicComponent::HandleUndefinedFunctions()
 {
-    const std::vector<FuncMetaData*> undefinedFunctions = SemanticCheckerFacade::AreAllFunctionsDefined(
+    SemanticCheckerFacade tempFacade;
+    const std::vector<FuncMetaData*> undefinedFunctions = tempFacade.AreAllFunctionsDefined(
         this->m_decoratedAST.funcTable
     );
 
     // provide final check for every undefined function
     for (const FuncMetaData* undefinedFunc : undefinedFunctions)
     {
+        if (undefinedFunc->IsExtern()) continue;
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::LINKING_EROR,

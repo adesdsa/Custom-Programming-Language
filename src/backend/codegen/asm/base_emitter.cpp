@@ -10,7 +10,8 @@ std::string BaseEmitter::Emit(const IRModule& module)
 {
     std::ostringstream out;
 
-    out << EmitHeader();
+    out << EmitHeader(module);
+    EmitExternAndGlobalDirectives(module, out);
     EmitDataSection(module, out);
     EmitBssSection(module, out);
     EmitTextSection(module, out);
@@ -23,6 +24,24 @@ std::string BaseEmitter::MangledName(const std::string& name) const
     return name; // default: no mangling
 }
 
+void BaseEmitter::EmitExternAndGlobalDirectives(const IRModule& module, std::ostream& out)
+{
+    for (const auto& symbol : module.GetExports())
+    {
+        out << "global " << MangledName(symbol) << "\n";
+    }
+
+    for (const auto& symbol : module.GetImports())
+    {
+        out << "extern " << MangledName(symbol) << "\n";
+    }
+
+    if (!module.GetExports().empty() || !module.GetImports().empty())
+    {
+        out << "\n";
+    }
+}
+
 void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
 {
     out << GetSectionDirective(SectionType::DATA);
@@ -30,7 +49,9 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
 
     for (const auto& globalVar : module.GetVariables())
     {
-        if (globalVar.get()->GetInitializer())
+        if (globalVar->IsExtern()) continue;
+
+        if (globalVar->GetInitializer())
         {
             int varSize = GetTypeSize(globalVar->GetType());
             out << Indent() << MangledName(globalVar->GetName()) << ": ";
@@ -75,7 +96,9 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
     
     for (const auto& global : module.GetVariables())
     {
-        if (!global.get()->GetInitializer())
+        if (global->IsExtern()) continue;
+
+        if (!global->GetInitializer())
         {
             int size = GetTypeSize(global->GetType());
             out << Indent() << MangledName(global->GetName()) << ": ";
@@ -92,7 +115,7 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
     out << GetSectionDirective(SectionType::TEXT);
     out << "\n";
     
-    EmitStart(out);
+    EmitStart(module, out);
     out << "\n";
     
     for (const auto& func : module.GetFunctions())

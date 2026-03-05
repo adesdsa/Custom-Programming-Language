@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <mutex>
 
 #include "error_models.h"
 
@@ -22,11 +23,11 @@ public:
     // @return: Static instance of the console class.
     static ErrorManager& GetInstance() noexcept;
 
-    // Sets the current file path to stamp on all subsequent errors
-    void SetCurrentFilePath(const std::string& filePath) noexcept;
+    // Sets the current file path to stamp on all subsequent errors (thread-safe per-thread)
+    static void SetCurrentFilePath(const std::string& filePath) noexcept;
 
-    // Sets the current reporter component name to stamp on all subsequent errors
-    void SetCurrentReporter(const std::string& reporter) noexcept;
+    // Sets the current reporter component name to stamp on all subsequent errors (thread-safe per-thread)
+    static void SetCurrentReporter(const std::string& reporter) noexcept;
 
     // Stores the given error for later handling
     void StoreError(CompileTimeError error);
@@ -34,22 +35,33 @@ public:
     // Remove all previously stored errors (call at the start of a new compilation)
     void Clear() noexcept;
 
-    // Display all errors that occured and abort program
+    // Display all errors that occured and abort program.
+    // In deferred mode this is a no-op — errors accumulate silently.
     void HandleErrors() const;
 
     // @return: true -> Errors stored in the `m_errorList`, false -> Otherwise.
     bool HasErrorsOccured() const noexcept;
 
+    /// @brief Enable/disable deferred mode.
+    /// When deferred, HandleErrors() is a no-op so that all files can be
+    /// processed before errors are displayed. Call with false and then
+    /// HandleErrors() to display everything at the end.
+    void SetDeferredMode(bool deferred) noexcept;
+
 private:
     std::vector<CompileTimeError> m_errorList;
-    std::string m_currentFilePath;
-    std::string m_currentReporter;
     EntityLogger m_entityLogger;
+    mutable std::mutex m_errorManagerMutex;
+    bool m_deferredMode = false;
 
-    // TODO: For later versions - Make this method support both GUI & CLI
-    // Display all the errors that occur through out the compilation in the UI
-    void DisplayErrorsInUI() const noexcept;
+    static thread_local std::string tl_currentFilePath;
+    static thread_local std::string tl_currentReporter;
+
+    // Internal helpers that assume m_errorManagerMutex is already held
+    bool HasErrorsOccured_NoLock() const noexcept;
+
+    void DisplayErrorsInUI_NoLock() const noexcept;
 
     // Safely stops the compilation proccess
-    void AbortCompilation() const;
+    void AbortCompilation_NoLock() const;
 };

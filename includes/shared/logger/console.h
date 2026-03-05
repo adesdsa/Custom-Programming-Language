@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <functional>
+#include <mutex>
 
 #include "logger_library.h"
 #include "includes/shared/utils/system_utils.h"
@@ -80,6 +81,7 @@ private:
     WarningLevel m_warningLevel;
     mutable std::ofstream m_logFile;
     LogCallback m_logCallback;
+    mutable std::mutex m_consoleMutex;
 
     // Private constructor and destructor so that no one could create instance of this class
     Console();
