@@ -1,9 +1,4 @@
 import * as vscode from "vscode";
-import { exec } from "child_process";
-import * as path from "path";
-
-const diagnosticCollection =
-  vscode.languages.createDiagnosticCollection("picoc");
 
 // --- Comment tag decoration types ---
 
@@ -130,27 +125,6 @@ function scanCommentBody(
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const compileCommand = vscode.commands.registerCommand(
-    "picoc.compile",
-    () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || editor.document.languageId !== "picoc") {
-        vscode.window.showErrorMessage("Open a .picoc file first.");
-        return;
-      }
-      editor.document.save().then(() => {
-        compilePicoC(editor.document.uri);
-      });
-    }
-  );
-
-  const compileOnSave = vscode.workspace.onDidSaveTextDocument((doc) => {
-    const config = vscode.workspace.getConfiguration("picoc");
-    if (doc.languageId === "picoc" && config.get<boolean>("compileOnSave", true)) {
-      compilePicoC(doc.uri);
-    }
-  });
-
   const hoverProvider = vscode.languages.registerHoverProvider(
     "picoc",
     { provideHover }
@@ -188,78 +162,14 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   context.subscriptions.push(
-    compileCommand,
-    compileOnSave,
     hoverProvider,
     completionProvider,
     docTagCompletionProvider,
     definitionProvider,
     onEditorChange,
     onDocChange,
-    diagnosticCollection,
     ...Object.values(commentTagDecorations)
   );
-}
-
-function compilePicoC(fileUri: vscode.Uri): void {
-  const filePath = fileUri.fsPath;
-  const config = vscode.workspace.getConfiguration("picoc");
-  const compilerPath = config.get<string>("compilerPath", "picoc");
-
-  diagnosticCollection.delete(fileUri);
-
-  const command = `"${compilerPath}" "${filePath}"`;
-  const cwd = path.dirname(filePath);
-
-  exec(command, { cwd }, (error: Error | null, stdout: string, stderr: string) => {
-    const output = stdout + "\n" + stderr;
-    const diagnostics = parseCompilerOutput(output, fileUri);
-
-    diagnosticCollection.set(fileUri, diagnostics);
-
-    if (diagnostics.length === 0 && !error) {
-      vscode.window.showInformationMessage("PicoC: Compiled successfully!");
-    } else if (diagnostics.length > 0) {
-      vscode.window.showErrorMessage(
-        `PicoC: ${diagnostics.length} error(s) found.`
-      );
-    }
-  });
-}
-
-function parseCompilerOutput(
-  output: string,
-  fileUri: vscode.Uri
-): vscode.Diagnostic[] {
-  const diagnostics: vscode.Diagnostic[] = [];
-
-  const errorPattern =
-    /at file:\s*(.+?)\s*\((\d+),(\d+)\):\s*(.+?):\s*(.+?)(?:\tPROPOSED FIX:\s*(.+))?$/gm;
-
-  let match: RegExpExecArray | null;
-  while ((match = errorPattern.exec(output)) !== null) {
-    const line = parseInt(match[2], 10) - 1;
-    const col = Math.max(0, parseInt(match[3], 10) - 1);
-    const errorType = match[4].trim();
-    const message = match[5].trim();
-    const hint = match[6]?.trim();
-
-    const range = new vscode.Range(line, col, line, Math.max(col + 1, 1));
-
-    const severity =
-      errorType.toLowerCase().includes("warning")
-        ? vscode.DiagnosticSeverity.Warning
-        : vscode.DiagnosticSeverity.Error;
-
-    const fullMessage = hint ? `${message} (fix: ${hint})` : message;
-
-    const diagnostic = new vscode.Diagnostic(range, fullMessage, severity);
-    diagnostic.source = "picoc";
-    diagnostic.code = errorType;
-    diagnostics.push(diagnostic);
-  }
-
-  return diagnostics;
 }
 
 // --- Hover provider: show function signature + params + doc when available ---
@@ -736,7 +646,4 @@ function provideDefinition(
   return locations.length === 1 ? locations[0] : locations;
 }
 
-export function deactivate(): void {
-  diagnosticCollection.clear();
-  diagnosticCollection.dispose();
-}
+export function deactivate(): void {}

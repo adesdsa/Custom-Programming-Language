@@ -3,9 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
-const child_process_1 = require("child_process");
-const path = require("path");
-const diagnosticCollection = vscode.languages.createDiagnosticCollection("picoc");
 // --- Comment tag decoration types ---
 const commentTagDecorations = {
     todo: vscode.window.createTextEditorDecorationType({
@@ -106,22 +103,6 @@ function scanCommentBody(editor, body, offset, buckets) {
     }
 }
 function activate(context) {
-    const compileCommand = vscode.commands.registerCommand("picoc.compile", () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor || editor.document.languageId !== "picoc") {
-            vscode.window.showErrorMessage("Open a .picoc file first.");
-            return;
-        }
-        editor.document.save().then(() => {
-            compilePicoC(editor.document.uri);
-        });
-    });
-    const compileOnSave = vscode.workspace.onDidSaveTextDocument((doc) => {
-        const config = vscode.workspace.getConfiguration("picoc");
-        if (doc.languageId === "picoc" && config.get("compileOnSave", true)) {
-            compilePicoC(doc.uri);
-        }
-    });
     const hoverProvider = vscode.languages.registerHoverProvider("picoc", { provideHover });
     const completionProvider = vscode.languages.registerCompletionItemProvider("picoc", { provideCompletionItems }, ".");
     const docTagCompletionProvider = vscode.languages.registerCompletionItemProvider("picoc", { provideCompletionItems: provideDocTagCompletions }, "@");
@@ -140,48 +121,7 @@ function activate(context) {
             updateCommentDecorations(editor);
         }
     });
-    context.subscriptions.push(compileCommand, compileOnSave, hoverProvider, completionProvider, docTagCompletionProvider, definitionProvider, onEditorChange, onDocChange, diagnosticCollection, ...Object.values(commentTagDecorations));
-}
-function compilePicoC(fileUri) {
-    const filePath = fileUri.fsPath;
-    const config = vscode.workspace.getConfiguration("picoc");
-    const compilerPath = config.get("compilerPath", "picoc");
-    diagnosticCollection.delete(fileUri);
-    const command = `"${compilerPath}" "${filePath}"`;
-    const cwd = path.dirname(filePath);
-    (0, child_process_1.exec)(command, { cwd }, (error, stdout, stderr) => {
-        const output = stdout + "\n" + stderr;
-        const diagnostics = parseCompilerOutput(output, fileUri);
-        diagnosticCollection.set(fileUri, diagnostics);
-        if (diagnostics.length === 0 && !error) {
-            vscode.window.showInformationMessage("PicoC: Compiled successfully!");
-        }
-        else if (diagnostics.length > 0) {
-            vscode.window.showErrorMessage(`PicoC: ${diagnostics.length} error(s) found.`);
-        }
-    });
-}
-function parseCompilerOutput(output, fileUri) {
-    const diagnostics = [];
-    const errorPattern = /at file:\s*(.+?)\s*\((\d+),(\d+)\):\s*(.+?):\s*(.+?)(?:\tPROPOSED FIX:\s*(.+))?$/gm;
-    let match;
-    while ((match = errorPattern.exec(output)) !== null) {
-        const line = parseInt(match[2], 10) - 1;
-        const col = Math.max(0, parseInt(match[3], 10) - 1);
-        const errorType = match[4].trim();
-        const message = match[5].trim();
-        const hint = match[6]?.trim();
-        const range = new vscode.Range(line, col, line, Math.max(col + 1, 1));
-        const severity = errorType.toLowerCase().includes("warning")
-            ? vscode.DiagnosticSeverity.Warning
-            : vscode.DiagnosticSeverity.Error;
-        const fullMessage = hint ? `${message} (fix: ${hint})` : message;
-        const diagnostic = new vscode.Diagnostic(range, fullMessage, severity);
-        diagnostic.source = "picoc";
-        diagnostic.code = errorType;
-        diagnostics.push(diagnostic);
-    }
-    return diagnostics;
+    context.subscriptions.push(hoverProvider, completionProvider, docTagCompletionProvider, definitionProvider, onEditorChange, onDocChange, ...Object.values(commentTagDecorations));
 }
 function provideHover(document, position) {
     const wordRange = document.getWordRangeAtPosition(position);
@@ -552,8 +492,5 @@ function provideDefinition(document, position) {
         return null;
     return locations.length === 1 ? locations[0] : locations;
 }
-function deactivate() {
-    diagnosticCollection.clear();
-    diagnosticCollection.dispose();
-}
+function deactivate() { }
 //# sourceMappingURL=extension.js.map
