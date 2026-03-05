@@ -60,6 +60,7 @@ FileExportTable CollectExports(const AST& ast, const std::string& filePath)
                 ExportedVar var;
                 var.name = ASTExtractor::ExtractVarName(cursor);
                 var.type = ASTExtractor::ExtractVarType(cursor);
+                var.accessRights = ASTExtractor::ExtractVarAccessRight(cursor);
                 table.exportedVars.push_back(var);
             }
         }

@@ -1,4 +1,6 @@
 #include "includes/backend/codegen/ir/optimizations/dce_pass.h"
+#include <unordered_set>
+#include <string>
 
 DCEPass::DCEPass(const EntityLogger& optimizerLogger) :
     m_optimizerLogger(optimizerLogger)
@@ -20,10 +22,13 @@ bool DCEPass::Run(IRModule& program)
     }
 
     std::vector<IRGlobalVariable*> globalsToRemove;
+    const auto& exports = program.GetExports();
+    std::unordered_set<std::string> exportedNames(exports.begin(), exports.end());
 
     for (const auto& global : program.GetVariables())
     {
-        if (this->m_usedGlobals.count(global.get()) == 0)
+        if (this->m_usedGlobals.count(global.get()) == 0 &&
+            exportedNames.count(global->GetName()) == 0)
         {
             globalsToRemove.push_back(global.get());
         }

@@ -45,7 +45,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
     if (this->m_facade.CheckVarExistence(*this->m_currentScope, varName))
     {
-        if (varScope == Scope::GLOBAL) return;
+        if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT) return;
 
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -70,7 +70,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     // `var` variables go to the function scope root (visible throughout the function).
     // `let` variables go to the current block scope.
     VarTableNode* targetScope;
-    if (varScope == Scope::GLOBAL)
+    if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT)
     {
         targetScope = &this->m_varTable;
     }

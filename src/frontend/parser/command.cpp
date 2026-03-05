@@ -960,7 +960,7 @@ void Command::AddIdentifier(Token& currToken)
 
 bool Command::HandleFuncLikeParams(Token& currToken, Token& nextToken)
 {
-    if (this->IsValue(currToken, ",")) 
+    if (this->IsValue(currToken, ",") && this->m_iParanthesesCounter <= 1) 
     {
         this->m_tokens.push_back(currToken);
         if (this->m_uParameterIndex < this->m_parameters.size())
