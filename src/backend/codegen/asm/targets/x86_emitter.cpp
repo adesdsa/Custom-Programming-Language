@@ -28,7 +28,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global println\n";
                 header << "global println_bool\n";
                 header << "global println_str\n";
-                header << "global println_double\n\n";
+                header << "global println_double\n";
+                header << "global println_char\n\n";
 
                 header << "global __println_bool_true\n";
                 header << "global __println_bool_false\n";
@@ -48,7 +49,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println\n";
                 header << "extern println_bool\n";
                 header << "extern println_str\n";
-                header << "extern println_double\n\n";
+                header << "extern println_double\n";
+                header << "extern println_char\n\n";
 
                 header << "extern __println_bool_true\n";
                 header << "extern __println_bool_false\n";
@@ -73,11 +75,13 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _println\n";
                 header << "global _println_double\n";
                 header << "global _println_str\n";
-                header << "global _println_bool\n\n";
+                header << "global _println_bool\n";
+                header << "global _println_char\n\n";
 
                 header << "global __println_fmt_int\n";
                 header << "global __println_fmt_double\n";
                 header << "global __println_fmt_str\n";
+                header << "global __println_fmt_char\n";
                 header << "global __println_bool_true\n";
                 header << "global __println_bool_false\n\n";
 
@@ -85,6 +89,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "    __println_fmt_int db \"%d\", 10, 0\n";
                 header << "    __println_fmt_double db \"%g\", 10, 0\n";
                 header << "    __println_fmt_str db \"%s\", 10, 0\n";
+                header << "    __println_fmt_char db \"%c\", 10, 0\n";
                 header << "    __println_bool_true db \"true\", 0\n";
                 header << "    __println_bool_false db \"false\", 0\n\n";
             }
@@ -93,11 +98,13 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern _println\n";
                 header << "extern _println_double\n";
                 header << "extern _println_str\n";
-                header << "extern _println_bool\n\n";
+                header << "extern _println_bool\n";
+                header << "extern _println_char\n\n";
 
                 header << "extern __println_fmt_int\n";
                 header << "extern __println_fmt_double\n";
                 header << "extern __println_fmt_str\n";
+                header << "extern __println_fmt_char\n";
                 header << "extern __println_bool_true\n";
                 header << "extern __println_bool_false\n\n";
             }
@@ -604,6 +611,25 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    pop ebp\n";
             out << "    ret\n";
 
+            // ---- Built-in: println_char(value: char) -> void ----
+            // Prints a single ASCII character followed by a newline via write(1, ...).
+            out << "\n";
+            out << "println_char:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 8\n";
+            out << "    mov eax, [ebp+8]\n";
+            out << "    mov byte [ebp-1], al\n";
+            out << "    mov byte [ebp-2], 10\n";
+            out << "    lea ecx, [ebp-1]\n";
+            out << "    mov edx, 2\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            out << "    add esp, 8\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
             // ---- Built-in: println_double(value: float32) -> void ----
             // Prints a 32-bit float as "<int>.<frac6>\n" via write(1, ...).
             out << "\n";
@@ -778,6 +804,19 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    push __println_bool_false\n";
             out << "._println_bool_out:\n";
             out << "    push __println_fmt_str\n";
+            out << "    call _printf\n";
+            out << "    add esp, 8\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: println_char(value: char) -> void ----
+            // Wraps printf with a "%c\n" format string (cdecl).
+            out << "\n";
+            out << "_println_char:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    push dword [ebp+8]\n";
+            out << "    push __println_fmt_char\n";
             out << "    call _printf\n";
             out << "    add esp, 8\n";
             out << "    pop ebp\n";

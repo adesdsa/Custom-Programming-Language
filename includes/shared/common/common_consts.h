@@ -27,7 +27,8 @@ enum class Type
     INT_TYPE,
     DOUBLE_TYPE, 
     UNSIGNED_INT_TYPE,
-    STRING_TYPE  // string literal
+    STRING_TYPE,  // string literal
+    CHAR_TYPE     // 1-byte 0-255 ASCII
 };
 
 enum class AccessRights

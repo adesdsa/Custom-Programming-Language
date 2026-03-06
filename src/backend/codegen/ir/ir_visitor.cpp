@@ -989,6 +989,10 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         else return IRType::GetInt64();
         break;
 
+    case Type::CHAR_TYPE:
+        return IRType::GetInt8();
+        break;
+
     case Type::VOID_TYPE:
         return IRType::GetVoid();
         break;
@@ -1019,6 +1023,11 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
         else return IRType::GetInt64();
     }
 
+    if (type == "char")
+    {
+        return IRType::GetInt8();
+    }
+
     if (type == "void")
     {
         return IRType::GetVoid();
@@ -1031,6 +1040,31 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
 IRBaseValue* IRVisitor::ValueToConstIR(Token token)
 {
     std::string value = token.GetValue();
+
+    if (token.GetType() == TokenTypes::CHAR_LITERAL)
+    {
+        std::string raw = value.substr(1, value.size() - 2);
+        int charVal = 0;
+        if (raw.size() == 1)
+        {
+            charVal = static_cast<unsigned char>(raw[0]);
+        }
+        else if (raw.size() == 2 && raw[0] == '\\')
+        {
+            switch (raw[1])
+            {
+                case 'n':  charVal = 10; break;
+                case 't':  charVal = 9;  break;
+                case 'r':  charVal = 13; break;
+                case '0':  charVal = 0;  break;
+                case '\\': charVal = 92; break;
+                case '\'': charVal = 39; break;
+                default:   charVal = static_cast<unsigned char>(raw[1]); break;
+            }
+        }
+        if (TargetArchitecture::Is32Bit()) return this->m_irbuilder.GetInt32(charVal);
+        else return this->m_irbuilder.GetInt64(charVal);
+    }
 
     if (token.GetType() == TokenTypes::STRING_LITERAL)
     {
@@ -1453,6 +1487,10 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         {
             targetFuncName = "println_bool";
         }
+        else if (argKind == IRTypeKind::Int8)
+        {
+            targetFuncName = "println_char";
+        }
         else if (dynamic_cast<IRConstantString*>(tempInstructionHolder[0]))
         {
             targetFuncName = "println_str";
@@ -1866,6 +1904,19 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.signage = false;
             it.floatness = false;
             it.notCnt = 0;
+            expr.push_back(it);
+            continue;
+        }
+        else if (token.GetType() == TokenTypes::CHAR_LITERAL)
+        {
+            IRBaseValue* currExpressionValue = ValueToConstIR(token);
+
+            ExprItem it;
+            it.value = currExpressionValue;
+            it.signage = false;
+            it.floatness = false;
+            it.notCnt = pendingNotCnt;
+            pendingNotCnt = 0;
             expr.push_back(it);
             continue;
         }

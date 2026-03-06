@@ -38,6 +38,16 @@ bool Token::Append(char cAddedChar) noexcept
         return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
     }
 
+    // if we are already building a char literal, keep accumulating.
+    if (this->m_sType == TokenTypes::CHAR_LITERAL)
+    {
+        if (this->m_sValue.size() > 1 && this->m_sValue.back() == '\'')
+        {
+            return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::CHAR_LITERAL);
+    }
+
     // check #1: Comments (must run before " check so quotes inside comments don't start strings)
     if (this->IsCommentToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
@@ -55,6 +65,15 @@ bool Token::Append(char cAddedChar) noexcept
             return TokenStatus::k_bFinished;
         }
         return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
+    }
+
+    if (cAddedChar == '\'')
+    {
+        if (!m_sValue.empty())
+        {
+            return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::CHAR_LITERAL);
     }
 
     // check #2: Whitespace

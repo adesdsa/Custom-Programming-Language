@@ -31,7 +31,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global println\n";
                 header << "global println_bool\n";
                 header << "global println_str\n";
-                header << "global println_double\n\n";
+                header << "global println_double\n";
+                header << "global println_char\n\n";
 
                 header << "global __println_bool_true\n";
                 header << "global __println_bool_false\n";
@@ -51,7 +52,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println\n";
                 header << "extern println_bool\n";
                 header << "extern println_str\n";
-                header << "extern println_double\n\n";
+                header << "extern println_double\n";
+                header << "extern println_char\n\n";
 
                 header << "extern __println_bool_true\n";
                 header << "extern __println_bool_false\n";
@@ -73,11 +75,13 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global println\n";
                 header << "global println_double\n";
                 header << "global println_str\n";
-                header << "global println_bool\n\n";
+                header << "global println_bool\n";
+                header << "global println_char\n\n";
 
                 header << "global __println_fmt_int\n";
                 header << "global __println_fmt_double\n";
                 header << "global __println_fmt_str\n";
+                header << "global __println_fmt_char\n";
                 header << "global __println_bool_true\n";
                 header << "global __println_bool_false\n\n";
 
@@ -85,6 +89,7 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "    __println_fmt_int db \"%lld\", 10, 0\n";
                 header << "    __println_fmt_double db \"%g\", 10, 0\n";
                 header << "    __println_fmt_str db \"%s\", 10, 0\n";
+                header << "    __println_fmt_char db \"%c\", 10, 0\n";
                 header << "    __println_bool_true db \"true\", 0\n";
                 header << "    __println_bool_false db \"false\", 0\n\n";
             }
@@ -93,11 +98,13 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println\n";
                 header << "extern println_double\n";
                 header << "extern println_str\n";
-                header << "extern println_bool\n\n";
+                header << "extern println_bool\n";
+                header << "extern println_char\n\n";
 
                 header << "extern __println_fmt_int\n";
                 header << "extern __println_fmt_double\n";
                 header << "extern __println_fmt_str\n";
+                header << "extern __println_fmt_char\n";
                 header << "extern __println_bool_true\n";
                 header << "extern __println_bool_false\n\n";
             }
@@ -826,6 +833,24 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    pop rbp\n";
         out << "    ret\n";
 
+        // ---- Built-in: println_char(value: char) -> void ----
+        // Prints a single ASCII character followed by a newline via write(1, ...).
+        out << "\n";
+        out << "println_char:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 16\n";
+        out << "    mov byte [rbp-1], dil\n";
+        out << "    mov byte [rbp-2], 10\n";
+        out << "    lea rsi, [rbp-1]\n";
+        out << "    mov rdx, 2\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    add rsp, 16\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
         // ---- Built-in: println_double(value: double) -> void ----
         // Prints a 64-bit double as "<int>.<frac6>\n" via write(1, ...).
         // rdi contains the raw double bits (SysV integer ABI for this calling convention).
@@ -1018,6 +1043,20 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    lea rdx, [rel __println_bool_false]\n";
         out << ".println_bool_out:\n";
         out << "    lea rcx, [rel __println_fmt_str]\n";       // 1st printf arg = fmt
+        out << "    sub rsp, 32\n";
+        out << "    call printf\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
+        // ---- Built-in: println_char(value: char) -> void ----
+        // Wraps printf with a "%c\n" format string.
+        out << "\n";
+        out << "println_char:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    mov rdx, rcx\n";
+        out << "    lea rcx, [rel __println_fmt_char]\n";
         out << "    sub rsp, 32\n";
         out << "    call printf\n";
         out << "    add rsp, 32\n";

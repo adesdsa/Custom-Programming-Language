@@ -821,7 +821,7 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
 
     if (imports.empty())
     {
-        // Wildcard import: import * from "file.picoc"
+        // wildcard import: import * from "file.picoc"
         for (const auto& function : fileExports->functions)
         {
             if (!this->m_funcTable.InsertFunction(this->m_funcFactory.CreateFuncMetadata(function)))
@@ -1061,6 +1061,7 @@ std::string SemanticAnalysisVisitor::TypeToString(
         case Type::UNSIGNED_INT_TYPE:    return "unsigned int";
         case Type::VOID_TYPE:            return "void";
         case Type::STRING_TYPE:          return "string";
+        case Type::CHAR_TYPE:            return "char";
         default:                         return "unknown";
     }
 }

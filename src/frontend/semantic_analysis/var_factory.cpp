@@ -21,6 +21,7 @@ VarMetaData VarFactory::CreateVarMetadata(
     switch (varType)
     {
     case Type::BOOL_TYPE:
+    case Type::CHAR_TYPE:
         varOffsetInsideFrame = 1;
         break;
     
@@ -66,6 +67,7 @@ VarMetaData VarFactory::CreateVarMetadata(const ExportedVar& exportedVar) const
     switch (exportedVar.type)
     {
     case Type::BOOL_TYPE:
+    case Type::CHAR_TYPE:
         varOffsetInsideFrame = 1;
         break;
     
