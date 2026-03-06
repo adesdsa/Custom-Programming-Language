@@ -140,8 +140,11 @@ private:
     bool m_bLoopFlag;                        // A flag that represents if we are inside a loop rn (if true no need to do control flow checks).
     bool m_bSuppressDefaultExprCheck;       // When true, DefaultExpressionChecks is a no-op (used during condition evaluation).
 
-    /// @brief Returns true if the first token of the expression is string-like (string literal, string var, or string-returning func).
-    static bool IsFirstTokenStringLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode);
+    /// @brief Returns true if the first token of the expression is string-like or char-like (string/char literal, string/char var, or string-returning func).
+    static bool IsFirstTokenStringOrCharLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode);
+    /// @brief Helper for IsFirstTokenStringOrCharLike that works on a token range (handles leading parentheses).
+    static bool IsFirstTokenStringOrCharLikeFrom(const Command& expression, size_t start, size_t end, size_t& paramIndex,
+        const FuncTable& funcTable, const VarTableNode& currVarTableNode);
 
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.

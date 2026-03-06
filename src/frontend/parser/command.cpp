@@ -68,6 +68,11 @@ void Command::SetValue(Token token)
     this->m_tokens.push_back(token);
 }
 
+void Command::SetTokens(std::vector<Token> tokens)
+{
+    this->m_tokens = std::move(tokens);
+}
+
 Token& Command::operator[](size_t index)
 {
     return this->m_tokens[index];

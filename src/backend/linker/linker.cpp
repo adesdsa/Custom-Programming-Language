@@ -94,10 +94,8 @@ std::string Linker::BuildLinkerCommand(
             inner += " \"" + objPath + "\"";
         }
 
-        if constexpr (TargetArchitecture::Is32Bit())
-        {
-            inner += " /mix";
-        }
+        /* /mix: allow mixing object formats if needed */
+        inner += " /mix";
 
         inner += " kernel32.dll"
               +  std::string(" msvcrt.dll");

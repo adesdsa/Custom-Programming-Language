@@ -130,6 +130,8 @@ public:
     void SetExpression(bool indicator);
     // Set the a single Token as the Command.
     void SetValue(Token token);
+    // Set multiple tokens (e.g. for sub-expressions).
+    void SetTokens(std::vector<Token> tokens);
 
     // Operators
     Token& operator[](size_t index);

@@ -95,6 +95,9 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
             )
         );
     }
+
+    // Set for assignment check when next sibling is ASSIGNMENT (e.g. let x: T = expr)
+    this->m_lastIdentifierName = varName;
 }
 
 void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
@@ -1075,6 +1078,7 @@ std::string SemanticAnalysisVisitor::ExpressionTypeToString(
         case ExpressionType::BOOLEAN:      return "boolean";
         case ExpressionType::MATHEMATICAL: return "numeric";
         case ExpressionType::STRING:       return "string";
+        case ExpressionType::CHAR:         return "char";
         case ExpressionType::VOID_TYPE:    return "void";
         default:                           return "unknown";
     }

@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 IRVisitor::IRVisitor(
@@ -202,8 +203,28 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             if (globalVar && valueToStore)
             {
                 auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
-                valueToStore = ConvertIfNeeded(valueToStore, targetType);
-                globalVar->SetInitializer(valueToStore);
+                Type varType = this->m_currVarMetaData.value().type;
+                if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
+                {
+                    // Global init: only char literals (constants) supported; use string constant
+                    auto* charConst = dynamic_cast<IRConstantInt*>(valueToStore);
+                    if (charConst)
+                    {
+                        valueToStore = this->m_irbuilder.GetString(
+                            std::string(1, static_cast<char>(charConst->GetValue())));
+                    }
+                    else
+                    {
+                        StoreInternalError("Global string variable cannot be initialized from non-constant char", node->command);
+                        valueToStore = nullptr;
+                    }
+                }
+                else
+                {
+                    valueToStore = ConvertIfNeeded(valueToStore, targetType);
+                }
+                if (valueToStore)
+                    globalVar->SetInitializer(valueToStore);
             }
             this->m_expectedAssignment = false;
             this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
@@ -217,7 +238,22 @@ void IRVisitor::VisitAssignment(ASTNode* node)
         if (valueToStore && target)
         {
             auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
-            valueToStore = ConvertIfNeeded(valueToStore, targetType);
+            Type varType = this->m_currVarMetaData.value().type;
+            // char to string: convert via str_from_char
+            if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
+            {
+                if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                {
+                    this->m_currModule.AddFunction("str_from_char",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                }
+                valueToStore = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_from_char"), { valueToStore });
+            }
+            else
+            {
+                valueToStore = ConvertIfNeeded(valueToStore, targetType);
+            }
         }
 
         if (!valueToStore || !target)
@@ -1073,8 +1109,7 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
                 default:   charVal = static_cast<unsigned char>(raw[1]); break;
             }
         }
-        if (TargetArchitecture::Is32Bit()) return this->m_irbuilder.GetInt32(charVal);
-        else return this->m_irbuilder.GetInt64(charVal);
+        return this->m_irbuilder.GetInt8(charVal);
     }
 
     if (token.GetType() == TokenTypes::STRING_LITERAL)
@@ -1529,9 +1564,12 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                 {
                     if (auto* callInstr = dynamic_cast<IRInstruction*>(tempInstructionHolder[0]))
                     {
-                        if (callInstr->GetOpcode() == IROpcode::Call && callInstr->GetCalledFunction() &&
-                            callInstr->GetCalledFunction()->GetName() == "str_concat")
-                            isStringArg = true;
+                        if (callInstr->GetOpcode() == IROpcode::Call && callInstr->GetCalledFunction())
+                        {
+                            const std::string& name = callInstr->GetCalledFunction()->GetName();
+                            if (name == "str_concat" || name == "str_from_char" || name == "substr")
+                                isStringArg = true;
+                        }
                     }
                 }
             }
@@ -1795,7 +1833,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
 
         IRBaseValue* result = nullptr;
 
-        // String concatenation: only Add is supported for strings
+        // String concatenation: Add supports string+string and char+string
         if (currOp == Operators::Add && combinedIsString)
         {
             auto* leftStr = dynamic_cast<IRConstantString*>(lhs);
@@ -1822,7 +1860,66 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
         }
         else if (currOp == Operators::Add && (expr[i].isString || expr[i + 1].isString))
         {
-            StoreInternalError("String addition only supports string + string (literals, variables, or string-returning functions)", Command());
+            // char + string or string + char: convert char to string via str_from_char, then str_concat
+            bool leftIsString = expr[i].isString;
+            bool rightIsString = expr[i + 1].isString;
+            bool leftIsChar = lhs->GetType()->GetKind() == IRTypeKind::Int8;
+            bool rightIsChar = rhs->GetType()->GetKind() == IRTypeKind::Int8;
+
+            if ((leftIsString && rightIsChar) || (leftIsChar && rightIsString))
+            {
+                IRBaseValue* leftStrVal = lhs;
+                IRBaseValue* rightStrVal = rhs;
+
+                // Compile-time: char literal + string literal
+                auto* leftCharConst = dynamic_cast<IRConstantInt*>(lhs);
+                auto* rightCharConst = dynamic_cast<IRConstantInt*>(rhs);
+                auto* leftStrConst = dynamic_cast<IRConstantString*>(lhs);
+                auto* rightStrConst = dynamic_cast<IRConstantString*>(rhs);
+
+                if (leftCharConst && rightStrConst)
+                {
+                    std::string oneChar(1, static_cast<char>(leftCharConst->GetValue()));
+                    leftStrVal = this->m_irbuilder.GetString(oneChar);
+                }
+                else if (leftStrConst && rightCharConst)
+                {
+                    std::string oneChar(1, static_cast<char>(rightCharConst->GetValue()));
+                    rightStrVal = this->m_irbuilder.GetString(oneChar);
+                }
+                else
+                {
+                    // Runtime: use str_from_char for the char operand
+                    if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                    {
+                        this->m_currModule.AddFunction("str_from_char",
+                            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+                                { IRType::GetInt8() }));
+                    }
+                    if (leftIsChar)
+                        leftStrVal = this->m_irbuilder.CreateCall(
+                            this->m_currModule.GetFunction("str_from_char"), { lhs });
+                    else
+                        rightStrVal = this->m_irbuilder.CreateCall(
+                            this->m_currModule.GetFunction("str_from_char"), { rhs });
+                }
+
+                if (!this->m_currModule.IsFuncExistByName("str_concat"))
+                {
+                    this->m_currModule.AddFunction("str_concat",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+                            { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
+                }
+                result = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_concat"),
+                    { leftStrVal, rightStrVal }
+                );
+                combinedIsString = true;  // result is string
+            }
+            else
+            {
+                StoreInternalError("String addition only supports string + string, or char + string (literals, variables, or string-returning functions)", Command());
+            }
         }
         else if (combinedFloatness)
         {

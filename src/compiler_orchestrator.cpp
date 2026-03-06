@@ -4,6 +4,8 @@
 #include "includes/shared/errors/error_manager.h"
 #include "includes/shared/errors/error_models.h"
 #include "includes/shared/utils/string_utils.hpp"
+#include "includes/shared/utils/system_utils.h"
+#include "includes/shared/common/target_architecture.h"
 
 #include <algorithm>
 #include <unordered_map>
