@@ -140,6 +140,9 @@ private:
     bool m_bLoopFlag;                        // A flag that represents if we are inside a loop rn (if true no need to do control flow checks).
     bool m_bSuppressDefaultExprCheck;       // When true, DefaultExpressionChecks is a no-op (used during condition evaluation).
 
+    /// @brief Returns true if the first token of the expression is string-like (string literal, string var, or string-returning func).
+    static bool IsFirstTokenStringLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode);
+
     /// @brief The func changes a Token into and ExpressionType.
     /// @return ExpressionType: the corresponding ExpressionType for the Token.
     ExpressionType TokenToExpressionType(const Token& curr);

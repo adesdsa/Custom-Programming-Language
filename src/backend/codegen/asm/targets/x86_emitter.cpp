@@ -29,7 +29,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global println_bool\n";
                 header << "global println_str\n";
                 header << "global println_double\n";
-                header << "global println_char\n\n";
+                header << "global println_char\n";
+                header << "global str_concat\n\n";
 
                 header << "global __println_bool_true\n";
                 header << "global __println_bool_false\n";
@@ -37,6 +38,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global __println_minus\n";
                 header << "global __println_dot\n\n";
 
+                header << "extern malloc\n\n";
                 header << "section .data\n";
                 header << "    __println_bool_true db \"true\", 10, 0\n";
                 header << "    __println_bool_false db \"false\", 10, 0\n";
@@ -50,7 +52,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_bool\n";
                 header << "extern println_str\n";
                 header << "extern println_double\n";
-                header << "extern println_char\n\n";
+                header << "extern println_char\n";
+                header << "extern str_concat\n\n";
 
                 header << "extern __println_bool_true\n";
                 header << "extern __println_bool_false\n";
@@ -70,13 +73,15 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _main\n";
                 header << "extern _ExitProcess@4\n";
                 header << "extern _printf\n";
-                header << "extern _exit\n\n";
+                header << "extern _exit\n";
+                header << "extern _malloc\n\n";
 
                 header << "global _println\n";
                 header << "global _println_double\n";
                 header << "global _println_str\n";
                 header << "global _println_bool\n";
-                header << "global _println_char\n\n";
+                header << "global _println_char\n";
+                header << "global _str_concat\n\n";
 
                 header << "global __println_fmt_int\n";
                 header << "global __println_fmt_double\n";
@@ -99,7 +104,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern _println_double\n";
                 header << "extern _println_str\n";
                 header << "extern _println_bool\n";
-                header << "extern _println_char\n\n";
+                header << "extern _println_char\n";
+                header << "extern _str_concat\n\n";
 
                 header << "extern __println_fmt_int\n";
                 header << "extern __println_fmt_double\n";
@@ -611,6 +617,60 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    pop ebp\n";
             out << "    ret\n";
 
+            // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
+            out << "\n";
+            out << "str_concat:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 24\n";
+            out << "    mov eax, [ebp+8]\n";
+            out << "    mov [ebp-4], eax\n";
+            out << "    mov eax, [ebp+12]\n";
+            out << "    mov [ebp-8], eax\n";
+            out << "    xor ecx, ecx\n";
+            out << ".Lconcat_len1:\n";
+            out << "    mov eax, [ebp-4]\n";
+            out << "    cmp byte [eax + ecx], 0\n";
+            out << "    je .Lconcat_len1_done\n";
+            out << "    inc ecx\n";
+            out << "    jmp .Lconcat_len1\n";
+            out << ".Lconcat_len1_done:\n";
+            out << "    xor edx, edx\n";
+            out << ".Lconcat_len2:\n";
+            out << "    mov eax, [ebp-8]\n";
+            out << "    cmp byte [eax + edx], 0\n";
+            out << "    je .Lconcat_len2_done\n";
+            out << "    inc edx\n";
+            out << "    jmp .Lconcat_len2\n";
+            out << ".Lconcat_len2_done:\n";
+            out << "    lea eax, [ecx + edx + 1]\n";
+            out << "    push eax\n";
+            out << "    call malloc\n";
+            out << "    add esp, 4\n";
+            out << "    mov [ebp-12], eax\n";
+            out << "    mov ecx, [ebp-4]\n";
+            out << "    mov edx, eax\n";
+            out << ".Lconcat_cpy1:\n";
+            out << "    mov al, [ecx]\n";
+            out << "    mov [edx], al\n";
+            out << "    inc ecx\n";
+            out << "    inc edx\n";
+            out << "    test al, al\n";
+            out << "    jnz .Lconcat_cpy1\n";
+            out << "    dec edx\n";
+            out << "    mov ecx, [ebp-8]\n";
+            out << ".Lconcat_cpy2:\n";
+            out << "    mov al, [ecx]\n";
+            out << "    mov [edx], al\n";
+            out << "    inc ecx\n";
+            out << "    inc edx\n";
+            out << "    test al, al\n";
+            out << "    jnz .Lconcat_cpy2\n";
+            out << "    mov eax, [ebp-12]\n";
+            out << "    add esp, 24\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
             // ---- Built-in: println_char(value: char) -> void ----
             // Prints a single ASCII character followed by a newline via write(1, ...).
             out << "\n";
@@ -806,6 +866,60 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    push __println_fmt_str\n";
             out << "    call _printf\n";
             out << "    add esp, 8\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
+            out << "\n";
+            out << "_str_concat:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 24\n";
+            out << "    mov eax, [ebp+8]\n";
+            out << "    mov [ebp-4], eax\n";
+            out << "    mov eax, [ebp+12]\n";
+            out << "    mov [ebp-8], eax\n";
+            out << "    xor ecx, ecx\n";
+            out << "._Lconcat_len1:\n";
+            out << "    mov eax, [ebp-4]\n";
+            out << "    cmp byte [eax + ecx], 0\n";
+            out << "    je ._Lconcat_len1_done\n";
+            out << "    inc ecx\n";
+            out << "    jmp ._Lconcat_len1\n";
+            out << "._Lconcat_len1_done:\n";
+            out << "    xor edx, edx\n";
+            out << "._Lconcat_len2:\n";
+            out << "    mov eax, [ebp-8]\n";
+            out << "    cmp byte [eax + edx], 0\n";
+            out << "    je ._Lconcat_len2_done\n";
+            out << "    inc edx\n";
+            out << "    jmp ._Lconcat_len2\n";
+            out << "._Lconcat_len2_done:\n";
+            out << "    lea eax, [ecx + edx + 1]\n";
+            out << "    push eax\n";
+            out << "    call _malloc\n";
+            out << "    add esp, 4\n";
+            out << "    mov [ebp-12], eax\n";
+            out << "    mov ecx, [ebp-4]\n";
+            out << "    mov edx, eax\n";
+            out << "._Lconcat_cpy1:\n";
+            out << "    mov al, [ecx]\n";
+            out << "    mov [edx], al\n";
+            out << "    inc ecx\n";
+            out << "    inc edx\n";
+            out << "    test al, al\n";
+            out << "    jnz ._Lconcat_cpy1\n";
+            out << "    dec edx\n";
+            out << "    mov ecx, [ebp-8]\n";
+            out << "._Lconcat_cpy2:\n";
+            out << "    mov al, [ecx]\n";
+            out << "    mov [edx], al\n";
+            out << "    inc ecx\n";
+            out << "    inc edx\n";
+            out << "    test al, al\n";
+            out << "    jnz ._Lconcat_cpy2\n";
+            out << "    mov eax, [ebp-12]\n";
+            out << "    add esp, 24\n";
             out << "    pop ebp\n";
             out << "    ret\n";
 

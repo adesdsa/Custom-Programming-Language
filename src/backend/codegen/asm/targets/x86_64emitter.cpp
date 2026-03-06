@@ -32,7 +32,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global println_bool\n";
                 header << "global println_str\n";
                 header << "global println_double\n";
-                header << "global println_char\n\n";
+                header << "global println_char\n";
+                header << "global str_concat\n\n";
 
                 header << "global __println_bool_true\n";
                 header << "global __println_bool_false\n";
@@ -40,6 +41,7 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global __println_minus\n";
                 header << "global __println_dot\n\n";
 
+                header << "extern malloc\n\n";
                 header << "section .data\n";
                 header << "    __println_bool_true db \"true\", 10, 0\n";
                 header << "    __println_bool_false db \"false\", 10, 0\n";
@@ -53,7 +55,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_bool\n";
                 header << "extern println_str\n";
                 header << "extern println_double\n";
-                header << "extern println_char\n\n";
+                header << "extern println_char\n";
+                header << "extern str_concat\n\n";
 
                 header << "extern __println_bool_true\n";
                 header << "extern __println_bool_false\n";
@@ -70,13 +73,15 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global main\n";
                 header << "extern ExitProcess\n";
                 header << "extern printf\n";
-                header << "extern exit\n\n";
+                header << "extern exit\n";
+                header << "extern malloc\n\n";
 
                 header << "global println\n";
                 header << "global println_double\n";
                 header << "global println_str\n";
                 header << "global println_bool\n";
-                header << "global println_char\n\n";
+                header << "global println_char\n";
+                header << "global str_concat\n\n";
 
                 header << "global __println_fmt_int\n";
                 header << "global __println_fmt_double\n";
@@ -99,7 +104,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_double\n";
                 header << "extern println_str\n";
                 header << "extern println_bool\n";
-                header << "extern println_char\n\n";
+                header << "extern println_char\n";
+                header << "extern str_concat\n\n";
 
                 header << "extern __println_fmt_int\n";
                 header << "extern __println_fmt_double\n";
@@ -833,6 +839,55 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    pop rbp\n";
         out << "    ret\n";
 
+        // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
+        out << "\n";
+        out << "str_concat:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 32\n";
+        out << "    mov [rbp-8], rdi\n";
+        out << "    mov [rbp-16], rsi\n";
+        out << "    xor rcx, rcx\n";
+        out << ".Lconcat_len1:\n";
+        out << "    cmp byte [rdi + rcx], 0\n";
+        out << "    je .Lconcat_len1_done\n";
+        out << "    inc rcx\n";
+        out << "    jmp .Lconcat_len1\n";
+        out << ".Lconcat_len1_done:\n";
+        out << "    mov rdi, [rbp-16]\n";
+        out << "    xor rdx, rdx\n";
+        out << ".Lconcat_len2:\n";
+        out << "    cmp byte [rdi + rdx], 0\n";
+        out << "    je .Lconcat_len2_done\n";
+        out << "    inc rdx\n";
+        out << "    jmp .Lconcat_len2\n";
+        out << ".Lconcat_len2_done:\n";
+        out << "    lea rdi, [rcx + rdx + 1]\n";
+        out << "    call malloc\n";
+        out << "    mov [rbp-24], rax\n";
+        out << "    mov rdi, [rbp-8]\n";
+        out << "    mov rsi, rax\n";
+        out << ".Lconcat_cpy1:\n";
+        out << "    mov cl, [rdi]\n";
+        out << "    mov [rsi], cl\n";
+        out << "    inc rdi\n";
+        out << "    inc rsi\n";
+        out << "    test cl, cl\n";
+        out << "    jnz .Lconcat_cpy1\n";
+        out << "    dec rsi\n";
+        out << "    mov rdi, [rbp-16]\n";
+        out << ".Lconcat_cpy2:\n";
+        out << "    mov cl, [rdi]\n";
+        out << "    mov [rsi], cl\n";
+        out << "    inc rdi\n";
+        out << "    inc rsi\n";
+        out << "    test cl, cl\n";
+        out << "    jnz .Lconcat_cpy2\n";
+        out << "    mov rax, [rbp-24]\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
         // ---- Built-in: println_char(value: char) -> void ----
         // Prints a single ASCII character followed by a newline via write(1, ...).
         out << "\n";
@@ -1026,6 +1081,57 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    sub rsp, 32\n";
         out << "    call printf\n";
         out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
+        // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
+        out << "\n";
+        out << "str_concat:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 48\n";
+        out << "    mov [rbp+16], rcx\n";
+        out << "    mov [rbp+24], rdx\n";
+        out << "    xor r8, r8\n";
+        out << ".Lwconcat_len1:\n";
+        out << "    cmp byte [rcx + r8], 0\n";
+        out << "    je .Lwconcat_len1_done\n";
+        out << "    inc r8\n";
+        out << "    jmp .Lwconcat_len1\n";
+        out << ".Lwconcat_len1_done:\n";
+        out << "    mov rcx, [rbp+24]\n";
+        out << "    xor r9, r9\n";
+        out << ".Lwconcat_len2:\n";
+        out << "    cmp byte [rcx + r9], 0\n";
+        out << "    je .Lwconcat_len2_done\n";
+        out << "    inc r9\n";
+        out << "    jmp .Lwconcat_len2\n";
+        out << ".Lwconcat_len2_done:\n";
+        out << "    lea rcx, [r8 + r9 + 1]\n";
+        out << "    sub rsp, 32\n";
+        out << "    call malloc\n";
+        out << "    add rsp, 32\n";
+        out << "    mov [rbp-8], rax\n";
+        out << "    mov rcx, [rbp+16]\n";
+        out << "    mov rdx, rax\n";
+        out << ".Lwconcat_cpy1:\n";
+        out << "    mov r8b, [rcx]\n";
+        out << "    mov [rdx], r8b\n";
+        out << "    inc rcx\n";
+        out << "    inc rdx\n";
+        out << "    test r8b, r8b\n";
+        out << "    jnz .Lwconcat_cpy1\n";
+        out << "    dec rdx\n";
+        out << "    mov rcx, [rbp+24]\n";
+        out << ".Lwconcat_cpy2:\n";
+        out << "    mov r8b, [rcx]\n";
+        out << "    mov [rdx], r8b\n";
+        out << "    inc rcx\n";
+        out << "    inc rdx\n";
+        out << "    test r8b, r8b\n";
+        out << "    jnz .Lwconcat_cpy2\n";
+        out << "    mov rax, [rbp-8]\n";
+        out << "    add rsp, 48\n";
         out << "    pop rbp\n";
         out << "    ret\n";
 

@@ -38,6 +38,28 @@ bool SemanticCheckerFacade::CheckFuncDefinition(const FuncTable& funcTable, cons
     return searchedFuncMetadata->IsFuncDefined();
 }
 
+bool SemanticCheckerFacade::IsFirstTokenStringLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode)
+{
+    if (expression.GetTokens().empty()) return false;
+    const Token& first = expression[FIRST_TOKEN_INDEX];
+    if (first.GetType() == TokenTypes::STRING_LITERAL) return true;
+    if (first.GetType() == TokenTypes::HAS_PARAM && !expression.GetParams().empty())
+    {
+        const Command& param = expression.GetParams()[0];
+        if (param.GetType() == CommandTypes::IDENTIFIER_VALUE)
+        {
+            auto varData = currVarTableNode.FindVar(param[IDENTIFIER_INDEX].GetValue());
+            return varData.has_value() && varData->type == Type::STRING_TYPE;
+        }
+        if (param.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+        {
+            FuncMetaData* f = funcTable.FindFunctionByName(param[IDENTIFIER_INDEX].GetValue());
+            return f && f->GetRType() == Type::STRING_TYPE;
+        }
+    }
+    return false;
+}
+
 ExpressionType SemanticCheckerFacade::CheckExpression(
     const Command& expression,
     const FuncTable& funcTable,
@@ -52,6 +74,50 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     if (expression.GetTokens().size() == 1 && expression[FIRST_TOKEN_INDEX].GetValue() == "void")
     {
         return ExpressionType::VOID_TYPE;
+    }
+
+    // Incase the expression is string related (string literal, string var, string + string, etc.)
+    if (expression.GetTokens().size() >= 1 && IsFirstTokenStringLike(expression, funcTable, currVarTableNode))
+    {
+        for (int i = 0; i < expression.GetTokens().size(); i++)
+        {
+            if (i % 2 == 0)
+            {
+                if (expression[i].GetType() == TokenTypes::STRING_LITERAL)
+                {
+                    continue;
+                }
+                else if (expression[i].GetType() == TokenTypes::HAS_PARAM)
+                {
+                    if (uParamIndex >= expression.GetParams().size()) return ExpressionType::UNKNOWN;
+                    const Command& currCommand = expression.GetParams()[uParamIndex++];
+                    if (currCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
+                    {
+                        auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                        if (!varData.has_value())  return ExpressionType::UNKNOWN;
+
+                        if (varData.value().type == Type::STRING_TYPE) continue;
+                    }
+                    else if (currCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+                    {
+                        FuncMetaData* funcData = funcTable.FindFunctionByName(currCommand[IDENTIFIER_INDEX].GetValue());
+
+                        if (funcData && funcData->GetRType() == Type::STRING_TYPE) continue;
+                        else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
+                    }
+                }
+                return ExpressionType::UNKNOWN;
+            }
+            else
+            {
+                if (expression[i].GetValue() == "+")
+                {
+                    continue;
+                }
+                return ExpressionType::UNKNOWN;
+            }
+        }
+        return ExpressionType::STRING;
     }
 
     // Incase the expression is a single func call or identifier value.
@@ -413,6 +479,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (gottenType == ExpressionType::UNKNOWN) return false;
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
     if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
+    if (expectedType == Type::STRING_TYPE && gottenType == ExpressionType::STRING) return true;
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||

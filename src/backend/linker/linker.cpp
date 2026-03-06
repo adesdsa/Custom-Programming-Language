@@ -122,6 +122,7 @@ std::string Linker::BuildLinkerCommand(
             cmd += " \"" + objPath + "\"";
         }
 
+        cmd += " -lc";
         return cmd;
 
     #else

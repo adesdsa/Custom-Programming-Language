@@ -993,6 +993,11 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         return IRType::GetInt8();
         break;
 
+    case Type::STRING_TYPE:
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
+        break;
+
     case Type::VOID_TYPE:
         return IRType::GetVoid();
         break;
@@ -1026,6 +1031,12 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
     if (type == "char")
     {
         return IRType::GetInt8();
+    }
+
+    if (type == "string")
+    {
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
     }
 
     if (type == "void")
@@ -1495,6 +1506,38 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         {
             targetFuncName = "println_str";
         }
+        else if (argKind == IRTypeKind::Int32 || argKind == IRTypeKind::Int64)
+        {
+            // Int32/Int64 can be either int or string (pointer-sized). Distinguish by AST/semantic info.
+            bool isStringArg = false;
+            const auto& argExprs = command.GetParams();
+            if (argExprs.size() > 0)
+            {
+                const Command& firstArg = argExprs[0];
+                if (firstArg.GetType() == CommandTypes::IDENTIFIER_VALUE)
+                {
+                    ASTNode tempNode(firstArg);
+                    auto varMeta = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(&tempNode));
+                    if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                }
+                else if (firstArg.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+                {
+                    FuncMetaData* argFunc = this->m_decoratedAst.funcTable.FindFunctionByName(firstArg[FUNC_IDENTIFIER_INDEX].GetValue());
+                    if (argFunc && argFunc->GetRType() == Type::STRING_TYPE) isStringArg = true;
+                }
+                else if (firstArg.GetType() == CommandTypes::EXPRESSION)
+                {
+                    if (auto* callInstr = dynamic_cast<IRInstruction*>(tempInstructionHolder[0]))
+                    {
+                        if (callInstr->GetOpcode() == IROpcode::Call && callInstr->GetCalledFunction() &&
+                            callInstr->GetCalledFunction()->GetName() == "str_concat")
+                            isStringArg = true;
+                    }
+                }
+            }
+            if (isStringArg) targetFuncName = "println_str";
+            // else: integer → keep targetFuncName as "println"
+        }
     }
 
     // ensure the target function stub exists in the module
@@ -1748,21 +1791,50 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
 
         bool combinedSignage = expr[i].signage || expr[i + 1].signage;
         bool combinedFloatness = expr[i].floatness || expr[i + 1].floatness;
+        bool combinedIsString = expr[i].isString && expr[i + 1].isString;
 
-        if (combinedFloatness)
+        IRBaseValue* result = nullptr;
+
+        // String concatenation: only Add is supported for strings
+        if (currOp == Operators::Add && combinedIsString)
+        {
+            auto* leftStr = dynamic_cast<IRConstantString*>(lhs);
+            auto* rightStr = dynamic_cast<IRConstantString*>(rhs);
+            if (leftStr && rightStr)
+            {
+                // Compile-time concatenation for two string literals
+                result = this->m_irbuilder.GetString(leftStr->GetValue() + rightStr->GetValue());
+            }
+            else
+            {
+                // Runtime concatenation via str_concat
+                if (!this->m_currModule.IsFuncExistByName("str_concat"))
+                {
+                    this->m_currModule.AddFunction("str_concat",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+                            { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
+                }
+                result = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_concat"),
+                    { lhs, rhs }
+                );
+            }
+        }
+        else if (currOp == Operators::Add && (expr[i].isString || expr[i + 1].isString))
+        {
+            StoreInternalError("String addition only supports string + string (literals, variables, or string-returning functions)", Command());
+        }
+        else if (combinedFloatness)
         {
             auto floatType = IRType::GetFloat64();
             lhs = ConvertIfNeeded(lhs, floatType);
             rhs = ConvertIfNeeded(rhs, floatType);
+            result = ChooseOperation(currOp, lhs, rhs, combinedSignage, combinedFloatness);
         }
-
-        IRBaseValue* result = ChooseOperation(
-            currOp,
-            lhs,
-            rhs,
-            combinedSignage,
-            combinedFloatness
-        );
+        else
+        {
+            result = ChooseOperation(currOp, lhs, rhs, combinedSignage, combinedFloatness);
+        }
 
         if (!result)
         {
@@ -1776,6 +1848,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
         expr[i].value = result;
         expr[i].signage = combinedSignage;
         expr[i].floatness = combinedFloatness;
+        expr[i].isString = combinedIsString;
         expr[i].notCnt = 0;
         expr[i].op = expr[i + 1].op;
 
@@ -1836,6 +1909,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = inner.front().value;
             it.signage = inner.front().signage;
             it.floatness = inner.front().floatness;
+            it.isString = inner.front().isString;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1864,6 +1938,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             IRBaseValue* currExpressionValue = nullptr;
             bool localSignage = false;
             bool localFloatness = false;
+            bool localIsString = false;
 
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
@@ -1872,6 +1947,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
                 if (!varMetaData) return {};
                 if (varMetaData->type == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (varMetaData->type == Type::DOUBLE_TYPE) localFloatness = true;
+                else if (varMetaData->type == Type::STRING_TYPE) localIsString = true;
 
                 currExpressionValue = HandleIdentifierValue(&tempNode);
             }
@@ -1881,6 +1957,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
                 if (!funcMetaData) return {};
                 if (funcMetaData->GetRType() == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (funcMetaData->GetRType() == Type::DOUBLE_TYPE) localFloatness = true;
+                else if (funcMetaData->GetRType() == Type::STRING_TYPE) localIsString = true;
 
                 currExpressionValue = HandleFuncCall(innerCommand);
             }
@@ -1897,6 +1974,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = localSignage;
             it.floatness = localFloatness;
+            it.isString = localIsString;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1910,6 +1988,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = false;
             it.floatness = false;
+            it.isString = true;
             it.notCnt = 0;
             expr.push_back(it);
             continue;
@@ -1922,6 +2001,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = false;
             it.floatness = false;
+            it.isString = false;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1941,6 +2021,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = localSignage;
             it.floatness = localFloatness;
+            it.isString = false;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1958,6 +2039,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
                 zero.value = this->m_irbuilder.GetInt32(0);
                 zero.signage = false;
                 zero.floatness = false;
+                zero.isString = false;
                 zero.notCnt = 0;
                 zero.op = op;
                 expr.push_back(zero);

@@ -865,7 +865,8 @@ inline bool Command::IsType(Token& token)
            this->IsValue(token, "bool")   ||
            this->IsValue(token, "double") ||
            this->IsValue(token, "void")   ||
-           this->IsValue(token, "char");
+           this->IsValue(token, "char")   ||
+           this->IsValue(token, "string");
 }
 
 bool Command::IsControlStatement(Token& token)

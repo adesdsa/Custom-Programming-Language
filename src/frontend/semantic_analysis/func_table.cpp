@@ -64,5 +64,21 @@ void FuncTable::RegisterBuiltins()
     printlnFunc.SetDefined(); // mark as defined so the linker check passes
     this->InsertFunction(std::move(printlnFunc));
 
+    // str_concat(a: string, b: string) -> string
+    std::vector<VarMetaData> strConcatParams = {
+        VarMetaData("a", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("b", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData strConcatFunc(
+        this->m_entityLogger,
+        "str_concat",
+        Type::STRING_TYPE,
+        strConcatParams,
+        0, 0,
+        nullptr
+    );
+    strConcatFunc.SetDefined();
+    this->InsertFunction(std::move(strConcatFunc));
+
     this->m_entityLogger.Info("Registered built-in functions");
 }
