@@ -1711,6 +1711,13 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
         bool combinedSignage = expr[i].signage || expr[i + 1].signage;
         bool combinedFloatness = expr[i].floatness || expr[i + 1].floatness;
 
+        if (combinedFloatness)
+        {
+            auto floatType = IRType::GetFloat64();
+            lhs = ConvertIfNeeded(lhs, floatType);
+            rhs = ConvertIfNeeded(rhs, floatType);
+        }
+
         IRBaseValue* result = ChooseOperation(
             currOp,
             lhs,
