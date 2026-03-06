@@ -104,15 +104,17 @@ std::string Linker::BuildLinkerCommand(
 
     #elif defined(__linux__)
 
+        /* -dynamic-linker: embed correct PT_INTERP so the kernel finds the loader.
+         * Without this, ld may produce wrong interpreter (e.g. /lib/ld64.so.1). */
         std::string cmd;
 
         if constexpr (TargetArchitecture::Is64Bit())
         {
-            cmd = "ld -o \"" + exePath + "\"";
+            cmd = "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o \"" + exePath + "\"";
         }
         else
         {
-            cmd = "ld -m elf_i386 -o \"" + exePath + "\"";
+            cmd = "ld -m elf_i386 -dynamic-linker /lib/ld-linux.so.2 -o \"" + exePath + "\"";
         }
 
         for (const auto& objPath : objPaths)
