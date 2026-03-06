@@ -396,6 +396,10 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
     {
         return ExpressionType::STRING;
     }
+    else if (token.GetType() == TokenTypes::CHAR_LITERAL)
+    {
+        return ExpressionType::MATHEMATICAL;
+    }
     /// If it's a value
     else if (token.GetValue() == "true" || token.GetValue() == "false")
     {
@@ -412,7 +416,8 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||
-        expectedType == Type::UNSIGNED_INT_TYPE)
+        expectedType == Type::UNSIGNED_INT_TYPE ||
+        expectedType == Type::CHAR_TYPE)
     ) return true;
 
     return false;

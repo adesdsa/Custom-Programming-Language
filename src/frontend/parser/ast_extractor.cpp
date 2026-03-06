@@ -117,6 +117,7 @@ std::optional<Type> ASTExtractor::StringToType(std::string_view type)
     if (type == "bool") return Type::BOOL_TYPE;
     if (type == "int") return Type::INT_TYPE;
     if (type == "double") return Type::DOUBLE_TYPE;
+    if (type == "char") return Type::CHAR_TYPE;
 
     return std::nullopt;  // Unknown/unsupported type
 }

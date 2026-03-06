@@ -62,7 +62,7 @@ namespace RegexPatterns
             try 
             {
                 return std::regex(
-                    R"(\b(and|or|not|xor|break|continue|return|if|elif|else|for|while|pass|sizeof|const|readonly|void|bool|unsigned|int|double|global|var|let|export|import|from)\b)", // MUST BE IN A SINGLE LINE!
+                    R"(\b(and|or|not|xor|break|continue|return|if|elif|else|for|while|pass|sizeof|const|readonly|void|bool|unsigned|int|double|char|global|var|let|export|import|from)\b)", // MUST BE IN A SINGLE LINE!
                     std::regex::optimize
                 );
             } 

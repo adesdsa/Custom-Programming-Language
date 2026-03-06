@@ -189,5 +189,12 @@
       "export const ${1:name}: ${2:int} = ${3:0};"
     ],
     "description": "Export a constant variable"
+  },
+  "Char Variable": {
+    "prefix": "charvar",
+    "body": [
+      "let ${1:name}: char = '${2:a}';"
+    ],
+    "description": "Char variable declaration"
   }
 }
