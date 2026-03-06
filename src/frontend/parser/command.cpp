@@ -638,7 +638,8 @@ bool Command::ParseExpressionOperator(Token& currToken, Token& nextToken)
             }
         } 
         else if (this->IsType(currToken, TokenTypes::VALUE) || 
-                 this->IsType(currToken, TokenTypes::STRING_LITERAL))
+                 this->IsType(currToken, TokenTypes::STRING_LITERAL) ||
+                 this->IsType(currToken, TokenTypes::CHAR_LITERAL))
         {
             return this->NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
         }
@@ -836,6 +837,7 @@ bool Command::IsExpressionStart(Token& token)
     return this->IsType(token, TokenTypes::IDENTIFIER)     ||
            this->IsType(token, TokenTypes::VALUE)          ||
            this->IsType(token, TokenTypes::STRING_LITERAL) ||
+           this->IsType(token, TokenTypes::CHAR_LITERAL)   ||
            this->IsValue(token, "-")                       ||
            this->IsValue(token, "not")                     ||
            this->IsValue(token, "(");
@@ -853,7 +855,8 @@ inline bool Command::IsValueToken(Token& token)
 {
     return this->IsType(token, TokenTypes::IDENTIFIER)     ||
            this->IsType(token, TokenTypes::VALUE)          ||
-           this->IsType(token, TokenTypes::STRING_LITERAL);
+           this->IsType(token, TokenTypes::STRING_LITERAL) ||
+           this->IsType(token, TokenTypes::CHAR_LITERAL);
 }
 
 inline bool Command::IsType(Token& token)

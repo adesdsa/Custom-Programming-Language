@@ -540,7 +540,7 @@ const KEYWORD_COMPLETIONS = [
     return item;
 });
 const TYPE_COMPLETIONS = [
-    "void", "bool", "int", "double", "unsigned",
+    "void", "bool", "int", "double", "unsigned", "char",
 ].map((t) => {
     const item = new vscode.CompletionItem(t, vscode.CompletionItemKind.TypeParameter);
     item.detail = "type";
