@@ -95,6 +95,22 @@ void FuncTable::RegisterBuiltins()
     strFromCharFunc.SetDefined();
     this->InsertFunction(std::move(strFromCharFunc));
 
+    // str_cmp(a: string, b: string) -> int
+    std::vector<VarMetaData> strCmpParams = {
+        VarMetaData("a", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("b", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData strCmpFunc(
+        this->m_entityLogger,
+        "str_cmp",
+        Type::INT_TYPE,
+        strCmpParams,
+        0, 0,
+        nullptr
+    );
+    strCmpFunc.SetDefined();
+    this->InsertFunction(std::move(strCmpFunc));
+
     // str_len(s: string) -> int
     std::vector<VarMetaData> strLenParams = {
         VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)

@@ -1921,6 +1921,36 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
                 StoreInternalError("String addition only supports string + string, or char + string (literals, variables, or string-returning functions)", Command());
             }
         }
+        else if ((expr[i].isString || expr[i + 1].isString) &&
+                 (currOp == Operators::Eq || currOp == Operators::Ne ||
+                  currOp == Operators::Lt || currOp == Operators::Gt ||
+                  currOp == Operators::Le || currOp == Operators::Ge))
+        {
+            if (!this->m_currModule.IsFuncExistByName("str_cmp"))
+            {
+                this->m_currModule.AddFunction("str_cmp",
+                    IRType::GetFunction(
+                        TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64(),
+                        { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
+            }
+            IRBaseValue* cmpResult = this->m_irbuilder.CreateCall(
+                this->m_currModule.GetFunction("str_cmp"), { lhs, rhs });
+            IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+
+            switch (currOp)
+            {
+                case Operators::Eq: result = this->m_irbuilder.CreateICmpEQ(cmpResult, zero); break;
+                case Operators::Ne: result = this->m_irbuilder.CreateICmpNE(cmpResult, zero); break;
+                case Operators::Lt: result = this->m_irbuilder.CreateICmpSLT(cmpResult, zero); break;
+                case Operators::Gt: result = this->m_irbuilder.CreateICmpSGT(cmpResult, zero); break;
+                case Operators::Le: result = this->m_irbuilder.CreateICmpSLE(cmpResult, zero); break;
+                case Operators::Ge: result = this->m_irbuilder.CreateICmpSGE(cmpResult, zero); break;
+                default: break;
+            }
+            combinedIsString = false;
+        }
         else if (combinedFloatness)
         {
             auto floatType = IRType::GetFloat64();

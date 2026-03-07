@@ -53,6 +53,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global println_char\n";
                 header << "global str_concat\n";
                 header << "global str_from_char\n";
+                header << "global str_cmp\n";
                 header << "global str_len\n";
                 header << "global substr\n";
                 header << "global char_at\n";
@@ -85,6 +86,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_char\n";
                 header << "extern str_concat\n";
                 header << "extern str_from_char\n";
+                header << "extern str_cmp\n";
                 header << "extern str_len\n";
                 header << "extern substr\n";
                 header << "extern char_at\n";
@@ -121,6 +123,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _println_char\n";
                 header << "global _str_concat\n";
                 header << "global _str_from_char\n";
+                header << "global _str_cmp\n";
                 header << "global _str_len\n";
                 header << "global _substr\n";
                 header << "global _char_at\n";
@@ -156,6 +159,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern _println_char\n";
                 header << "extern _str_concat\n";
                 header << "extern _str_from_char\n";
+                header << "extern _str_cmp\n";
                 header << "extern _str_len\n";
                 header << "extern _substr\n";
                 header << "extern _char_at\n";
@@ -759,6 +763,24 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov byte [eax+1], 0\n";
             out << "    add esp, 8\n";
             out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: str_cmp(a: char*, b: char*) -> int ----
+            out << "\n";
+            out << "str_cmp:\n";
+            out << "    mov ecx, [esp+4]\n";
+            out << "    mov edx, [esp+8]\n";
+            out << ".Lstrcmp_loop:\n";
+            out << "    movzx eax, byte [ecx]\n";
+            out << "    movzx ebx, byte [edx]\n";
+            out << "    sub eax, ebx\n";
+            out << "    jnz .Lstrcmp_done\n";
+            out << "    cmp byte [ecx], 0\n";
+            out << "    je .Lstrcmp_done\n";
+            out << "    inc ecx\n";
+            out << "    inc edx\n";
+            out << "    jmp .Lstrcmp_loop\n";
+            out << ".Lstrcmp_done:\n";
             out << "    ret\n";
 
             // ---- Built-in: str_len(s: char*) -> int ----
@@ -1606,6 +1628,24 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov [eax], cl\n";
             out << "    mov byte [eax+1], 0\n";
             out << "    pop ebp\n";
+            out << "    ret\n";
+
+            // ---- Built-in: str_cmp(a: char*, b: char*) -> int ----
+            out << "\n";
+            out << "_str_cmp:\n";
+            out << "    mov ecx, [esp+4]\n";
+            out << "    mov edx, [esp+8]\n";
+            out << "._Lstrcmp_loop:\n";
+            out << "    movzx eax, byte [ecx]\n";
+            out << "    movzx ebx, byte [edx]\n";
+            out << "    sub eax, ebx\n";
+            out << "    jnz ._Lstrcmp_done\n";
+            out << "    cmp byte [ecx], 0\n";
+            out << "    je ._Lstrcmp_done\n";
+            out << "    inc ecx\n";
+            out << "    inc edx\n";
+            out << "    jmp ._Lstrcmp_loop\n";
+            out << "._Lstrcmp_done:\n";
             out << "    ret\n";
 
             // ---- Built-in: str_len(s: char*) -> int ----
