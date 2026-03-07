@@ -58,6 +58,7 @@ struct ExprItem
     Operators op;           // operator after this value
     bool signage;
     bool floatness;
+    bool isString;          // true if value is string (literal, variable, or string-returning func)
     size_t notCnt;          // how many `not` applied before this value
 };
 

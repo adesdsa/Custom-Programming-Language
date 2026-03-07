@@ -38,6 +38,7 @@ VarMetaData VarFactory::CreateVarMetadata(
 
     case Type::INT_TYPE:
     case Type::UNSIGNED_INT_TYPE:
+    case Type::STRING_TYPE:  // String vars hold a pointer to the character data, not the content itself
         if (TargetArchitecture::Is32Bit())
         {
             varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
@@ -84,6 +85,7 @@ VarMetaData VarFactory::CreateVarMetadata(const ExportedVar& exportedVar) const
 
     case Type::INT_TYPE:
     case Type::UNSIGNED_INT_TYPE:
+    case Type::STRING_TYPE:  // String vars hold a pointer to the character data, not the content itself
         if (TargetArchitecture::Is32Bit())
         {
             varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;

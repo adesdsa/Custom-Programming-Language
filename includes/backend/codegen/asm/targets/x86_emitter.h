@@ -64,4 +64,6 @@ private:
 
     // load an operand into an SSE XMM register
     void LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
+
+    void EmitExtraBssContent(const IRModule& module, std::ostream& out) const override;
 };

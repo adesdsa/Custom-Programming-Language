@@ -76,6 +76,9 @@ private:
     
     /// @brief Emits .bss section (uninitialized globals). Skips extern variables.
     void EmitBssSection(const IRModule& module, std::ostream& out);
+
+    /// @brief Override to emit extra BSS content (e.g. heap for custom allocator). Default: no-op.
+    virtual void EmitExtraBssContent(const IRModule& module, std::ostream& out) const { (void)module; (void)out; }
     
     /// @brief emits .text section (all functions)
     void EmitTextSection(const IRModule& module, std::ostream& out);

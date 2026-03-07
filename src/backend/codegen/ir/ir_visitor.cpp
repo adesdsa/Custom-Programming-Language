@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 IRVisitor::IRVisitor(
@@ -202,8 +203,28 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             if (globalVar && valueToStore)
             {
                 auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
-                valueToStore = ConvertIfNeeded(valueToStore, targetType);
-                globalVar->SetInitializer(valueToStore);
+                Type varType = this->m_currVarMetaData.value().type;
+                if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
+                {
+                    // Global init: only char literals (constants) supported; use string constant
+                    auto* charConst = dynamic_cast<IRConstantInt*>(valueToStore);
+                    if (charConst)
+                    {
+                        valueToStore = this->m_irbuilder.GetString(
+                            std::string(1, static_cast<char>(charConst->GetValue())));
+                    }
+                    else
+                    {
+                        StoreInternalError("Global string variable cannot be initialized from non-constant char", node->command);
+                        valueToStore = nullptr;
+                    }
+                }
+                else
+                {
+                    valueToStore = ConvertIfNeeded(valueToStore, targetType);
+                }
+                if (valueToStore)
+                    globalVar->SetInitializer(valueToStore);
             }
             this->m_expectedAssignment = false;
             this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
@@ -217,7 +238,22 @@ void IRVisitor::VisitAssignment(ASTNode* node)
         if (valueToStore && target)
         {
             auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
-            valueToStore = ConvertIfNeeded(valueToStore, targetType);
+            Type varType = this->m_currVarMetaData.value().type;
+            // char to string: convert via str_from_char
+            if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
+            {
+                if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                {
+                    this->m_currModule.AddFunction("str_from_char",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                }
+                valueToStore = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_from_char"), { valueToStore });
+            }
+            else
+            {
+                valueToStore = ConvertIfNeeded(valueToStore, targetType);
+            }
         }
 
         if (!valueToStore || !target)
@@ -993,6 +1029,11 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         return IRType::GetInt8();
         break;
 
+    case Type::STRING_TYPE:
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
+        break;
+
     case Type::VOID_TYPE:
         return IRType::GetVoid();
         break;
@@ -1026,6 +1067,12 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
     if (type == "char")
     {
         return IRType::GetInt8();
+    }
+
+    if (type == "string")
+    {
+        if (TargetArchitecture::Is32Bit()) return IRType::GetInt32();
+        else return IRType::GetInt64();
     }
 
     if (type == "void")
@@ -1062,8 +1109,7 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
                 default:   charVal = static_cast<unsigned char>(raw[1]); break;
             }
         }
-        if (TargetArchitecture::Is32Bit()) return this->m_irbuilder.GetInt32(charVal);
-        else return this->m_irbuilder.GetInt64(charVal);
+        return this->m_irbuilder.GetInt8(charVal);
     }
 
     if (token.GetType() == TokenTypes::STRING_LITERAL)
@@ -1495,6 +1541,41 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         {
             targetFuncName = "println_str";
         }
+        else if (argKind == IRTypeKind::Int32 || argKind == IRTypeKind::Int64)
+        {
+            // Int32/Int64 can be either int or string (pointer-sized). Distinguish by AST/semantic info.
+            bool isStringArg = false;
+            const auto& argExprs = command.GetParams();
+            if (argExprs.size() > 0)
+            {
+                const Command& firstArg = argExprs[0];
+                if (firstArg.GetType() == CommandTypes::IDENTIFIER_VALUE)
+                {
+                    ASTNode tempNode(firstArg);
+                    auto varMeta = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(&tempNode));
+                    if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                }
+                else if (firstArg.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+                {
+                    FuncMetaData* argFunc = this->m_decoratedAst.funcTable.FindFunctionByName(firstArg[FUNC_IDENTIFIER_INDEX].GetValue());
+                    if (argFunc && argFunc->GetRType() == Type::STRING_TYPE) isStringArg = true;
+                }
+                else if (firstArg.GetType() == CommandTypes::EXPRESSION)
+                {
+                    if (auto* callInstr = dynamic_cast<IRInstruction*>(tempInstructionHolder[0]))
+                    {
+                        if (callInstr->GetOpcode() == IROpcode::Call && callInstr->GetCalledFunction())
+                        {
+                            const std::string& name = callInstr->GetCalledFunction()->GetName();
+                            if (name == "str_concat" || name == "str_from_char" || name == "substr")
+                                isStringArg = true;
+                        }
+                    }
+                }
+            }
+            if (isStringArg) targetFuncName = "println_str";
+            // else: integer → keep targetFuncName as "println"
+        }
     }
 
     // ensure the target function stub exists in the module
@@ -1748,21 +1829,109 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
 
         bool combinedSignage = expr[i].signage || expr[i + 1].signage;
         bool combinedFloatness = expr[i].floatness || expr[i + 1].floatness;
+        bool combinedIsString = expr[i].isString && expr[i + 1].isString;
 
-        if (combinedFloatness)
+        IRBaseValue* result = nullptr;
+
+        // String concatenation: Add supports string+string and char+string
+        if (currOp == Operators::Add && combinedIsString)
+        {
+            auto* leftStr = dynamic_cast<IRConstantString*>(lhs);
+            auto* rightStr = dynamic_cast<IRConstantString*>(rhs);
+            if (leftStr && rightStr)
+            {
+                // Compile-time concatenation for two string literals
+                result = this->m_irbuilder.GetString(leftStr->GetValue() + rightStr->GetValue());
+            }
+            else
+            {
+                // Runtime concatenation via str_concat
+                if (!this->m_currModule.IsFuncExistByName("str_concat"))
+                {
+                    this->m_currModule.AddFunction("str_concat",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+                            { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
+                }
+                result = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_concat"),
+                    { lhs, rhs }
+                );
+            }
+        }
+        else if (currOp == Operators::Add && (expr[i].isString || expr[i + 1].isString))
+        {
+            // char + string or string + char: convert char to string via str_from_char, then str_concat
+            bool leftIsString = expr[i].isString;
+            bool rightIsString = expr[i + 1].isString;
+            bool leftIsChar = lhs->GetType()->GetKind() == IRTypeKind::Int8;
+            bool rightIsChar = rhs->GetType()->GetKind() == IRTypeKind::Int8;
+
+            if ((leftIsString && rightIsChar) || (leftIsChar && rightIsString))
+            {
+                IRBaseValue* leftStrVal = lhs;
+                IRBaseValue* rightStrVal = rhs;
+
+                // Compile-time: char literal + string literal
+                auto* leftCharConst = dynamic_cast<IRConstantInt*>(lhs);
+                auto* rightCharConst = dynamic_cast<IRConstantInt*>(rhs);
+                auto* leftStrConst = dynamic_cast<IRConstantString*>(lhs);
+                auto* rightStrConst = dynamic_cast<IRConstantString*>(rhs);
+
+                if (leftCharConst && rightStrConst)
+                {
+                    std::string oneChar(1, static_cast<char>(leftCharConst->GetValue()));
+                    leftStrVal = this->m_irbuilder.GetString(oneChar);
+                }
+                else if (leftStrConst && rightCharConst)
+                {
+                    std::string oneChar(1, static_cast<char>(rightCharConst->GetValue()));
+                    rightStrVal = this->m_irbuilder.GetString(oneChar);
+                }
+                else
+                {
+                    // Runtime: use str_from_char for the char operand
+                    if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                    {
+                        this->m_currModule.AddFunction("str_from_char",
+                            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+                                { IRType::GetInt8() }));
+                    }
+                    if (leftIsChar)
+                        leftStrVal = this->m_irbuilder.CreateCall(
+                            this->m_currModule.GetFunction("str_from_char"), { lhs });
+                    else
+                        rightStrVal = this->m_irbuilder.CreateCall(
+                            this->m_currModule.GetFunction("str_from_char"), { rhs });
+                }
+
+                if (!this->m_currModule.IsFuncExistByName("str_concat"))
+                {
+                    this->m_currModule.AddFunction("str_concat",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+                            { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
+                }
+                result = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_concat"),
+                    { leftStrVal, rightStrVal }
+                );
+                combinedIsString = true;  // result is string
+            }
+            else
+            {
+                StoreInternalError("String addition only supports string + string, or char + string (literals, variables, or string-returning functions)", Command());
+            }
+        }
+        else if (combinedFloatness)
         {
             auto floatType = IRType::GetFloat64();
             lhs = ConvertIfNeeded(lhs, floatType);
             rhs = ConvertIfNeeded(rhs, floatType);
+            result = ChooseOperation(currOp, lhs, rhs, combinedSignage, combinedFloatness);
         }
-
-        IRBaseValue* result = ChooseOperation(
-            currOp,
-            lhs,
-            rhs,
-            combinedSignage,
-            combinedFloatness
-        );
+        else
+        {
+            result = ChooseOperation(currOp, lhs, rhs, combinedSignage, combinedFloatness);
+        }
 
         if (!result)
         {
@@ -1776,6 +1945,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
         expr[i].value = result;
         expr[i].signage = combinedSignage;
         expr[i].floatness = combinedFloatness;
+        expr[i].isString = combinedIsString;
         expr[i].notCnt = 0;
         expr[i].op = expr[i + 1].op;
 
@@ -1836,6 +2006,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = inner.front().value;
             it.signage = inner.front().signage;
             it.floatness = inner.front().floatness;
+            it.isString = inner.front().isString;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1864,6 +2035,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             IRBaseValue* currExpressionValue = nullptr;
             bool localSignage = false;
             bool localFloatness = false;
+            bool localIsString = false;
 
             if (innerCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
             {
@@ -1872,6 +2044,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
                 if (!varMetaData) return {};
                 if (varMetaData->type == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (varMetaData->type == Type::DOUBLE_TYPE) localFloatness = true;
+                else if (varMetaData->type == Type::STRING_TYPE) localIsString = true;
 
                 currExpressionValue = HandleIdentifierValue(&tempNode);
             }
@@ -1881,6 +2054,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
                 if (!funcMetaData) return {};
                 if (funcMetaData->GetRType() == Type::UNSIGNED_INT_TYPE) localSignage = true;
                 else if (funcMetaData->GetRType() == Type::DOUBLE_TYPE) localFloatness = true;
+                else if (funcMetaData->GetRType() == Type::STRING_TYPE) localIsString = true;
 
                 currExpressionValue = HandleFuncCall(innerCommand);
             }
@@ -1897,6 +2071,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = localSignage;
             it.floatness = localFloatness;
+            it.isString = localIsString;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1910,6 +2085,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = false;
             it.floatness = false;
+            it.isString = true;
             it.notCnt = 0;
             expr.push_back(it);
             continue;
@@ -1922,6 +2098,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = false;
             it.floatness = false;
+            it.isString = false;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1941,6 +2118,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             it.value = currExpressionValue;
             it.signage = localSignage;
             it.floatness = localFloatness;
+            it.isString = false;
             it.notCnt = pendingNotCnt;
             pendingNotCnt = 0;
             expr.push_back(it);
@@ -1958,6 +2136,7 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
                 zero.value = this->m_irbuilder.GetInt32(0);
                 zero.signage = false;
                 zero.floatness = false;
+                zero.isString = false;
                 zero.notCnt = 0;
                 zero.op = op;
                 expr.push_back(zero);

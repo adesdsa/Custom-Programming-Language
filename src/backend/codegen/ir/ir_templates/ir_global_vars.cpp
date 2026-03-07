@@ -1,4 +1,5 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 
 IRGlobalVariable::IRGlobalVariable(
     const std::string& name, 
@@ -62,6 +63,10 @@ std::string IRGlobalVariable::GetInitializerString() const
     else if (varType == IRType::GetInt1())
     {
         return static_cast<IRConstantBool*>(this->m_initializer)->GetValue() ? "1" : "0";
+    }
+    else if (auto* strConst = dynamic_cast<IRConstantString*>(this->m_initializer))
+    {
+        return strConst->GetLabel();
     }
     else
     {

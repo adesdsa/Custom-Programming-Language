@@ -38,6 +38,56 @@ bool SemanticCheckerFacade::CheckFuncDefinition(const FuncTable& funcTable, cons
     return searchedFuncMetadata->IsFuncDefined();
 }
 
+bool SemanticCheckerFacade::IsFirstTokenStringOrCharLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode)
+{
+    if (expression.GetTokens().empty()) return false;
+    size_t paramIndex = 0;
+    return IsFirstTokenStringOrCharLikeFrom(expression, 0, expression.GetTokens().size(), paramIndex, funcTable, currVarTableNode);
+}
+
+bool SemanticCheckerFacade::IsFirstTokenStringOrCharLikeFrom(const Command& expression, size_t start, size_t end, size_t& paramIndex,
+    const FuncTable& funcTable, const VarTableNode& currVarTableNode)
+{
+    if (start >= end) return false;
+    const Token& first = expression[start];
+    if (first.GetType() == TokenTypes::STRING_LITERAL) return true;
+    if (first.GetType() == TokenTypes::CHAR_LITERAL) return true;
+    if (first.GetValue() == "(")
+    {
+        int depth = 0;
+        size_t closeIdx = start;
+        for (size_t i = start; i < end; ++i)
+        {
+            if (expression[i].GetValue() == "(") ++depth;
+            else if (expression[i].GetValue() == ")")
+            {
+                --depth;
+                if (depth == 0) { closeIdx = i; break; }
+            }
+        }
+        if (closeIdx > start + 1)
+            return IsFirstTokenStringOrCharLikeFrom(expression, start + 1, closeIdx, paramIndex, funcTable, currVarTableNode);
+        return false;
+    }
+    if (first.GetType() == TokenTypes::HAS_PARAM && paramIndex < expression.GetParams().size())
+    {
+        const Command& param = expression.GetParams()[paramIndex++];
+        if (param.GetType() == CommandTypes::IDENTIFIER_VALUE)
+        {
+            auto varData = currVarTableNode.FindVar(param[IDENTIFIER_INDEX].GetValue());
+            return varData.has_value() && (varData->type == Type::STRING_TYPE || varData->type == Type::CHAR_TYPE);
+        }
+        if (param.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+        {
+            FuncMetaData* f = funcTable.FindFunctionByName(param[IDENTIFIER_INDEX].GetValue());
+            return f && (f->GetRType() == Type::STRING_TYPE || f->GetRType() == Type::CHAR_TYPE);
+        }
+        if (param.GetType() == CommandTypes::EXPRESSION)
+            return IsFirstTokenStringOrCharLike(param, funcTable, currVarTableNode);
+    }
+    return false;
+}
+
 ExpressionType SemanticCheckerFacade::CheckExpression(
     const Command& expression,
     const FuncTable& funcTable,
@@ -52,6 +102,90 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     if (expression.GetTokens().size() == 1 && expression[FIRST_TOKEN_INDEX].GetValue() == "void")
     {
         return ExpressionType::VOID_TYPE;
+    }
+
+    // Incase the expression is string related (string/char literal, string/char var, string + string, char + string, etc.)
+    if (expression.GetTokens().size() >= 1 && IsFirstTokenStringOrCharLike(expression, funcTable, currVarTableNode))
+    {
+        bool sawString = false;
+        for (size_t i = 0; i < expression.GetTokens().size(); )
+        {
+            if (expression[i].GetType() == TokenTypes::STRING_LITERAL)
+            {
+                sawString = true;
+                i += 2; // skip operand and the "+" after it (or end)
+                continue;
+            }
+            else if (expression[i].GetType() == TokenTypes::CHAR_LITERAL)
+            {
+                i += 2;
+                continue;
+            }
+            else if (expression[i].GetValue() == "(")
+            {
+                int depth = 0;
+                size_t closeIdx = i;
+                for (size_t j = i; j < expression.GetTokens().size(); ++j)
+                {
+                    if (expression[j].GetValue() == "(") ++depth;
+                    else if (expression[j].GetValue() == ")") { --depth; if (depth == 0) { closeIdx = j; break; } }
+                }
+                if (closeIdx <= i + 1) return ExpressionType::UNKNOWN;
+                // Build sub-expression from content and recurse
+                std::vector<Token> innerTokens(expression.GetTokens().begin() + i + 1, expression.GetTokens().begin() + closeIdx);
+                Command inner;
+                inner.SetType(CommandTypes::EXPRESSION);
+                inner.SetTokens(std::move(innerTokens));
+                size_t paramCount = 0;
+                for (size_t k = i + 1; k < closeIdx; ++k)
+                    if (expression[k].GetType() == TokenTypes::HAS_PARAM) ++paramCount;
+                for (size_t p = 0; p < paramCount && uParamIndex < expression.GetParams().size(); ++p)
+                    inner.GetParams().push_back(expression.GetParams()[uParamIndex++]);
+                ExpressionType innerType = CheckExpression(inner, funcTable, currVarTableNode);
+                if (innerType == ExpressionType::STRING) sawString = true;
+                if (innerType != ExpressionType::STRING && innerType != ExpressionType::CHAR) return ExpressionType::UNKNOWN;
+                i = closeIdx + 1;
+                if (i < expression.GetTokens().size() && expression[i].GetValue() == "+") ++i;
+                continue;
+            }
+            else if (expression[i].GetType() == TokenTypes::HAS_PARAM)
+            {
+                if (uParamIndex >= expression.GetParams().size()) return ExpressionType::UNKNOWN;
+                const Command& currCommand = expression.GetParams()[uParamIndex++];
+                if (currCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
+                {
+                    auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                    if (!varData.has_value())  return ExpressionType::UNKNOWN;
+
+                    if (varData.value().type == Type::STRING_TYPE) sawString = true;
+                    if (varData.value().type == Type::STRING_TYPE || varData.value().type == Type::CHAR_TYPE)
+                    {
+                        i += 2;
+                        continue;
+                    }
+                }
+                else if (currCommand.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+                {
+                    FuncMetaData* funcData = funcTable.FindFunctionByName(currCommand[IDENTIFIER_INDEX].GetValue());
+
+                    if (funcData && (funcData->GetRType() == Type::STRING_TYPE || funcData->GetRType() == Type::CHAR_TYPE))
+                    {
+                        if (funcData->GetRType() == Type::STRING_TYPE) sawString = true;
+                        i += 2;
+                        continue;
+                    }
+                }
+                return ExpressionType::UNKNOWN;
+            }
+            else if (expression[i].GetValue() == "+")
+            {
+                ++i;
+                continue;
+            }
+            return ExpressionType::UNKNOWN;
+        }
+        // Only return STRING if we have actual string concatenation; single char stays MATHEMATICAL (for return type match)
+        return sawString ? ExpressionType::STRING : ExpressionType::CHAR;
     }
 
     // Incase the expression is a single func call or identifier value.
@@ -148,7 +282,8 @@ bool SemanticCheckerFacade::CheckFuncArguments(const std::vector<ExpressionType>
         ExpressionType argType = paramTypes[0];
         if (argType == ExpressionType::MATHEMATICAL ||
             argType == ExpressionType::BOOLEAN ||
-            argType == ExpressionType::STRING)
+            argType == ExpressionType::STRING ||
+            argType == ExpressionType::CHAR)
         {
             return true;
         }
@@ -363,6 +498,7 @@ ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
     if (type == Type::BOOL_TYPE) return ExpressionType::BOOLEAN;
     else if (type == Type::VOID_TYPE) return ExpressionType::VOID_TYPE;
     else if (type == Type::STRING_TYPE) return ExpressionType::STRING;
+    else if (type == Type::CHAR_TYPE) return ExpressionType::CHAR;
     else return ExpressionType::MATHEMATICAL;
 }
 
@@ -398,7 +534,7 @@ ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
     }
     else if (token.GetType() == TokenTypes::CHAR_LITERAL)
     {
-        return ExpressionType::MATHEMATICAL;
+        return ExpressionType::CHAR;
     }
     /// If it's a value
     else if (token.GetValue() == "true" || token.GetValue() == "false")
@@ -413,6 +549,8 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (gottenType == ExpressionType::UNKNOWN) return false;
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
     if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
+    if (expectedType == Type::STRING_TYPE && (gottenType == ExpressionType::STRING || gottenType == ExpressionType::CHAR)) return true;  // char can assign to string
+    if (expectedType == Type::CHAR_TYPE && gottenType == ExpressionType::CHAR) return true;
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||
@@ -562,9 +700,9 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
 
     for (size_t i = 0; i < expressionSet.size(); i++)
     {
-        // Incase we see math but actually the next operator is a comparrison 
+        // Incase we see math/char but actually the next operator is a comparrison 
         // operator so we started a comparrison expression => boolean and not math.
-        if (expressionSet[i] == ExpressionType::MATHEMATICAL &&
+        if ((expressionSet[i] == ExpressionType::MATHEMATICAL || expressionSet[i] == ExpressionType::CHAR) &&
             i + 1 < expressionSet.size() &&
             expressionSet[i + 1] == ExpressionType::COMPARRISON_OPERATOR)
         {
@@ -582,7 +720,7 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         }
         // Incase it was a boolean untill now and we start a comparrison. e.g.: 1 < 2
         else if (currExpressionType == ExpressionType::BOOLEAN && 
-            expressionSet[i] == ExpressionType::MATHEMATICAL && 
+            (expressionSet[i] == ExpressionType::MATHEMATICAL || expressionSet[i] == ExpressionType::CHAR) && 
             i + 1 < expressionSet.size() && 
             expressionSet[i + 1] == ExpressionType::COMPARRISON_OPERATOR)
         {
@@ -590,14 +728,14 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         }
         // Incase we started a comparrison we check if it's ending is legal.
         else if (currExpressionType == ExpressionType::COMPARRISON_OPERATOR && 
-            expressionSet[i] == ExpressionType::MATHEMATICAL)
+            (expressionSet[i] == ExpressionType::MATHEMATICAL || expressionSet[i] == ExpressionType::CHAR))
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }
         // Arithmetic after a comparison is part of the right-hand side
         // due to operator precedence (e.g. j < height - i - 1).
         else if (currExpressionType == ExpressionType::BOOLEAN &&
-            expressionSet[i] == ExpressionType::MATHEMATICAL)
+            (expressionSet[i] == ExpressionType::MATHEMATICAL || expressionSet[i] == ExpressionType::CHAR))
         {
             // stay BOOLEAN
         }
@@ -605,7 +743,7 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
         else if (currExpressionType == ExpressionType::BOOLEAN &&
             expressionSet[i] == ExpressionType::COMPARRISON_OPERATOR &&
             i + 1 < expressionSet.size() &&
-            expressionSet[i + 1] == ExpressionType::BOOLEAN)
+            (expressionSet[i + 1] == ExpressionType::BOOLEAN || expressionSet[i + 1] == ExpressionType::MATHEMATICAL || expressionSet[i + 1] == ExpressionType::CHAR))
         {
             currExpressionType = ExpressionType::BOOLEAN;
         }
@@ -616,7 +754,8 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
                 expressionSet[i] == ExpressionType::BITWISE_OPERATOR &&
                 (
                     currExpressionType == ExpressionType::MATHEMATICAL ||
-                    currExpressionType == ExpressionType::BOOLEAN
+                    currExpressionType == ExpressionType::BOOLEAN ||
+                    currExpressionType == ExpressionType::CHAR
                 )
             )
         {
@@ -626,11 +765,19 @@ ExpressionType SemanticCheckerFacade::SimplifyExpressionSet(std::vector<Expressi
                 currExpressionType == ExpressionType::BITWISE_OPERATOR &&
                 (
                     expressionSet[i] == ExpressionType::MATHEMATICAL ||
-                    expressionSet[i] == ExpressionType::BOOLEAN
+                    expressionSet[i] == ExpressionType::BOOLEAN ||
+                    expressionSet[i] == ExpressionType::CHAR
                 )
             )
         {
             currExpressionType = expressionSet[i]; // adopt the operand's type
+        }
+        // CHAR in arithmetic: char + int, int + char, char + char -> MATHEMATICAL
+        else if ((currExpressionType == ExpressionType::CHAR && expressionSet[i] == ExpressionType::MATHEMATICAL) ||
+                 (currExpressionType == ExpressionType::MATHEMATICAL && expressionSet[i] == ExpressionType::CHAR) ||
+                 (currExpressionType == ExpressionType::CHAR && expressionSet[i] == ExpressionType::CHAR))
+        {
+            currExpressionType = ExpressionType::MATHEMATICAL;
         }
         // Unknown behaviour.
         else

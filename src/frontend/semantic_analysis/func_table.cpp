@@ -64,5 +64,120 @@ void FuncTable::RegisterBuiltins()
     printlnFunc.SetDefined(); // mark as defined so the linker check passes
     this->InsertFunction(std::move(printlnFunc));
 
+    // str_concat(a: string, b: string) -> string
+    std::vector<VarMetaData> strConcatParams = {
+        VarMetaData("a", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("b", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData strConcatFunc(
+        this->m_entityLogger,
+        "str_concat",
+        Type::STRING_TYPE,
+        strConcatParams,
+        0, 0,
+        nullptr
+    );
+    strConcatFunc.SetDefined();
+    this->InsertFunction(std::move(strConcatFunc));
+
+    // str_from_char(c: char) -> string
+    std::vector<VarMetaData> strFromCharParams = {
+        VarMetaData("c", Type::CHAR_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData strFromCharFunc(
+        this->m_entityLogger,
+        "str_from_char",
+        Type::STRING_TYPE,
+        strFromCharParams,
+        0, 0,
+        nullptr
+    );
+    strFromCharFunc.SetDefined();
+    this->InsertFunction(std::move(strFromCharFunc));
+
+    // str_len(s: string) -> int
+    std::vector<VarMetaData> strLenParams = {
+        VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData strLenFunc(
+        this->m_entityLogger,
+        "str_len",
+        Type::INT_TYPE,
+        strLenParams,
+        0, 0,
+        nullptr
+    );
+    strLenFunc.SetDefined();
+    this->InsertFunction(std::move(strLenFunc));
+
+    // substr(s: string, start: int, length: int) -> string
+    std::vector<VarMetaData> substrParams = {
+        VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("start", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("length", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData substrFunc(
+        this->m_entityLogger,
+        "substr",
+        Type::STRING_TYPE,
+        substrParams,
+        0, 0,
+        nullptr
+    );
+    substrFunc.SetDefined();
+    this->InsertFunction(std::move(substrFunc));
+
+    // char_at(s: string, index: int) -> char
+    std::vector<VarMetaData> charAtParams = {
+        VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("index", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData charAtFunc(
+        this->m_entityLogger,
+        "char_at",
+        Type::CHAR_TYPE,
+        charAtParams,
+        0, 0,
+        nullptr
+    );
+    charAtFunc.SetDefined();
+    this->InsertFunction(std::move(charAtFunc));
+
+    // readln() -> string
+    FuncMetaData readlnFunc(
+        this->m_entityLogger,
+        "readln",
+        Type::STRING_TYPE,
+        std::vector<VarMetaData>{},
+        0, 0,
+        nullptr
+    );
+    readlnFunc.SetDefined();
+    this->InsertFunction(std::move(readlnFunc));
+
+    // read_int() -> int
+    FuncMetaData read_intFunc(
+        this->m_entityLogger,
+        "read_int",
+        Type::INT_TYPE,
+        std::vector<VarMetaData>{},
+        0, 0,
+        nullptr
+    );
+    read_intFunc.SetDefined();
+    this->InsertFunction(std::move(read_intFunc));
+
+    // read_double() -> double
+    FuncMetaData read_doubleFunc(
+        this->m_entityLogger,
+        "read_double",
+        Type::DOUBLE_TYPE,
+        std::vector<VarMetaData>{},
+        0, 0,
+        nullptr
+    );
+    read_doubleFunc.SetDefined();
+    this->InsertFunction(std::move(read_doubleFunc));
+
     this->m_entityLogger.Info("Registered built-in functions");
 }

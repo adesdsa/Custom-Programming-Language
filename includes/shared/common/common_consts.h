@@ -43,6 +43,7 @@ enum class ExpressionType
     BOOLEAN,
     MATHEMATICAL,
     STRING,               // string literal expression
+    CHAR,                 // char literal or char variable
     UNKNOWN,
     VOID_TYPE,
     PARANTHESES_OPEN,

@@ -96,4 +96,6 @@ private:
 
     /// @brief A Select operand label generator (x86_64 prefixes with function name).
     std::string SelectLabelGenerator();
+
+    void EmitExtraBssContent(const IRModule& module, std::ostream& out) const override;
 };

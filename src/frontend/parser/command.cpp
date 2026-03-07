@@ -68,6 +68,11 @@ void Command::SetValue(Token token)
     this->m_tokens.push_back(token);
 }
 
+void Command::SetTokens(std::vector<Token> tokens)
+{
+    this->m_tokens = std::move(tokens);
+}
+
 Token& Command::operator[](size_t index)
 {
     return this->m_tokens[index];
@@ -865,7 +870,8 @@ inline bool Command::IsType(Token& token)
            this->IsValue(token, "bool")   ||
            this->IsValue(token, "double") ||
            this->IsValue(token, "void")   ||
-           this->IsValue(token, "char");
+           this->IsValue(token, "char")   ||
+           this->IsValue(token, "string");
 }
 
 bool Command::IsControlStatement(Token& token)

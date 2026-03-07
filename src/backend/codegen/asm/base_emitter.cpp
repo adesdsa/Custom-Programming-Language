@@ -106,6 +106,7 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
             out << GetReserveDirective(size) << " 1\n";
         }
     }
+    EmitExtraBssContent(module, out);
     out << "\n";
     out << "\n";
 }
