@@ -57,6 +57,7 @@ public:
     bool IsPrimaryModule() const;
 
     void AddDeferredGlobalInit(const std::string& target, const std::string& source);
+    void RemoveDeferredGlobalInit(const std::string& name);
     const std::vector<std::pair<std::string, std::string>>& GetDeferredGlobalInits() const noexcept;
 
 private:

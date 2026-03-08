@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_module.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
+#include <algorithm>
 
 IRModule::IRModule(const std::string& moduleName) :
     m_name(moduleName),
@@ -147,6 +148,17 @@ bool IRModule::IsPrimaryModule() const
 void IRModule::AddDeferredGlobalInit(const std::string& target, const std::string& source)
 {
     this->m_deferredGlobalInits.emplace_back(target, source);
+}
+
+void IRModule::RemoveDeferredGlobalInit(const std::string& name)
+{
+    this->m_deferredGlobalInits.erase(
+        std::remove_if(this->m_deferredGlobalInits.begin(), this->m_deferredGlobalInits.end(),
+            [&name](const std::pair<std::string, std::string>& p)
+            {
+                return p.first == name || p.second == name;
+            }),
+        this->m_deferredGlobalInits.end());
 }
 
 const std::vector<std::pair<std::string, std::string>>& IRModule::GetDeferredGlobalInits() const noexcept

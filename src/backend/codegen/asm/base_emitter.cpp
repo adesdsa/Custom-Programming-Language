@@ -70,7 +70,7 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
             {
                 if (i > 0) out << ", ";
                 unsigned char ch = static_cast<unsigned char>(val[i]);
-                if (ch >= 32 && ch < 127 && ch != '"' && ch != '\\')
+                if (ch >= 32 && ch < 127 && ch != '"' && ch != '\\' && ch != '\'')
                 {
                     // printable ASCII
                     out << "'" << val[i] << "'";

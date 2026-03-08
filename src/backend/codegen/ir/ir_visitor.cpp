@@ -312,11 +312,25 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             {
                 auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
                 this->m_currModule.AddFunction("str_slice_set",
-                    IRType::GetFunction(IRType::GetVoid(),
-                        { TypeToIRType(Type::STRING_TYPE), intType, intType, TypeToIRType(Type::STRING_TYPE) }));
+                    IRType::GetFunction(
+                        IRType::GetVoid(),
+                        { 
+                            TypeToIRType(Type::STRING_TYPE), 
+                            intType, 
+                            intType, 
+                            TypeToIRType(Type::STRING_TYPE) 
+                        }
+                    ));
             }
             this->m_irbuilder.CreateCall(
-                this->m_currModule.GetFunction("str_slice_set"), { strPtr, start, end_idx, valueToStore });
+                this->m_currModule.GetFunction("str_slice_set"), 
+                { 
+                    strPtr, 
+                    start, 
+                    end_idx, 
+                    valueToStore 
+                }
+            );
         }
         else
         {
@@ -1107,9 +1121,13 @@ void IRVisitor::VisitArrayAccess(ASTNode* node)
     {
         IRBaseValue* result = nullptr;
         if (node->command.GetType() == CommandTypes::ARRAY_ACCESS)
+        {
             result = HandleArrayAccess(node->command);
+        }
         else if (node->command.GetType() == CommandTypes::ARRAY_SLICE)
+        {
             result = HandleArraySlice(node->command);
+        }
 
         CheckValueNeededSomewhere(result, node);
     }
@@ -1259,6 +1277,21 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
                         
                     case '"':  
                         processed += '"';
+                        i++;
+                        break;
+
+                    case '\'':
+                        processed += '\'';
+                        i++;
+                        break;
+
+                    case 'r':
+                        processed += '\r';
+                        i++;
+                        break;
+
+                    case '0':
+                        processed += '\0';
                         i++;
                         break;
 
@@ -1596,7 +1629,9 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
         if (globalVar && this->m_currVarMetaData.has_value())
         {
             this->m_currModule.AddDeferredGlobalInit(
-                this->m_currVarMetaData.value().sName, varMetaData.value().sName);
+                this->m_currVarMetaData.value().sName, 
+                varMetaData.value().sName
+            );
             return nullptr;
         }
         StoreInternalError("Global initializer can only reference initialized globals", node->command);
@@ -2357,7 +2392,9 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
 IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)
 {
     const std::string& varName = command[0].GetValue();
-    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(FindPointer(varName));
+    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(
+        FindPointer(varName)
+    );
 
     if (command.GetParams().size() < 2)
     {
@@ -2373,9 +2410,15 @@ IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)
     if (!this->m_currModule.IsFuncExistByName("substr"))
     {
         auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
-        this->m_currModule.AddFunction("substr",
+        this->m_currModule.AddFunction(
+            "substr",
             IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
-                { TypeToIRType(Type::STRING_TYPE), intType, intType }));
+            { 
+                TypeToIRType(Type::STRING_TYPE), 
+                intType, 
+                intType 
+            }
+        ));
     }
     return this->m_irbuilder.CreateCall(
         this->m_currModule.GetFunction("substr"), { strPtr, start, length });

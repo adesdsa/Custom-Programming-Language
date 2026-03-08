@@ -33,7 +33,11 @@ bool Token::Append(char cAddedChar) noexcept
     {
         if (this->m_sValue.size() > 1 && this->m_sValue.back() == '"')
         {
-            return TokenStatus::k_bFinished;
+            size_t backslashes = 0;
+            for (size_t i = this->m_sValue.size() - 2; i > 0 && this->m_sValue[i] == '\\'; --i)
+                ++backslashes;
+            if (backslashes % 2 == 0)
+                return TokenStatus::k_bFinished;
         }
         return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
     }
