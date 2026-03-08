@@ -192,7 +192,8 @@ void FullCommand::CheckLine()
     try
     {
         if (this->m_line.at(0).GetType() == CommandTypes::IDENTIFIER ||
-            this->m_line.at(0).GetType() == CommandTypes::ARRAY_ACCESS)
+            this->m_line.at(0).GetType() == CommandTypes::ARRAY_ACCESS ||
+            this->m_line.at(0).GetType() == CommandTypes::ARRAY_SLICE)
         {
             if (this->m_line.at(1).GetType() == CommandTypes::ASSIGNMENT)
             {
@@ -563,6 +564,18 @@ void FullCommand::ReformCommand(Command& checkedCommand)
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS)
     {
         this->HandleSingleParamKeyword(checkedCommand);
+        if (this->m_bLegal)
+        {
+            checkedCommand.SetExpression(true);
+        }
+    }
+    else if (checkedCommand.GetType() == CommandTypes::ARRAY_SLICE)
+    {
+        if (checkedCommand.GetParams().size() == 2)
+        {
+            this->CheckParamExpectedExpression(checkedCommand, 0);
+            this->CheckParamExpectedExpression(checkedCommand, 1);
+        }
         if (this->m_bLegal)
         {
             checkedCommand.SetExpression(true);

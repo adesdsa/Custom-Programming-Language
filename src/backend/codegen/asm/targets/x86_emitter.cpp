@@ -57,6 +57,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global str_len\n";
                 header << "global substr\n";
                 header << "global char_at\n";
+                header << "global set_char_at\n";
+                header << "global str_slice_set\n";
                 header << "global readln\n";
                 header << "global read_int\n";
                 header << "global read_double\n";
@@ -90,6 +92,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern str_len\n";
                 header << "extern substr\n";
                 header << "extern char_at\n";
+                header << "extern set_char_at\n";
+                header << "extern str_slice_set\n";
                 header << "extern readln\n";
                 header << "extern read_int\n";
                 header << "extern read_double\n";
@@ -127,6 +131,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _str_len\n";
                 header << "global _substr\n";
                 header << "global _char_at\n";
+                header << "global _set_char_at\n";
+                header << "global _str_slice_set\n";
                 header << "global _readln\n";
                 header << "global _read_int\n";
                 header << "global _read_double\n";
@@ -163,6 +169,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern _str_len\n";
                 header << "extern _substr\n";
                 header << "extern _char_at\n";
+                header << "extern _set_char_at\n";
+                header << "extern _str_slice_set\n";
                 header << "extern _readln\n";
                 header << "extern _read_int\n";
                 header << "extern _read_double\n";
@@ -586,6 +594,13 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
         case OS::Linux:
         {
             out << "_start:\n";
+
+            for (const auto& [target, source] : module.GetDeferredGlobalInits())
+            {
+                out << "    mov eax, [" << source << "]\n";
+                out << "    mov [" << target << "], eax\n";
+            }
+
             out << "    call main\n";
 
             // exit syscall (sys_exit = 1)
@@ -880,6 +895,89 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    ret\n";
             out << ".Lchar_at_bad:\n";
             out << "    xor eax, eax\n";
+            out << "    ret\n";
+
+            // ---- Built-in: set_char_at(s: char*, index: int, c: char) -> void ----
+            // cdecl: [esp+4]=s, [esp+8]=index, [esp+12]=c
+            out << "\n";
+            out << "set_char_at:\n";
+            out << "    mov ecx, [esp+4]\n";
+            out << "    mov edx, [esp+8]\n";
+            out << "    cmp edx, 0\n";
+            out << "    jl .Lsca_done\n";
+            out << "    xor eax, eax\n";
+            out << ".Lsca_len:\n";
+            out << "    cmp byte [ecx + eax], 0\n";
+            out << "    je .Lsca_check\n";
+            out << "    inc eax\n";
+            out << "    jmp .Lsca_len\n";
+            out << ".Lsca_check:\n";
+            out << "    cmp edx, eax\n";
+            out << "    jge .Lsca_done\n";
+            out << "    mov al, [esp+12]\n";
+            out << "    mov [ecx + edx], al\n";
+            out << ".Lsca_done:\n";
+            out << "    ret\n";
+
+            // ---- Built-in: str_slice_set(s, start, end_idx, replacement) -> void ----
+            // cdecl: [esp+4]=s, [esp+8]=start, [esp+12]=end_idx, [esp+16]=replacement
+            out << "\n";
+            out << "str_slice_set:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 16\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    ; strlen(s)\n";
+            out << "    xor eax, eax\n";
+            out << ".Lsls32_slen:\n";
+            out << "    cmp byte [ecx + eax], 0\n";
+            out << "    je .Lsls32_slen_done\n";
+            out << "    inc eax\n";
+            out << "    jmp .Lsls32_slen\n";
+            out << ".Lsls32_slen_done:\n";
+            out << "    mov edx, [ebp+12]\n";
+            out << "    cmp edx, 0\n";
+            out << "    jge .Lsls32_start_ok\n";
+            out << "    xor edx, edx\n";
+            out << ".Lsls32_start_ok:\n";
+            out << "    cmp edx, eax\n";
+            out << "    jl .Lsls32_end_clamp\n";
+            out << "    jmp .Lsls32_done\n";
+            out << ".Lsls32_end_clamp:\n";
+            out << "    mov ebx, [ebp+16]\n";
+            out << "    cmp ebx, eax\n";
+            out << "    jle .Lsls32_end_ok\n";
+            out << "    mov ebx, eax\n";
+            out << ".Lsls32_end_ok:\n";
+            out << "    mov edi, ebx\n";
+            out << "    sub edi, edx\n";
+            out << "    jle .Lsls32_done\n";
+            out << "    ; strlen(replacement)\n";
+            out << "    mov esi, [ebp+20]\n";
+            out << "    xor eax, eax\n";
+            out << ".Lsls32_rlen:\n";
+            out << "    cmp byte [esi + eax], 0\n";
+            out << "    je .Lsls32_rlen_done\n";
+            out << "    inc eax\n";
+            out << "    jmp .Lsls32_rlen\n";
+            out << ".Lsls32_rlen_done:\n";
+            out << "    cmp eax, edi\n";
+            out << "    jle .Lsls32_use_rlen\n";
+            out << "    mov eax, edi\n";
+            out << ".Lsls32_use_rlen:\n";
+            out << "    test eax, eax\n";
+            out << "    jz .Lsls32_done\n";
+            out << "    ; memcpy(s + start, replacement, copy_len)\n";
+            out << "    push eax\n";
+            out << "    push dword [ebp+20]\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    add ecx, edx\n";
+            out << "    push ecx\n";
+            out << "    call memcpy\n";
+            out << "    add esp, 12\n";
+            out << ".Lsls32_done:\n";
+            out << "    add esp, 16\n";
+            out << "    pop ebp\n";
             out << "    ret\n";
 
             // ---- Built-in: readln() -> string ----
@@ -1474,6 +1572,13 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
         case OS::Windows:
         {
             out << "_mainCRTStartup:\n";
+
+            for (const auto& [target, source] : module.GetDeferredGlobalInits())
+            {
+                out << "    mov eax, [_" << source << "]\n";
+                out << "    mov [_" << target << "], eax\n";
+            }
+
             out << "    call _main\n";
 
             // exit() flushes CRT stdio buffers
@@ -1745,6 +1850,86 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    ret\n";
             out << ".Lchar_at_bad:\n";
             out << "    xor eax, eax\n";
+            out << "    ret\n";
+
+            // ---- Built-in: _set_char_at(s: char*, index: int, c: char) -> void ----
+            // cdecl: [esp+4]=s, [esp+8]=index, [esp+12]=c
+            out << "\n";
+            out << "_set_char_at:\n";
+            out << "    mov ecx, [esp+4]\n";
+            out << "    mov edx, [esp+8]\n";
+            out << "    cmp edx, 0\n";
+            out << "    jl ._Lsca_done\n";
+            out << "    xor eax, eax\n";
+            out << "._Lsca_len:\n";
+            out << "    cmp byte [ecx + eax], 0\n";
+            out << "    je ._Lsca_check\n";
+            out << "    inc eax\n";
+            out << "    jmp ._Lsca_len\n";
+            out << "._Lsca_check:\n";
+            out << "    cmp edx, eax\n";
+            out << "    jge ._Lsca_done\n";
+            out << "    mov al, [esp+12]\n";
+            out << "    mov [ecx + edx], al\n";
+            out << "._Lsca_done:\n";
+            out << "    ret\n";
+
+            // ---- Built-in: _str_slice_set(s, start, end_idx, replacement) -> void ----
+            // cdecl: [esp+4]=s, [esp+8]=start, [esp+12]=end_idx, [esp+16]=replacement
+            out << "\n";
+            out << "_str_slice_set:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    sub esp, 16\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    xor eax, eax\n";
+            out << "._Lsls32_slen:\n";
+            out << "    cmp byte [ecx + eax], 0\n";
+            out << "    je ._Lsls32_slen_done\n";
+            out << "    inc eax\n";
+            out << "    jmp ._Lsls32_slen\n";
+            out << "._Lsls32_slen_done:\n";
+            out << "    mov edx, [ebp+12]\n";
+            out << "    cmp edx, 0\n";
+            out << "    jge ._Lsls32_start_ok\n";
+            out << "    xor edx, edx\n";
+            out << "._Lsls32_start_ok:\n";
+            out << "    cmp edx, eax\n";
+            out << "    jl ._Lsls32_end_clamp\n";
+            out << "    jmp ._Lsls32_done\n";
+            out << "._Lsls32_end_clamp:\n";
+            out << "    mov ebx, [ebp+16]\n";
+            out << "    cmp ebx, eax\n";
+            out << "    jle ._Lsls32_end_ok\n";
+            out << "    mov ebx, eax\n";
+            out << "._Lsls32_end_ok:\n";
+            out << "    mov edi, ebx\n";
+            out << "    sub edi, edx\n";
+            out << "    jle ._Lsls32_done\n";
+            out << "    mov esi, [ebp+20]\n";
+            out << "    xor eax, eax\n";
+            out << "._Lsls32_rlen:\n";
+            out << "    cmp byte [esi + eax], 0\n";
+            out << "    je ._Lsls32_rlen_done\n";
+            out << "    inc eax\n";
+            out << "    jmp ._Lsls32_rlen\n";
+            out << "._Lsls32_rlen_done:\n";
+            out << "    cmp eax, edi\n";
+            out << "    jle ._Lsls32_use_rlen\n";
+            out << "    mov eax, edi\n";
+            out << "._Lsls32_use_rlen:\n";
+            out << "    test eax, eax\n";
+            out << "    jz ._Lsls32_done\n";
+            out << "    push eax\n";
+            out << "    push dword [ebp+20]\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    add ecx, edx\n";
+            out << "    push ecx\n";
+            out << "    call _memcpy\n";
+            out << "    add esp, 12\n";
+            out << "._Lsls32_done:\n";
+            out << "    add esp, 16\n";
+            out << "    pop ebp\n";
             out << "    ret\n";
 
             // ---- Built-in: readln() -> string (Windows: GetStdHandle + ReadFile) ----

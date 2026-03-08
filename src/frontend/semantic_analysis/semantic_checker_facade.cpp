@@ -244,6 +244,20 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
         if (funcData) return TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
         else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
     }
+    if (expression.GetType() == CommandTypes::ARRAY_ACCESS)
+    {
+        auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
+        if (!varData.has_value()) return ExpressionType::UNKNOWN;
+        if (varData->type == Type::STRING_TYPE) return ExpressionType::CHAR;
+        return ExpressionType::MATHEMATICAL;
+    }
+    if (expression.GetType() == CommandTypes::ARRAY_SLICE)
+    {
+        auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
+        if (!varData.has_value()) return ExpressionType::UNKNOWN;
+        if (varData->type == Type::STRING_TYPE) return ExpressionType::STRING;
+        return ExpressionType::UNKNOWN;
+    }
 
     for (size_t i = 0; i < expression.GetTokens().size(); i++)
     {
@@ -267,6 +281,18 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
 
                 if (funcData) paramType = TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
                 else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
+            }
+            else if (currCommand.GetType() == CommandTypes::ARRAY_ACCESS)
+            {
+                auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                if (!varData.has_value()) return ExpressionType::UNKNOWN;
+                paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::CHAR : ExpressionType::MATHEMATICAL;
+            }
+            else if (currCommand.GetType() == CommandTypes::ARRAY_SLICE)
+            {
+                auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                if (!varData.has_value()) return ExpressionType::UNKNOWN;
+                paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::STRING : ExpressionType::UNKNOWN;
             }
             else if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
@@ -356,13 +382,13 @@ bool SemanticCheckerFacade::CheckFunctionReturnType(const ExpressionType& return
     return CompareTypes(func->GetRType(), returnExpressionType);
 }
 
-bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
+bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode, bool isInitialization)
 {
     DefaultExpressionChecks();
     auto found = currVarTableNode.FindVar(sAssignedVarName);
     if (!found.has_value()) return false;
     VarMetaData varData = *found;
-    if (varData.accessRights == AccessRights::CONST_ACCESS || varData.accessRights == AccessRights::READ_ONLY_ACCESS) return false;
+    if (!isInitialization && (varData.accessRights == AccessRights::CONST_ACCESS || varData.accessRights == AccessRights::READ_ONLY_ACCESS)) return false;
     return CompareTypes(varData.type, assigmentExpressionType);
 }
 
@@ -591,7 +617,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
     if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
     if (expectedType == Type::STRING_TYPE && (gottenType == ExpressionType::STRING || gottenType == ExpressionType::CHAR)) return true;  // char can assign to string
-    if (expectedType == Type::CHAR_TYPE && gottenType == ExpressionType::CHAR) return true;
+    if (expectedType == Type::CHAR_TYPE && (gottenType == ExpressionType::CHAR || gottenType == ExpressionType::STRING)) return true;
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||

@@ -159,6 +159,41 @@ void FuncTable::RegisterBuiltins()
     charAtFunc.SetDefined();
     this->InsertFunction(std::move(charAtFunc));
 
+    // set_char_at(s: string, index: int, c: char) -> void
+    std::vector<VarMetaData> setCharAtParams = {
+        VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("index", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("c", Type::CHAR_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData setCharAtFunc(
+        this->m_entityLogger,
+        "set_char_at",
+        Type::VOID_TYPE,
+        setCharAtParams,
+        0, 0,
+        nullptr
+    );
+    setCharAtFunc.SetDefined();
+    this->InsertFunction(std::move(setCharAtFunc));
+
+    // str_slice_set(s: string, start: int, end_idx: int, replacement: string) -> void
+    std::vector<VarMetaData> strSliceSetParams = {
+        VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("start", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("end_idx", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("replacement", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData strSliceSetFunc(
+        this->m_entityLogger,
+        "str_slice_set",
+        Type::VOID_TYPE,
+        strSliceSetParams,
+        0, 0,
+        nullptr
+    );
+    strSliceSetFunc.SetDefined();
+    this->InsertFunction(std::move(strSliceSetFunc));
+
     // readln() -> string
     FuncMetaData readlnFunc(
         this->m_entityLogger,

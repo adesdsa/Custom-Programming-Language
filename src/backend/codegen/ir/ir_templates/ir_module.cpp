@@ -143,3 +143,13 @@ bool IRModule::IsPrimaryModule() const
 {
     return this->m_isPrimaryModule;
 }
+
+void IRModule::AddDeferredGlobalInit(const std::string& target, const std::string& source)
+{
+    this->m_deferredGlobalInits.emplace_back(target, source);
+}
+
+const std::vector<std::pair<std::string, std::string>>& IRModule::GetDeferredGlobalInits() const noexcept
+{
+    return this->m_deferredGlobalInits;
+}

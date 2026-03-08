@@ -49,6 +49,11 @@ std::string IRGlobalVariable::ToString() const
 
 std::string IRGlobalVariable::GetInitializerString() const
 {
+    if (auto* strConst = dynamic_cast<IRConstantString*>(this->m_initializer))
+    {
+        return strConst->GetLabel();
+    }
+
     std::shared_ptr<const IRType> varType = this->m_initializer->GetType();
     if (varType == IRType::GetInt32() ||
         varType == IRType::GetInt64())
@@ -64,12 +69,8 @@ std::string IRGlobalVariable::GetInitializerString() const
     {
         return static_cast<IRConstantBool*>(this->m_initializer)->GetValue() ? "1" : "0";
     }
-    else if (auto* strConst = dynamic_cast<IRConstantString*>(this->m_initializer))
-    {
-        return strConst->GetLabel();
-    }
     else
     {
-        return "0"; // error (shouldnt get here)
+        return "0";
     }
 }

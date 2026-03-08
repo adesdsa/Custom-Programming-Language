@@ -56,6 +56,9 @@ public:
     void SetPrimaryModule();
     bool IsPrimaryModule() const;
 
+    void AddDeferredGlobalInit(const std::string& target, const std::string& source);
+    const std::vector<std::pair<std::string, std::string>>& GetDeferredGlobalInits() const noexcept;
+
 private:
     const std::string m_name;
     std::vector<std::unique_ptr<IRBaseValue>> m_constants;
@@ -74,4 +77,6 @@ private:
 
     std::vector<std::unique_ptr<IRGlobalVariable>> m_globals;
     std::map<std::string, IRGlobalVariable*> m_globalMap;
+
+    std::vector<std::pair<std::string, std::string>> m_deferredGlobalInits;
 };

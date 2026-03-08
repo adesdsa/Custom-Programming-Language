@@ -61,6 +61,7 @@ protected:
     virtual void VisitImportStatement(ASTNode* node) = 0;
     virtual void VisitPass(ASTNode* node) = 0;
     virtual void VisitEof(ASTNode* node) = 0;
+    virtual void VisitArrayAccess(ASTNode* node) = 0;
 
     /// @brief Initialize dispatch map, each child should call it in constructor
     void InitializeHandlers();

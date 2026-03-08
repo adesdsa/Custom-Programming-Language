@@ -45,6 +45,7 @@ public:
     virtual void VisitImportStatement(ASTNode* node) override;
     virtual void VisitPass(ASTNode* node) override;
     virtual void VisitEof(ASTNode* node) override;
+    virtual void VisitArrayAccess(ASTNode* node) override;
 
 private:
     /**********************\
@@ -84,6 +85,7 @@ private:
 
     // pending assignment tracking, consumed by VisitExpression
     bool m_pendingAssignment = false;
+    bool m_isVarInitialization = false;
     size_t m_assignmentLine = 0;
     size_t m_assignmentColumn = 0;
 

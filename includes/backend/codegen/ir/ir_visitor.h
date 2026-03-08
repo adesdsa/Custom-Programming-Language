@@ -108,6 +108,7 @@ class IRVisitor : public IASTVisitor
     void VisitImportStatement(ASTNode* node) override;
     void VisitPass(ASTNode* node) override;
     void VisitEof(ASTNode* node) override;
+    void VisitArrayAccess(ASTNode* node) override;
 
 private:
     /**********************\
@@ -181,6 +182,10 @@ private:
     bool m_expectedReturnValue;
     bool m_expectedAssignment;
 
+    bool m_indexedAssignment;
+    bool m_slicedAssignment;
+    Command m_pendingIndexCommand;
+
     bool m_returnedAlready;
     /// @brief This is used to flag that we already handled the insides:
     /// e.g. let's say we had an if statement we had to run the expression inside it at the VisitIf
@@ -241,6 +246,12 @@ private:
     /// @param command The Command that holds the PicoC EXPRESSION.
     /// @return The IRBaseValue that holds the last value of the expression.
     IRBaseValue* HandleExpression(Command command);
+
+    /// @brief Handles string index access str[i] by lowering to char_at(str, i).
+    IRBaseValue* HandleArrayAccess(const Command& command);
+
+    /// @brief Handles string slice access str[a:b] by lowering to substr(str, a, b-a).
+    IRBaseValue* HandleArraySlice(const Command& command);
 
     /// @brief The func creates a corresponding labelName for each nameless block.
     /// @see EntranceKind for more info

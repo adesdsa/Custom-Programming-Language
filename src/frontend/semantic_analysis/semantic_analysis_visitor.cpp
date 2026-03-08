@@ -98,6 +98,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
     // Set for assignment check when next sibling is ASSIGNMENT (e.g. let x: T = expr)
     this->m_lastIdentifierName = varName;
+    this->m_isVarInitialization = true;
 }
 
 void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
@@ -169,6 +170,7 @@ void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
     }
     
     this->m_lastIdentifierName = identifierName;
+    this->m_isVarInitialization = false;
     this->m_identifierError = false;
 }
 
@@ -333,7 +335,8 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
         !this->m_facade.CheckAssignment(
             this->m_lastIdentifierName,
             expressionType,
-            *this->m_currentScope)
+            *this->m_currentScope,
+            this->m_isVarInitialization)
         )
     {
         auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
@@ -942,6 +945,99 @@ void SemanticAnalysisVisitor::VisitEof(ASTNode* node)
     // skip, no logic needed
 }
 
+void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
+{
+    if (!node || this->m_facade.IsBlockFinished()) return;
+
+    const std::vector<Token>& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+
+    const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
+
+    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Undefined variable '" + identifierName + "'",
+                tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                "Declare the variable before using it"
+            )
+        );
+        this->SignalFailureForNextHandlers();
+        return;
+    }
+
+    if (this->m_pendingAssignment)
+    {
+        ExpressionType exprType = this->m_facade.CheckExpression(
+            node->command, this->m_funcTable, *this->m_currentScope);
+        this->m_lastExpressionType = exprType;
+
+        if (!this->m_lastIdentifierName.empty())
+        {
+            if (exprType != ExpressionType::UNKNOWN &&
+                !this->m_facade.CheckAssignment(
+                    this->m_lastIdentifierName, exprType, *this->m_currentScope,
+                    this->m_isVarInitialization))
+            {
+                auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+                std::string expectedType = var.has_value() ? this->TypeToString(var->type) : "unknown";
+                std::string gotType = this->ExpressionTypeToString(exprType);
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::TYPE_ERROR,
+                        "Type mismatch: cannot assign '" + gotType + "' to variable '" +
+                            this->m_lastIdentifierName + "' of type '" + expectedType + "'",
+                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        "Ensure the expression type matches the variable type"
+                    )
+                );
+            }
+            ResetAssignmentState();
+        }
+    }
+    else
+    {
+        auto var = this->m_currentScope->FindVar(identifierName);
+        if (var.has_value())
+        {
+            if (var->accessRights == AccessRights::CONST_ACCESS)
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::ACCESS_RIGHT_ERROR,
+                        "Cannot assign to constant variable '" + identifierName + "'",
+                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        "Constant variables cannot be modified after declaration"
+                    )
+                );
+                this->SignalFailureForNextHandlers();
+                return;
+            }
+            else if (var->accessRights == AccessRights::READ_ONLY_ACCESS)
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::ACCESS_RIGHT_ERROR,
+                        "Cannot assign to read-only variable '" + identifierName + "'",
+                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        "Read-only variables cannot be modified"
+                    )
+                );
+                this->SignalFailureForNextHandlers();
+                return;
+            }
+        }
+        this->m_lastIdentifierName = identifierName;
+        this->m_identifierError = false;
+    }
+}
+
 void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
 {
     if (!node || this->m_facade.IsBlockFinished()) return;
@@ -1047,6 +1143,7 @@ void SemanticAnalysisVisitor::ResetAssignmentState() noexcept
 {
     this->m_lastIdentifierName.clear();
     this->m_pendingAssignment = false;
+    this->m_isVarInitialization = false;
     this->m_assignmentLine = 0;
     this->m_assignmentColumn = 0;
     this->m_identifierError = false;
@@ -1250,7 +1347,8 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
         !this->m_facade.CheckAssignment(
             this->m_lastIdentifierName,
             expressionType,
-            *this->m_currentScope)
+            *this->m_currentScope,
+            this->m_isVarInitialization)
         )
     {
         auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);

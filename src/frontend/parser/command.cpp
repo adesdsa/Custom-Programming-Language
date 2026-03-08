@@ -705,8 +705,22 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
         else if (this->m_iParanthesesCounter == 0)
         {
             this->m_bIgnoreCurrToken = false;
+            if (this->m_parameters.size() >= 2)
+            {
+                return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
+            }
             return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
         }
+    }
+    else if (currToken.GetValue() == ":" && this->m_iParanthesesCounter == 1)
+    {
+        this->m_tokens.push_back(currToken);
+        this->m_bIgnoreCurrToken = true;
+        if (this->m_uParameterIndex < this->m_parameters.size())
+        {
+            this->m_uParameterIndex++;
+        }
+        return false;
     }
 
     this->AddToCurrParam(currToken, nextToken);

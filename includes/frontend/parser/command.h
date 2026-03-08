@@ -44,6 +44,7 @@ namespace CommandTypes
     inline constexpr std::string_view FINISHED_FUNC_DECLARATION     = "FINISHED_FUNC_DECLARATION";
     inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
+    inline constexpr std::string_view ARRAY_SLICE                   = "ARRAY_SLICE";
     inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
     inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";           // int, bool...
 

@@ -44,7 +44,7 @@ namespace RegexPatterns
         {
             try 
             {
-                return std::regex(R"(->|[:,\(\)\{\};#])", std::regex::optimize);
+                return std::regex(R"(->|[:,\(\)\{\}\[\];#])", std::regex::optimize);
             } 
             catch (const std::regex_error& e) 
             {

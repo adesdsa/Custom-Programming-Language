@@ -53,6 +53,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global str_len\n";
                 header << "global substr\n";
                 header << "global char_at\n";
+                header << "global set_char_at\n";
+                header << "global str_slice_set\n";
                 header << "global readln\n";
                 header << "global read_int\n";
                 header << "global read_double\n";
@@ -85,6 +87,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern str_len\n";
                 header << "extern substr\n";
                 header << "extern char_at\n";
+                header << "extern set_char_at\n";
+                header << "extern str_slice_set\n";
                 header << "extern readln\n";
                 header << "extern read_int\n";
                 header << "extern read_double\n";
@@ -121,6 +125,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global str_len\n";
                 header << "global substr\n";
                 header << "global char_at\n";
+                header << "global set_char_at\n";
+                header << "global str_slice_set\n";
                 header << "global readln\n";
                 header << "global read_int\n";
                 header << "global read_double\n";
@@ -154,6 +160,8 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern str_len\n";
                 header << "extern substr\n";
                 header << "extern char_at\n";
+                header << "extern set_char_at\n";
+                header << "extern str_slice_set\n";
                 header << "extern readln\n";
                 header << "extern read_int\n";
                 header << "extern read_double\n";
@@ -795,6 +803,12 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ; Align stack to 16 bytes (kernel provides RSP % 16 == 8 on entry)\n";
         out << "    and rsp, -16\n";
 
+        for (const auto& [target, source] : module.GetDeferredGlobalInits())
+        {
+            out << "    mov rax, [rel " << source << "]\n";
+            out << "    mov [rel " << target << "], rax\n";
+        }
+
         // call main()
         out << "    ; call main() and pass its return value to sys_exit\n";
         out << "    call main\n";
@@ -1076,6 +1090,85 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ret\n";
         out << ".char_at_bad:\n";
         out << "    xor eax, eax\n";
+        out << "    ret\n";
+
+        // ---- Built-in: set_char_at(s: char*, index: int, c: char) -> void ----
+        // rdi = s, rsi = index, rdx = c (byte)
+        out << "\n";
+        out << "set_char_at:\n";
+        out << "    cmp rsi, 0\n";
+        out << "    jl .set_char_at_done\n";
+        out << "    xor rcx, rcx\n";
+        out << ".set_char_at_len:\n";
+        out << "    cmp byte [rdi + rcx], 0\n";
+        out << "    je .set_char_at_check\n";
+        out << "    inc rcx\n";
+        out << "    jmp .set_char_at_len\n";
+        out << ".set_char_at_check:\n";
+        out << "    cmp rsi, rcx\n";
+        out << "    jge .set_char_at_done\n";
+        out << "    mov [rdi + rsi], dl\n";
+        out << ".set_char_at_done:\n";
+        out << "    ret\n";
+
+        // ---- Built-in: str_slice_set(s: char*, start: int, end_idx: int, replacement: char*) -> void ----
+        // rdi = s, rsi = start, rdx = end_idx, rcx = replacement
+        out << "\n";
+        out << "str_slice_set:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 32\n";
+        out << "    mov [rbp-8], rdi\n";
+        out << "    mov [rbp-16], rsi\n";
+        out << "    mov [rbp-24], rdx\n";
+        out << "    mov [rbp-32], rcx\n";
+        out << "    ; compute strlen(s)\n";
+        out << "    xor rax, rax\n";
+        out << ".Lsls_slen:\n";
+        out << "    cmp byte [rdi + rax], 0\n";
+        out << "    je .Lsls_slen_done\n";
+        out << "    inc rax\n";
+        out << "    jmp .Lsls_slen\n";
+        out << ".Lsls_slen_done:\n";
+        out << "    ; clamp start to [0, slen]\n";
+        out << "    cmp rsi, 0\n";
+        out << "    jge .Lsls_start_ok\n";
+        out << "    xor rsi, rsi\n";
+        out << ".Lsls_start_ok:\n";
+        out << "    cmp rsi, rax\n";
+        out << "    jl .Lsls_end_clamp\n";
+        out << "    jmp .Lsls_done\n";
+        out << ".Lsls_end_clamp:\n";
+        out << "    ; clamp end to [start, slen]\n";
+        out << "    cmp rdx, rax\n";
+        out << "    cmova rdx, rax\n";
+        out << "    ; slice_len = end - start\n";
+        out << "    mov r8, rdx\n";
+        out << "    sub r8, rsi\n";
+        out << "    jle .Lsls_done\n";
+        out << "    ; compute strlen(replacement)\n";
+        out << "    mov r9, [rbp-32]\n";
+        out << "    xor r10, r10\n";
+        out << ".Lsls_rlen:\n";
+        out << "    cmp byte [r9 + r10], 0\n";
+        out << "    je .Lsls_rlen_done\n";
+        out << "    inc r10\n";
+        out << "    jmp .Lsls_rlen\n";
+        out << ".Lsls_rlen_done:\n";
+        out << "    ; copy_len = min(slice_len, rlen)\n";
+        out << "    cmp r10, r8\n";
+        out << "    cmova r10, r8\n";
+        out << "    test r10, r10\n";
+        out << "    jz .Lsls_done\n";
+        out << "    ; memcpy(s + start, replacement, copy_len)\n";
+        out << "    mov rdi, [rbp-8]\n";
+        out << "    add rdi, rsi\n";
+        out << "    mov rsi, [rbp-32]\n";
+        out << "    mov rdx, r10\n";
+        out << "    call memcpy\n";
+        out << ".Lsls_done:\n";
+        out << "    add rsp, 32\n";
+        out << "    pop rbp\n";
         out << "    ret\n";
 
         // ---- Built-in: readln() -> string ----
@@ -1679,6 +1772,12 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ; allocate shadow space + alignment for calling main\n";
         out << "    sub rsp, 40\n"; // 32 shadow + 8 align
 
+        for (const auto& [target, source] : module.GetDeferredGlobalInits())
+        {
+            out << "    mov rax, [rel " << source << "]\n";
+            out << "    mov [rel " << target << "], rax\n";
+        }
+
         // call main()
         out << "    ; call main() (CRT entry -> user main)\n";
         out << "    call main\n";
@@ -1926,6 +2025,83 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ret\n";
         out << ".char_at_bad:\n";
         out << "    xor eax, eax\n";
+        out << "    ret\n";
+
+        // ---- Built-in: set_char_at(s: char*, index: int, c: char) -> void ----
+        // Windows x64: rcx = s, rdx = index, r8 = c (byte)
+        out << "\n";
+        out << "set_char_at:\n";
+        out << "    cmp rdx, 0\n";
+        out << "    jl .set_char_at_done\n";
+        out << "    xor r9, r9\n";
+        out << ".set_char_at_len:\n";
+        out << "    cmp byte [rcx + r9], 0\n";
+        out << "    je .set_char_at_check\n";
+        out << "    inc r9\n";
+        out << "    jmp .set_char_at_len\n";
+        out << ".set_char_at_check:\n";
+        out << "    cmp rdx, r9\n";
+        out << "    jge .set_char_at_done\n";
+        out << "    mov [rcx + rdx], r8b\n";
+        out << ".set_char_at_done:\n";
+        out << "    ret\n";
+
+        // ---- Built-in: str_slice_set(s: char*, start: int, end_idx: int, replacement: char*) -> void ----
+        // Windows x64: rcx = s, rdx = start, r8 = end_idx, r9 = replacement
+        out << "\n";
+        out << "str_slice_set:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 64\n";
+        out << "    mov [rbp-8], rcx\n";
+        out << "    mov [rbp-16], rdx\n";
+        out << "    mov [rbp-24], r8\n";
+        out << "    mov [rbp-32], r9\n";
+        out << "    ; strlen(s)\n";
+        out << "    xor rax, rax\n";
+        out << ".Lwsls_slen:\n";
+        out << "    cmp byte [rcx + rax], 0\n";
+        out << "    je .Lwsls_slen_done\n";
+        out << "    inc rax\n";
+        out << "    jmp .Lwsls_slen\n";
+        out << ".Lwsls_slen_done:\n";
+        out << "    cmp rdx, 0\n";
+        out << "    jge .Lwsls_start_ok\n";
+        out << "    xor rdx, rdx\n";
+        out << ".Lwsls_start_ok:\n";
+        out << "    cmp rdx, rax\n";
+        out << "    jl .Lwsls_end_clamp\n";
+        out << "    jmp .Lwsls_done\n";
+        out << ".Lwsls_end_clamp:\n";
+        out << "    cmp r8, rax\n";
+        out << "    cmova r8, rax\n";
+        out << "    mov r10, r8\n";
+        out << "    sub r10, rdx\n";
+        out << "    jle .Lwsls_done\n";
+        out << "    ; strlen(replacement)\n";
+        out << "    mov r9, [rbp-32]\n";
+        out << "    xor r11, r11\n";
+        out << ".Lwsls_rlen:\n";
+        out << "    cmp byte [r9 + r11], 0\n";
+        out << "    je .Lwsls_rlen_done\n";
+        out << "    inc r11\n";
+        out << "    jmp .Lwsls_rlen\n";
+        out << ".Lwsls_rlen_done:\n";
+        out << "    cmp r11, r10\n";
+        out << "    cmova r11, r10\n";
+        out << "    test r11, r11\n";
+        out << "    jz .Lwsls_done\n";
+        out << "    ; memcpy(s + start, replacement, copy_len)\n";
+        out << "    mov rcx, [rbp-8]\n";
+        out << "    add rcx, [rbp-16]\n";
+        out << "    mov rdx, [rbp-32]\n";
+        out << "    mov r8, r11\n";
+        out << "    sub rsp, 32\n";
+        out << "    call memcpy\n";
+        out << "    add rsp, 32\n";
+        out << ".Lwsls_done:\n";
+        out << "    add rsp, 64\n";
+        out << "    pop rbp\n";
         out << "    ret\n";
 
         // ---- Built-in: readln() -> string (Windows: GetStdHandle + ReadFile) ----
