@@ -52,6 +52,7 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global str_cmp\n";
                 header << "global str_len\n";
                 header << "global substr\n";
+                header << "global substr_step\n";
                 header << "global char_at\n";
                 header << "global set_char_at\n";
                 header << "global str_slice_set\n";
@@ -86,6 +87,7 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern str_cmp\n";
                 header << "extern str_len\n";
                 header << "extern substr\n";
+                header << "extern substr_step\n";
                 header << "extern char_at\n";
                 header << "extern set_char_at\n";
                 header << "extern str_slice_set\n";
@@ -124,6 +126,7 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global str_cmp\n";
                 header << "global str_len\n";
                 header << "global substr\n";
+                header << "global substr_step\n";
                 header << "global char_at\n";
                 header << "global set_char_at\n";
                 header << "global str_slice_set\n";
@@ -1070,6 +1073,107 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    pop rbp\n";
         out << "    ret\n";
 
+        // ---- Built-in: substr_step(s, start, end, step) -> string ----
+        // SysV ABI: rdi=s, rsi=start, rdx=end, rcx=step
+        out << "\n";
+        out << "substr_step:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 64\n";
+        out << "    mov [rbp-8], rdi\n";   // s
+        out << "    mov [rbp-16], rsi\n";  // start
+        out << "    mov [rbp-24], rdx\n";  // end
+        out << "    mov [rbp-32], rcx\n";  // step
+        out << "    test rdi, rdi\n";
+        out << "    jz .substep_empty\n";
+        out << "    cmp rcx, 0\n";
+        out << "    je .substep_empty\n";
+        // strlen(s)
+        out << "    xor rax, rax\n";
+        out << ".substep_len:\n";
+        out << "    cmp byte [rdi+rax], 0\n";
+        out << "    je .substep_len_done\n";
+        out << "    inc rax\n";
+        out << "    jmp .substep_len\n";
+        out << ".substep_len_done:\n";
+        out << "    mov [rbp-40], rax\n";  // slen
+        // clamp start to [0, slen]
+        out << "    mov rsi, [rbp-16]\n";
+        out << "    xor r8, r8\n";
+        out << "    cmp rsi, 0\n";
+        out << "    cmovl rsi, r8\n";
+        out << "    cmp rsi, rax\n";
+        out << "    cmovg rsi, rax\n";
+        out << "    mov [rbp-16], rsi\n";
+        // clamp end upper bound to slen (allow negative for reverse slicing)
+        out << "    mov rdx, [rbp-24]\n";
+        out << "    cmp rdx, rax\n";
+        out << "    cmovg rdx, rax\n";
+        out << "    mov [rbp-24], rdx\n";
+        // count how many chars will be collected
+        out << "    xor r9, r9\n";         // count = 0
+        out << "    mov r10, rsi\n";       // i = start
+        out << "    mov rcx, [rbp-32]\n";  // step
+        out << "    cmp rcx, 0\n";
+        out << "    jg .substep_count_pos\n";
+        // negative step: while i > end
+        out << ".substep_count_neg:\n";
+        out << "    cmp r10, rdx\n";
+        out << "    jle .substep_count_done\n";
+        out << "    cmp r10, rax\n";       // i < slen
+        out << "    jge .substep_count_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .substep_count_done\n";
+        out << "    inc r9\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .substep_count_neg\n";
+        // positive step: while i < end
+        out << ".substep_count_pos:\n";
+        out << "    cmp r10, rdx\n";
+        out << "    jge .substep_count_done\n";
+        out << "    cmp r10, rax\n";
+        out << "    jge .substep_count_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .substep_count_done\n";
+        out << "    inc r9\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .substep_count_pos\n";
+        out << ".substep_count_done:\n";
+        out << "    test r9, r9\n";
+        out << "    jz .substep_empty\n";
+        out << "    mov [rbp-48], r9\n";   // save count
+        // allocate count+1 bytes
+        out << "    lea rdi, [r9+1]\n";
+        out << "    call heap_alloc\n";
+        out << "    mov [rbp-56], rax\n";  // dest
+        // copy loop
+        out << "    mov r10, [rbp-16]\n";  // i = start
+        out << "    mov rcx, [rbp-32]\n";  // step
+        out << "    mov rdi, [rbp-8]\n";   // s
+        out << "    mov rdx, rax\n";       // dest ptr
+        out << "    mov r9, [rbp-48]\n";   // count
+        out << "    xor r8, r8\n";         // written = 0
+        out << ".substep_copy:\n";
+        out << "    cmp r8, r9\n";
+        out << "    jge .substep_copy_done\n";
+        out << "    movzx eax, byte [rdi+r10]\n";
+        out << "    mov [rdx+r8], al\n";
+        out << "    inc r8\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .substep_copy\n";
+        out << ".substep_copy_done:\n";
+        out << "    mov byte [rdx+r8], 0\n";
+        out << "    mov rax, [rbp-56]\n";
+        out << "    jmp .substep_done\n";
+        out << ".substep_empty:\n";
+        out << "    mov edi, 1\n";
+        out << "    call heap_alloc\n";
+        out << "    mov byte [rax], 0\n";
+        out << ".substep_done:\n";
+        out << "    add rsp, 64\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
         // ---- Built-in: char_at(s: string, index: int) -> char ----
         // rdi = s, rsi = index. Returns char in al. Bounds: index < 0 or index >= len -> 0.
         out << "\n";
@@ -1111,18 +1215,21 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << ".set_char_at_done:\n";
         out << "    ret\n";
 
-        // ---- Built-in: str_slice_set(s: char*, start: int, end_idx: int, replacement: char*) -> void ----
-        // rdi = s, rsi = start, rdx = end_idx, rcx = replacement
+        // ---- Built-in: str_slice_set(s, start, end, step, replacement) -> void ----
+        // SysV: rdi=s, rsi=start, rdx=end, rcx=step, r8=replacement
         out << "\n";
         out << "str_slice_set:\n";
         out << "    push rbp\n";
         out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    mov [rbp-8], rdi\n";
-        out << "    mov [rbp-16], rsi\n";
-        out << "    mov [rbp-24], rdx\n";
-        out << "    mov [rbp-32], rcx\n";
-        out << "    ; compute strlen(s)\n";
+        out << "    sub rsp, 48\n";
+        out << "    mov [rbp-8], rdi\n";    // s
+        out << "    mov [rbp-16], rsi\n";   // start
+        out << "    mov [rbp-24], rdx\n";   // end
+        out << "    mov [rbp-32], rcx\n";   // step
+        out << "    mov [rbp-40], r8\n";    // replacement
+        out << "    test rcx, rcx\n";
+        out << "    jz .Lsls_done\n";
+        // strlen(s)
         out << "    xor rax, rax\n";
         out << ".Lsls_slen:\n";
         out << "    cmp byte [rdi + rax], 0\n";
@@ -1130,44 +1237,58 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    inc rax\n";
         out << "    jmp .Lsls_slen\n";
         out << ".Lsls_slen_done:\n";
-        out << "    ; clamp start to [0, slen]\n";
-        out << "    cmp rsi, 0\n";
-        out << "    jge .Lsls_start_ok\n";
-        out << "    xor rsi, rsi\n";
-        out << ".Lsls_start_ok:\n";
-        out << "    cmp rsi, rax\n";
-        out << "    jl .Lsls_end_clamp\n";
-        out << "    jmp .Lsls_done\n";
-        out << ".Lsls_end_clamp:\n";
-        out << "    ; clamp end to [start, slen]\n";
-        out << "    cmp rdx, rax\n";
-        out << "    cmova rdx, rax\n";
-        out << "    ; slice_len = end - start\n";
-        out << "    mov r8, rdx\n";
-        out << "    sub r8, rsi\n";
-        out << "    jle .Lsls_done\n";
-        out << "    ; compute strlen(replacement)\n";
-        out << "    mov r9, [rbp-32]\n";
-        out << "    xor r10, r10\n";
+        out << "    mov [rbp-48], rax\n";   // slen
+        // strlen(replacement)
+        out << "    mov r8, [rbp-40]\n";
+        out << "    xor r9, r9\n";
         out << ".Lsls_rlen:\n";
-        out << "    cmp byte [r9 + r10], 0\n";
+        out << "    cmp byte [r8 + r9], 0\n";
         out << "    je .Lsls_rlen_done\n";
-        out << "    inc r10\n";
+        out << "    inc r9\n";
         out << "    jmp .Lsls_rlen\n";
         out << ".Lsls_rlen_done:\n";
-        out << "    ; copy_len = min(slice_len, rlen)\n";
-        out << "    cmp r10, r8\n";
-        out << "    cmova r10, r8\n";
-        out << "    test r10, r10\n";
+        out << "    test r9, r9\n";
         out << "    jz .Lsls_done\n";
-        out << "    ; memcpy(s + start, replacement, copy_len)\n";
-        out << "    mov rdi, [rbp-8]\n";
-        out << "    add rdi, rsi\n";
-        out << "    mov rsi, [rbp-32]\n";
-        out << "    mov rdx, r10\n";
-        out << "    call memcpy\n";
+        // stepped copy: i=start, j=0; while boundary and j<rlen: s[i]=repl[j]; i+=step; j++
+        out << "    mov r10, [rbp-16]\n";   // i = start
+        out << "    xor r11, r11\n";        // j = 0
+        out << "    mov rcx, [rbp-32]\n";   // step
+        out << "    mov rdi, [rbp-8]\n";    // s
+        out << "    mov rdx, [rbp-24]\n";   // end
+        out << "    cmp rcx, 0\n";
+        out << "    jg .Lsls_loop_pos\n";
+        // negative step loop
+        out << ".Lsls_loop_neg:\n";
+        out << "    cmp r10, rdx\n";
+        out << "    jle .Lsls_done\n";
+        out << "    cmp r10, [rbp-48]\n";
+        out << "    jge .Lsls_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .Lsls_done\n";
+        out << "    cmp r11, r9\n";
+        out << "    jge .Lsls_done\n";
+        out << "    movzx eax, byte [r8 + r11]\n";
+        out << "    mov [rdi + r10], al\n";
+        out << "    inc r11\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .Lsls_loop_neg\n";
+        // positive step loop
+        out << ".Lsls_loop_pos:\n";
+        out << "    cmp r10, rdx\n";
+        out << "    jge .Lsls_done\n";
+        out << "    cmp r10, [rbp-48]\n";
+        out << "    jge .Lsls_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .Lsls_done\n";
+        out << "    cmp r11, r9\n";
+        out << "    jge .Lsls_done\n";
+        out << "    movzx eax, byte [r8 + r11]\n";
+        out << "    mov [rdi + r10], al\n";
+        out << "    inc r11\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .Lsls_loop_pos\n";
         out << ".Lsls_done:\n";
-        out << "    add rsp, 32\n";
+        out << "    add rsp, 48\n";
         out << "    pop rbp\n";
         out << "    ret\n";
 
@@ -2005,6 +2126,111 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    pop rbp\n";
         out << "    ret\n";
 
+        // ---- Built-in: substr_step(s, start, end, step) -> string ----
+        // Windows x64: rcx=s, rdx=start, r8=end, r9=step
+        out << "\n";
+        out << "substr_step:\n";
+        out << "    push rbp\n";
+        out << "    mov rbp, rsp\n";
+        out << "    sub rsp, 96\n";
+        out << "    mov [rbp-8], rcx\n";   // s
+        out << "    mov [rbp-16], rdx\n";  // start
+        out << "    mov [rbp-24], r8\n";   // end
+        out << "    mov [rbp-32], r9\n";   // step
+        out << "    test rcx, rcx\n";
+        out << "    jz .substep_empty\n";
+        out << "    cmp r9, 0\n";
+        out << "    je .substep_empty\n";
+        // strlen(s)
+        out << "    xor rax, rax\n";
+        out << ".substep_len:\n";
+        out << "    cmp byte [rcx+rax], 0\n";
+        out << "    je .substep_len_done\n";
+        out << "    inc rax\n";
+        out << "    jmp .substep_len\n";
+        out << ".substep_len_done:\n";
+        out << "    mov [rbp-40], rax\n";  // slen
+        // clamp start to [0, slen]
+        out << "    mov rdx, [rbp-16]\n";
+        out << "    xor r10, r10\n";
+        out << "    cmp rdx, 0\n";
+        out << "    cmovl rdx, r10\n";
+        out << "    cmp rdx, rax\n";
+        out << "    cmovg rdx, rax\n";
+        out << "    mov [rbp-16], rdx\n";
+        // clamp end upper bound to slen (allow negative for reverse slicing)
+        out << "    mov r8, [rbp-24]\n";
+        out << "    cmp r8, rax\n";
+        out << "    cmovg r8, rax\n";
+        out << "    mov [rbp-24], r8\n";
+        // count how many chars will be collected
+        out << "    xor r11, r11\n";       // count = 0
+        out << "    mov r10, rdx\n";       // i = start
+        out << "    mov r9, [rbp-32]\n";   // step
+        out << "    cmp r9, 0\n";
+        out << "    jg .substep_count_pos\n";
+        // negative step: while i > end
+        out << ".substep_count_neg:\n";
+        out << "    cmp r10, r8\n";
+        out << "    jle .substep_count_done\n";
+        out << "    cmp r10, rax\n";
+        out << "    jge .substep_count_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .substep_count_done\n";
+        out << "    inc r11\n";
+        out << "    add r10, r9\n";
+        out << "    jmp .substep_count_neg\n";
+        // positive step: while i < end
+        out << ".substep_count_pos:\n";
+        out << "    cmp r10, r8\n";
+        out << "    jge .substep_count_done\n";
+        out << "    cmp r10, rax\n";
+        out << "    jge .substep_count_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .substep_count_done\n";
+        out << "    inc r11\n";
+        out << "    add r10, r9\n";
+        out << "    jmp .substep_count_pos\n";
+        out << ".substep_count_done:\n";
+        out << "    test r11, r11\n";
+        out << "    jz .substep_empty\n";
+        out << "    mov [rbp-48], r11\n";  // save count
+        // allocate count+1 bytes
+        out << "    lea rcx, [r11+1]\n";
+        out << "    sub rsp, 32\n";
+        out << "    call heap_alloc\n";
+        out << "    add rsp, 32\n";
+        out << "    mov [rbp-56], rax\n";  // dest
+        // copy loop
+        out << "    mov r10, [rbp-16]\n";  // i = start
+        out << "    mov r9, [rbp-32]\n";   // step
+        out << "    mov rcx, [rbp-8]\n";   // s
+        out << "    mov rdx, rax\n";       // dest ptr
+        out << "    mov r11, [rbp-48]\n";  // count
+        out << "    xor r8, r8\n";         // written = 0
+        out << ".substep_copy:\n";
+        out << "    cmp r8, r11\n";
+        out << "    jge .substep_copy_done\n";
+        out << "    movzx eax, byte [rcx+r10]\n";
+        out << "    mov [rdx+r8], al\n";
+        out << "    inc r8\n";
+        out << "    add r10, r9\n";
+        out << "    jmp .substep_copy\n";
+        out << ".substep_copy_done:\n";
+        out << "    mov byte [rdx+r8], 0\n";
+        out << "    mov rax, [rbp-56]\n";
+        out << "    jmp .substep_done\n";
+        out << ".substep_empty:\n";
+        out << "    mov rcx, 1\n";
+        out << "    sub rsp, 32\n";
+        out << "    call heap_alloc\n";
+        out << "    add rsp, 32\n";
+        out << "    mov byte [rax], 0\n";
+        out << ".substep_done:\n";
+        out << "    add rsp, 96\n";
+        out << "    pop rbp\n";
+        out << "    ret\n";
+
         // ---- Built-in: char_at(s: string, index: int) -> char ----
         // Windows x64: rcx = s, rdx = index. Returns char in al.
         out << "\n";
@@ -2046,18 +2272,22 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << ".set_char_at_done:\n";
         out << "    ret\n";
 
-        // ---- Built-in: str_slice_set(s: char*, start: int, end_idx: int, replacement: char*) -> void ----
-        // Windows x64: rcx = s, rdx = start, r8 = end_idx, r9 = replacement
+        // ---- Built-in: str_slice_set(s, start, end, step, replacement) -> void ----
+        // Windows x64: rcx=s, rdx=start, r8=end, r9=step, [rsp+48]=replacement
         out << "\n";
         out << "str_slice_set:\n";
         out << "    push rbp\n";
         out << "    mov rbp, rsp\n";
         out << "    sub rsp, 64\n";
-        out << "    mov [rbp-8], rcx\n";
-        out << "    mov [rbp-16], rdx\n";
-        out << "    mov [rbp-24], r8\n";
-        out << "    mov [rbp-32], r9\n";
-        out << "    ; strlen(s)\n";
+        out << "    mov [rbp-8], rcx\n";    // s
+        out << "    mov [rbp-16], rdx\n";   // start
+        out << "    mov [rbp-24], r8\n";    // end
+        out << "    mov [rbp-32], r9\n";    // step
+        out << "    mov rax, [rbp+48]\n";   // replacement (5th arg on stack)
+        out << "    mov [rbp-40], rax\n";
+        out << "    test r9, r9\n";
+        out << "    jz .Lwsls_done\n";
+        // strlen(s)
         out << "    xor rax, rax\n";
         out << ".Lwsls_slen:\n";
         out << "    cmp byte [rcx + rax], 0\n";
@@ -2065,40 +2295,54 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    inc rax\n";
         out << "    jmp .Lwsls_slen\n";
         out << ".Lwsls_slen_done:\n";
-        out << "    cmp rdx, 0\n";
-        out << "    jge .Lwsls_start_ok\n";
-        out << "    xor rdx, rdx\n";
-        out << ".Lwsls_start_ok:\n";
-        out << "    cmp rdx, rax\n";
-        out << "    jl .Lwsls_end_clamp\n";
-        out << "    jmp .Lwsls_done\n";
-        out << ".Lwsls_end_clamp:\n";
-        out << "    cmp r8, rax\n";
-        out << "    cmova r8, rax\n";
-        out << "    mov r10, r8\n";
-        out << "    sub r10, rdx\n";
-        out << "    jle .Lwsls_done\n";
-        out << "    ; strlen(replacement)\n";
-        out << "    mov r9, [rbp-32]\n";
-        out << "    xor r11, r11\n";
+        out << "    mov [rbp-48], rax\n";   // slen
+        // strlen(replacement)
+        out << "    mov r8, [rbp-40]\n";
+        out << "    xor r9, r9\n";
         out << ".Lwsls_rlen:\n";
-        out << "    cmp byte [r9 + r11], 0\n";
+        out << "    cmp byte [r8 + r9], 0\n";
         out << "    je .Lwsls_rlen_done\n";
-        out << "    inc r11\n";
+        out << "    inc r9\n";
         out << "    jmp .Lwsls_rlen\n";
         out << ".Lwsls_rlen_done:\n";
-        out << "    cmp r11, r10\n";
-        out << "    cmova r11, r10\n";
-        out << "    test r11, r11\n";
+        out << "    test r9, r9\n";
         out << "    jz .Lwsls_done\n";
-        out << "    ; memcpy(s + start, replacement, copy_len)\n";
-        out << "    mov rcx, [rbp-8]\n";
-        out << "    add rcx, [rbp-16]\n";
-        out << "    mov rdx, [rbp-32]\n";
-        out << "    mov r8, r11\n";
-        out << "    sub rsp, 32\n";
-        out << "    call memcpy\n";
-        out << "    add rsp, 32\n";
+        // stepped copy: i=start, j=0
+        out << "    mov r10, [rbp-16]\n";   // i = start
+        out << "    xor r11, r11\n";        // j = 0
+        out << "    mov rcx, [rbp-32]\n";   // step
+        out << "    mov rdi, [rbp-8]\n";    // s (rdi is non-volatile on Win but we saved)
+        out << "    mov rdx, [rbp-24]\n";   // end
+        out << "    cmp rcx, 0\n";
+        out << "    jg .Lwsls_loop_pos\n";
+        out << ".Lwsls_loop_neg:\n";
+        out << "    cmp r10, rdx\n";
+        out << "    jle .Lwsls_done\n";
+        out << "    cmp r10, [rbp-48]\n";
+        out << "    jge .Lwsls_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .Lwsls_done\n";
+        out << "    cmp r11, r9\n";
+        out << "    jge .Lwsls_done\n";
+        out << "    movzx eax, byte [r8 + r11]\n";
+        out << "    mov [rdi + r10], al\n";
+        out << "    inc r11\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .Lwsls_loop_neg\n";
+        out << ".Lwsls_loop_pos:\n";
+        out << "    cmp r10, rdx\n";
+        out << "    jge .Lwsls_done\n";
+        out << "    cmp r10, [rbp-48]\n";
+        out << "    jge .Lwsls_done\n";
+        out << "    cmp r10, 0\n";
+        out << "    jl .Lwsls_done\n";
+        out << "    cmp r11, r9\n";
+        out << "    jge .Lwsls_done\n";
+        out << "    movzx eax, byte [r8 + r11]\n";
+        out << "    mov [rdi + r10], al\n";
+        out << "    inc r11\n";
+        out << "    add r10, rcx\n";
+        out << "    jmp .Lwsls_loop_pos\n";
         out << ".Lwsls_done:\n";
         out << "    add rsp, 64\n";
         out << "    pop rbp\n";

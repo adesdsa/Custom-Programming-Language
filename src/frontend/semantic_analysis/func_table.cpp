@@ -143,6 +143,24 @@ void FuncTable::RegisterBuiltins()
     substrFunc.SetDefined();
     this->InsertFunction(std::move(substrFunc));
 
+    // substr_step(s: string, start: int, end: int, step: int) -> string
+    std::vector<VarMetaData> substrStepParams = {
+        VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("start", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("end", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),
+        VarMetaData("step", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
+    };
+    FuncMetaData substrStepFunc(
+        this->m_entityLogger,
+        "substr_step",
+        Type::STRING_TYPE,
+        substrStepParams,
+        0, 0,
+        nullptr
+    );
+    substrStepFunc.SetDefined();
+    this->InsertFunction(std::move(substrStepFunc));
+
     // char_at(s: string, index: int) -> char
     std::vector<VarMetaData> charAtParams = {
         VarMetaData("s", Type::STRING_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0),

@@ -308,6 +308,19 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(target);
             IRBaseValue* start = HandleExpression(this->m_pendingIndexCommand.GetParams()[0]);
             IRBaseValue* end_idx = HandleExpression(this->m_pendingIndexCommand.GetParams()[1]);
+
+            IRBaseValue* step = nullptr;
+            if (this->m_pendingIndexCommand.GetParams().size() >= 3)
+            {
+                step = HandleExpression(this->m_pendingIndexCommand.GetParams()[2]);
+            }
+            else
+            {
+                step = TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
+            }
+
             if (!this->m_currModule.IsFuncExistByName("str_slice_set"))
             {
                 auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
@@ -318,6 +331,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                             TypeToIRType(Type::STRING_TYPE), 
                             intType, 
                             intType, 
+                            intType,
                             TypeToIRType(Type::STRING_TYPE) 
                         }
                     ));
@@ -327,7 +341,8 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                 { 
                     strPtr, 
                     start, 
-                    end_idx, 
+                    end_idx,
+                    step,
                     valueToStore 
                 }
             );
@@ -1729,6 +1744,15 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                     FuncMetaData* argFunc = this->m_decoratedAst.funcTable.FindFunctionByName(firstArg[FUNC_IDENTIFIER_INDEX].GetValue());
                     if (argFunc && argFunc->GetRType() == Type::STRING_TYPE) isStringArg = true;
                 }
+                else if (firstArg.GetType() == CommandTypes::ARRAY_SLICE)
+                {
+                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                    if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                }
+                else if (firstArg.GetType() == CommandTypes::ARRAY_ACCESS)
+                {
+                    // single index on string returns char, not string
+                }
                 else if (firstArg.GetType() == CommandTypes::EXPRESSION)
                 {
                     if (auto* callInstr = dynamic_cast<IRInstruction*>(tempInstructionHolder[0]))
@@ -1736,7 +1760,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                         if (callInstr->GetOpcode() == IROpcode::Call && callInstr->GetCalledFunction())
                         {
                             const std::string& name = callInstr->GetCalledFunction()->GetName();
-                            if (name == "str_concat" || name == "str_from_char" || name == "substr")
+                            if (name == "str_concat" || name == "str_from_char" || name == "substr" || name == "substr_step")
                                 isStringArg = true;
                         }
                     }
@@ -2398,30 +2422,42 @@ IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)
 
     if (command.GetParams().size() < 2)
     {
-        StoreInternalError("Array slice requires two parameters [start:end]", command);
+        StoreInternalError("Array slice requires at least two parameters [start:end]", command);
         return nullptr;
     }
     IRBaseValue* start = HandleExpression(command.GetParams()[0]);
     IRBaseValue* end_idx = HandleExpression(command.GetParams()[1]);
     if (!start || !end_idx) return nullptr;
 
-    IRBaseValue* length = this->m_irbuilder.CreateSub(end_idx, start);
+    IRBaseValue* step = nullptr;
+    if (command.GetParams().size() >= 3)
+    {
+        step = HandleExpression(command.GetParams()[2]);
+    }
+    else
+    {
+        step = TargetArchitecture::Is32Bit()
+            ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
+            : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
+    }
+    if (!step) return nullptr;
 
-    if (!this->m_currModule.IsFuncExistByName("substr"))
+    if (!this->m_currModule.IsFuncExistByName("substr_step"))
     {
         auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
         this->m_currModule.AddFunction(
-            "substr",
+            "substr_step",
             IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
             { 
                 TypeToIRType(Type::STRING_TYPE), 
                 intType, 
+                intType,
                 intType 
             }
         ));
     }
     return this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction("substr"), { strPtr, start, length });
+        this->m_currModule.GetFunction("substr_step"), { strPtr, start, end_idx, step });
 }
 
 IRBaseValue* IRVisitor::HandleExpression(Command command)

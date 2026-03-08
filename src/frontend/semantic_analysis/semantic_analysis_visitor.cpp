@@ -1239,6 +1239,16 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
     {
         return ExpressionType::MATHEMATICAL; // sizeof always returns an int
     }
+
+    else if (nodeType == CommandTypes::ARRAY_ACCESS ||
+             nodeType == CommandTypes::ARRAY_SLICE)
+    {
+        return this->m_facade.CheckExpression(
+            node->command,
+            this->m_funcTable,
+            *this->m_currentScope
+        );
+    }
     
     return ExpressionType::UNKNOWN;
 }

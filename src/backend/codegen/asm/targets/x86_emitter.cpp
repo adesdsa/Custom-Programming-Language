@@ -56,6 +56,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global str_cmp\n";
                 header << "global str_len\n";
                 header << "global substr\n";
+                header << "global substr_step\n";
                 header << "global char_at\n";
                 header << "global set_char_at\n";
                 header << "global str_slice_set\n";
@@ -91,6 +92,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern str_cmp\n";
                 header << "extern str_len\n";
                 header << "extern substr\n";
+                header << "extern substr_step\n";
                 header << "extern char_at\n";
                 header << "extern set_char_at\n";
                 header << "extern str_slice_set\n";
@@ -130,6 +132,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _str_cmp\n";
                 header << "global _str_len\n";
                 header << "global _substr\n";
+                header << "global _substr_step\n";
                 header << "global _char_at\n";
                 header << "global _set_char_at\n";
                 header << "global _str_slice_set\n";
@@ -168,6 +171,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern _str_cmp\n";
                 header << "extern _str_len\n";
                 header << "extern _substr\n";
+                header << "extern _substr_step\n";
                 header << "extern _char_at\n";
                 header << "extern _set_char_at\n";
                 header << "extern _str_slice_set\n";
@@ -874,6 +878,116 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    pop ebp\n";
             out << "    ret\n";
 
+            // ---- Built-in: substr_step(s, start, end, step) -> string ----
+            // cdecl: [ebp+8]=s, [ebp+12]=start, [ebp+16]=end, [ebp+20]=step
+            out << "\n";
+            out << "substr_step:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    push ebx\n";
+            out << "    push esi\n";
+            out << "    push edi\n";
+            out << "    sub esp, 32\n";
+            out << "    mov ecx, [ebp+8]\n";   // s
+            out << "    mov edx, [ebp+20]\n";  // step
+            out << "    test ecx, ecx\n";
+            out << "    jz .substep_empty\n";
+            out << "    cmp edx, 0\n";
+            out << "    je .substep_empty\n";
+            // strlen(s)
+            out << "    xor eax, eax\n";
+            out << ".substep_len:\n";
+            out << "    cmp byte [ecx+eax], 0\n";
+            out << "    je .substep_len_done\n";
+            out << "    inc eax\n";
+            out << "    jmp .substep_len\n";
+            out << ".substep_len_done:\n";
+            out << "    mov [ebp-4], eax\n";   // slen
+            // clamp start to [0, slen]
+            out << "    mov esi, [ebp+12]\n";
+            out << "    cmp esi, 0\n";
+            out << "    jge .substep_s_ok\n";
+            out << "    xor esi, esi\n";
+            out << ".substep_s_ok:\n";
+            out << "    cmp esi, eax\n";
+            out << "    jle .substep_s_ok2\n";
+            out << "    mov esi, eax\n";
+            out << ".substep_s_ok2:\n";
+            out << "    mov [ebp+12], esi\n";
+            // clamp end upper bound to slen (allow negative for reverse slicing)
+            out << "    mov edi, [ebp+16]\n";
+            out << "    cmp edi, eax\n";
+            out << "    jle .substep_e_ok2\n";
+            out << "    mov edi, eax\n";
+            out << ".substep_e_ok2:\n";
+            out << "    mov [ebp+16], edi\n";
+            // count characters
+            out << "    xor ebx, ebx\n";       // count = 0
+            out << "    mov esi, [ebp+12]\n";  // i = start
+            out << "    mov edx, [ebp+20]\n";  // step
+            out << "    cmp edx, 0\n";
+            out << "    jg .substep_count_pos\n";
+            out << ".substep_count_neg:\n";
+            out << "    cmp esi, edi\n";
+            out << "    jle .substep_count_done\n";
+            out << "    cmp esi, eax\n";
+            out << "    jge .substep_count_done\n";
+            out << "    cmp esi, 0\n";
+            out << "    jl .substep_count_done\n";
+            out << "    inc ebx\n";
+            out << "    add esi, edx\n";
+            out << "    jmp .substep_count_neg\n";
+            out << ".substep_count_pos:\n";
+            out << "    cmp esi, edi\n";
+            out << "    jge .substep_count_done\n";
+            out << "    cmp esi, eax\n";
+            out << "    jge .substep_count_done\n";
+            out << "    cmp esi, 0\n";
+            out << "    jl .substep_count_done\n";
+            out << "    inc ebx\n";
+            out << "    add esi, edx\n";
+            out << "    jmp .substep_count_pos\n";
+            out << ".substep_count_done:\n";
+            out << "    test ebx, ebx\n";
+            out << "    jz .substep_empty\n";
+            out << "    mov [ebp-8], ebx\n";   // save count
+            // allocate count+1
+            out << "    lea eax, [ebx+1]\n";
+            out << "    push eax\n";
+            out << "    call heap_alloc\n";
+            out << "    add esp, 4\n";
+            out << "    mov [ebp-12], eax\n";  // dest
+            // copy loop
+            out << "    mov esi, [ebp+12]\n";  // i = start
+            out << "    mov edx, [ebp+20]\n";  // step
+            out << "    mov ecx, [ebp+8]\n";   // s
+            out << "    mov edi, eax\n";       // dest
+            out << "    xor ebx, ebx\n";       // written = 0
+            out << ".substep_copy:\n";
+            out << "    cmp ebx, [ebp-8]\n";
+            out << "    jge .substep_copy_done\n";
+            out << "    movzx eax, byte [ecx+esi]\n";
+            out << "    mov [edi+ebx], al\n";
+            out << "    inc ebx\n";
+            out << "    add esi, edx\n";
+            out << "    jmp .substep_copy\n";
+            out << ".substep_copy_done:\n";
+            out << "    mov byte [edi+ebx], 0\n";
+            out << "    mov eax, [ebp-12]\n";
+            out << "    jmp .substep_done\n";
+            out << ".substep_empty:\n";
+            out << "    push 1\n";
+            out << "    call heap_alloc\n";
+            out << "    add esp, 4\n";
+            out << "    mov byte [eax], 0\n";
+            out << ".substep_done:\n";
+            out << "    add esp, 32\n";
+            out << "    pop edi\n";
+            out << "    pop esi\n";
+            out << "    pop ebx\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
             // ---- Built-in: char_at(s: string, index: int) -> char ----
             out << "\n";
             out << "char_at:\n";
@@ -919,15 +1033,21 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << ".Lsca_done:\n";
             out << "    ret\n";
 
-            // ---- Built-in: str_slice_set(s, start, end_idx, replacement) -> void ----
-            // cdecl: [esp+4]=s, [esp+8]=start, [esp+12]=end_idx, [esp+16]=replacement
+            // ---- Built-in: str_slice_set(s, start, end, step, replacement) -> void ----
+            // cdecl: [ebp+8]=s, [ebp+12]=start, [ebp+16]=end, [ebp+20]=step, [ebp+24]=replacement
             out << "\n";
             out << "str_slice_set:\n";
             out << "    push ebp\n";
             out << "    mov ebp, esp\n";
+            out << "    push ebx\n";
+            out << "    push esi\n";
+            out << "    push edi\n";
             out << "    sub esp, 16\n";
-            out << "    mov ecx, [ebp+8]\n";
-            out << "    ; strlen(s)\n";
+            out << "    mov ecx, [ebp+8]\n";    // s
+            out << "    mov edx, [ebp+20]\n";   // step
+            out << "    test edx, edx\n";
+            out << "    jz .Lsls32_done\n";
+            // strlen(s)
             out << "    xor eax, eax\n";
             out << ".Lsls32_slen:\n";
             out << "    cmp byte [ecx + eax], 0\n";
@@ -935,48 +1055,58 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    inc eax\n";
             out << "    jmp .Lsls32_slen\n";
             out << ".Lsls32_slen_done:\n";
-            out << "    mov edx, [ebp+12]\n";
-            out << "    cmp edx, 0\n";
-            out << "    jge .Lsls32_start_ok\n";
-            out << "    xor edx, edx\n";
-            out << ".Lsls32_start_ok:\n";
-            out << "    cmp edx, eax\n";
-            out << "    jl .Lsls32_end_clamp\n";
-            out << "    jmp .Lsls32_done\n";
-            out << ".Lsls32_end_clamp:\n";
-            out << "    mov ebx, [ebp+16]\n";
-            out << "    cmp ebx, eax\n";
-            out << "    jle .Lsls32_end_ok\n";
-            out << "    mov ebx, eax\n";
-            out << ".Lsls32_end_ok:\n";
-            out << "    mov edi, ebx\n";
-            out << "    sub edi, edx\n";
-            out << "    jle .Lsls32_done\n";
-            out << "    ; strlen(replacement)\n";
-            out << "    mov esi, [ebp+20]\n";
-            out << "    xor eax, eax\n";
+            out << "    mov [ebp-4], eax\n";    // slen
+            // strlen(replacement)
+            out << "    mov esi, [ebp+24]\n";
+            out << "    xor ebx, ebx\n";
             out << ".Lsls32_rlen:\n";
-            out << "    cmp byte [esi + eax], 0\n";
+            out << "    cmp byte [esi + ebx], 0\n";
             out << "    je .Lsls32_rlen_done\n";
-            out << "    inc eax\n";
+            out << "    inc ebx\n";
             out << "    jmp .Lsls32_rlen\n";
             out << ".Lsls32_rlen_done:\n";
-            out << "    cmp eax, edi\n";
-            out << "    jle .Lsls32_use_rlen\n";
-            out << "    mov eax, edi\n";
-            out << ".Lsls32_use_rlen:\n";
-            out << "    test eax, eax\n";
+            out << "    test ebx, ebx\n";
             out << "    jz .Lsls32_done\n";
-            out << "    ; memcpy(s + start, replacement, copy_len)\n";
-            out << "    push eax\n";
-            out << "    push dword [ebp+20]\n";
-            out << "    mov ecx, [ebp+8]\n";
-            out << "    add ecx, edx\n";
-            out << "    push ecx\n";
-            out << "    call memcpy\n";
-            out << "    add esp, 12\n";
+            out << "    mov [ebp-8], ebx\n";    // rlen
+            // stepped copy: i=start, j=0
+            out << "    mov edi, [ebp+12]\n";   // i = start
+            out << "    xor ebx, ebx\n";        // j = 0
+            out << "    mov edx, [ebp+20]\n";   // step
+            out << "    cmp edx, 0\n";
+            out << "    jg .Lsls32_loop_pos\n";
+            out << ".Lsls32_loop_neg:\n";
+            out << "    cmp edi, [ebp+16]\n";
+            out << "    jle .Lsls32_done\n";
+            out << "    cmp edi, [ebp-4]\n";
+            out << "    jge .Lsls32_done\n";
+            out << "    cmp edi, 0\n";
+            out << "    jl .Lsls32_done\n";
+            out << "    cmp ebx, [ebp-8]\n";
+            out << "    jge .Lsls32_done\n";
+            out << "    movzx eax, byte [esi + ebx]\n";
+            out << "    mov [ecx + edi], al\n";
+            out << "    inc ebx\n";
+            out << "    add edi, edx\n";
+            out << "    jmp .Lsls32_loop_neg\n";
+            out << ".Lsls32_loop_pos:\n";
+            out << "    cmp edi, [ebp+16]\n";
+            out << "    jge .Lsls32_done\n";
+            out << "    cmp edi, [ebp-4]\n";
+            out << "    jge .Lsls32_done\n";
+            out << "    cmp edi, 0\n";
+            out << "    jl .Lsls32_done\n";
+            out << "    cmp ebx, [ebp-8]\n";
+            out << "    jge .Lsls32_done\n";
+            out << "    movzx eax, byte [esi + ebx]\n";
+            out << "    mov [ecx + edi], al\n";
+            out << "    inc ebx\n";
+            out << "    add edi, edx\n";
+            out << "    jmp .Lsls32_loop_pos\n";
             out << ".Lsls32_done:\n";
             out << "    add esp, 16\n";
+            out << "    pop edi\n";
+            out << "    pop esi\n";
+            out << "    pop ebx\n";
             out << "    pop ebp\n";
             out << "    ret\n";
 
@@ -1829,6 +1959,111 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    pop ebp\n";
             out << "    ret\n";
 
+            // ---- Built-in: substr_step(s, start, end, step) -> string ----
+            // cdecl: [ebp+8]=s, [ebp+12]=start, [ebp+16]=end, [ebp+20]=step
+            out << "\n";
+            out << "_substr_step:\n";
+            out << "    push ebp\n";
+            out << "    mov ebp, esp\n";
+            out << "    push ebx\n";
+            out << "    push esi\n";
+            out << "    push edi\n";
+            out << "    sub esp, 32\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    mov edx, [ebp+20]\n";
+            out << "    test ecx, ecx\n";
+            out << "    jz ._substep_empty\n";
+            out << "    cmp edx, 0\n";
+            out << "    je ._substep_empty\n";
+            out << "    xor eax, eax\n";
+            out << "._substep_len:\n";
+            out << "    cmp byte [ecx+eax], 0\n";
+            out << "    je ._substep_len_done\n";
+            out << "    inc eax\n";
+            out << "    jmp ._substep_len\n";
+            out << "._substep_len_done:\n";
+            out << "    mov [ebp-4], eax\n";
+            out << "    mov esi, [ebp+12]\n";
+            out << "    cmp esi, 0\n";
+            out << "    jge ._substep_s_ok\n";
+            out << "    xor esi, esi\n";
+            out << "._substep_s_ok:\n";
+            out << "    cmp esi, eax\n";
+            out << "    jle ._substep_s_ok2\n";
+            out << "    mov esi, eax\n";
+            out << "._substep_s_ok2:\n";
+            out << "    mov [ebp+12], esi\n";
+            // clamp end upper bound to slen (allow negative for reverse slicing)
+            out << "    mov edi, [ebp+16]\n";
+            out << "    cmp edi, eax\n";
+            out << "    jle ._substep_e_ok2\n";
+            out << "    mov edi, eax\n";
+            out << "._substep_e_ok2:\n";
+            out << "    mov [ebp+16], edi\n";
+            out << "    xor ebx, ebx\n";
+            out << "    mov esi, [ebp+12]\n";
+            out << "    mov edx, [ebp+20]\n";
+            out << "    cmp edx, 0\n";
+            out << "    jg ._substep_count_pos\n";
+            out << "._substep_count_neg:\n";
+            out << "    cmp esi, edi\n";
+            out << "    jle ._substep_count_done\n";
+            out << "    cmp esi, eax\n";
+            out << "    jge ._substep_count_done\n";
+            out << "    cmp esi, 0\n";
+            out << "    jl ._substep_count_done\n";
+            out << "    inc ebx\n";
+            out << "    add esi, edx\n";
+            out << "    jmp ._substep_count_neg\n";
+            out << "._substep_count_pos:\n";
+            out << "    cmp esi, edi\n";
+            out << "    jge ._substep_count_done\n";
+            out << "    cmp esi, eax\n";
+            out << "    jge ._substep_count_done\n";
+            out << "    cmp esi, 0\n";
+            out << "    jl ._substep_count_done\n";
+            out << "    inc ebx\n";
+            out << "    add esi, edx\n";
+            out << "    jmp ._substep_count_pos\n";
+            out << "._substep_count_done:\n";
+            out << "    test ebx, ebx\n";
+            out << "    jz ._substep_empty\n";
+            out << "    mov [ebp-8], ebx\n";
+            out << "    lea eax, [ebx+1]\n";
+            out << "    push eax\n";
+            out << "    call _heap_alloc\n";
+            out << "    add esp, 4\n";
+            out << "    mov [ebp-12], eax\n";
+            out << "    mov esi, [ebp+12]\n";
+            out << "    mov edx, [ebp+20]\n";
+            out << "    mov ecx, [ebp+8]\n";
+            out << "    mov edi, eax\n";
+            out << "    xor ebx, ebx\n";
+            out << "._substep_copy:\n";
+            out << "    cmp ebx, [ebp-8]\n";
+            out << "    jge ._substep_copy_done\n";
+            out << "    movzx eax, byte [ecx+esi]\n";
+            out << "    mov [edi+ebx], al\n";
+            out << "    inc ebx\n";
+            out << "    add esi, edx\n";
+            out << "    jmp ._substep_copy\n";
+            out << "._substep_copy_done:\n";
+            out << "    mov byte [edi+ebx], 0\n";
+            out << "    mov eax, [ebp-12]\n";
+            out << "    jmp ._substep_done\n";
+            out << "._substep_empty:\n";
+            out << "    push 1\n";
+            out << "    call _heap_alloc\n";
+            out << "    add esp, 4\n";
+            out << "    mov byte [eax], 0\n";
+            out << "._substep_done:\n";
+            out << "    add esp, 32\n";
+            out << "    pop edi\n";
+            out << "    pop esi\n";
+            out << "    pop ebx\n";
+            out << "    pop ebp\n";
+            out << "    ret\n";
+
             // ---- Built-in: char_at(s: string, index: int) -> char ----
             out << "\n";
             out << "_char_at:\n";
@@ -1874,14 +2109,20 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "._Lsca_done:\n";
             out << "    ret\n";
 
-            // ---- Built-in: _str_slice_set(s, start, end_idx, replacement) -> void ----
-            // cdecl: [esp+4]=s, [esp+8]=start, [esp+12]=end_idx, [esp+16]=replacement
+            // ---- Built-in: _str_slice_set(s, start, end, step, replacement) -> void ----
+            // cdecl: [ebp+8]=s, [ebp+12]=start, [ebp+16]=end, [ebp+20]=step, [ebp+24]=replacement
             out << "\n";
             out << "_str_slice_set:\n";
             out << "    push ebp\n";
             out << "    mov ebp, esp\n";
+            out << "    push ebx\n";
+            out << "    push esi\n";
+            out << "    push edi\n";
             out << "    sub esp, 16\n";
             out << "    mov ecx, [ebp+8]\n";
+            out << "    mov edx, [ebp+20]\n";
+            out << "    test edx, edx\n";
+            out << "    jz ._Lsls32_done\n";
             out << "    xor eax, eax\n";
             out << "._Lsls32_slen:\n";
             out << "    cmp byte [ecx + eax], 0\n";
@@ -1889,46 +2130,56 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    inc eax\n";
             out << "    jmp ._Lsls32_slen\n";
             out << "._Lsls32_slen_done:\n";
-            out << "    mov edx, [ebp+12]\n";
-            out << "    cmp edx, 0\n";
-            out << "    jge ._Lsls32_start_ok\n";
-            out << "    xor edx, edx\n";
-            out << "._Lsls32_start_ok:\n";
-            out << "    cmp edx, eax\n";
-            out << "    jl ._Lsls32_end_clamp\n";
-            out << "    jmp ._Lsls32_done\n";
-            out << "._Lsls32_end_clamp:\n";
-            out << "    mov ebx, [ebp+16]\n";
-            out << "    cmp ebx, eax\n";
-            out << "    jle ._Lsls32_end_ok\n";
-            out << "    mov ebx, eax\n";
-            out << "._Lsls32_end_ok:\n";
-            out << "    mov edi, ebx\n";
-            out << "    sub edi, edx\n";
-            out << "    jle ._Lsls32_done\n";
-            out << "    mov esi, [ebp+20]\n";
-            out << "    xor eax, eax\n";
+            out << "    mov [ebp-4], eax\n";
+            out << "    mov esi, [ebp+24]\n";
+            out << "    xor ebx, ebx\n";
             out << "._Lsls32_rlen:\n";
-            out << "    cmp byte [esi + eax], 0\n";
+            out << "    cmp byte [esi + ebx], 0\n";
             out << "    je ._Lsls32_rlen_done\n";
-            out << "    inc eax\n";
+            out << "    inc ebx\n";
             out << "    jmp ._Lsls32_rlen\n";
             out << "._Lsls32_rlen_done:\n";
-            out << "    cmp eax, edi\n";
-            out << "    jle ._Lsls32_use_rlen\n";
-            out << "    mov eax, edi\n";
-            out << "._Lsls32_use_rlen:\n";
-            out << "    test eax, eax\n";
+            out << "    test ebx, ebx\n";
             out << "    jz ._Lsls32_done\n";
-            out << "    push eax\n";
-            out << "    push dword [ebp+20]\n";
-            out << "    mov ecx, [ebp+8]\n";
-            out << "    add ecx, edx\n";
-            out << "    push ecx\n";
-            out << "    call _memcpy\n";
-            out << "    add esp, 12\n";
+            out << "    mov [ebp-8], ebx\n";
+            out << "    mov edi, [ebp+12]\n";
+            out << "    xor ebx, ebx\n";
+            out << "    mov edx, [ebp+20]\n";
+            out << "    cmp edx, 0\n";
+            out << "    jg ._Lsls32_loop_pos\n";
+            out << "._Lsls32_loop_neg:\n";
+            out << "    cmp edi, [ebp+16]\n";
+            out << "    jle ._Lsls32_done\n";
+            out << "    cmp edi, [ebp-4]\n";
+            out << "    jge ._Lsls32_done\n";
+            out << "    cmp edi, 0\n";
+            out << "    jl ._Lsls32_done\n";
+            out << "    cmp ebx, [ebp-8]\n";
+            out << "    jge ._Lsls32_done\n";
+            out << "    movzx eax, byte [esi + ebx]\n";
+            out << "    mov [ecx + edi], al\n";
+            out << "    inc ebx\n";
+            out << "    add edi, edx\n";
+            out << "    jmp ._Lsls32_loop_neg\n";
+            out << "._Lsls32_loop_pos:\n";
+            out << "    cmp edi, [ebp+16]\n";
+            out << "    jge ._Lsls32_done\n";
+            out << "    cmp edi, [ebp-4]\n";
+            out << "    jge ._Lsls32_done\n";
+            out << "    cmp edi, 0\n";
+            out << "    jl ._Lsls32_done\n";
+            out << "    cmp ebx, [ebp-8]\n";
+            out << "    jge ._Lsls32_done\n";
+            out << "    movzx eax, byte [esi + ebx]\n";
+            out << "    mov [ecx + edi], al\n";
+            out << "    inc ebx\n";
+            out << "    add edi, edx\n";
+            out << "    jmp ._Lsls32_loop_pos\n";
             out << "._Lsls32_done:\n";
             out << "    add esp, 16\n";
+            out << "    pop edi\n";
+            out << "    pop esi\n";
+            out << "    pop ebx\n";
             out << "    pop ebp\n";
             out << "    ret\n";
 
