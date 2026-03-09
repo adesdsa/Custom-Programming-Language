@@ -18,6 +18,8 @@ std::string CodeGenManager::MainFlow()
         optimizationManager.MainFlow(irProgram);
     }
 
+    this->m_requiredLibraries = irProgram.GetRequiredLibraries();
+
     std::string outputName = StringUtils::ToNarrow(this->m_options.outputFileName);
     std::string outputDir  = StringUtils::ToNarrow(this->m_options.outputDir);
 
@@ -38,4 +40,9 @@ std::string CodeGenManager::MainFlow()
     }
 
     return objectFilePath;
+}
+
+const std::set<std::string>& CodeGenManager::GetRequiredLibraries() const noexcept
+{
+    return this->m_requiredLibraries;
 }

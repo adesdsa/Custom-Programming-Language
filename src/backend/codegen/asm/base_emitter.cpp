@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include <set>
 
 BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
     m_funcTable(funcTable),
@@ -26,17 +27,33 @@ std::string BaseEmitter::MangledName(const std::string& name) const
 
 void BaseEmitter::EmitExternAndGlobalDirectives(const IRModule& module, std::ostream& out)
 {
+    std::set<std::string> exportedNames(module.GetExports().begin(), module.GetExports().end());
+
     for (const auto& symbol : module.GetExports())
     {
         out << "global " << MangledName(symbol) << "\n";
     }
 
+    std::set<std::string> emittedExterns;
     for (const auto& symbol : module.GetImports())
     {
         out << "extern " << MangledName(symbol) << "\n";
+        emittedExterns.insert(symbol);
     }
 
-    if (!module.GetExports().empty() || !module.GetImports().empty())
+    for (const auto& func : module.GetFunctions())
+    {
+        const std::string& name = func->GetName();
+        if (func->GetNumBasicBlocks() == 0 &&
+            emittedExterns.count(name) == 0 &&
+            exportedNames.count(name) == 0)
+        {
+            out << "extern " << MangledName(name) << "\n";
+            emittedExterns.insert(name);
+        }
+    }
+
+    if (!module.GetExports().empty() || !emittedExterns.empty())
     {
         out << "\n";
     }

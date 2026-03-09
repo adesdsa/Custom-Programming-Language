@@ -805,7 +805,14 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
     std::string importPath = pathToken.GetValue();
     if (importPath.size() >= 2 && importPath.front() == '"' && importPath.back() == '"')
         importPath = importPath.substr(1, importPath.size() - 2);
-    std::string moduleName = std::filesystem::path(importPath).stem().string(); // resolve by stem to match ProjectSymbolTable registration
+
+    if (BuiltinLibraryRegistry::IsBuiltinLibrary(importPath))
+    {
+        HandleBuiltinLibraryImport(node, importPath);
+        return;
+    }
+
+    std::string moduleName = std::filesystem::path(importPath).stem().string();
     auto fileExports = this->m_projectSymbolTable.Resolve(moduleName);
     if (fileExports == nullptr)
     {
@@ -919,6 +926,72 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
                     node->command.GetTokens()[0].GetLine(),
                     node->command.GetTokens()[0].GetColumn(),
                     "Maybe you forgot to add export to the function/variable"
+                )
+            );
+        }
+    }
+}
+
+void SemanticAnalysisVisitor::HandleBuiltinLibraryImport(ASTNode* node, const std::string& libName)
+{
+    const auto& tokens = node->command.GetTokens();
+    const auto* lib = BuiltinLibraryRegistry::GetLibrary(libName);
+    if (!lib) return;
+
+    auto imports = node->command.GetParams();
+    const int importLine = static_cast<int>(tokens[0].GetLine());
+    const int importColumn = static_cast<int>(tokens[0].GetColumn());
+
+    auto registerFunc = [&](const BuiltinFunction& bf) {
+        FuncMetaData func(
+            this->m_entityLogger,
+            bf.name,
+            bf.returnType,
+            bf.params,
+            0, 0,
+            nullptr,
+            true
+        );
+        func.SetDefined();
+        if (!this->m_funcTable.InsertFunction(std::move(func)))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Duplicate import: '" + bf.name + "' was already imported",
+                    importLine, importColumn,
+                    "Remove the duplicate import"
+                )
+            );
+        }
+    };
+
+    if (imports.empty())
+    {
+        for (const auto& func : lib->functions)
+            registerFunc(func);
+        return;
+    }
+
+    for (auto import : imports)
+    {
+        const std::string& symbolName = import.GetTokens()[0].GetValue();
+        const int line = static_cast<int>(import.GetTokens()[0].GetLine());
+        const int column = static_cast<int>(import.GetTokens()[0].GetColumn());
+
+        const BuiltinFunction* bf = lib->FindFunction(symbolName);
+        if (bf)
+        {
+            registerFunc(*bf);
+        }
+        else
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Built-in library '" + libName + "' doesn't export: " + symbolName,
+                    line, column,
+                    "Check available functions in the '" + libName + "' library"
                 )
             );
         }

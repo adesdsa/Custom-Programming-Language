@@ -165,3 +165,13 @@ const std::vector<std::pair<std::string, std::string>>& IRModule::GetDeferredGlo
 {
     return this->m_deferredGlobalInits;
 }
+
+void IRModule::AddRequiredLibrary(const std::string& libName)
+{
+    this->m_requiredLibraries.insert(libName);
+}
+
+const std::set<std::string>& IRModule::GetRequiredLibraries() const noexcept
+{
+    return this->m_requiredLibraries;
+}

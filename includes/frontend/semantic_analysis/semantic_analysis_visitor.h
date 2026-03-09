@@ -10,6 +10,7 @@
 #include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
 #include "includes/frontend/semantic_analysis/var_metadata.h"
 #include "includes/frontend/common/project_symbol_table.h"
+#include "includes/shared/common/builtin_library.h"
 
 class SemanticAnalysisVisitor : public IASTVisitor
 {
@@ -120,6 +121,7 @@ private:
     /// @brief If some logic errors already detected in handler
         /// then next handlers in the chain may need use this knowlage
     void SignalFailureForNextHandlers() noexcept;
+    void HandleBuiltinLibraryImport(ASTNode* node, const std::string& libName);
 
     /// @brief Clears all state related to the deferred assignment type check mechanism.
     /// 

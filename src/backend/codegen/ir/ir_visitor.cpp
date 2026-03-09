@@ -1,6 +1,7 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/shared/common/builtin_library.h"
 
 IRVisitor::IRVisitor(
     const EntityLogger& entityLogger,
@@ -300,6 +301,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                     IRType::GetFunction(IRType::GetVoid(),
                         { TypeToIRType(Type::STRING_TYPE), intType, IRType::GetInt8() }));
             }
+            this->m_currModule.AddRequiredLibrary("string");
             this->m_irbuilder.CreateCall(
                 this->m_currModule.GetFunction("set_char_at"), { strPtr, idx, charVal });
         }
@@ -336,6 +338,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                         }
                     ));
             }
+            this->m_currModule.AddRequiredLibrary("string");
             this->m_irbuilder.CreateCall(
                 this->m_currModule.GetFunction("str_slice_set"), 
                 { 
@@ -358,6 +361,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                     this->m_currModule.AddFunction("str_from_char",
                         IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
                 }
+                this->m_currModule.AddRequiredLibrary("string");
                 valueToStore = this->m_irbuilder.CreateCall(
                     this->m_currModule.GetFunction("str_from_char"), { valueToStore });
             }
@@ -376,6 +380,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                         }
                     ));
                 }
+                this->m_currModule.AddRequiredLibrary("string");
                 IRBaseValue* zero = TargetArchitecture::Is32Bit() ? 
                     static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0)) : 
                     static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
@@ -1094,6 +1099,8 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
+    this->m_indexedAssignment = false;
+    this->m_slicedAssignment = false;
     if (node) // If this is null it was called from blockEnd
     {
         this->m_entityLogger.Info("Added EndOfCommand IR handling.\nAt line: "
@@ -1680,6 +1687,12 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         this->m_currModule.AddFunction(funcName,
             IRType::GetFunction(TypeToIRType(funcMetaData->GetRType()), std::move(paramTypes)));
     }
+    if (funcMetaData->IsExtern())
+    {
+        const auto* lib = BuiltinLibraryRegistry::GetLibrary("string");
+        if (lib && lib->FindFunction(funcName))
+            this->m_currModule.AddRequiredLibrary("string");
+    }
 
     // Setting up the temporary holder
     std::vector<IRBaseValue*> tempInstructionHolder;
@@ -2045,6 +2058,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
                         IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
                             { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
                 }
+                this->m_currModule.AddRequiredLibrary("string");
                 result = this->m_irbuilder.CreateCall(
                     this->m_currModule.GetFunction("str_concat"),
                     { lhs, rhs }
@@ -2103,6 +2117,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
                         IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
                             { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
                 }
+                this->m_currModule.AddRequiredLibrary("string");
                 result = this->m_irbuilder.CreateCall(
                     this->m_currModule.GetFunction("str_concat"),
                     { leftStrVal, rightStrVal }
@@ -2126,6 +2141,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
                         TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64(),
                         { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
             }
+            this->m_currModule.AddRequiredLibrary("string");
             IRBaseValue* cmpResult = this->m_irbuilder.CreateCall(
                 this->m_currModule.GetFunction("str_cmp"), { lhs, rhs });
             IRBaseValue* zero = TargetArchitecture::Is32Bit()
@@ -2409,6 +2425,7 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
                 { TypeToIRType(Type::STRING_TYPE),
                   TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
     }
+    this->m_currModule.AddRequiredLibrary("string");
     return this->m_irbuilder.CreateCall(
         this->m_currModule.GetFunction("char_at"), { strPtr, idx });
 }
@@ -2456,6 +2473,7 @@ IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)
             }
         ));
     }
+    this->m_currModule.AddRequiredLibrary("string");
     return this->m_irbuilder.CreateCall(
         this->m_currModule.GetFunction("substr_step"), { strPtr, start, end_idx, step });
 }

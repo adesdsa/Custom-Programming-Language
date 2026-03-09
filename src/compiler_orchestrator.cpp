@@ -6,6 +6,7 @@
 #include "includes/shared/utils/string_utils.hpp"
 #include "includes/shared/utils/system_utils.h"
 #include "includes/shared/common/target_architecture.h"
+#include "includes/shared/common/builtin_library.h"
 
 #include <algorithm>
 #include <unordered_map>
@@ -224,6 +225,7 @@ void CompilerOrchestrator::MainFlow()
 
     // Step 3: Semantic analysis + code generation (sequential)
     std::vector<std::string> artifactPaths;
+    std::set<std::string> requiredLibraries;
     for (size_t i = 0; i < parsers.size(); i++)
     {
         std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
@@ -239,6 +241,9 @@ void CompilerOrchestrator::MainFlow()
 
         CodeGenManager codegen(decorated, perFileOptions);
         artifactPaths.push_back(codegen.MainFlow());
+
+        for (const auto& lib : codegen.GetRequiredLibraries())
+            requiredLibraries.insert(lib);
     }
 
     // Step 4:
@@ -256,14 +261,22 @@ void CompilerOrchestrator::MainFlow()
         std::string outputName = StringUtils::ToNarrow(this->m_options.outputFileName);
         std::string outputDir  = StringUtils::ToNarrow(this->m_options.outputDir);
 
+        size_t userArtifactCount = artifactPaths.size();
+        for (const auto& libName : requiredLibraries)
+        {
+            std::string libObjPath = BuiltinLibraryRegistry::GetObjPath(libName);
+            if (std::filesystem::exists(libObjPath))
+                artifactPaths.push_back(libObjPath);
+        }
+
         Linker linker;
         linker.MainFlow(artifactPaths, outputName, outputDir);
 
         if (!this->m_options.saveTemps)
         {
-            for (const auto& objPath : artifactPaths)
+            for (size_t i = 0; i < userArtifactCount; i++)
             {
-                std::filesystem::remove(objPath);
+                std::filesystem::remove(artifactPaths[i]);
             }
         }
     }

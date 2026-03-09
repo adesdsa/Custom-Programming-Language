@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <set>
 
 #include "includes/driver/compiler_options.h"
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
@@ -29,7 +30,10 @@ public:
     /// @return Path to the produced artifact (.asm if stopAtAsm, .obj/.o otherwise).
     std::string MainFlow();
 
+    const std::set<std::string>& GetRequiredLibraries() const noexcept;
+
 private:
+    std::set<std::string> m_requiredLibraries;
     const DecoratedAST& m_decoratedAST;
     const CompilerOptions& m_options;
     ErrorManager& m_errorManager;
