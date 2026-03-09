@@ -1,8 +1,6 @@
 ; picoC standard library: string (Windows x86, cdecl)
 BITS 32
 
-section .text
-
 global _str_concat
 global _str_from_char
 global _str_cmp
@@ -12,9 +10,20 @@ global _substr_step
 global _char_at
 global _set_char_at
 global _str_slice_set
+global _str_find
+global _str_find_first_of
+global _str_find_last_of
+global _str_back
+global _str_front
+global _EOS
 
 extern _heap_alloc
 extern _memcpy
+
+section .data
+    _EOS: dd -1
+
+section .text
 
 ; ---- _str_concat(a: char*, b: char*) -> char* ----
 _str_concat:
@@ -390,4 +399,92 @@ _str_slice_set:
     pop esi
     pop ebx
     pop ebp
+    ret
+
+; ---- _str_find(s, ch) -> int ----
+; [esp+4]=s, [esp+8]=ch. Returns index or -1 (npos).
+_str_find:
+_str_find_first_of:
+    mov ecx, [esp+4]
+    test ecx, ecx
+    jz ._find_npos
+    movzx edx, byte [esp+8]
+    xor eax, eax
+._find_loop:
+    mov bl, [ecx + eax]
+    test bl, bl
+    jz ._find_npos
+    cmp bl, dl
+    je ._find_ret
+    inc eax
+    jmp ._find_loop
+._find_ret:
+    ret
+._find_npos:
+    mov eax, -1
+    ret
+
+; ---- _str_find_last_of(s, ch) -> int ----
+; [esp+4]=s, [esp+8]=ch. Returns last index or -1 (npos).
+_str_find_last_of:
+    push esi
+    push ebx
+    mov ecx, [esp+12]
+    test ecx, ecx
+    jz ._findlast_npos
+    movzx edx, byte [esp+16]
+    mov eax, -1
+    xor esi, esi
+._findlast_loop:
+    mov bl, [ecx + esi]
+    test bl, bl
+    jz ._findlast_done
+    cmp bl, dl
+    jne ._findlast_skip
+    mov eax, esi
+._findlast_skip:
+    inc esi
+    jmp ._findlast_loop
+._findlast_done:
+    pop ebx
+    pop esi
+    ret
+._findlast_npos:
+    mov eax, -1
+    pop ebx
+    pop esi
+    ret
+
+; ---- _str_back(s) -> char ----
+; [esp+4]=s. Returns last char or 0 if empty.
+_str_back:
+    mov ecx, [esp+4]
+    test ecx, ecx
+    jz ._back_empty
+    xor eax, eax
+._back_len:
+    cmp byte [ecx + eax], 0
+    je ._back_done
+    inc eax
+    jmp ._back_len
+._back_done:
+    test eax, eax
+    jz ._back_empty
+    dec eax
+    movzx eax, byte [ecx + eax]
+    ret
+._back_empty:
+    xor eax, eax
+    ret
+
+; ---- _str_front(s) -> char ----
+; [esp+4]=s. Returns first char or 0 if empty.
+_str_front:
+    mov ecx, [esp+4]
+    test ecx, ecx
+    jz ._front_empty
+    movzx eax, byte [ecx]
+    ret
+._front_empty:
+    xor eax, eax
     ret

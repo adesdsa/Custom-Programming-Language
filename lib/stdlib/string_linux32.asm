@@ -1,8 +1,6 @@
 ; picoC standard library: string (Linux x86, cdecl)
 BITS 32
 
-section .text
-
 global str_concat
 global str_from_char
 global str_cmp
@@ -12,9 +10,20 @@ global substr_step
 global char_at
 global set_char_at
 global str_slice_set
+global str_find
+global str_find_first_of
+global str_find_last_of
+global str_back
+global str_front
+global EOS
 
 extern heap_alloc
 extern memcpy
+
+section .data
+    EOS: dd -1
+
+section .text
 
 ; ---- str_concat(a: char*, b: char*) -> char* ----
 str_concat:
@@ -392,4 +401,92 @@ str_slice_set:
     pop esi
     pop ebx
     pop ebp
+    ret
+
+; ---- str_find(s, ch) -> int ----
+; [esp+4]=s, [esp+8]=ch. Returns index or -1 (npos).
+str_find:
+str_find_first_of:
+    mov ecx, [esp+4]
+    test ecx, ecx
+    jz .find_npos
+    movzx edx, byte [esp+8]
+    xor eax, eax
+.find_loop:
+    mov bl, [ecx + eax]
+    test bl, bl
+    jz .find_npos
+    cmp bl, dl
+    je .find_ret
+    inc eax
+    jmp .find_loop
+.find_ret:
+    ret
+.find_npos:
+    mov eax, -1
+    ret
+
+; ---- str_find_last_of(s, ch) -> int ----
+; [esp+4]=s, [esp+8]=ch. Returns last index or -1 (npos).
+str_find_last_of:
+    push esi
+    push ebx
+    mov ecx, [esp+12]
+    test ecx, ecx
+    jz .findlast_npos
+    movzx edx, byte [esp+16]
+    mov eax, -1
+    xor esi, esi
+.findlast_loop:
+    mov bl, [ecx + esi]
+    test bl, bl
+    jz .findlast_done
+    cmp bl, dl
+    jne .findlast_skip
+    mov eax, esi
+.findlast_skip:
+    inc esi
+    jmp .findlast_loop
+.findlast_done:
+    pop ebx
+    pop esi
+    ret
+.findlast_npos:
+    mov eax, -1
+    pop ebx
+    pop esi
+    ret
+
+; ---- str_back(s) -> char ----
+; [esp+4]=s. Returns last char or 0 if empty.
+str_back:
+    mov ecx, [esp+4]
+    test ecx, ecx
+    jz .back_empty
+    xor eax, eax
+.back_len:
+    cmp byte [ecx + eax], 0
+    je .back_done
+    inc eax
+    jmp .back_len
+.back_done:
+    test eax, eax
+    jz .back_empty
+    dec eax
+    movzx eax, byte [ecx + eax]
+    ret
+.back_empty:
+    xor eax, eax
+    ret
+
+; ---- str_front(s) -> char ----
+; [esp+4]=s. Returns first char or 0 if empty.
+str_front:
+    mov ecx, [esp+4]
+    test ecx, ecx
+    jz .front_empty
+    movzx eax, byte [ecx]
+    ret
+.front_empty:
+    xor eax, eax
     ret

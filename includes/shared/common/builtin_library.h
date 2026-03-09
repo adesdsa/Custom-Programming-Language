@@ -14,12 +14,21 @@ struct BuiltinFunction
     std::vector<VarMetaData> params;
 };
 
+struct BuiltinVariable
+{
+    std::string name;
+    Type type;
+    AccessRights access;
+};
+
 struct BuiltinLibrary
 {
     std::string name;
     std::vector<BuiltinFunction> functions;
+    std::vector<BuiltinVariable> variables;
 
     const BuiltinFunction* FindFunction(const std::string& funcName) const;
+    const BuiltinVariable* FindVariable(const std::string& varName) const;
 };
 
 class BuiltinLibraryRegistry

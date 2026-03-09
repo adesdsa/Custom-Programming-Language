@@ -11,6 +11,15 @@ const BuiltinFunction* BuiltinLibrary::FindFunction(const std::string& funcName)
     return nullptr;
 }
 
+const BuiltinVariable* BuiltinLibrary::FindVariable(const std::string& varName) const
+{
+    for (const auto& var : variables)
+    {
+        if (var.name == varName) return &var;
+    }
+    return nullptr;
+}
+
 static BuiltinLibrary BuildStringLibrary()
 {
     BuiltinLibrary lib;
@@ -29,7 +38,16 @@ static BuiltinLibrary BuildStringLibrary()
         { "substr_step", Type::STRING_TYPE, { mkParam("s", Type::STRING_TYPE), mkParam("start", Type::INT_TYPE), mkParam("end", Type::INT_TYPE), mkParam("step", Type::INT_TYPE) } },
         { "char_at",     Type::CHAR_TYPE,   { mkParam("s", Type::STRING_TYPE), mkParam("index", Type::INT_TYPE) } },
         { "set_char_at", Type::VOID_TYPE,   { mkParam("s", Type::STRING_TYPE), mkParam("index", Type::INT_TYPE), mkParam("c", Type::CHAR_TYPE) } },
-        { "str_slice_set", Type::VOID_TYPE, { mkParam("s", Type::STRING_TYPE), mkParam("start", Type::INT_TYPE), mkParam("end", Type::INT_TYPE), mkParam("step", Type::INT_TYPE), mkParam("replacement", Type::STRING_TYPE) } }
+        { "str_slice_set", Type::VOID_TYPE, { mkParam("s", Type::STRING_TYPE), mkParam("start", Type::INT_TYPE), mkParam("end", Type::INT_TYPE), mkParam("step", Type::INT_TYPE), mkParam("replacement", Type::STRING_TYPE) } },
+        { "str_find",       Type::INT_TYPE,  { mkParam("s", Type::STRING_TYPE), mkParam("ch", Type::CHAR_TYPE) } },
+        { "str_find_first_of", Type::INT_TYPE, { mkParam("s", Type::STRING_TYPE), mkParam("ch", Type::CHAR_TYPE) } },
+        { "str_find_last_of",  Type::INT_TYPE, { mkParam("s", Type::STRING_TYPE), mkParam("ch", Type::CHAR_TYPE) } },
+        { "str_back",  Type::CHAR_TYPE, { mkParam("s", Type::STRING_TYPE) } },
+        { "str_front", Type::CHAR_TYPE, { mkParam("s", Type::STRING_TYPE) } }
+    };
+
+    lib.variables = {
+        { "EOS", Type::INT_TYPE, AccessRights::CONST_ACCESS }
     };
 
     return lib;

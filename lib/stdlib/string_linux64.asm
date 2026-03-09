@@ -1,8 +1,6 @@
 ; picoC standard library: string (Linux x86_64, SysV ABI)
 BITS 64
 
-section .text
-
 global str_concat
 global str_from_char
 global str_cmp
@@ -12,9 +10,20 @@ global substr_step
 global char_at
 global set_char_at
 global str_slice_set
+global str_find
+global str_find_first_of
+global str_find_last_of
+global str_back
+global str_front
+global EOS
 
 extern heap_alloc
 extern memcpy
+
+section .data
+    EOS: dq -1
+
+section .text
 
 ; ---- str_concat(a: char*, b: char*) -> char* ----
 ; rdi = a, rsi = b
@@ -364,4 +373,80 @@ str_slice_set:
 .Lsls_done:
     add rsp, 48
     pop rbp
+    ret
+
+; ---- str_find(s, ch) -> int ----
+; rdi=s, sil=ch. Returns index or -1 (npos).
+str_find:
+str_find_first_of:
+    test rdi, rdi
+    jz .find_npos
+    xor rax, rax
+.find_loop:
+    mov cl, [rdi + rax]
+    test cl, cl
+    jz .find_npos
+    cmp cl, sil
+    je .find_ret
+    inc rax
+    jmp .find_loop
+.find_ret:
+    ret
+.find_npos:
+    mov rax, -1
+    ret
+
+; ---- str_find_last_of(s, ch) -> int ----
+; rdi=s, sil=ch. Returns last index or -1 (npos).
+str_find_last_of:
+    test rdi, rdi
+    jz .findlast_npos
+    mov rax, -1
+    xor rcx, rcx
+.findlast_loop:
+    mov r8b, [rdi + rcx]
+    test r8b, r8b
+    jz .findlast_done
+    cmp r8b, sil
+    jne .findlast_skip
+    mov rax, rcx
+.findlast_skip:
+    inc rcx
+    jmp .findlast_loop
+.findlast_done:
+    ret
+.findlast_npos:
+    mov rax, -1
+    ret
+
+; ---- str_back(s) -> char ----
+; rdi=s. Returns last char or 0 if empty.
+str_back:
+    test rdi, rdi
+    jz .back_empty
+    xor rax, rax
+.back_len:
+    cmp byte [rdi + rax], 0
+    je .back_done
+    inc rax
+    jmp .back_len
+.back_done:
+    test rax, rax
+    jz .back_empty
+    dec rax
+    movzx eax, byte [rdi + rax]
+    ret
+.back_empty:
+    xor eax, eax
+    ret
+
+; ---- str_front(s) -> char ----
+; rdi=s. Returns first char or 0 if empty.
+str_front:
+    test rdi, rdi
+    jz .front_empty
+    movzx eax, byte [rdi]
+    ret
+.front_empty:
+    xor eax, eax
     ret

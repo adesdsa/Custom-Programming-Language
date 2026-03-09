@@ -966,10 +966,27 @@ void SemanticAnalysisVisitor::HandleBuiltinLibraryImport(ASTNode* node, const st
         }
     };
 
+    auto registerVar = [&](const BuiltinVariable& bv) {
+        VarMetaData var(bv.name, bv.type, bv.access, Scope::GLOBAL, 0, true);
+        if (!this->m_currentScope->InsertVar(var))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Duplicate import: '" + bv.name + "' was already imported",
+                    importLine, importColumn,
+                    "Remove the duplicate import"
+                )
+            );
+        }
+    };
+
     if (imports.empty())
     {
         for (const auto& func : lib->functions)
             registerFunc(func);
+        for (const auto& var : lib->variables)
+            registerVar(var);
         return;
     }
 
@@ -983,18 +1000,24 @@ void SemanticAnalysisVisitor::HandleBuiltinLibraryImport(ASTNode* node, const st
         if (bf)
         {
             registerFunc(*bf);
+            continue;
         }
-        else
+
+        const BuiltinVariable* bv = lib->FindVariable(symbolName);
+        if (bv)
         {
-            this->m_errorManager.StoreError(
-                CompileTimeError(
-                    ErrorTypes::NAME_ERROR,
-                    "Built-in library '" + libName + "' doesn't export: " + symbolName,
-                    line, column,
-                    "Check available functions in the '" + libName + "' library"
-                )
-            );
+            registerVar(*bv);
+            continue;
         }
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Built-in library '" + libName + "' doesn't export: " + symbolName,
+                line, column,
+                "Check available functions in the '" + libName + "' library"
+            )
+        );
     }
 }
 
