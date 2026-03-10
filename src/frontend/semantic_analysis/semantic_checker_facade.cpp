@@ -105,7 +105,6 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     }
 
     // Incase the expression is string related (string/char literal, string/char var, string + string, char + string, etc.)
-    // Only + is allowed for strings; -=, *=, /=, //= are invalid
     if (expression.GetTokens().size() >= 1 && IsFirstTokenStringOrCharLike(expression, funcTable, currVarTableNode))
     {
         bool sawString = false;
