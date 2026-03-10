@@ -108,20 +108,29 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     if (expression.GetTokens().size() >= 1 && IsFirstTokenStringOrCharLike(expression, funcTable, currVarTableNode))
     {
         bool sawString = false;
+        bool sawComparison = false;
         for (size_t i = 0; i < expression.GetTokens().size(); )
         {
             if (expression[i].GetType() == TokenTypes::STRING_LITERAL)
             {
                 sawString = true;
-                if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
-                    return ExpressionType::UNKNOWN;
-                i += 2; // skip operand and the "+" after it (or end)
+                if (i + 1 < expression.GetTokens().size())
+                {
+                    const std::string& op = expression[i + 1].GetValue();
+                    if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+                        sawComparison = true;
+                }
+                i += 2;
                 continue;
             }
             else if (expression[i].GetType() == TokenTypes::CHAR_LITERAL)
             {
-                if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
-                    return ExpressionType::UNKNOWN;
+                if (i + 1 < expression.GetTokens().size())
+                {
+                    const std::string& op = expression[i + 1].GetValue();
+                    if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+                        sawComparison = true;
+                }
                 i += 2;
                 continue;
             }
@@ -149,7 +158,15 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 if (innerType == ExpressionType::STRING) sawString = true;
                 if (innerType != ExpressionType::STRING && innerType != ExpressionType::CHAR) return ExpressionType::UNKNOWN;
                 i = closeIdx + 1;
-                if (i < expression.GetTokens().size() && expression[i].GetValue() == "+") ++i;
+                if (i < expression.GetTokens().size() &&
+                    (expression[i].GetValue() == "+" ||
+                     expression[i].GetValue() == "==" || expression[i].GetValue() == "!=" ||
+                     expression[i].GetValue() == "<"  || expression[i].GetValue() == ">"  ||
+                     expression[i].GetValue() == "<=" || expression[i].GetValue() == ">="))
+                {
+                    if (expression[i].GetValue() != "+") sawComparison = true;
+                    ++i;
+                }
                 continue;
             }
             else if (expression[i].GetType() == TokenTypes::HAS_PARAM)
@@ -164,8 +181,12 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                     if (varData.value().type == Type::STRING_TYPE) sawString = true;
                     if (varData.value().type == Type::STRING_TYPE || varData.value().type == Type::CHAR_TYPE)
                     {
-                        if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
-                            return ExpressionType::UNKNOWN;
+                        if (i + 1 < expression.GetTokens().size())
+                        {
+                            const std::string& op = expression[i + 1].GetValue();
+                            if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+                                sawComparison = true;
+                        }
                         i += 2;
                         continue;
                     }
@@ -177,8 +198,12 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                     if (funcData && (funcData->GetRType() == Type::STRING_TYPE || funcData->GetRType() == Type::CHAR_TYPE))
                     {
                         if (funcData->GetRType() == Type::STRING_TYPE) sawString = true;
-                        if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
-                            return ExpressionType::UNKNOWN;
+                        if (i + 1 < expression.GetTokens().size())
+                        {
+                            const std::string& op = expression[i + 1].GetValue();
+                            if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+                                sawComparison = true;
+                        }
                         i += 2;
                         continue;
                     }
@@ -190,9 +215,17 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 ++i;
                 continue;
             }
+            else if (expression[i].GetValue() == "==" || expression[i].GetValue() == "!=" ||
+                     expression[i].GetValue() == "<"  || expression[i].GetValue() == ">"  ||
+                     expression[i].GetValue() == "<=" || expression[i].GetValue() == ">=")
+            {
+                sawComparison = true;
+                ++i;
+                continue;
+            }
             return ExpressionType::UNKNOWN;
         }
-        // Only return STRING if we have actual string concatenation; single char stays MATHEMATICAL (for return type match)
+        if (sawComparison) return ExpressionType::BOOLEAN;
         return sawString ? ExpressionType::STRING : ExpressionType::CHAR;
     }
 
@@ -210,6 +243,20 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
 
         if (funcData) return TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
         else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
+    }
+    if (expression.GetType() == CommandTypes::ARRAY_ACCESS)
+    {
+        auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
+        if (!varData.has_value()) return ExpressionType::UNKNOWN;
+        if (varData->type == Type::STRING_TYPE) return ExpressionType::CHAR;
+        return ExpressionType::MATHEMATICAL;
+    }
+    if (expression.GetType() == CommandTypes::ARRAY_SLICE)
+    {
+        auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
+        if (!varData.has_value()) return ExpressionType::UNKNOWN;
+        if (varData->type == Type::STRING_TYPE) return ExpressionType::STRING;
+        return ExpressionType::UNKNOWN;
     }
 
     for (size_t i = 0; i < expression.GetTokens().size(); i++)
@@ -234,6 +281,18 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
 
                 if (funcData) paramType = TypeToExpressionType(funcData->GetRType()); // Saving the func's return type.
                 else return ExpressionType::UNKNOWN; //Incase the func doesnt exist
+            }
+            else if (currCommand.GetType() == CommandTypes::ARRAY_ACCESS)
+            {
+                auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                if (!varData.has_value()) return ExpressionType::UNKNOWN;
+                paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::CHAR : ExpressionType::MATHEMATICAL;
+            }
+            else if (currCommand.GetType() == CommandTypes::ARRAY_SLICE)
+            {
+                auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                if (!varData.has_value()) return ExpressionType::UNKNOWN;
+                paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::STRING : ExpressionType::UNKNOWN;
             }
             else if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
@@ -323,13 +382,13 @@ bool SemanticCheckerFacade::CheckFunctionReturnType(const ExpressionType& return
     return CompareTypes(func->GetRType(), returnExpressionType);
 }
 
-bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode)
+bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode, bool isInitialization)
 {
     DefaultExpressionChecks();
     auto found = currVarTableNode.FindVar(sAssignedVarName);
     if (!found.has_value()) return false;
     VarMetaData varData = *found;
-    if (varData.accessRights == AccessRights::CONST_ACCESS || varData.accessRights == AccessRights::READ_ONLY_ACCESS) return false;
+    if (!isInitialization && (varData.accessRights == AccessRights::CONST_ACCESS || varData.accessRights == AccessRights::READ_ONLY_ACCESS)) return false;
     return CompareTypes(varData.type, assigmentExpressionType);
 }
 
@@ -558,7 +617,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
     if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
     if (expectedType == Type::STRING_TYPE && (gottenType == ExpressionType::STRING || gottenType == ExpressionType::CHAR)) return true;  // char can assign to string
-    if (expectedType == Type::CHAR_TYPE && gottenType == ExpressionType::CHAR) return true;
+    if (expectedType == Type::CHAR_TYPE && (gottenType == ExpressionType::CHAR || gottenType == ExpressionType::STRING)) return true;
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||

@@ -51,11 +51,6 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global println_str\n";
                 header << "global println_double\n";
                 header << "global println_char\n";
-                header << "global str_concat\n";
-                header << "global str_from_char\n";
-                header << "global str_len\n";
-                header << "global substr\n";
-                header << "global char_at\n";
                 header << "global readln\n";
                 header << "global read_int\n";
                 header << "global read_double\n";
@@ -83,11 +78,6 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_str\n";
                 header << "extern println_double\n";
                 header << "extern println_char\n";
-                header << "extern str_concat\n";
-                header << "extern str_from_char\n";
-                header << "extern str_len\n";
-                header << "extern substr\n";
-                header << "extern char_at\n";
                 header << "extern readln\n";
                 header << "extern read_int\n";
                 header << "extern read_double\n";
@@ -119,11 +109,6 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _println_str\n";
                 header << "global _println_bool\n";
                 header << "global _println_char\n";
-                header << "global _str_concat\n";
-                header << "global _str_from_char\n";
-                header << "global _str_len\n";
-                header << "global _substr\n";
-                header << "global _char_at\n";
                 header << "global _readln\n";
                 header << "global _read_int\n";
                 header << "global _read_double\n";
@@ -154,11 +139,6 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "extern _println_str\n";
                 header << "extern _println_bool\n";
                 header << "extern _println_char\n";
-                header << "extern _str_concat\n";
-                header << "extern _str_from_char\n";
-                header << "extern _str_len\n";
-                header << "extern _substr\n";
-                header << "extern _char_at\n";
                 header << "extern _readln\n";
                 header << "extern _read_int\n";
                 header << "extern _read_double\n";
@@ -582,6 +562,13 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
         case OS::Linux:
         {
             out << "_start:\n";
+
+            for (const auto& [target, source] : module.GetDeferredGlobalInits())
+            {
+                out << "    mov eax, [" << source << "]\n";
+                out << "    mov [" << target << "], eax\n";
+            }
+
             out << "    call main\n";
 
             // exit syscall (sys_exit = 1)
@@ -689,175 +676,6 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov ebx, 1\n";
             out << "    int 0x80\n";
             out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
-            out << "\n";
-            out << "str_concat:\n";
-            out << "    push ebp\n";
-            out << "    mov ebp, esp\n";
-            out << "    sub esp, 24\n";
-            out << "    mov eax, [ebp+8]\n";
-            out << "    mov [ebp-4], eax\n";
-            out << "    mov eax, [ebp+12]\n";
-            out << "    mov [ebp-8], eax\n";
-            out << "    xor ecx, ecx\n";
-            out << ".Lconcat_len1:\n";
-            out << "    mov eax, [ebp-4]\n";
-            out << "    cmp byte [eax + ecx], 0\n";
-            out << "    je .Lconcat_len1_done\n";
-            out << "    inc ecx\n";
-            out << "    jmp .Lconcat_len1\n";
-            out << ".Lconcat_len1_done:\n";
-            out << "    xor edx, edx\n";
-            out << ".Lconcat_len2:\n";
-            out << "    mov eax, [ebp-8]\n";
-            out << "    cmp byte [eax + edx], 0\n";
-            out << "    je .Lconcat_len2_done\n";
-            out << "    inc edx\n";
-            out << "    jmp .Lconcat_len2\n";
-            out << ".Lconcat_len2_done:\n";
-            out << "    lea eax, [ecx + edx + 1]\n";
-            out << "    push eax\n";
-            out << "    call heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov [ebp-12], eax\n";
-            out << "    mov ecx, [ebp-4]\n";
-            out << "    mov edx, eax\n";
-            out << ".Lconcat_cpy1:\n";
-            out << "    mov al, [ecx]\n";
-            out << "    mov [edx], al\n";
-            out << "    inc ecx\n";
-            out << "    inc edx\n";
-            out << "    test al, al\n";
-            out << "    jnz .Lconcat_cpy1\n";
-            out << "    dec edx\n";
-            out << "    mov ecx, [ebp-8]\n";
-            out << ".Lconcat_cpy2:\n";
-            out << "    mov al, [ecx]\n";
-            out << "    mov [edx], al\n";
-            out << "    inc ecx\n";
-            out << "    inc edx\n";
-            out << "    test al, al\n";
-            out << "    jnz .Lconcat_cpy2\n";
-            out << "    mov eax, [ebp-12]\n";
-            out << "    add esp, 24\n";
-            out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: str_from_char(c: char) -> char* ----
-            out << "\n";
-            out << "str_from_char:\n";
-            out << "    push ebp\n";
-            out << "    mov ebp, esp\n";
-            out << "    sub esp, 8\n";
-            out << "    push 2\n";
-            out << "    call heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov cl, [ebp+8]\n";
-            out << "    mov [eax], cl\n";
-            out << "    mov byte [eax+1], 0\n";
-            out << "    add esp, 8\n";
-            out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: str_len(s: char*) -> int ----
-            out << "\n";
-            out << "str_len:\n";
-            out << "    mov ecx, [esp+4]\n";
-            out << "    xor eax, eax\n";
-            out << ".Lstrlen_loop:\n";
-            out << "    cmp byte [ecx + eax], 0\n";
-            out << "    je .Lstrlen_done\n";
-            out << "    inc eax\n";
-            out << "    jmp .Lstrlen_loop\n";
-            out << ".Lstrlen_done:\n";
-            out << "    ret\n";
-
-            // ---- Built-in: substr(s: string, start: int, length: int) -> string ----
-            out << "\n";
-            out << "substr:\n";
-            out << "    push ebp\n";
-            out << "    mov ebp, esp\n";
-            out << "    push ebx\n";
-            out << "    sub esp, 28\n";
-            out << "    mov ecx, [ebp+8]\n";
-            out << "    mov [ebp-4], ecx\n";
-            out << "    mov edx, [ebp+12]\n";
-            out << "    mov [ebp-8], edx\n";
-            out << "    mov eax, [ebp+16]\n";
-            out << "    mov [ebp-12], eax\n";
-            out << "    test ecx, ecx\n";
-            out << "    jz .substr_empty\n";
-            out << "    cmp edx, 0\n";
-            out << "    jl .substr_empty\n";
-            out << "    cmp eax, 0\n";
-            out << "    jle .substr_empty\n";
-            out << "    mov ecx, [ebp-4]\n";
-            out << "    xor eax, eax\n";
-            out << ".substr_len:\n";
-            out << "    cmp byte [ecx+eax], 0\n";
-            out << "    je .substr_len_done\n";
-            out << "    inc eax\n";
-            out << "    jmp .substr_len\n";
-            out << ".substr_len_done:\n";
-            out << "    cmp [ebp-8], eax\n";
-            out << "    jge .substr_empty\n";
-            out << "    mov ebx, eax\n";
-            out << "    sub ebx, [ebp-8]\n";
-            out << "    mov ecx, [ebp-12]\n";
-            out << "    cmp ecx, ebx\n";
-            out << "    cmova ecx, ebx\n";
-            out << "    mov [ebp-16], ecx\n";
-            out << "    inc ecx\n";
-            out << "    push ecx\n";
-            out << "    call heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov [ebp-20], eax\n";
-            out << "    push dword [ebp-16]\n";
-            out << "    mov eax, [ebp-4]\n";
-            out << "    add eax, [ebp-8]\n";
-            out << "    push eax\n";
-            out << "    push dword [ebp-20]\n";
-            out << "    call memcpy\n";
-            out << "    add esp, 12\n";
-            out << "    mov eax, [ebp-20]\n";
-            out << "    add eax, [ebp-16]\n";
-            out << "    mov byte [eax], 0\n";
-            out << "    mov eax, [ebp-20]\n";
-            out << "    jmp .substr_done\n";
-            out << ".substr_empty:\n";
-            out << "    push 1\n";
-            out << "    call heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov byte [eax], 0\n";
-            out << ".substr_done:\n";
-            out << "    add esp, 28\n";
-            out << "    pop ebx\n";
-            out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: char_at(s: string, index: int) -> char ----
-            out << "\n";
-            out << "char_at:\n";
-            out << "    mov ecx, [esp+4]\n";
-            out << "    mov edx, [esp+8]\n";
-            out << "    cmp edx, 0\n";
-            out << "    jl .Lchar_at_bad\n";
-            out << "    xor eax, eax\n";
-            out << ".Lchar_at_loop:\n";
-            out << "    cmp byte [ecx+eax], 0\n";
-            out << "    je .Lchar_at_bad\n";
-            out << "    cmp eax, edx\n";
-            out << "    je .Lchar_at_found\n";
-            out << "    inc eax\n";
-            out << "    jmp .Lchar_at_loop\n";
-            out << ".Lchar_at_found:\n";
-            out << "    mov al, [ecx+eax]\n";
-            out << "    movzx eax, al\n";
-            out << "    ret\n";
-            out << ".Lchar_at_bad:\n";
-            out << "    xor eax, eax\n";
             out << "    ret\n";
 
             // ---- Built-in: readln() -> string ----
@@ -1452,6 +1270,13 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
         case OS::Windows:
         {
             out << "_mainCRTStartup:\n";
+
+            for (const auto& [target, source] : module.GetDeferredGlobalInits())
+            {
+                out << "    mov eax, [_" << source << "]\n";
+                out << "    mov [_" << target << "], eax\n";
+            }
+
             out << "    call _main\n";
 
             // exit() flushes CRT stdio buffers
@@ -1538,173 +1363,6 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    call _printf\n";
             out << "    add esp, 8\n";
             out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
-            out << "\n";
-            out << "_str_concat:\n";
-            out << "    push ebp\n";
-            out << "    mov ebp, esp\n";
-            out << "    sub esp, 24\n";
-            out << "    mov eax, [ebp+8]\n";
-            out << "    mov [ebp-4], eax\n";
-            out << "    mov eax, [ebp+12]\n";
-            out << "    mov [ebp-8], eax\n";
-            out << "    xor ecx, ecx\n";
-            out << "._Lconcat_len1:\n";
-            out << "    mov eax, [ebp-4]\n";
-            out << "    cmp byte [eax + ecx], 0\n";
-            out << "    je ._Lconcat_len1_done\n";
-            out << "    inc ecx\n";
-            out << "    jmp ._Lconcat_len1\n";
-            out << "._Lconcat_len1_done:\n";
-            out << "    xor edx, edx\n";
-            out << "._Lconcat_len2:\n";
-            out << "    mov eax, [ebp-8]\n";
-            out << "    cmp byte [eax + edx], 0\n";
-            out << "    je ._Lconcat_len2_done\n";
-            out << "    inc edx\n";
-            out << "    jmp ._Lconcat_len2\n";
-            out << "._Lconcat_len2_done:\n";
-            out << "    lea eax, [ecx + edx + 1]\n";
-            out << "    push eax\n";
-            out << "    call _heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov [ebp-12], eax\n";
-            out << "    mov ecx, [ebp-4]\n";
-            out << "    mov edx, eax\n";
-            out << "._Lconcat_cpy1:\n";
-            out << "    mov al, [ecx]\n";
-            out << "    mov [edx], al\n";
-            out << "    inc ecx\n";
-            out << "    inc edx\n";
-            out << "    test al, al\n";
-            out << "    jnz ._Lconcat_cpy1\n";
-            out << "    dec edx\n";
-            out << "    mov ecx, [ebp-8]\n";
-            out << "._Lconcat_cpy2:\n";
-            out << "    mov al, [ecx]\n";
-            out << "    mov [edx], al\n";
-            out << "    inc ecx\n";
-            out << "    inc edx\n";
-            out << "    test al, al\n";
-            out << "    jnz ._Lconcat_cpy2\n";
-            out << "    mov eax, [ebp-12]\n";
-            out << "    add esp, 24\n";
-            out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: str_from_char(c: char) -> char* ----
-            out << "\n";
-            out << "_str_from_char:\n";
-            out << "    push ebp\n";
-            out << "    mov ebp, esp\n";
-            out << "    push 2\n";
-            out << "    call _heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov cl, [ebp+8]\n";
-            out << "    mov [eax], cl\n";
-            out << "    mov byte [eax+1], 0\n";
-            out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: str_len(s: char*) -> int ----
-            out << "\n";
-            out << "_str_len:\n";
-            out << "    mov ecx, [esp+4]\n";
-            out << "    xor eax, eax\n";
-            out << "._Lstrlen_loop:\n";
-            out << "    cmp byte [ecx + eax], 0\n";
-            out << "    je ._Lstrlen_done\n";
-            out << "    inc eax\n";
-            out << "    jmp ._Lstrlen_loop\n";
-            out << "._Lstrlen_done:\n";
-            out << "    ret\n";
-
-            // ---- Built-in: substr(s: string, start: int, length: int) -> string ----
-            out << "\n";
-            out << "_substr:\n";
-            out << "    push ebp\n";
-            out << "    mov ebp, esp\n";
-            out << "    push ebx\n";
-            out << "    sub esp, 28\n";
-            out << "    mov ecx, [ebp+8]\n";
-            out << "    mov [ebp-4], ecx\n";
-            out << "    mov edx, [ebp+12]\n";
-            out << "    mov [ebp-8], edx\n";
-            out << "    mov eax, [ebp+16]\n";
-            out << "    mov [ebp-12], eax\n";
-            out << "    test ecx, ecx\n";
-            out << "    jz ._substr_empty\n";
-            out << "    cmp edx, 0\n";
-            out << "    jl ._substr_empty\n";
-            out << "    cmp eax, 0\n";
-            out << "    jle ._substr_empty\n";
-            out << "    mov ecx, [ebp-4]\n";
-            out << "    xor eax, eax\n";
-            out << "._substr_len:\n";
-            out << "    cmp byte [ecx+eax], 0\n";
-            out << "    je ._substr_len_done\n";
-            out << "    inc eax\n";
-            out << "    jmp ._substr_len\n";
-            out << "._substr_len_done:\n";
-            out << "    cmp [ebp-8], eax\n";
-            out << "    jge ._substr_empty\n";
-            out << "    mov ebx, eax\n";
-            out << "    sub ebx, [ebp-8]\n";
-            out << "    mov ecx, [ebp-12]\n";
-            out << "    cmp ecx, ebx\n";
-            out << "    cmova ecx, ebx\n";
-            out << "    mov [ebp-16], ecx\n";
-            out << "    inc ecx\n";
-            out << "    push ecx\n";
-            out << "    call _heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov [ebp-20], eax\n";
-            out << "    push dword [ebp-16]\n";
-            out << "    mov eax, [ebp-4]\n";
-            out << "    add eax, [ebp-8]\n";
-            out << "    push eax\n";
-            out << "    push dword [ebp-20]\n";
-            out << "    call _memcpy\n";
-            out << "    add esp, 12\n";
-            out << "    mov eax, [ebp-20]\n";
-            out << "    add eax, [ebp-16]\n";
-            out << "    mov byte [eax], 0\n";
-            out << "    mov eax, [ebp-20]\n";
-            out << "    jmp ._substr_done\n";
-            out << "._substr_empty:\n";
-            out << "    push 1\n";
-            out << "    call _heap_alloc\n";
-            out << "    add esp, 4\n";
-            out << "    mov byte [eax], 0\n";
-            out << "._substr_done:\n";
-            out << "    add esp, 28\n";
-            out << "    pop ebx\n";
-            out << "    pop ebp\n";
-            out << "    ret\n";
-
-            // ---- Built-in: char_at(s: string, index: int) -> char ----
-            out << "\n";
-            out << "_char_at:\n";
-            out << "    mov ecx, [esp+4]\n";
-            out << "    mov edx, [esp+8]\n";
-            out << "    cmp edx, 0\n";
-            out << "    jl .Lchar_at_bad\n";
-            out << "    xor eax, eax\n";
-            out << ".Lchar_at_loop:\n";
-            out << "    cmp byte [ecx+eax], 0\n";
-            out << "    je .Lchar_at_bad\n";
-            out << "    cmp eax, edx\n";
-            out << "    je .Lchar_at_found\n";
-            out << "    inc eax\n";
-            out << "    jmp .Lchar_at_loop\n";
-            out << ".Lchar_at_found:\n";
-            out << "    mov al, [ecx+eax]\n";
-            out << "    movzx eax, al\n";
-            out << "    ret\n";
-            out << ".Lchar_at_bad:\n";
-            out << "    xor eax, eax\n";
             out << "    ret\n";
 
             // ---- Built-in: readln() -> string (Windows: GetStdHandle + ReadFile) ----

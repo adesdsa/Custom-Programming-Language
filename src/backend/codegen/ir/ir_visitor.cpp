@@ -1,6 +1,7 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/shared/common/builtin_library.h"
 
 IRVisitor::IRVisitor(
     const EntityLogger& entityLogger,
@@ -25,6 +26,8 @@ IRVisitor::IRVisitor(
     m_currVarMetaData(std::nullopt),
     m_expectedReturnValue(false),
     m_expectedAssignment(false),
+    m_indexedAssignment(false),
+    m_slicedAssignment(false),
     m_returnedAlready(false),
     m_handledInsides(false),
     m_insideFor(false)
@@ -163,6 +166,21 @@ void IRVisitor::VisitExpression(ASTNode* node)
 void IRVisitor::VisitIdentifier(ASTNode* node)
 {
     if (this->m_returnedAlready) return; // Incase already returned
+
+    this->m_indexedAssignment = false;
+    this->m_slicedAssignment = false;
+
+    if (node->command.GetType() == CommandTypes::ARRAY_ACCESS)
+    {
+        this->m_indexedAssignment = true;
+        this->m_pendingIndexCommand = node->command;
+    }
+    else if (node->command.GetType() == CommandTypes::ARRAY_SLICE)
+    {
+        this->m_slicedAssignment = true;
+        this->m_pendingIndexCommand = node->command;
+    }
+
     // Getting the varMetaData and saving it for later use incase of assignment.
     std::optional<VarMetaData> varMetaData = this->m_currVarTableNode->FindVar(ASTExtractor::ExtractVarName(node));
     if (!varMetaData)
@@ -206,7 +224,6 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                 Type varType = this->m_currVarMetaData.value().type;
                 if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
                 {
-                    // Global init: only char literals (constants) supported; use string constant
                     auto* charConst = dynamic_cast<IRConstantInt*>(valueToStore);
                     if (charConst)
                     {
@@ -216,6 +233,20 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                     else
                     {
                         StoreInternalError("Global string variable cannot be initialized from non-constant char", node->command);
+                        valueToStore = nullptr;
+                    }
+                }
+                else if (varType == Type::CHAR_TYPE && valueToStore->GetType()->GetKind() != IRTypeKind::Int8)
+                {
+                    auto* strConst = dynamic_cast<IRConstantString*>(valueToStore);
+                    if (strConst && !strConst->GetValue().empty())
+                    {
+                        valueToStore = this->m_irbuilder.GetInt8(
+                            static_cast<unsigned char>(strConst->GetValue()[0]));
+                    }
+                    else
+                    {
+                        StoreInternalError("Global char variable cannot be initialized from non-constant string", node->command);
                         valueToStore = nullptr;
                     }
                 }
@@ -234,28 +265,6 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 
         IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
 
-        // Insert implicit type conversion when the value type differs from the target variable type
-        if (valueToStore && target)
-        {
-            auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
-            Type varType = this->m_currVarMetaData.value().type;
-            // char to string: convert via str_from_char
-            if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
-            {
-                if (!this->m_currModule.IsFuncExistByName("str_from_char"))
-                {
-                    this->m_currModule.AddFunction("str_from_char",
-                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
-                }
-                valueToStore = this->m_irbuilder.CreateCall(
-                    this->m_currModule.GetFunction("str_from_char"), { valueToStore });
-            }
-            else
-            {
-                valueToStore = ConvertIfNeeded(valueToStore, targetType);
-            }
-        }
-
         if (!valueToStore || !target)
         {
             if (!valueToStore)
@@ -263,11 +272,133 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             else if (!target)
                 StoreInternalError("Code generation: CreateStore: target pointer is null", node->command);
         }
+        else if (this->m_indexedAssignment)
+        {
+            IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(target);
+            IRBaseValue* idx = HandleExpression(this->m_pendingIndexCommand.GetParams()[0]);
+
+            IRBaseValue* charVal = valueToStore;
+            if (dynamic_cast<IRConstantString*>(charVal) || charVal->GetType()->GetKind() != IRTypeKind::Int8)
+            {
+                if (!this->m_currModule.IsFuncExistByName("char_at"))
+                {
+                    this->m_currModule.AddFunction("char_at",
+                        IRType::GetFunction(IRType::GetInt8(),
+                            { TypeToIRType(Type::STRING_TYPE),
+                              TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
+                }
+                IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                charVal = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("char_at"), { charVal, zero });
+            }
+
+            if (!this->m_currModule.IsFuncExistByName("set_char_at"))
+            {
+                auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+                this->m_currModule.AddFunction("set_char_at",
+                    IRType::GetFunction(IRType::GetVoid(),
+                        { TypeToIRType(Type::STRING_TYPE), intType, IRType::GetInt8() }));
+            }
+            this->m_currModule.AddRequiredLibrary("string");
+            this->m_irbuilder.CreateCall(
+                this->m_currModule.GetFunction("set_char_at"), { strPtr, idx, charVal });
+        }
+        else if (this->m_slicedAssignment)
+        {
+            IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(target);
+            IRBaseValue* start = HandleExpression(this->m_pendingIndexCommand.GetParams()[0]);
+            IRBaseValue* end_idx = HandleExpression(this->m_pendingIndexCommand.GetParams()[1]);
+
+            IRBaseValue* step = nullptr;
+            if (this->m_pendingIndexCommand.GetParams().size() >= 3)
+            {
+                step = HandleExpression(this->m_pendingIndexCommand.GetParams()[2]);
+            }
+            else
+            {
+                step = TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
+            }
+
+            if (!this->m_currModule.IsFuncExistByName("str_slice_set"))
+            {
+                auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+                this->m_currModule.AddFunction("str_slice_set",
+                    IRType::GetFunction(
+                        IRType::GetVoid(),
+                        { 
+                            TypeToIRType(Type::STRING_TYPE), 
+                            intType, 
+                            intType, 
+                            intType,
+                            TypeToIRType(Type::STRING_TYPE) 
+                        }
+                    ));
+            }
+            this->m_currModule.AddRequiredLibrary("string");
+            this->m_irbuilder.CreateCall(
+                this->m_currModule.GetFunction("str_slice_set"), 
+                { 
+                    strPtr, 
+                    start, 
+                    end_idx,
+                    step,
+                    valueToStore 
+                }
+            );
+        }
         else
         {
+            auto targetType = TypeToIRType(this->m_currVarMetaData.value().type);
+            Type varType = this->m_currVarMetaData.value().type;
+            if (varType == Type::STRING_TYPE && valueToStore->GetType()->GetKind() == IRTypeKind::Int8)
+            {
+                if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                {
+                    this->m_currModule.AddFunction("str_from_char",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                }
+                this->m_currModule.AddRequiredLibrary("string");
+                valueToStore = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_from_char"), { valueToStore });
+            }
+            else if (varType == Type::CHAR_TYPE && valueToStore->GetType()->GetKind() != IRTypeKind::Int8)
+            {
+                if (!this->m_currModule.IsFuncExistByName("char_at"))
+                {
+                    this->m_currModule.AddFunction(
+                        "char_at",
+                        IRType::GetFunction(IRType::GetInt8(),
+                        { 
+                            TypeToIRType(Type::STRING_TYPE),
+                            TargetArchitecture::Is32Bit() ? 
+                                IRType::GetInt32() : 
+                                IRType::GetInt64() 
+                        }
+                    ));
+                }
+                this->m_currModule.AddRequiredLibrary("string");
+                IRBaseValue* zero = TargetArchitecture::Is32Bit() ? 
+                    static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0)) : 
+                    static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                
+                valueToStore = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("char_at"), 
+                    { valueToStore, zero }
+                );
+            }
+            else
+            {
+                valueToStore = ConvertIfNeeded(valueToStore, targetType);
+            }
             this->m_irbuilder.CreateStore(valueToStore, target);
         }
         this->m_expectedAssignment = false;
+        this->m_indexedAssignment = false;
+        this->m_slicedAssignment = false;
         this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
     }
@@ -968,6 +1099,8 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_currVarMetaData = std::nullopt;
     this->m_expectedReturnValue = false;
     this->m_expectedAssignment = false;
+    this->m_indexedAssignment = false;
+    this->m_slicedAssignment = false;
     if (node) // If this is null it was called from blockEnd
     {
         this->m_entityLogger.Info("Added EndOfCommand IR handling.\nAt line: "
@@ -1000,6 +1133,30 @@ void IRVisitor::VisitEof(ASTNode* node)
     this->m_entityLogger.Info("Added Eof IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
     return;
+}
+
+void IRVisitor::VisitArrayAccess(ASTNode* node)
+{
+    if (this->m_returnedAlready) return;
+
+    if (this->m_expectedAssignment)
+    {
+        IRBaseValue* result = nullptr;
+        if (node->command.GetType() == CommandTypes::ARRAY_ACCESS)
+        {
+            result = HandleArrayAccess(node->command);
+        }
+        else if (node->command.GetType() == CommandTypes::ARRAY_SLICE)
+        {
+            result = HandleArraySlice(node->command);
+        }
+
+        CheckValueNeededSomewhere(result, node);
+    }
+    else
+    {
+        VisitIdentifier(node);
+    }
 }
 
 std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
@@ -1142,6 +1299,21 @@ IRBaseValue* IRVisitor::ValueToConstIR(Token token)
                         
                     case '"':  
                         processed += '"';
+                        i++;
+                        break;
+
+                    case '\'':
+                        processed += '\'';
+                        i++;
+                        break;
+
+                    case 'r':
+                        processed += '\r';
+                        i++;
+                        break;
+
+                    case '0':
+                        processed += '\0';
                         i++;
                         break;
 
@@ -1469,6 +1641,25 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
         return nullptr;
     }
 
+    if (!this->m_currFunc)
+    {
+        IRGlobalVariable* globalVar = this->m_currModule.GetVariable(varMetaData.value().sName);
+        if (globalVar && globalVar->GetInitializer())
+        {
+            return globalVar->GetInitializer();
+        }
+        if (globalVar && this->m_currVarMetaData.has_value())
+        {
+            this->m_currModule.AddDeferredGlobalInit(
+                this->m_currVarMetaData.value().sName, 
+                varMetaData.value().sName
+            );
+            return nullptr;
+        }
+        StoreInternalError("Global initializer can only reference initialized globals", node->command);
+        return nullptr;
+    }
+
     return this->m_irbuilder.CreateLoad(
         FindPointer(varMetaData.value().sName)
     );
@@ -1495,6 +1686,12 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
             paramTypes.push_back(TypeToIRType(p.type));
         this->m_currModule.AddFunction(funcName,
             IRType::GetFunction(TypeToIRType(funcMetaData->GetRType()), std::move(paramTypes)));
+    }
+    if (funcMetaData->IsExtern())
+    {
+        const auto* lib = BuiltinLibraryRegistry::GetLibrary("string");
+        if (lib && lib->FindFunction(funcName))
+            this->m_currModule.AddRequiredLibrary("string");
     }
 
     // Setting up the temporary holder
@@ -1560,6 +1757,15 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                     FuncMetaData* argFunc = this->m_decoratedAst.funcTable.FindFunctionByName(firstArg[FUNC_IDENTIFIER_INDEX].GetValue());
                     if (argFunc && argFunc->GetRType() == Type::STRING_TYPE) isStringArg = true;
                 }
+                else if (firstArg.GetType() == CommandTypes::ARRAY_SLICE)
+                {
+                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                    if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                }
+                else if (firstArg.GetType() == CommandTypes::ARRAY_ACCESS)
+                {
+                    // single index on string returns char, not string
+                }
                 else if (firstArg.GetType() == CommandTypes::EXPRESSION)
                 {
                     if (auto* callInstr = dynamic_cast<IRInstruction*>(tempInstructionHolder[0]))
@@ -1567,7 +1773,7 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                         if (callInstr->GetOpcode() == IROpcode::Call && callInstr->GetCalledFunction())
                         {
                             const std::string& name = callInstr->GetCalledFunction()->GetName();
-                            if (name == "str_concat" || name == "str_from_char" || name == "substr")
+                            if (name == "str_concat" || name == "str_from_char" || name == "substr" || name == "substr_step")
                                 isStringArg = true;
                         }
                     }
@@ -1852,6 +2058,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
                         IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
                             { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
                 }
+                this->m_currModule.AddRequiredLibrary("string");
                 result = this->m_irbuilder.CreateCall(
                     this->m_currModule.GetFunction("str_concat"),
                     { lhs, rhs }
@@ -1910,6 +2117,7 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
                         IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
                             { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
                 }
+                this->m_currModule.AddRequiredLibrary("string");
                 result = this->m_irbuilder.CreateCall(
                     this->m_currModule.GetFunction("str_concat"),
                     { leftStrVal, rightStrVal }
@@ -1920,6 +2128,37 @@ void IRVisitor::ReduceExprByOperators(std::vector<ExprItem>& expr, std::initiali
             {
                 StoreInternalError("String addition only supports string + string, or char + string (literals, variables, or string-returning functions)", Command());
             }
+        }
+        else if ((expr[i].isString || expr[i + 1].isString) &&
+                 (currOp == Operators::Eq || currOp == Operators::Ne ||
+                  currOp == Operators::Lt || currOp == Operators::Gt ||
+                  currOp == Operators::Le || currOp == Operators::Ge))
+        {
+            if (!this->m_currModule.IsFuncExistByName("str_cmp"))
+            {
+                this->m_currModule.AddFunction("str_cmp",
+                    IRType::GetFunction(
+                        TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64(),
+                        { TypeToIRType(Type::STRING_TYPE), TypeToIRType(Type::STRING_TYPE) }));
+            }
+            this->m_currModule.AddRequiredLibrary("string");
+            IRBaseValue* cmpResult = this->m_irbuilder.CreateCall(
+                this->m_currModule.GetFunction("str_cmp"), { lhs, rhs });
+            IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+
+            switch (currOp)
+            {
+                case Operators::Eq: result = this->m_irbuilder.CreateICmpEQ(cmpResult, zero); break;
+                case Operators::Ne: result = this->m_irbuilder.CreateICmpNE(cmpResult, zero); break;
+                case Operators::Lt: result = this->m_irbuilder.CreateICmpSLT(cmpResult, zero); break;
+                case Operators::Gt: result = this->m_irbuilder.CreateICmpSGT(cmpResult, zero); break;
+                case Operators::Le: result = this->m_irbuilder.CreateICmpSLE(cmpResult, zero); break;
+                case Operators::Ge: result = this->m_irbuilder.CreateICmpSGE(cmpResult, zero); break;
+                default: break;
+            }
+            combinedIsString = false;
         }
         else if (combinedFloatness)
         {
@@ -2062,6 +2301,15 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             {
                 currExpressionValue = HandleSizeof(innerCommand);
             }
+            else if (innerCommand.GetType() == CommandTypes::ARRAY_ACCESS)
+            {
+                currExpressionValue = HandleArrayAccess(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::ARRAY_SLICE)
+            {
+                localIsString = true;
+                currExpressionValue = HandleArraySlice(innerCommand);
+            }
             else
             {
                 StoreInternalError("Unknown parameter type in expression", command);
@@ -2157,6 +2405,79 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
     return expr;
 }
 
+IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
+{
+    const std::string& varName = command[0].GetValue();
+    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(FindPointer(varName));
+
+    if (command.GetParams().empty())
+    {
+        StoreInternalError("Array access missing index parameter", command);
+        return nullptr;
+    }
+    IRBaseValue* idx = HandleExpression(command.GetParams()[0]);
+    if (!idx) return nullptr;
+
+    if (!this->m_currModule.IsFuncExistByName("char_at"))
+    {
+        this->m_currModule.AddFunction("char_at",
+            IRType::GetFunction(IRType::GetInt8(),
+                { TypeToIRType(Type::STRING_TYPE),
+                  TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
+    }
+    this->m_currModule.AddRequiredLibrary("string");
+    return this->m_irbuilder.CreateCall(
+        this->m_currModule.GetFunction("char_at"), { strPtr, idx });
+}
+
+IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)
+{
+    const std::string& varName = command[0].GetValue();
+    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(
+        FindPointer(varName)
+    );
+
+    if (command.GetParams().size() < 2)
+    {
+        StoreInternalError("Array slice requires at least two parameters [start:end]", command);
+        return nullptr;
+    }
+    IRBaseValue* start = HandleExpression(command.GetParams()[0]);
+    IRBaseValue* end_idx = HandleExpression(command.GetParams()[1]);
+    if (!start || !end_idx) return nullptr;
+
+    IRBaseValue* step = nullptr;
+    if (command.GetParams().size() >= 3)
+    {
+        step = HandleExpression(command.GetParams()[2]);
+    }
+    else
+    {
+        step = TargetArchitecture::Is32Bit()
+            ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
+            : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
+    }
+    if (!step) return nullptr;
+
+    if (!this->m_currModule.IsFuncExistByName("substr_step"))
+    {
+        auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+        this->m_currModule.AddFunction(
+            "substr_step",
+            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE),
+            { 
+                TypeToIRType(Type::STRING_TYPE), 
+                intType, 
+                intType,
+                intType 
+            }
+        ));
+    }
+    this->m_currModule.AddRequiredLibrary("string");
+    return this->m_irbuilder.CreateCall(
+        this->m_currModule.GetFunction("substr_step"), { strPtr, start, end_idx, step });
+}
+
 IRBaseValue* IRVisitor::HandleExpression(Command command)
 {
     // quick-cases
@@ -2172,6 +2493,14 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     else if (command.GetType() == CommandTypes::SIZEOF)
     {
         return HandleSizeof(command);
+    }
+    else if (command.GetType() == CommandTypes::ARRAY_ACCESS)
+    {
+        return HandleArrayAccess(command);
+    }
+    else if (command.GetType() == CommandTypes::ARRAY_SLICE)
+    {
+        return HandleArraySlice(command);
     }
 
     const std::vector<Token> tokens = command.GetTokens();

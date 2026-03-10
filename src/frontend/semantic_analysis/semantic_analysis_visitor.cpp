@@ -98,6 +98,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
 
     // Set for assignment check when next sibling is ASSIGNMENT (e.g. let x: T = expr)
     this->m_lastIdentifierName = varName;
+    this->m_isVarInitialization = true;
 }
 
 void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
@@ -169,6 +170,7 @@ void SemanticAnalysisVisitor::VisitIdentifier(ASTNode* node)
     }
     
     this->m_lastIdentifierName = identifierName;
+    this->m_isVarInitialization = false;
     this->m_identifierError = false;
 }
 
@@ -333,7 +335,8 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
         !this->m_facade.CheckAssignment(
             this->m_lastIdentifierName,
             expressionType,
-            *this->m_currentScope)
+            *this->m_currentScope,
+            this->m_isVarInitialization)
         )
     {
         auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
@@ -802,7 +805,14 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
     std::string importPath = pathToken.GetValue();
     if (importPath.size() >= 2 && importPath.front() == '"' && importPath.back() == '"')
         importPath = importPath.substr(1, importPath.size() - 2);
-    std::string moduleName = std::filesystem::path(importPath).stem().string(); // resolve by stem to match ProjectSymbolTable registration
+
+    if (BuiltinLibraryRegistry::IsBuiltinLibrary(importPath))
+    {
+        HandleBuiltinLibraryImport(node, importPath);
+        return;
+    }
+
+    std::string moduleName = std::filesystem::path(importPath).stem().string();
     auto fileExports = this->m_projectSymbolTable.Resolve(moduleName);
     if (fileExports == nullptr)
     {
@@ -922,6 +932,95 @@ void SemanticAnalysisVisitor::VisitImportStatement(ASTNode* node)
     }
 }
 
+void SemanticAnalysisVisitor::HandleBuiltinLibraryImport(ASTNode* node, const std::string& libName)
+{
+    const auto& tokens = node->command.GetTokens();
+    const auto* lib = BuiltinLibraryRegistry::GetLibrary(libName);
+    if (!lib) return;
+
+    auto imports = node->command.GetParams();
+    const int importLine = static_cast<int>(tokens[0].GetLine());
+    const int importColumn = static_cast<int>(tokens[0].GetColumn());
+
+    auto registerFunc = [&](const BuiltinFunction& bf) {
+        FuncMetaData func(
+            this->m_entityLogger,
+            bf.name,
+            bf.returnType,
+            bf.params,
+            0, 0,
+            nullptr,
+            true
+        );
+        func.SetDefined();
+        if (!this->m_funcTable.InsertFunction(std::move(func)))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Duplicate import: '" + bf.name + "' was already imported",
+                    importLine, importColumn,
+                    "Remove the duplicate import"
+                )
+            );
+        }
+    };
+
+    auto registerVar = [&](const BuiltinVariable& bv) {
+        VarMetaData var(bv.name, bv.type, bv.access, Scope::GLOBAL, 0, true);
+        if (!this->m_currentScope->InsertVar(var))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Duplicate import: '" + bv.name + "' was already imported",
+                    importLine, importColumn,
+                    "Remove the duplicate import"
+                )
+            );
+        }
+    };
+
+    if (imports.empty())
+    {
+        for (const auto& func : lib->functions)
+            registerFunc(func);
+        for (const auto& var : lib->variables)
+            registerVar(var);
+        return;
+    }
+
+    for (auto import : imports)
+    {
+        const std::string& symbolName = import.GetTokens()[0].GetValue();
+        const int line = static_cast<int>(import.GetTokens()[0].GetLine());
+        const int column = static_cast<int>(import.GetTokens()[0].GetColumn());
+
+        const BuiltinFunction* bf = lib->FindFunction(symbolName);
+        if (bf)
+        {
+            registerFunc(*bf);
+            continue;
+        }
+
+        const BuiltinVariable* bv = lib->FindVariable(symbolName);
+        if (bv)
+        {
+            registerVar(*bv);
+            continue;
+        }
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Built-in library '" + libName + "' doesn't export: " + symbolName,
+                line, column,
+                "Check available functions in the '" + libName + "' library"
+            )
+        );
+    }
+}
+
 void SemanticAnalysisVisitor::VisitSizeof(ASTNode* node)
 {
     // skip, no logic needed
@@ -940,6 +1039,99 @@ void SemanticAnalysisVisitor::VisitPass(ASTNode* node)
 void SemanticAnalysisVisitor::VisitEof(ASTNode* node)
 {
     // skip, no logic needed
+}
+
+void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
+{
+    if (!node || this->m_facade.IsBlockFinished()) return;
+
+    const std::vector<Token>& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+
+    const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
+
+    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Undefined variable '" + identifierName + "'",
+                tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                "Declare the variable before using it"
+            )
+        );
+        this->SignalFailureForNextHandlers();
+        return;
+    }
+
+    if (this->m_pendingAssignment)
+    {
+        ExpressionType exprType = this->m_facade.CheckExpression(
+            node->command, this->m_funcTable, *this->m_currentScope);
+        this->m_lastExpressionType = exprType;
+
+        if (!this->m_lastIdentifierName.empty())
+        {
+            if (exprType != ExpressionType::UNKNOWN &&
+                !this->m_facade.CheckAssignment(
+                    this->m_lastIdentifierName, exprType, *this->m_currentScope,
+                    this->m_isVarInitialization))
+            {
+                auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+                std::string expectedType = var.has_value() ? this->TypeToString(var->type) : "unknown";
+                std::string gotType = this->ExpressionTypeToString(exprType);
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::TYPE_ERROR,
+                        "Type mismatch: cannot assign '" + gotType + "' to variable '" +
+                            this->m_lastIdentifierName + "' of type '" + expectedType + "'",
+                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        "Ensure the expression type matches the variable type"
+                    )
+                );
+            }
+            ResetAssignmentState();
+        }
+    }
+    else
+    {
+        auto var = this->m_currentScope->FindVar(identifierName);
+        if (var.has_value())
+        {
+            if (var->accessRights == AccessRights::CONST_ACCESS)
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::ACCESS_RIGHT_ERROR,
+                        "Cannot assign to constant variable '" + identifierName + "'",
+                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        "Constant variables cannot be modified after declaration"
+                    )
+                );
+                this->SignalFailureForNextHandlers();
+                return;
+            }
+            else if (var->accessRights == AccessRights::READ_ONLY_ACCESS)
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::ACCESS_RIGHT_ERROR,
+                        "Cannot assign to read-only variable '" + identifierName + "'",
+                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        "Read-only variables cannot be modified"
+                    )
+                );
+                this->SignalFailureForNextHandlers();
+                return;
+            }
+        }
+        this->m_lastIdentifierName = identifierName;
+        this->m_identifierError = false;
+    }
 }
 
 void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
@@ -1047,6 +1239,7 @@ void SemanticAnalysisVisitor::ResetAssignmentState() noexcept
 {
     this->m_lastIdentifierName.clear();
     this->m_pendingAssignment = false;
+    this->m_isVarInitialization = false;
     this->m_assignmentLine = 0;
     this->m_assignmentColumn = 0;
     this->m_identifierError = false;
@@ -1141,6 +1334,16 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
     else if (nodeType == CommandTypes::SIZEOF)
     {
         return ExpressionType::MATHEMATICAL; // sizeof always returns an int
+    }
+
+    else if (nodeType == CommandTypes::ARRAY_ACCESS ||
+             nodeType == CommandTypes::ARRAY_SLICE)
+    {
+        return this->m_facade.CheckExpression(
+            node->command,
+            this->m_funcTable,
+            *this->m_currentScope
+        );
     }
     
     return ExpressionType::UNKNOWN;
@@ -1250,7 +1453,8 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
         !this->m_facade.CheckAssignment(
             this->m_lastIdentifierName,
             expressionType,
-            *this->m_currentScope)
+            *this->m_currentScope,
+            this->m_isVarInitialization)
         )
     {
         auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);

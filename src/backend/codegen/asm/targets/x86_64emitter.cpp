@@ -47,11 +47,6 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global println_str\n";
                 header << "global println_double\n";
                 header << "global println_char\n";
-                header << "global str_concat\n";
-                header << "global str_from_char\n";
-                header << "global str_len\n";
-                header << "global substr\n";
-                header << "global char_at\n";
                 header << "global readln\n";
                 header << "global read_int\n";
                 header << "global read_double\n";
@@ -78,11 +73,6 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_str\n";
                 header << "extern println_double\n";
                 header << "extern println_char\n";
-                header << "extern str_concat\n";
-                header << "extern str_from_char\n";
-                header << "extern str_len\n";
-                header << "extern substr\n";
-                header << "extern char_at\n";
                 header << "extern readln\n";
                 header << "extern read_int\n";
                 header << "extern read_double\n";
@@ -113,11 +103,6 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "global println_str\n";
                 header << "global println_bool\n";
                 header << "global println_char\n";
-                header << "global str_concat\n";
-                header << "global str_from_char\n";
-                header << "global str_len\n";
-                header << "global substr\n";
-                header << "global char_at\n";
                 header << "global readln\n";
                 header << "global read_int\n";
                 header << "global read_double\n";
@@ -145,11 +130,6 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
                 header << "extern println_str\n";
                 header << "extern println_bool\n";
                 header << "extern println_char\n";
-                header << "extern str_concat\n";
-                header << "extern str_from_char\n";
-                header << "extern str_len\n";
-                header << "extern substr\n";
-                header << "extern char_at\n";
                 header << "extern readln\n";
                 header << "extern read_int\n";
                 header << "extern read_double\n";
@@ -720,8 +700,16 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     int argIndex = x86_64::FOUR_ARGUEMENTS + i;
                     int argOffset = i * x86_64::STACK_SLOT_SIZE;
                     tempAsmValue = GetOperandAsm(callOperands[argIndex], out);
-                    out << "    mov qword [rsp + " << argOffset << "], "
-                        << tempAsmValue << "\n";
+                    if (tempAsmValue.front() == '[')
+                    {
+                        out << "    mov rax, " << tempAsmValue << "\n";
+                        out << "    mov qword [rsp + " << argOffset << "], rax\n";
+                    }
+                    else
+                    {
+                        out << "    mov qword [rsp + " << argOffset << "], "
+                            << tempAsmValue << "\n";
+                    }
                 }
 
                 // Register args
@@ -790,6 +778,12 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         // Kernel enters with RSP % 16 == 8
         out << "    ; Align stack to 16 bytes (kernel provides RSP % 16 == 8 on entry)\n";
         out << "    and rsp, -16\n";
+
+        for (const auto& [target, source] : module.GetDeferredGlobalInits())
+        {
+            out << "    mov rax, [rel " << source << "]\n";
+            out << "    mov [rel " << target << "], rax\n";
+        }
 
         // call main()
         out << "    ; call main() and pass its return value to sys_exit\n";
@@ -901,159 +895,6 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov rdi, 1\n";
         out << "    syscall\n";
         out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
-        out << "\n";
-        out << "str_concat:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    mov [rbp-8], rdi\n";
-        out << "    mov [rbp-16], rsi\n";
-        out << "    xor rcx, rcx\n";
-        out << ".Lconcat_len1:\n";
-        out << "    cmp byte [rdi + rcx], 0\n";
-        out << "    je .Lconcat_len1_done\n";
-        out << "    inc rcx\n";
-        out << "    jmp .Lconcat_len1\n";
-        out << ".Lconcat_len1_done:\n";
-        out << "    mov rdi, [rbp-16]\n";
-        out << "    xor rdx, rdx\n";
-        out << ".Lconcat_len2:\n";
-        out << "    cmp byte [rdi + rdx], 0\n";
-        out << "    je .Lconcat_len2_done\n";
-        out << "    inc rdx\n";
-        out << "    jmp .Lconcat_len2\n";
-        out << ".Lconcat_len2_done:\n";
-        out << "    lea rdi, [rcx + rdx + 1]\n";
-        out << "    call heap_alloc\n";
-        out << "    mov [rbp-24], rax\n";
-        out << "    mov rdi, [rbp-8]\n";
-        out << "    mov rsi, rax\n";
-        out << ".Lconcat_cpy1:\n";
-        out << "    mov cl, [rdi]\n";
-        out << "    mov [rsi], cl\n";
-        out << "    inc rdi\n";
-        out << "    inc rsi\n";
-        out << "    test cl, cl\n";
-        out << "    jnz .Lconcat_cpy1\n";
-        out << "    dec rsi\n";
-        out << "    mov rdi, [rbp-16]\n";
-        out << ".Lconcat_cpy2:\n";
-        out << "    mov cl, [rdi]\n";
-        out << "    mov [rsi], cl\n";
-        out << "    inc rdi\n";
-        out << "    inc rsi\n";
-        out << "    test cl, cl\n";
-        out << "    jnz .Lconcat_cpy2\n";
-        out << "    mov rax, [rbp-24]\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: str_from_char(c: char) -> char* ----
-        out << "\n";
-        out << "str_from_char:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 16\n";
-        out << "    mov [rbp-1], dil\n";   // save char (1st arg)
-        out << "    mov edi, 2\n";         // malloc(2): char + null
-        out << "    call heap_alloc\n";
-        out << "    mov cl, [rbp-1]\n";    // restore char
-        out << "    mov [rax], cl\n";
-        out << "    mov byte [rax+1], 0\n";
-        out << "    add rsp, 16\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: str_len(s: char*) -> int ----
-        out << "\n";
-        out << "str_len:\n";
-        out << "    xor eax, eax\n";
-        out << ".Lstrlen_loop:\n";
-        out << "    cmp byte [rdi + rax], 0\n";
-        out << "    je .Lstrlen_done\n";
-        out << "    inc rax\n";
-        out << "    jmp .Lstrlen_loop\n";
-        out << ".Lstrlen_done:\n";
-        out << "    ret\n";
-
-        // ---- Built-in: substr(s: string, start: int, length: int) -> string ----
-        out << "\n";
-        out << "substr:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 48\n";
-        out << "    mov [rbp-8], rdi\n";
-        out << "    mov [rbp-16], rsi\n";
-        out << "    mov [rbp-24], rdx\n";
-        out << "    test rdi, rdi\n";
-        out << "    jz .substr_empty\n";
-        out << "    cmp rsi, 0\n";
-        out << "    jl .substr_empty\n";
-        out << "    cmp rdx, 0\n";
-        out << "    jle .substr_empty\n";
-        out << "    mov rdi, [rbp-8]\n";
-        out << "    xor rcx, rcx\n";
-        out << ".substr_len:\n";
-        out << "    cmp byte [rdi+rcx], 0\n";
-        out << "    je .substr_len_done\n";
-        out << "    inc rcx\n";
-        out << "    jmp .substr_len\n";
-        out << ".substr_len_done:\n";
-        out << "    cmp [rbp-16], rcx\n";
-        out << "    jge .substr_empty\n";
-        out << "    mov r8, rcx\n";
-        out << "    sub r8, [rbp-16]\n";
-        out << "    mov r9, [rbp-24]\n";
-        out << "    cmp r9, r8\n";
-        out << "    cmova r9, r8\n";
-        out << "    lea rdi, [r9+1]\n";
-        out << "    call heap_alloc\n";
-        out << "    mov r10, rax\n";
-        out << "    mov [rbp-32], r10\n";
-        out << "    mov [rbp-40], r9\n";
-        out << "    mov rdi, r10\n";
-        out << "    mov rsi, [rbp-8]\n";
-        out << "    add rsi, [rbp-16]\n";
-        out << "    mov rdx, r9\n";
-        out << "    call memcpy\n";
-        out << "    mov r10, [rbp-32]\n";
-        out << "    mov r9, [rbp-40]\n";
-        out << "    mov byte [r10+r9], 0\n";
-        out << "    mov rax, r10\n";
-        out << "    jmp .substr_done\n";
-        out << ".substr_empty:\n";
-        out << "    mov edi, 1\n";
-        out << "    call heap_alloc\n";
-        out << "    mov byte [rax], 0\n";
-        out << ".substr_done:\n";
-        out << "    add rsp, 48\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: char_at(s: string, index: int) -> char ----
-        // rdi = s, rsi = index. Returns char in al. Bounds: index < 0 or index >= len -> 0.
-        out << "\n";
-        out << "char_at:\n";
-        out << "    cmp rsi, 0\n";
-        out << "    jl .char_at_bad\n";
-        out << "    xor rcx, rcx\n";
-        out << ".char_at_loop:\n";
-        out << "    mov al, [rdi + rcx]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .char_at_bad\n";
-        out << "    cmp rcx, rsi\n";
-        out << "    je .char_at_found\n";
-        out << "    inc rcx\n";
-        out << "    jmp .char_at_loop\n";
-        out << ".char_at_found:\n";
-        out << "    movzx eax, al\n";
-        out << "    ret\n";
-        out << ".char_at_bad:\n";
-        out << "    xor eax, eax\n";
         out << "    ret\n";
 
         // ---- Built-in: readln() -> string ----
@@ -1657,6 +1498,12 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ; allocate shadow space + alignment for calling main\n";
         out << "    sub rsp, 40\n"; // 32 shadow + 8 align
 
+        for (const auto& [target, source] : module.GetDeferredGlobalInits())
+        {
+            out << "    mov rax, [rel " << source << "]\n";
+            out << "    mov [rel " << target << "], rax\n";
+        }
+
         // call main()
         out << "    ; call main() (CRT entry -> user main)\n";
         out << "    call main\n";
@@ -1729,164 +1576,6 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    call printf\n";
         out << "    add rsp, 32\n";
         out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: str_concat(a: char*, b: char*) -> char* ----
-        out << "\n";
-        out << "str_concat:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 48\n";
-        out << "    mov [rbp+16], rcx\n";
-        out << "    mov [rbp+24], rdx\n";
-        out << "    xor r8, r8\n";
-        out << ".Lwconcat_len1:\n";
-        out << "    cmp byte [rcx + r8], 0\n";
-        out << "    je .Lwconcat_len1_done\n";
-        out << "    inc r8\n";
-        out << "    jmp .Lwconcat_len1\n";
-        out << ".Lwconcat_len1_done:\n";
-        out << "    mov rcx, [rbp+24]\n";
-        out << "    xor r9, r9\n";
-        out << ".Lwconcat_len2:\n";
-        out << "    cmp byte [rcx + r9], 0\n";
-        out << "    je .Lwconcat_len2_done\n";
-        out << "    inc r9\n";
-        out << "    jmp .Lwconcat_len2\n";
-        out << ".Lwconcat_len2_done:\n";
-        out << "    lea rcx, [r8 + r9 + 1]\n";
-        out << "    sub rsp, 32\n";
-        out << "    call heap_alloc\n";
-        out << "    add rsp, 32\n";
-        out << "    mov [rbp-8], rax\n";
-        out << "    mov rcx, [rbp+16]\n";
-        out << "    mov rdx, rax\n";
-        out << ".Lwconcat_cpy1:\n";
-        out << "    mov r8b, [rcx]\n";
-        out << "    mov [rdx], r8b\n";
-        out << "    inc rcx\n";
-        out << "    inc rdx\n";
-        out << "    test r8b, r8b\n";
-        out << "    jnz .Lwconcat_cpy1\n";
-        out << "    dec rdx\n";
-        out << "    mov rcx, [rbp+24]\n";
-        out << ".Lwconcat_cpy2:\n";
-        out << "    mov r8b, [rcx]\n";
-        out << "    mov [rdx], r8b\n";
-        out << "    inc rcx\n";
-        out << "    inc rdx\n";
-        out << "    test r8b, r8b\n";
-        out << "    jnz .Lwconcat_cpy2\n";
-        out << "    mov rax, [rbp-8]\n";
-        out << "    add rsp, 48\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: str_from_char(c: char) -> char* ----
-        out << "\n";
-        out << "str_from_char:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    mov [rbp-1], cl\n";    // save char (1st arg)
-        out << "    mov rcx, 2\n";         // malloc(2): char + null
-        out << "    call heap_alloc\n";
-        out << "    mov cl, [rbp-1]\n";    // restore char
-        out << "    mov [rax], cl\n";
-        out << "    mov byte [rax+1], 0\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: str_len(s: char*) -> int (Windows: rcx = s) ----
-        out << "\n";
-        out << "str_len:\n";
-        out << "    xor eax, eax\n";
-        out << ".Lwstrlen_loop:\n";
-        out << "    cmp byte [rcx + rax], 0\n";
-        out << "    je .Lwstrlen_done\n";
-        out << "    inc rax\n";
-        out << "    jmp .Lwstrlen_loop\n";
-        out << ".Lwstrlen_done:\n";
-        out << "    ret\n";
-
-        // ---- Built-in: substr(s: string, start: int, length: int) -> string ----
-        // Windows x64: rcx=s, rdx=start, r8=length. Use r10 for result (volatile).
-        out << "\n";
-        out << "substr:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 80\n";
-        out << "    mov [rbp-8], rcx\n";
-        out << "    mov [rbp-16], rdx\n";
-        out << "    mov [rbp-24], r8\n";
-        out << "    test rcx, rcx\n";
-        out << "    jz .substr_empty\n";
-        out << "    cmp rdx, 0\n";
-        out << "    jl .substr_empty\n";
-        out << "    cmp r8, 0\n";
-        out << "    jle .substr_empty\n";
-        out << "    mov rcx, [rbp-8]\n";
-        out << "    xor r9, r9\n";
-        out << ".substr_len:\n";
-        out << "    cmp byte [rcx+r9], 0\n";
-        out << "    je .substr_len_done\n";
-        out << "    inc r9\n";
-        out << "    jmp .substr_len\n";
-        out << ".substr_len_done:\n";
-        out << "    cmp [rbp-16], r9\n";
-        out << "    jge .substr_empty\n";
-        out << "    mov r10, r9\n";
-        out << "    sub r10, [rbp-16]\n";
-        out << "    mov r11, [rbp-24]\n";
-        out << "    cmp r11, r10\n";
-        out << "    cmova r11, r10\n";
-        out << "    lea rcx, [r11+1]\n";
-        out << "    sub rsp, 32\n";
-        out << "    call heap_alloc\n";
-        out << "    add rsp, 32\n";
-        out << "    mov r10, rax\n";
-        out << "    mov rcx, r10\n";
-        out << "    mov rdx, [rbp-8]\n";
-        out << "    add rdx, [rbp-16]\n";
-        out << "    mov r8, r11\n";
-        out << "    sub rsp, 32\n";
-        out << "    call memcpy\n";
-        out << "    add rsp, 32\n";
-        out << "    mov byte [r10+r11], 0\n";
-        out << "    mov rax, r10\n";
-        out << "    jmp .substr_done\n";
-        out << ".substr_empty:\n";
-        out << "    mov rcx, 1\n";
-        out << "    sub rsp, 32\n";
-        out << "    call heap_alloc\n";
-        out << "    add rsp, 32\n";
-        out << "    mov byte [rax], 0\n";
-        out << ".substr_done:\n";
-        out << "    add rsp, 80\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: char_at(s: string, index: int) -> char ----
-        // Windows x64: rcx = s, rdx = index. Returns char in al.
-        out << "\n";
-        out << "char_at:\n";
-        out << "    cmp rdx, 0\n";
-        out << "    jl .char_at_bad\n";
-        out << "    xor r8, r8\n";
-        out << ".char_at_loop:\n";
-        out << "    mov al, [rcx + r8]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .char_at_bad\n";
-        out << "    cmp r8, rdx\n";
-        out << "    je .char_at_found\n";
-        out << "    inc r8\n";
-        out << "    jmp .char_at_loop\n";
-        out << ".char_at_found:\n";
-        out << "    movzx eax, al\n";
-        out << "    ret\n";
-        out << ".char_at_bad:\n";
-        out << "    xor eax, eax\n";
         out << "    ret\n";
 
         // ---- Built-in: readln() -> string (Windows: GetStdHandle + ReadFile) ----

@@ -78,7 +78,7 @@ public:
     /// @param assigmentExpressionType The Type that is being assigned
     /// @param currVarTableNode The current var table we are in.
     /// @return bool: True-> The assignment is legal, False-> Otherwise.
-    bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode);
+    bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode, bool isInitialization = false);
 
     /// @brief The func checks if a control statement is legal right now.
     /// @return bool: True-> Control statement is legal, False-> Otherwise.

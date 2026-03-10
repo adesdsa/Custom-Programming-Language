@@ -10,6 +10,7 @@
 #include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
 #include "includes/frontend/semantic_analysis/var_metadata.h"
 #include "includes/frontend/common/project_symbol_table.h"
+#include "includes/shared/common/builtin_library.h"
 
 class SemanticAnalysisVisitor : public IASTVisitor
 {
@@ -45,6 +46,7 @@ public:
     virtual void VisitImportStatement(ASTNode* node) override;
     virtual void VisitPass(ASTNode* node) override;
     virtual void VisitEof(ASTNode* node) override;
+    virtual void VisitArrayAccess(ASTNode* node) override;
 
 private:
     /**********************\
@@ -84,6 +86,7 @@ private:
 
     // pending assignment tracking, consumed by VisitExpression
     bool m_pendingAssignment = false;
+    bool m_isVarInitialization = false;
     size_t m_assignmentLine = 0;
     size_t m_assignmentColumn = 0;
 
@@ -118,6 +121,7 @@ private:
     /// @brief If some logic errors already detected in handler
         /// then next handlers in the chain may need use this knowlage
     void SignalFailureForNextHandlers() noexcept;
+    void HandleBuiltinLibraryImport(ASTNode* node, const std::string& libName);
 
     /// @brief Clears all state related to the deferred assignment type check mechanism.
     /// 

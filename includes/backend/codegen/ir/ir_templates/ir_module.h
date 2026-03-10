@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <set>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_function.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
@@ -56,6 +57,13 @@ public:
     void SetPrimaryModule();
     bool IsPrimaryModule() const;
 
+    void AddDeferredGlobalInit(const std::string& target, const std::string& source);
+    void RemoveDeferredGlobalInit(const std::string& name);
+    const std::vector<std::pair<std::string, std::string>>& GetDeferredGlobalInits() const noexcept;
+
+    void AddRequiredLibrary(const std::string& libName);
+    const std::set<std::string>& GetRequiredLibraries() const noexcept;
+
 private:
     const std::string m_name;
     std::vector<std::unique_ptr<IRBaseValue>> m_constants;
@@ -74,4 +82,7 @@ private:
 
     std::vector<std::unique_ptr<IRGlobalVariable>> m_globals;
     std::map<std::string, IRGlobalVariable*> m_globalMap;
+
+    std::vector<std::pair<std::string, std::string>> m_deferredGlobalInits;
+    std::set<std::string> m_requiredLibraries;
 };
