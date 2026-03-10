@@ -113,11 +113,15 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
             if (expression[i].GetType() == TokenTypes::STRING_LITERAL)
             {
                 sawString = true;
+                if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
+                    return ExpressionType::UNKNOWN;
                 i += 2; // skip operand and the "+" after it (or end)
                 continue;
             }
             else if (expression[i].GetType() == TokenTypes::CHAR_LITERAL)
             {
+                if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
+                    return ExpressionType::UNKNOWN;
                 i += 2;
                 continue;
             }
@@ -160,6 +164,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                     if (varData.value().type == Type::STRING_TYPE) sawString = true;
                     if (varData.value().type == Type::STRING_TYPE || varData.value().type == Type::CHAR_TYPE)
                     {
+                        if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
+                            return ExpressionType::UNKNOWN;
                         i += 2;
                         continue;
                     }
@@ -171,6 +177,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                     if (funcData && (funcData->GetRType() == Type::STRING_TYPE || funcData->GetRType() == Type::CHAR_TYPE))
                     {
                         if (funcData->GetRType() == Type::STRING_TYPE) sawString = true;
+                        if (i + 1 < expression.GetTokens().size() && expression[i + 1].GetValue() != "+")
+                            return ExpressionType::UNKNOWN;
                         i += 2;
                         continue;
                     }

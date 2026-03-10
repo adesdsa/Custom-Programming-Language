@@ -22,6 +22,11 @@ const std::vector<Token>& Command::GetTokens() const
     return this->m_tokens;
 }
 
+std::vector<Token> Command::GetTokensMutable() const
+{
+    return this->m_tokens;
+}
+
 bool Command::HasParams() const noexcept
 {
     return this->m_parameters.size() > 0;
@@ -209,6 +214,11 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     {
         return this->FinishAndAssignType(CommandTypes::IDENTIFIER);
     }
+    else if (this->IsType(currToken, TokenTypes::IDENTIFIER) && 
+             (this->IsAssignmentOperator(nextToken) || this->IsIncrementDecrement(nextToken)))
+    {
+        return this->FinishAndAssignType(CommandTypes::IDENTIFIER);
+    }
     else if (this->IsType(currToken, TokenTypes::IDENTIFIER))
     {
         if (this->IsOperator(nextToken))
@@ -328,6 +338,14 @@ bool Command::ParseUnidentified(Token& currToken, Token& nextToken)
     else if (this->IsValue(currToken, "="))
     {
         return this->FinishAndAssignType(CommandTypes::ASSIGNMENT);
+    }
+    else if (this->IsAssignmentOperator(currToken))
+    {
+        return this->FinishAndAssignType(CommandTypes::COMPOUND_ASSIGNMENT);
+    }
+    else if (this->IsIncrementDecrement(currToken))
+    {
+        return this->FinishAndAssignType(CommandTypes::INCREMENT_DECREMENT);
     }
     else if (this->IsType(currToken, TokenTypes::EOF_TOKEN))
     {
@@ -827,6 +845,20 @@ bool Command::CompareExpected(
 bool Command::IsAccessRights(Token& token)
 {
     return this->IsValue(token, "const") || this->IsValue(token, "readonly");
+}
+
+bool Command::IsAssignmentOperator(Token& token)
+{
+    return this->IsValue(token, "-=") ||
+           this->IsValue(token, "+=") ||
+           this->IsValue(token, "*=") ||
+           this->IsValue(token, "/=") ||
+           this->IsValue(token, "//=");
+}
+
+bool Command::IsIncrementDecrement(Token& token)
+{
+    return this->IsValue(token, "++") || this->IsValue(token, "--");
 }
 
 bool Command::IsScope(Token& token)
