@@ -54,6 +54,7 @@ enum class IROpcode
     Alloca,     // %ptr = alloca i32         (allocate stack space)
     Load,       // %val = load i32, i32* %ptr (read from memory)
     Store,      // store i32 %val, i32* %ptr  (write to memory)
+    GEP,        // %ptr = getelementptr base, index  (array indexing: base + index * elementSize)
 
     // Control flow
     Br,         // br label %target          (unconditional jump)

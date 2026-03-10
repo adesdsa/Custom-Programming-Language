@@ -63,7 +63,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     if (this->m_bStartedFuncDeclaration) return; // If we are in func declaration var's arent saved in this scope.
 
     VarMetaData var = this->m_varFactory.CreateVarMetadata(
-        varName, varType, varAccessRight, varScope
+        varName, varType, varAccessRight, varScope, std::nullopt
     );
 
     // `global` variables go to the root scope (visible from any function).
@@ -97,6 +97,100 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     }
 
     // Set for assignment check when next sibling is ASSIGNMENT (e.g. let x: T = expr)
+    this->m_lastIdentifierName = varName;
+    this->m_isVarInitialization = true;
+}
+
+void SemanticAnalysisVisitor::VisitArrayDeclaration(ASTNode* node)
+{
+    if (!node) return;
+
+    const std::vector<Token>& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+
+    const std::string& varName = ASTExtractor::ExtractVarName(node);
+    Type varType = ASTExtractor::ExtractVarType(node);
+    AccessRights varAccessRight = ASTExtractor::ExtractVarAccessRight(node);
+    Scope varScope = ASTExtractor::ExtractVarScope(node);
+    std::optional<size_t> arraySize = ASTExtractor::ExtractArraySize(node);
+
+    if (varType == Type::VOID_TYPE)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::TYPE_ERROR,
+                "Cannot declare array of void type",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
+                "Use a valid element type (int, double, bool, char, string)"
+            )
+        );
+        return;
+    }
+
+    if (!arraySize.has_value() || arraySize.value() == 0)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Array size must be a constant positive integer",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
+                "Use a literal like 10 or a const expression"
+            )
+        );
+        return;
+    }
+
+    if (this->m_facade.CheckVarExistence(*this->m_currentScope, varName))
+    {
+        if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT) return;
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Variable '" + varName + "' is already declared in this scope",
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                "Variable is already declared in this scope (shadowing is not allowed)"
+            )
+        );
+        return;
+    }
+
+    if (this->m_bStartedFuncDeclaration) return;
+
+    VarMetaData var = this->m_varFactory.CreateVarMetadata(
+        varName, varType, varAccessRight, varScope, arraySize
+    );
+
+    VarTableNode* targetScope;
+    if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT)
+    {
+        targetScope = &this->m_varTable;
+    }
+    else if (varScope == Scope::VAR && this->m_functionScopeRoot != nullptr)
+    {
+        targetScope = this->m_functionScopeRoot;
+    }
+    else
+    {
+        targetScope = this->m_currentScope;
+    }
+
+    if (!targetScope->InsertVar(var))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "Failed to insert variable '" + varName + "'",
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                "This is an internal error, please report it"
+            )
+        );
+    }
+
     this->m_lastIdentifierName = varName;
     this->m_isVarInitialization = true;
 }

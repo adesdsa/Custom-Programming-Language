@@ -1,4 +1,8 @@
 #include "includes/frontend/parser/ast_extractor.h"
+#include "includes/frontend/tokenizer/token.h"
+
+#include <cstdlib>
+#include <cctype>
 
 const std::string& ASTExtractor::ExtractVarName(ASTNode* varDecNode)
 {    
@@ -39,6 +43,39 @@ Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)
     }
     
     return Scope::LET;  // Default scope
+}
+
+std::optional<size_t> ASTExtractor::ExtractArraySize(ASTNode* arrayDeclNode)
+{
+    if (!arrayDeclNode || arrayDeclNode->command.GetType() != CommandTypes::ARRAY_DECLARATION)
+        return std::nullopt;
+
+    const auto& params = arrayDeclNode->command.GetParams();
+    if (params.empty())
+        return std::nullopt;
+
+    const Command& sizeParam = params[0];
+    const auto& tokens = sizeParam.GetTokens();
+
+    // Only accept a single integer literal (e.g. "10")
+    for (const Token& token : tokens)
+    {
+        if (token.GetType() != TokenTypes::VALUE)
+            return std::nullopt;  // Non-value token (e.g. operator) -> not a simple literal
+    }
+    if (tokens.size() != 1)
+        return std::nullopt;  // "2+3" or "3, 2" would have multiple tokens
+
+    const std::string& val = tokens[0].GetValue();
+    if (val.empty()) return std::nullopt;
+    const char* p = val.c_str();
+    for (; *p && std::isdigit(static_cast<unsigned char>(*p)); ++p) {}
+    if (*p != '\0')
+        return std::nullopt;  // Non-integer (e.g. "10.5")
+    unsigned long long n = std::strtoull(val.c_str(), nullptr, 10);
+    if (n > 0 && n <= SIZE_MAX)
+        return static_cast<size_t>(n);
+    return std::nullopt;
 }
 
 Type ASTExtractor::ExtractFuncReturnType(ASTNode* funcDecNode)
@@ -89,7 +126,8 @@ const std::vector<VarMetaData> ASTExtractor::ExtractFuncParams(
                     paramName,
                     paramType,
                     paramAccess,
-                    paramScope
+                    paramScope,
+                    std::nullopt
                 )
             );
         }

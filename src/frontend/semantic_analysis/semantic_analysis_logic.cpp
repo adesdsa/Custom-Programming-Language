@@ -64,7 +64,7 @@ void SemanticAnalysisLogicComponent::CollectGlobalVariables()
                     AccessRights varAccess = ASTExtractor::ExtractVarAccessRight(node);
 
                     VarMetaData var = varFactory.CreateVarMetadata(
-                        varName, varType, varAccess, scope
+                        varName, varType, varAccess, scope, std::nullopt
                     );
                     this->m_decoratedAST.varTable.InsertVar(var);
                 }

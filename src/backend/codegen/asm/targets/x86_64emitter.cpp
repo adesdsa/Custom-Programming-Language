@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 #include <cstring>
 
@@ -176,16 +177,21 @@ void X86_64Emitter::EmitPrologue(
 
     // The semantic analysis frame size may undercount when sibling scopes
     // reuse offsets, but the IR gives every variable its own alloca.
-    // Use the actual alloca count so temp slots never overlap var slots.
-    int numAllocas = 0;
+    // Use the actual alloca sizes (8-byte aligned) so temp slots never overlap var slots.
+    int allocaFrameSize = 0;
     if (func->GetEntryBlock())
     {
         for (const auto& instr : func->GetEntryBlock()->GetInstructions())
         {
-            if (instr->GetOpcode() == IROpcode::Alloca) numAllocas++;
+            if (instr->GetOpcode() == IROpcode::Alloca)
+            {
+                int sz = GetTypeSize(instr->GetType());
+                if (sz <= 0) sz = x86_64::STACK_SLOT_SIZE;
+                int allocSize = (sz + 7) & ~7;  // match Alloca emission
+                allocaFrameSize += allocSize;
+            }
         }
     }
-    int allocaFrameSize = numAllocas * x86_64::STACK_SLOT_SIZE;
     int actualFrameSize = std::max(frameSize, allocaFrameSize);
 
     // Calculate total frame = aligned frameSize
@@ -555,6 +561,34 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             out << "    ; Load from memory into register/slot\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
+            if (source1 && dynamic_cast<const IRInstruction*>(source1) &&
+                static_cast<const IRInstruction*>(source1)->GetOpcode() == IROpcode::GEP)
+            {
+                // GEP stores address in slot; load from that address with correct element size
+                auto elemType = instr->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                {
+                    out << "    movzx rax, byte [rax]\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                {
+                    out << "    mov eax, dword [rax]\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movss xmm0, dword [rax]\n";
+                    out << "    movq rax, xmm0\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float64)
+                {
+                    out << "    movsd xmm0, qword [rax]\n";
+                    out << "    movq rax, xmm0\n";
+                }
+                else
+                {
+                    out << "    mov rax, [rax]\n";  // Int64, pointer
+                }
+            }
             tempAsmValue = GetOperandAsm(instr, out);
             out << "    mov " << tempAsmValue << ", rax\n";
             break;
@@ -563,20 +597,82 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::Store:
         {
             out << "    ; Store value into memory\n";
-            // Load value to store into rax
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
-            out << "    mov " << tempAsmValue << ", rax\n";
+            if (source2 && dynamic_cast<const IRInstruction*>(source2) &&
+                static_cast<const IRInstruction*>(source2)->GetOpcode() == IROpcode::GEP)
+            {
+                out << "    mov rbx, " << tempAsmValue << "\n";  // rbx = address (GEP slot holds it directly)
+                auto elemType = static_cast<const IRInstruction*>(source2)->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                {
+                    out << "    mov [rbx], al\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                {
+                    out << "    mov [rbx], eax\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movq xmm0, rax\n";
+                    out << "    movss [rbx], xmm0\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float64)
+                {
+                    out << "    movq xmm0, rax\n";
+                    out << "    movsd [rbx], xmm0\n";
+                }
+                else
+                {
+                    out << "    mov [rbx], rax\n";  // Int64, pointer
+                }
+            }
+            else
+            {
+                out << "    mov " << tempAsmValue << ", rax\n";
+            }
             break;
         }
 
         case IROpcode::Alloca:
         {
-            // Allocate a new stack slot for new var
+            int varSize = GetTypeSize(instr->GetType());
+            if (varSize <= 0) varSize = x86_64::STACK_SLOT_SIZE;
+            // Align allocation to 8 bytes so zero-init and GEP never overflow
+            int allocSize = (varSize + 7) & ~7;
             int allocaOffset = this->m_nextVarStackOffset;
-            this->m_nextVarStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_nextVarStackOffset += allocSize;
             this->m_valueToStackOffset[instr] = allocaOffset;
+            if (varSize > x86_64::STACK_SLOT_SIZE && instr->GetType()->GetKind() == IRTypeKind::Array)
+            {
+                out << "    ; Zero-initialize array (calloc-style)\n";
+                out << "    xor eax, eax\n";
+                for (int i = 0; i < allocSize; i += x86_64::STACK_SLOT_SIZE)
+                {
+                    out << "    mov [rbp-" << (allocaOffset + i) << "], rax\n";
+                }
+            }
+            break;
+        }
+
+        case IROpcode::GEP:
+        {
+            // GEP(base, index): compute address = base - index * elementSize
+            // Stack grows down: arr[0] at rbp-X, arr[1] at rbp-X-8, arr[2] at rbp-X-16, ...
+            out << "    ; GEP: array index\n";
+            tempAsmValue = GetOperandAsm(source1, out);  // base: [rbp-X]
+            out << "    lea rax, " << tempAsmValue << "\n";  // rax = base address
+            tempAsmValue = GetOperandAsm(source2, out);  // index
+            out << "    mov rbx, " << tempAsmValue << "\n";
+            int scale = GetTypeSize(instr->GetType());
+            if (scale <= 0) scale = 1;
+            out << "    imul rbx, " << scale << "\n";
+            out << "    sub rax, rbx\n";  // rax = base - index*scale (stack grows down)
+            int slotOffset = this->m_nextTempStackOffset;
+            this->m_nextTempStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_valueToStackOffset[instr] = slotOffset;
+            out << "    mov [rbp-" << slotOffset << "], rax\n";
             break;
         }
 
@@ -1900,8 +1996,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     if (auto* intConst = dynamic_cast<const IRConstantInt*>(operand))
     {
         uint64_t bits = static_cast<uint64_t>(intConst->GetValue());
-        out << "    mov qword r10" << ", 0x" 
-            << std::hex << bits << std::dec << "\n";
+        out << "    mov r10, 0x" << std::hex << bits << std::dec << "\n";
         return "r10";
     }
     else if (auto* floatConst = dynamic_cast<const IRConstantFloat*>(operand))
@@ -1925,8 +2020,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     else if (auto* boolConst = dynamic_cast<const IRConstantBool*>(operand))
     {
         uint64_t bits = static_cast<uint64_t>(boolConst->GetValue());  // 0 or 1
-        out << "    mov qword r10" << ", 0x" 
-            << std::hex << bits << std::dec << "\n";
+        out << "    mov r10, 0x" << std::hex << bits << std::dec << "\n";
         return "r10";
     }
     else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))

@@ -13,7 +13,8 @@ enum class IRTypeKind
     Int64, 
     Float32, 
     Float64,
-    Function  // non fixed amount of bits
+    Function,  // non fixed amount of bits
+    Array      // fixed-size array: elementType[count]
 };
 
 /// @brief A class that represents the special intermidiate language 
@@ -47,17 +48,30 @@ public:
         std::vector<std::shared_ptr<const IRType>> paramTypes
     );
 
+    static std::shared_ptr<const IRType> GetArray(
+        std::shared_ptr<const IRType> elementType,
+        size_t count
+    );
+
     // ===== INSTANCE METHODS =====
     size_t GetSizeInBytes() const noexcept;
 
     IRTypeKind GetKind() const noexcept;
     std::shared_ptr<const IRType> GetReturnType() const noexcept;
     const std::vector<std::shared_ptr<const IRType>>& GetParameters() const noexcept;
+    std::shared_ptr<const IRType> GetElementType() const noexcept;
+    size_t GetArrayCount() const noexcept;
 
 private:
+    IRType(std::shared_ptr<const IRType> elementType, size_t arrayCount);
+
     const IRTypeKind m_kind;
     
     // in case of a function
     std::shared_ptr<const IRType> m_returnType;
     std::vector<std::shared_ptr<const IRType>> m_paramTypes;
+
+    // in case of an array
+    std::shared_ptr<const IRType> m_elementType;
+    size_t m_arrayCount;
 };

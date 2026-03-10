@@ -159,6 +159,10 @@ private:
     void PrependVariableAndOperatorToExpression(
         Command& expr, const Token& varToken, Operator op);
 
+    // Prepends full LHS command and operator (e.g. arr[i] + 5 from arr[i] += 5).
+    void PrependCommandAndOperatorToExpression(
+        Command& expr, const Command& lhsCommand, Operator op);
+
     // The func handles the case where the Command is Illegal.
     // @param command: The Command that is illegal.
     // @param sErrorContent: 

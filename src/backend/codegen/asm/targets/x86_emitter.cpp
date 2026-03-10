@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/asm/targets/x86_emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
 #include <cstring>
 
@@ -162,18 +163,18 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
 
 void X86_Emitter::EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out)
 {
-    // The semantic analysis frame size may undercount when sibling scopes
-    // reuse offsets, but the IR gives every variable its own alloca.
-    // Use the actual alloca count so temp slots never overlap var slots.
-    int numAllocas = 0;
+    int allocaFrameSize = 0;
     if (func->GetEntryBlock())
     {
         for (const auto& instr : func->GetEntryBlock()->GetInstructions())
         {
-            if (instr->GetOpcode() == IROpcode::Alloca) numAllocas++;
+            if (instr->GetOpcode() == IROpcode::Alloca)
+            {
+                int sz = GetTypeSize(instr->GetType());
+                allocaFrameSize += (sz > 0) ? sz : x86_32::STACK_SLOT_SIZE;
+            }
         }
     }
-    int allocaFrameSize = numAllocas * x86_32::STACK_SLOT_SIZE;
     int actualFrameSize = std::max(frameSize, allocaFrameSize);
 
     // reset stack tracking for this function
@@ -434,6 +435,11 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::Load:
         {
             out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
+            if (op1 && dynamic_cast<const IRInstruction*>(op1) &&
+                static_cast<const IRInstruction*>(op1)->GetOpcode() == IROpcode::GEP)
+            {
+                out << "    mov eax, [eax]\n";
+            }
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
         }
@@ -441,16 +447,44 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::Store:
         {
             out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    mov " << this->GetOperandAsm(op2, out) << ", eax\n";
+            std::string destSlot = this->GetOperandAsm(op2, out);
+            if (op2 && dynamic_cast<const IRInstruction*>(op2) &&
+                static_cast<const IRInstruction*>(op2)->GetOpcode() == IROpcode::GEP)
+            {
+                out << "    mov ebx, " << destSlot << "\n";  // ebx = address (GEP slot holds it directly)
+                out << "    mov [ebx], eax\n";
+            }
+            else
+            {
+                out << "    mov " << destSlot << ", eax\n";
+            }
             break;
         }
 
         case IROpcode::Alloca:
         {
-            // allocate a new stack slot for a local variable
+            int varSize = GetTypeSize(instruction->GetType());
+            if (varSize <= 0) varSize = x86_32::STACK_SLOT_SIZE;
             int offset = m_nextVarStackOffset;
-            m_nextVarStackOffset += x86_32::STACK_SLOT_SIZE;
+            m_nextVarStackOffset += varSize;
             m_valueToStackOffset[instruction] = offset;
+            break;
+        }
+
+        case IROpcode::GEP:
+        {
+            out << "    ; GEP: array index\n";
+            std::string baseSlot = this->GetOperandAsm(op1, out);
+            out << "    lea eax, " << baseSlot << "\n";
+            out << "    mov ebx, " << this->GetOperandAsm(op2, out) << "\n";
+            int scale = GetTypeSize(instruction->GetType());
+            if (scale <= 0) scale = 1;
+            out << "    imul ebx, " << scale << "\n";
+            out << "    sub eax, ebx\n";  // stack grows down: arr[i] at base - i*scale
+            int slotOffset = m_nextTempStackOffset;
+            m_nextTempStackOffset += x86_32::STACK_SLOT_SIZE;
+            m_valueToStackOffset[instruction] = slotOffset;
+            out << "    mov [ebp-" << slotOffset << "], eax\n";
             break;
         }
 

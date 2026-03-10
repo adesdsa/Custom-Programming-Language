@@ -63,6 +63,9 @@ protected:
     /// @param bytes size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) const = 0;
 
+    /// @brief Returns the size in bytes of the given IR type (including arrays).
+    int GetTypeSize(std::shared_ptr<const IRType> type) const;
+
 private:
     /** 
      * Emits global/extern directives for cross-module linking:
@@ -97,6 +100,5 @@ private:
     //    Helper Functions    //
     //                        //
     //------------------------//
-    int GetTypeSize(std::shared_ptr<const IRType> type) const;
     std::string Indent() const;
 };

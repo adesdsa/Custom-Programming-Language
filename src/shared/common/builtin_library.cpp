@@ -56,9 +56,25 @@ static BuiltinLibrary BuildStringLibrary()
     return lib;
 }
 
+static BuiltinLibrary BuildRuntimeLibrary()
+{
+    BuiltinLibrary lib;
+    lib.name = "runtime";
+
+    auto mkParam = [](const std::string& name, Type type) {
+        return VarMetaData(name, type, AccessRights::DEFAULT_ACCESS, Scope::LET, 0);
+    };
+
+    lib.functions = {
+        { "bounds_check", Type::VOID_TYPE, { mkParam("index", Type::INT_TYPE), mkParam("size", Type::INT_TYPE) } }
+    };
+
+    return lib;
+}
+
 const std::vector<BuiltinLibrary>& BuiltinLibraryRegistry::GetAll()
 {
-    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary() };
+    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildRuntimeLibrary() };
     return libs;
 }
 

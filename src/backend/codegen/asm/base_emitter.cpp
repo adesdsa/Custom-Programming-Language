@@ -119,8 +119,10 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
         {
             int size = GetTypeSize(global->GetType());
             out << Indent() << MangledName(global->GetName()) << ": ";
-            /// @note we only save scalar (no arrays) so only 1 count is needed
-            out << GetReserveDirective(size) << " 1\n";
+            if (size > 8)
+                out << "resb " << size << "\n";  // Arrays: reserve exact byte count
+            else
+                out << GetReserveDirective(size) << " 1\n";
         }
     }
     EmitExtraBssContent(module, out);
@@ -205,6 +207,9 @@ int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
 
     case IRTypeKind::Int8:
         return 1;
+
+    case IRTypeKind::Array:
+        return static_cast<int>(type->GetSizeInBytes());
     
     default: // Incase of error or void (shouldnt get here)
         return 0;
