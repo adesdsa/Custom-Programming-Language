@@ -1,4 +1,6 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
+#include <cstring>
+#include <unordered_set>
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 #include "includes/shared/common/builtin_library.h"
@@ -1834,24 +1836,159 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         StoreInternalError("Unknown function encountered", command);
         return nullptr;
     }
+    const std::string& funcName = funcMetaData->GetName();
+
+    // arraylib intrinsics: front, back, len (no runtime call)
+    static const std::unordered_set<std::string> ARRAYLIB_FRONT_BACK_LEN = {
+        "front", "back", "len", "front_str", "back_str", "len_str",
+        "front_double", "back_double", "len_double", "front_uint", "back_uint", "len_uint",
+        "front_char", "back_char", "len_char", "front_bool", "back_bool", "len_bool"
+    };
+    if (ARRAYLIB_FRONT_BACK_LEN.count(funcName))
+    {
+        const auto& argExprs = command.GetParams();
+        if (argExprs.empty()) { StoreInternalError("arraylib function requires array argument", command); return nullptr; }
+        const Command& firstArg = argExprs[0];
+        if (firstArg.GetType() != CommandTypes::IDENTIFIER_VALUE)
+        {
+            StoreInternalError("arraylib front/back/len require array variable (not expression)", command);
+            return nullptr;
+        }
+        const std::string& varName = firstArg[0].GetValue();
+        auto varMeta = this->m_currVarTableNode->FindVar(varName);
+        if (!varMeta || !varMeta->arraySize.has_value())
+        {
+            StoreInternalError("arraylib front/back/len require array variable", command);
+            return nullptr;
+        }
+        size_t arraySize = varMeta->arraySize.value();
+        IRBaseValue* base = FindPointer(varName);
+        if (!base) return nullptr;
+        auto elemType = TypeToIRType(varMeta->type);
+
+        if (funcName == "len" || funcName == "len_str" || funcName == "len_double" ||
+            funcName == "len_uint" || funcName == "len_char" || funcName == "len_bool")
+        {
+            auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+            return TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize)))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize)));
+        }
+        if (funcName == "front" || funcName == "front_str" || funcName == "front_double" ||
+            funcName == "front_uint" || funcName == "front_char" || funcName == "front_bool")
+        {
+            IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, zero, elemType);
+            return this->m_irbuilder.CreateLoad(gep);
+        }
+        if (funcName == "back" || funcName == "back_str" || funcName == "back_double" ||
+            funcName == "back_uint" || funcName == "back_char" || funcName == "back_bool")
+        {
+            IRBaseValue* lastIdx = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize - 1)))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize - 1)));
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, lastIdx, elemType);
+            return this->m_irbuilder.CreateLoad(gep);
+        }
+    }
+
+    // arraylib find family: emit call to arr_find_* with (base, size, value)
+    static const std::unordered_set<std::string> ARRAYLIB_FIND_FUNCS = {
+        "find", "find_first_of", "find_last_of", "find_str", "find_first_of_str", "find_last_of_str",
+        "find_double", "find_first_of_double", "find_last_of_double", "find_uint", "find_first_of_uint", "find_last_of_uint",
+        "find_char", "find_first_of_char", "find_last_of_char", "find_bool", "find_first_of_bool", "find_last_of_bool"
+    };
+    if (ARRAYLIB_FIND_FUNCS.count(funcName))
+    {
+        const auto& argExprs = command.GetParams();
+        if (argExprs.size() < 2) { StoreInternalError("find requires (arr, value)", command); return nullptr; }
+        const Command& firstArg = argExprs[0];
+        if (firstArg.GetType() != CommandTypes::IDENTIFIER_VALUE)
+        {
+            StoreInternalError("find requires array variable as first argument", command);
+            return nullptr;
+        }
+        const std::string& varName = firstArg[0].GetValue();
+        auto varMeta = this->m_currVarTableNode->FindVar(varName);
+        if (!varMeta || !varMeta->arraySize.has_value())
+        {
+            StoreInternalError("find requires array variable", command);
+            return nullptr;
+        }
+        size_t arraySize = varMeta->arraySize.value();
+        IRBaseValue* base = FindPointer(varName);
+        IRBaseValue* value = HandleExpression(argExprs[1]);
+        if (!base || !value) return nullptr;
+
+        auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+        IRBaseValue* sizeConst = TargetArchitecture::Is32Bit()
+            ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize)))
+            : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize)));
+
+        // Map (funcName, element type) to runtime symbol. uint->int, bool->char (same size).
+        std::string runtimeName;
+        bool isLastOf = (funcName.find("find_last_of") != std::string::npos);
+        if (funcName.find("_str") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_str" : "arr_find_str";
+        else if (funcName.find("_double") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_double" : "arr_find_double";
+        else if (funcName.find("_uint") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_int" : "arr_find_int";
+        else if (funcName.find("_char") != std::string::npos || funcName.find("_bool") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_char" : "arr_find_char";
+        else
+            runtimeName = isLastOf ? "arr_find_last_of_int" : "arr_find_int";
+
+        // Value type for runtime: uint uses int, bool uses char
+        auto valueIRType = TypeToIRType(varMeta->type);
+        if (varMeta->type == Type::UNSIGNED_INT_TYPE) valueIRType = TypeToIRType(Type::INT_TYPE);
+        else if (varMeta->type == Type::BOOL_TYPE) valueIRType = TypeToIRType(Type::CHAR_TYPE);
+
+        auto ptrType = intType;
+        if (!this->m_currModule.IsFuncExistByName(runtimeName))
+        {
+            this->m_currModule.AddFunction(runtimeName,
+                IRType::GetFunction(intType, { ptrType, intType, valueIRType }));
+        }
+        this->m_currModule.AddRequiredLibrary("arraylib");
+        this->m_currModule.AddRequiredLibrary("string");  // arraylib_win64.obj has extern str_cmp
+        return this->m_irbuilder.CreateCall(
+            this->m_currModule.GetFunction(runtimeName),
+            { base, sizeConst, value });
+    }
+
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
 
     // For built-in functions (e.g. println), lazily add a stub
     // IRFunction to the module so that CreateCall has a target.
-    const std::string& funcName = funcMetaData->GetName();
     if (!this->m_currModule.IsFuncExistByName(funcName))
     {
         std::vector<std::shared_ptr<const IRType>> paramTypes;
         for (const auto& p : params)
-            paramTypes.push_back(TypeToIRType(p.type));
+        {
+            if (p.arraySize.has_value())
+                paramTypes.push_back(TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64());
+            else
+                paramTypes.push_back(TypeToIRType(p.type));
+        }
         this->m_currModule.AddFunction(funcName,
             IRType::GetFunction(TypeToIRType(funcMetaData->GetRType()), std::move(paramTypes)));
     }
     if (funcMetaData->IsExtern())
     {
-        const auto* lib = BuiltinLibraryRegistry::GetLibrary("string");
-        if (lib && lib->FindFunction(funcName))
-            this->m_currModule.AddRequiredLibrary("string");
+        for (const char* libName : { "string", "arraylib" })
+        {
+            const auto* lib = BuiltinLibraryRegistry::GetLibrary(libName);
+            if (lib && lib->FindFunction(funcName))
+            {
+                this->m_currModule.AddRequiredLibrary(libName);
+                if (std::strcmp(libName, "arraylib") == 0)
+                    this->m_currModule.AddRequiredLibrary("string");  // arraylib_win64.obj has extern str_cmp
+                break;
+            }
+        }
     }
 
     // Setting up the temporary holder

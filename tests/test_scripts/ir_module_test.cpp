@@ -21,6 +21,7 @@ IRTypeKind GetExpectedIntType()
 // TEST: Happy Flow - Single function
 TEST(IRTest, HappyFlowSmallCodeExample) 
 {
+    ErrorManager::GetInstance().Clear();
     // Setup: Parse -> Semantic Analysis -> IR Generation
     ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.picoc"));
     const AST& ast = parser.MainFlow();

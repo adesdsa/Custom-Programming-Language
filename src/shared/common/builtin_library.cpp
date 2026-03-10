@@ -72,9 +72,72 @@ static BuiltinLibrary BuildRuntimeLibrary()
     return lib;
 }
 
+/// Array param: element type + arraySize=1 as sentinel for "array of this type"
+static VarMetaData MkArrayParam(const std::string& name, Type elemType)
+{
+    return VarMetaData(name, elemType, AccessRights::DEFAULT_ACCESS, Scope::LET, 0, false, std::optional<size_t>(1));
+}
+
+static BuiltinLibrary BuildArrayLibrary()
+{
+    BuiltinLibrary lib;
+    lib.name = "arraylib";
+
+    auto mkParam = [](const std::string& name, Type type) {
+        return VarMetaData(name, type, AccessRights::DEFAULT_ACCESS, Scope::LET, 0);
+    };
+
+    lib.functions = {
+        // int[]
+        { "front",  Type::INT_TYPE,    { MkArrayParam("arr", Type::INT_TYPE) } },
+        { "back",   Type::INT_TYPE,    { MkArrayParam("arr", Type::INT_TYPE) } },
+        { "len",    Type::INT_TYPE,    { MkArrayParam("arr", Type::INT_TYPE) } },
+        { "find",   Type::INT_TYPE,    { MkArrayParam("arr", Type::INT_TYPE), mkParam("value", Type::INT_TYPE) } },
+        { "find_first_of", Type::INT_TYPE, { MkArrayParam("arr", Type::INT_TYPE), mkParam("value", Type::INT_TYPE) } },
+        { "find_last_of",  Type::INT_TYPE, { MkArrayParam("arr", Type::INT_TYPE), mkParam("value", Type::INT_TYPE) } },
+        // string[]
+        { "front_str",  Type::STRING_TYPE, { MkArrayParam("arr", Type::STRING_TYPE) } },
+        { "back_str",   Type::STRING_TYPE, { MkArrayParam("arr", Type::STRING_TYPE) } },
+        { "len_str",    Type::INT_TYPE,    { MkArrayParam("arr", Type::STRING_TYPE) } },
+        { "find_str",   Type::INT_TYPE,    { MkArrayParam("arr", Type::STRING_TYPE), mkParam("value", Type::STRING_TYPE) } },
+        { "find_first_of_str", Type::INT_TYPE, { MkArrayParam("arr", Type::STRING_TYPE), mkParam("value", Type::STRING_TYPE) } },
+        { "find_last_of_str",  Type::INT_TYPE, { MkArrayParam("arr", Type::STRING_TYPE), mkParam("value", Type::STRING_TYPE) } },
+        // double[]
+        { "front_double",  Type::DOUBLE_TYPE, { MkArrayParam("arr", Type::DOUBLE_TYPE) } },
+        { "back_double",   Type::DOUBLE_TYPE, { MkArrayParam("arr", Type::DOUBLE_TYPE) } },
+        { "len_double",    Type::INT_TYPE,    { MkArrayParam("arr", Type::DOUBLE_TYPE) } },
+        { "find_double",   Type::INT_TYPE,    { MkArrayParam("arr", Type::DOUBLE_TYPE), mkParam("value", Type::DOUBLE_TYPE) } },
+        { "find_first_of_double", Type::INT_TYPE, { MkArrayParam("arr", Type::DOUBLE_TYPE), mkParam("value", Type::DOUBLE_TYPE) } },
+        { "find_last_of_double",  Type::INT_TYPE, { MkArrayParam("arr", Type::DOUBLE_TYPE), mkParam("value", Type::DOUBLE_TYPE) } },
+        // unsigned int[]
+        { "front_uint",  Type::UNSIGNED_INT_TYPE, { MkArrayParam("arr", Type::UNSIGNED_INT_TYPE) } },
+        { "back_uint",   Type::UNSIGNED_INT_TYPE, { MkArrayParam("arr", Type::UNSIGNED_INT_TYPE) } },
+        { "len_uint",    Type::INT_TYPE,         { MkArrayParam("arr", Type::UNSIGNED_INT_TYPE) } },
+        { "find_uint",   Type::INT_TYPE,         { MkArrayParam("arr", Type::UNSIGNED_INT_TYPE), mkParam("value", Type::UNSIGNED_INT_TYPE) } },
+        { "find_first_of_uint", Type::INT_TYPE, { MkArrayParam("arr", Type::UNSIGNED_INT_TYPE), mkParam("value", Type::UNSIGNED_INT_TYPE) } },
+        { "find_last_of_uint",  Type::INT_TYPE, { MkArrayParam("arr", Type::UNSIGNED_INT_TYPE), mkParam("value", Type::UNSIGNED_INT_TYPE) } },
+        // char[]
+        { "front_char",  Type::CHAR_TYPE, { MkArrayParam("arr", Type::CHAR_TYPE) } },
+        { "back_char",   Type::CHAR_TYPE, { MkArrayParam("arr", Type::CHAR_TYPE) } },
+        { "len_char",    Type::INT_TYPE,   { MkArrayParam("arr", Type::CHAR_TYPE) } },
+        { "find_char",   Type::INT_TYPE,   { MkArrayParam("arr", Type::CHAR_TYPE), mkParam("value", Type::CHAR_TYPE) } },
+        { "find_first_of_char", Type::INT_TYPE, { MkArrayParam("arr", Type::CHAR_TYPE), mkParam("value", Type::CHAR_TYPE) } },
+        { "find_last_of_char",  Type::INT_TYPE, { MkArrayParam("arr", Type::CHAR_TYPE), mkParam("value", Type::CHAR_TYPE) } },
+        // bool[]
+        { "front_bool",  Type::BOOL_TYPE, { MkArrayParam("arr", Type::BOOL_TYPE) } },
+        { "back_bool",   Type::BOOL_TYPE, { MkArrayParam("arr", Type::BOOL_TYPE) } },
+        { "len_bool",    Type::INT_TYPE,   { MkArrayParam("arr", Type::BOOL_TYPE) } },
+        { "find_bool",   Type::INT_TYPE,   { MkArrayParam("arr", Type::BOOL_TYPE), mkParam("value", Type::BOOL_TYPE) } },
+        { "find_first_of_bool", Type::INT_TYPE, { MkArrayParam("arr", Type::BOOL_TYPE), mkParam("value", Type::BOOL_TYPE) } },
+        { "find_last_of_bool",  Type::INT_TYPE, { MkArrayParam("arr", Type::BOOL_TYPE), mkParam("value", Type::BOOL_TYPE) } }
+    };
+
+    return lib;
+}
+
 const std::vector<BuiltinLibrary>& BuiltinLibraryRegistry::GetAll()
 {
-    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildRuntimeLibrary() };
+    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildRuntimeLibrary(), BuildArrayLibrary() };
     return libs;
 }
 

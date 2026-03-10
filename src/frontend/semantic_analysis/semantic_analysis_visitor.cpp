@@ -1,6 +1,7 @@
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
 
 #include <filesystem>
+#include <unordered_set>
 
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,
@@ -651,6 +652,37 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
                 "Check that the argument count and types match the function declaration"
             )
         );
+    }
+
+    // arraylib functions require first arg to be an array
+    static const std::unordered_set<std::string> ARRAYLIB_FUNCS = {
+        "front", "back", "len", "find", "find_first_of", "find_last_of",
+        "front_str", "back_str", "len_str", "find_str", "find_first_of_str", "find_last_of_str",
+        "front_double", "back_double", "len_double", "find_double", "find_first_of_double", "find_last_of_double",
+        "front_uint", "back_uint", "len_uint", "find_uint", "find_first_of_uint", "find_last_of_uint",
+        "front_char", "back_char", "len_char", "find_char", "find_first_of_char", "find_last_of_char",
+        "front_bool", "back_bool", "len_bool", "find_bool", "find_first_of_bool", "find_last_of_bool"
+    };
+    if (ARRAYLIB_FUNCS.count(funcName) && node->nodeFirstChild)
+    {
+        const Command& firstArg = node->nodeFirstChild->command;
+        if (firstArg.GetType() == CommandTypes::IDENTIFIER_VALUE)
+        {
+            const std::string& varName = firstArg[0].GetValue();
+            auto var = this->m_currentScope->FindVar(varName);
+            if (var && !var->arraySize.has_value())
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::TYPE_ERROR,
+                        "'" + funcName + "' requires an array argument, but '" + varName + "' is not an array",
+                        firstArg[0].GetLine(),
+                        firstArg[0].GetColumn(),
+                        "Pass an array variable (e.g. int[] or string[])"
+                    )
+                );
+            }
+        }
     }
 
     HandleSingleCommandAssignement(node);

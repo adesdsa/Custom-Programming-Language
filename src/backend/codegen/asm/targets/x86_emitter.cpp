@@ -545,7 +545,18 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             // 32-bit cdecl: push ALL arguments right to left
             for (int i = numOperands - 1; i >= 0; i--)
             {
-                out << "    push dword " << this->GetOperandAsm(operands[i], out) << "\n";
+                std::string opAsm = this->GetOperandAsm(operands[i], out);
+                auto* opInstr = dynamic_cast<const IRInstruction*>(operands[i]);
+                bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                if (isAlloca && opAsm.front() == '[')
+                {
+                    out << "    lea eax, " << opAsm << "\n";
+                    out << "    push eax\n";
+                }
+                else
+                {
+                    out << "    push dword " << opAsm << "\n";
+                }
             }
 
             std::string funcName = this->MangledName(instruction->GetCalledFunction()->GetName());

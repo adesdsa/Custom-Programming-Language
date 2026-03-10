@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 #include <cstring>
@@ -755,15 +756,35 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 for (int i = numCallOperands - 1; i >= x86_64::SIX_ARGUEMENTS; --i)
                 {
                     tempAsmValue = GetOperandAsm(callOperands[i], out);
-                    out << "    push " << tempAsmValue << "\n";
+                    auto* argInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool argIsAlloca = (argInstr && argInstr->GetOpcode() == IROpcode::Alloca);
+                    if (argIsAlloca && tempAsmValue.front() == '[')
+                    {
+                        out << "    lea rax, " << tempAsmValue << "\n";
+                        out << "    push rax\n";
+                    }
+                    else
+                    {
+                        out << "    push " << tempAsmValue << "\n";
+                    }
                 }
 
                 // move register args
                 for (int i = 0; i < std::min(x86_64::SIX_ARGUEMENTS, numCallOperands); ++i)
                 {
-                    tempAsmValue = GetOperandAsm(callOperands[i], out);
-                    out << "    mov " << x86_64::linuxArgMapping[i]
-                        << ", " << tempAsmValue << "\n";
+                    std::string tempValue = GetOperandAsm(callOperands[i], out);
+                    auto* opInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                    if (isAlloca && tempValue.front() == '[')
+                    {
+                        out << "    lea " << x86_64::linuxArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
+                    else
+                    {
+                        out << "    mov " << x86_64::linuxArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
@@ -796,9 +817,14 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     int argIndex = x86_64::FOUR_ARGUEMENTS + i;
                     int argOffset = i * x86_64::STACK_SLOT_SIZE;
                     tempAsmValue = GetOperandAsm(callOperands[argIndex], out);
+                    auto* argInstr = dynamic_cast<const IRInstruction*>(callOperands[argIndex]);
+                    bool argIsAlloca = (argInstr && argInstr->GetOpcode() == IROpcode::Alloca);
                     if (tempAsmValue.front() == '[')
                     {
-                        out << "    mov rax, " << tempAsmValue << "\n";
+                        if (argIsAlloca)
+                            out << "    lea rax, " << tempAsmValue << "\n";
+                        else
+                            out << "    mov rax, " << tempAsmValue << "\n";
                         out << "    mov qword [rsp + " << argOffset << "], rax\n";
                     }
                     else
@@ -812,8 +838,18 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 for (int i = 0; i < std::min(x86_64::FOUR_ARGUEMENTS, numCallOperands); ++i)
                 {
                     std::string tempValue = GetOperandAsm(callOperands[i], out);
-                    out << "    mov " << x86_64::windowsArgMapping[i]
-                        << ", " << tempValue << "\n";
+                    auto* opInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                    if (isAlloca && tempValue.front() == '[')
+                    {
+                        out << "    lea " << x86_64::windowsArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
+                    else
+                    {
+                        out << "    mov " << x86_64::windowsArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
