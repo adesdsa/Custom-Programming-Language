@@ -51,4 +51,5 @@ void IASTVisitor::InitializeHandlers()
     this->m_handlers.emplace(CommandTypes::IMPORT_STATEMENT,         [this](ASTNode* n) { VisitImportStatement(n); });
     this->m_handlers.emplace(CommandTypes::PASS,                     [this](ASTNode* n) { VisitPass(n); });
     this->m_handlers.emplace(CommandTypes::EOF_TOKEN,                [this](ASTNode* n) { VisitEof(n); });
+    this->m_handlers.emplace(CommandTypes::ARRAY_VALUE,              [this](ASTNode* n) { VisitArrayValue(n); });
 }

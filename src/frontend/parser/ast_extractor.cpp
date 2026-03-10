@@ -1,4 +1,5 @@
 #include "includes/frontend/parser/ast_extractor.h"
+#include "includes/frontend/parser/command.h"
 #include "includes/frontend/tokenizer/token.h"
 
 #include <cstdlib>
@@ -76,6 +77,27 @@ std::optional<size_t> ASTExtractor::ExtractArraySize(ASTNode* arrayDeclNode)
     if (n > 0 && n <= SIZE_MAX)
         return static_cast<size_t>(n);
     return std::nullopt;
+}
+
+std::optional<size_t> ASTExtractor::ExtractArraySizeFromInitializer(ASTNode* arrayDeclNode)
+{
+    if (!arrayDeclNode) return std::nullopt;
+
+    ASTNode* assignNode = arrayDeclNode->nodeNextSibling;
+    if (!assignNode) return std::nullopt;
+    if (assignNode->command.GetType() != CommandTypes::ASSIGNMENT)
+        return std::nullopt;
+
+    ASTNode* arrayValueNode = assignNode->nodeNextSibling;
+    if (!arrayValueNode) return std::nullopt;
+    if (arrayValueNode->command.GetType() != CommandTypes::ARRAY_VALUE)
+        return std::nullopt;
+
+    const auto& params = arrayValueNode->command.GetParams();
+    size_t count = params.size();
+    if (count == 0 || count > SIZE_MAX)
+        return std::nullopt;
+    return count;
 }
 
 Type ASTExtractor::ExtractFuncReturnType(ASTNode* funcDecNode)

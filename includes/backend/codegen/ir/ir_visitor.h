@@ -110,6 +110,7 @@ class IRVisitor : public IASTVisitor
     void VisitPass(ASTNode* node) override;
     void VisitEof(ASTNode* node) override;
     void VisitArrayAccess(ASTNode* node) override;
+    void VisitArrayValue(ASTNode* node) override;
 
 private:
     /**********************\

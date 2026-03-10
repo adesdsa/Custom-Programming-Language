@@ -1208,6 +1208,84 @@ void IRVisitor::VisitEof(ASTNode* node)
     return;
 }
 
+void IRVisitor::VisitArrayValue(ASTNode* node)
+{
+    if (this->m_returnedAlready) return;
+    if (!this->m_expectedAssignment || !this->m_currVarMetaData.has_value()) return;
+    if (!this->m_currVarMetaData.value().arraySize.has_value()) return;
+
+    const auto& params = node->command.GetParams();
+    if (params.empty()) return;
+
+    size_t arraySize = this->m_currVarMetaData.value().arraySize.value();
+    if (params.size() != arraySize)
+    {
+        StoreInternalError("Array initializer has " + std::to_string(params.size()) +
+            " elements but array size is " + std::to_string(arraySize), node->command);
+        this->m_expectedAssignment = false;
+        return;
+    }
+
+    if (!this->m_currFunc)
+    {
+        StoreInternalError("Global array initialization with multiple elements is not yet supported",
+            node->command);
+        this->m_expectedAssignment = false;
+        return;
+    }
+    else
+    {
+        IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
+        if (!target)
+        {
+            this->m_expectedAssignment = false;
+            return;
+        }
+
+        auto elementType = TypeToIRType(this->m_currVarMetaData.value().type);
+        Type varType = this->m_currVarMetaData.value().type;
+
+        for (size_t i = 0; i < params.size(); ++i)
+        {
+            IRBaseValue* elemVal = HandleExpression(params[i]);
+            if (!elemVal)
+            {
+                StoreInternalError("Could not evaluate array initializer element " + std::to_string(i), params[i]);
+                this->m_expectedAssignment = false;
+                return;
+            }
+
+            if (varType == Type::STRING_TYPE && elemVal->GetType()->GetKind() == IRTypeKind::Int8)
+            {
+                if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                {
+                    this->m_currModule.AddFunction("str_from_char",
+                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                }
+                this->m_currModule.AddRequiredLibrary("string");
+                elemVal = this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("str_from_char"), { elemVal });
+            }
+            else if (varType != Type::STRING_TYPE)
+            {
+                elemVal = ConvertIfNeeded(elemVal, elementType);
+            }
+
+            IRBaseValue* idx = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(i)))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(i)));
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(target, idx, elementType);
+            if (elemVal)
+                this->m_irbuilder.CreateStore(elemVal, gep);
+        }
+    }
+
+    this->m_expectedAssignment = false;
+    this->m_handledInsides = true;
+    size_t logLine = node && !node->command.GetTokens().empty() ? node->command[0].GetLine() : 0;
+    this->m_entityLogger.Info("Added ArrayValue IR handling.\nAt line: " + std::to_string(logLine));
+}
+
 void IRVisitor::VisitArrayAccess(ASTNode* node)
 {
     if (this->m_returnedAlready) return;

@@ -709,17 +709,18 @@ void FullCommand::ReformCommand(Command& checkedCommand)
         {
             return;
         }
-        else if (checkedCommand.GetParams().size() > 1) 
+        else if (checkedCommand.GetParams().size() > 1)
         {
             return this->FoundIllegal(checkedCommand,
                 "Too many args for an array",
                 "Try removing the extra args",
                 0);
         }
-        else
+        else if (checkedCommand.GetParams().size() == 1)
         {
             this->CheckParamExpectedExpression(checkedCommand, 0);
         }
+        // size 0: int[] with empty brackets; size inferred from initializer in semantic analysis
     }
     else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
     {

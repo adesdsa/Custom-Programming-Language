@@ -128,15 +128,19 @@ void SemanticAnalysisVisitor::VisitArrayDeclaration(ASTNode* node)
         return;
     }
 
+    if (!arraySize.has_value())
+    {
+        arraySize = ASTExtractor::ExtractArraySizeFromInitializer(node);
+    }
     if (!arraySize.has_value() || arraySize.value() == 0)
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::SYNTAX_ERROR,
-                "Array size must be a constant positive integer",
+                "Array size must be a constant positive integer or inferred from initializer (e.g. int[] = [1,2,3])",
                 tokens[0].GetLine(),
                 tokens[0].GetColumn(),
-                "Use a literal like 10 or a const expression"
+                "Use a literal like 10, a const expression, or int[] = [1,2,3] to infer from initializer"
             )
         );
         return;
