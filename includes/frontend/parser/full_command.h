@@ -39,12 +39,24 @@ public:
 
 
 private:
+    enum class Operator
+    {
+        PLUS,
+        FLOOR,
+        MINUS,
+        MULTIPLY,
+        DIVISION,
+        NONE
+    };
+
     const EntityLogger& m_entityLogger;
+    Operator m_hadAssignmentOperator;
     bool m_bFinished;
     bool m_bLegal;
     bool m_importLegal;     // False-> already in the middle of the code(import is only legal at the top), True-> import still legal
     std::vector<Command> m_line;
     size_t m_uLineIndex;
+    size_t m_insertedCommandsCount;  // Skip count when ReformCommand inserts (e.g. i++ -> i = i+1)
     static unsigned int m_uBlockStartCnt;
     static unsigned int m_uBlockCloseCnt;
     std::vector<CompileTimeError> m_errors;
@@ -133,6 +145,19 @@ private:
     // @param sCompare: The value we are comparing.
     // @return: True-> Token has the same value. False-> Otherwise.
     inline bool CheckValue(const Token& token, std::string sCompare) const;
+
+    // Parses compound assignment token ("+=", "-=", etc.) to Operator enum.
+    Operator ParseCompoundAssignmentOperator(const Command& compoundOp) const;
+
+    // Parses increment/decrement token ("++", "--") to Operator enum.
+    Operator ParseIncrementDecrementOperator(const Command& incDecOp) const;
+
+    // Creates the corresponding operator token (+, -, *, /, //) for IR.
+    Token MakeOperatorToken(Operator op, size_t line, size_t col) const;
+
+    // Prepends variable and operator to expression (e.g. x + 5 from x += 5).
+    void PrependVariableAndOperatorToExpression(
+        Command& expr, const Token& varToken, Operator op);
 
     // The func handles the case where the Command is Illegal.
     // @param command: The Command that is illegal.

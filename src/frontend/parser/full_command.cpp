@@ -8,7 +8,9 @@ FullCommand::FullCommand(const EntityLogger& entityLogger, bool importLegal) :
     m_bFinished(false), 
     m_bLegal(true),
     m_importLegal(importLegal),
-    m_uLineIndex(0)
+    m_uLineIndex(0),
+    m_insertedCommandsCount(0),
+    m_hadAssignmentOperator(Operator::NONE)
 {}
 
 FullCommand::FullCommand(const FullCommand& other):
@@ -18,6 +20,7 @@ FullCommand::FullCommand(const FullCommand& other):
     m_line(other.m_line),
     m_importLegal(other.m_importLegal),
     m_uLineIndex(other.m_uLineIndex),
+    m_insertedCommandsCount(0),
     m_errors(other.m_errors)
 {}
 
@@ -168,6 +171,8 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                 this->m_entityLogger.Info("Finished reforming the new Command");
             }
             this->m_uLineIndex++;
+            this->m_uLineIndex += this->m_insertedCommandsCount;
+            this->m_insertedCommandsCount = 0;
         }
     }
 
@@ -354,8 +359,61 @@ void FullCommand::CheckLine()
     }
 }
 
+FullCommand::Operator FullCommand::ParseCompoundAssignmentOperator(const Command& compoundOp) const
+{
+    const std::string& op = compoundOp[0].GetValue();
+    if (op == "+=") return Operator::PLUS;
+    if (op == "-=") return Operator::MINUS;
+    if (op == "*=") return Operator::MULTIPLY;
+    if (op == "/=") return Operator::DIVISION;
+    if (op == "//=") return Operator::FLOOR;
+    return Operator::NONE;
+}
+
+FullCommand::Operator FullCommand::ParseIncrementDecrementOperator(const Command& incDecOp) const
+{
+    const std::string& op = incDecOp[0].GetValue();
+    if (op == "++") return Operator::PLUS;
+    if (op == "--") return Operator::MINUS;
+    return Operator::NONE;
+}
+
+Token FullCommand::MakeOperatorToken(Operator op, size_t line, size_t col) const
+{
+    switch (op)
+    {
+    case Operator::PLUS:     return Token("+", TokenTypes::OPERATOR, line, col);
+    case Operator::MINUS:    return Token("-", TokenTypes::OPERATOR, line, col);
+    case Operator::MULTIPLY: return Token("*", TokenTypes::OPERATOR, line, col);
+    case Operator::DIVISION: return Token("/", TokenTypes::OPERATOR, line, col);
+    case Operator::FLOOR:    return Token("//", TokenTypes::OPERATOR, line, col);
+    default:                 return Token("+", TokenTypes::OPERATOR, line, col);
+    }
+}
+
+void FullCommand::PrependVariableAndOperatorToExpression(Command& expr, const Token& varToken, Operator op)
+{
+    auto tokens = expr.GetTokensMutable();
+    auto& params = expr.GetParams();
+    Command identifierParam;
+    identifierParam.SetType(CommandTypes::IDENTIFIER_VALUE);
+    identifierParam.SetValue(varToken);
+    params.insert(params.begin(), identifierParam);
+    Token hasParamToken(TokenTypes::HAS_PARAM, varToken.GetLine(), varToken.GetColumn());
+    Token opToken = MakeOperatorToken(op, varToken.GetLine(), varToken.GetColumn());
+    tokens.insert(tokens.begin(), opToken);
+    tokens.insert(tokens.begin(), hasParamToken);
+    expr.SetTokens(tokens);
+}
+
 void FullCommand::ReformCommand(Command& checkedCommand)
 {
+    if (this->m_hadAssignmentOperator != Operator::NONE)
+    {
+        const Token& varToken = this->m_line[0][0];
+        PrependVariableAndOperatorToExpression(checkedCommand, varToken, this->m_hadAssignmentOperator);
+        this->m_hadAssignmentOperator = Operator::NONE;
+    }
     if (checkedCommand.GetType() == CommandTypes::ELIF)
     {
         this->HandleSingleParamKeyword(checkedCommand);
@@ -410,6 +468,32 @@ void FullCommand::ReformCommand(Command& checkedCommand)
     }
     else if (checkedCommand.GetType() == CommandTypes::FOR)
     {
+        // Expand i++/i-- in for-loop increment: 6 params (id, ++) -> 7 params (id, assignment, expression)
+        auto& params = checkedCommand.GetParams();
+        if (params.size() == 6 &&
+            params[4].GetType() == CommandTypes::IDENTIFIER &&
+            params[5].GetType() == CommandTypes::INCREMENT_DECREMENT)
+        {
+            const Token& varToken = params[4][0];
+            Operator op = ParseIncrementDecrementOperator(params[5]);
+            if (op != Operator::NONE)
+            {
+                Command assignCmd;
+                assignCmd.SetTokens({Token("=", TokenTypes::OPERATOR, params[5][0].GetLine(), params[5][0].GetColumn())});
+                assignCmd.SetType(CommandTypes::ASSIGNMENT);
+                Command exprCmd;
+                exprCmd.SetValue(Token("1", TokenTypes::VALUE, params[5][0].GetLine(), params[5][0].GetColumn()));
+                exprCmd.SetType(CommandTypes::EXPRESSION);
+                exprCmd.SetExpression(true);
+                PrependVariableAndOperatorToExpression(exprCmd, varToken, op);
+                params[5] = std::move(assignCmd);
+                params.push_back(std::move(exprCmd));
+                auto tokens = checkedCommand.GetTokensMutable();
+                Token hasParam(TokenTypes::HAS_PARAM, varToken.GetLine(), varToken.GetColumn());
+                tokens.insert(tokens.begin() + 10, hasParam);
+                checkedCommand.SetTokens(std::move(tokens));
+            }
+        }
         if (checkedCommand.GetTokens().size() != 12)
         {
             checkedCommand.SetType(CommandTypes::UNKNOWN);
@@ -455,6 +539,20 @@ void FullCommand::ReformCommand(Command& checkedCommand)
                 {CommandTypes::IDENTIFIER}))
             {
                 return;
+            }
+            // Reform compound assignment (e.g. i += 1) in for-loop increment to i = i + 1
+            Command& incrementOp = checkedCommand.GetParams()[5];
+            Command& incrementExpr = checkedCommand.GetParams()[6];
+            if (incrementOp.GetType() == CommandTypes::COMPOUND_ASSIGNMENT)
+            {
+                Operator op = ParseCompoundAssignmentOperator(incrementOp);
+                if (op != Operator::NONE)
+                {
+                    const Token& varToken = checkedCommand.GetParams()[4][0];
+                    incrementOp.SetTokens({Token("=", TokenTypes::OPERATOR, incrementOp[0].GetLine(), incrementOp[0].GetColumn())});
+                    incrementOp.SetType(CommandTypes::ASSIGNMENT);
+                    PrependVariableAndOperatorToExpression(incrementExpr, varToken, op);
+                }
             }
             if (this->CheckParamExpectedTypes(checkedCommand, 5,
                 {CommandTypes::ASSIGNMENT}))
@@ -634,6 +732,29 @@ void FullCommand::ReformCommand(Command& checkedCommand)
             "Found an unfinished command",
             "Try finishing the command in the line specified",
             0);
+    }
+    else if (checkedCommand.GetType() == CommandTypes::COMPOUND_ASSIGNMENT)
+    {
+        this->m_hadAssignmentOperator = ParseCompoundAssignmentOperator(checkedCommand);
+        checkedCommand.SetTokens({Token("=", TokenTypes::OPERATOR, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn())});
+        checkedCommand.SetType(CommandTypes::ASSIGNMENT);
+    }
+    else if (checkedCommand.GetType() == CommandTypes::INCREMENT_DECREMENT)
+    {
+        Operator op = ParseIncrementDecrementOperator(checkedCommand);
+        if (op != Operator::NONE && this->m_line.size() > 0)
+        {
+            const Token& varToken = this->m_line[0][0];
+            checkedCommand.SetTokens({Token("=", TokenTypes::OPERATOR, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn())});
+            checkedCommand.SetType(CommandTypes::ASSIGNMENT);
+            Command exprCmd;
+            exprCmd.SetValue(Token("1", TokenTypes::VALUE, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn()));
+            exprCmd.SetType(CommandTypes::EXPRESSION);
+            exprCmd.SetExpression(true);
+            PrependVariableAndOperatorToExpression(exprCmd, varToken, op);
+            this->m_line.insert(this->m_line.begin() + this->m_uLineIndex + 1, exprCmd);
+            this->m_insertedCommandsCount = 1;
+        }
     }
 }
 
