@@ -20,6 +20,9 @@ const BuiltinVariable* BuiltinLibrary::FindVariable(const std::string& varName) 
     return nullptr;
 }
 
+/**
+ * Interface for string library, contains the built-in functions + global vars
+*/
 static BuiltinLibrary BuildStringLibrary()
 {
     BuiltinLibrary lib;
