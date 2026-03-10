@@ -31,6 +31,8 @@ namespace CommandTypes
     inline constexpr std::string_view IDENTIFIER_VALUE              = "IDENTIFIER_VALUE";   // IDENTIFIER call where the values is used
     inline constexpr std::string_view FINISHED_FUNC_DEFINITION      = "FINISHED_FUNC_DEFINITION";
     inline constexpr std::string_view IMPORT_STATEMENT              = "IMPORT_STATEMENT";
+    inline constexpr std::string_view COMPOUND_ASSIGNMENT           = "COMPOUND_ASSIGNMENT";         // +=, -=, *=, /=, //=
+    inline constexpr std::string_view INCREMENT_DECREMENT           = "INCREMENT_DECREMENT";         // ++, --
 
 
     /// 
@@ -107,6 +109,7 @@ public:
     std::string_view GetType() const;
     // The func returns the Token's of the Command.
     const std::vector<Token>& GetTokens() const;
+    std::vector<Token> GetTokensMutable() const;
     // Does the Command have parameters.
     bool HasParams() const noexcept;
     // Get the Command's parameters.
@@ -304,6 +307,16 @@ private:
     // @param token: The token we are checking.
     // @return: True-> the Token is an Access Right. False-> otherwise.
     bool IsAccessRights(Token& token);
+
+    // The func checks if the given token is an Assignment Operator.
+    // @param token: The token we are checking.
+    // @return: True-> the Token is an Assignment Operator. False-> otherwise.
+    bool IsAssignmentOperator(Token& token);
+
+    // The func checks if the given token is increment or decrement (++, --).
+    // @param token: The token we are checking.
+    // @return: True-> the Token is ++ or --. False-> otherwise.
+    bool IsIncrementDecrement(Token& token);
 
     // The func checks if the given token is a Scope.
     // @param token: The token we are checking.
