@@ -61,4 +61,12 @@ private:
         const std::string& outputName,
         const std::string& outputDir
     ) const;
+
+#ifdef _WIN32
+    /// @brief Build MSVC link.exe command for 32-bit (resolves GetStdHandle@4 etc.). Returns empty if not found.
+    static std::string BuildMsvcLinkCommandWin32(
+        const std::vector<std::string>& objPaths,
+        const std::string& exePath
+    );
+#endif
 };

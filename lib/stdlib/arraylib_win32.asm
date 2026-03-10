@@ -245,7 +245,3 @@ _arr_find_last_of_char:
 .findlast_char_npos:
     mov eax, -1
     ret
-</think>
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-StrReplace

@@ -268,6 +268,13 @@ void CompilerOrchestrator::MainFlow()
             if (std::filesystem::exists(libObjPath))
                 artifactPaths.push_back(libObjPath);
         }
+        // Runtime (GetStdHandle, ReadFile, etc.) is always needed for console I/O
+        if (requiredLibraries.find("runtime") == requiredLibraries.end())
+        {
+            std::string runtimePath = BuiltinLibraryRegistry::GetObjPath("runtime");
+            if (std::filesystem::exists(runtimePath))
+                artifactPaths.push_back(runtimePath);
+        }
 
         Linker linker;
         linker.MainFlow(artifactPaths, outputName, outputDir);

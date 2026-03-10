@@ -99,6 +99,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
             if (module.IsPrimaryModule())
             {
                 header << "global _mainCRTStartup\n";
+                header << "global __mainCRTStartup\n";
                 header << "global _main\n";
                 header << "extern _ExitProcess@4\n";
                 header << "extern _printf\n";
@@ -115,8 +116,8 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
                 header << "global _read_double\n";
                 header << "global _heap_alloc\n\n";
 
-                header << "extern GetStdHandle@4\n";
-                header << "extern ReadFile@20\n\n";
+                header << "extern _GetStdHandle@4\n";
+                header << "extern _ReadFile@20\n\n";
 
                 header << "global __println_fmt_int\n";
                 header << "global __println_fmt_double\n";
@@ -188,8 +189,11 @@ void X86_Emitter::EmitPrologue(const IRFunction* func, int frameSize, std::ostre
 
     if (actualFrameSize > 0)
     {
-        // reserve memory in stack for stack frame (align to 4 bytes)
-        int alignedSize = (actualFrameSize + x86_32::STACK_ALIGNMENT_BIT_WISE) & ~x86_32::STACK_ALIGNMENT_BIT_WISE;
+        int alignedSize;
+        if (TargetArchitecture::GetOS() == OS::Windows && !TargetArchitecture::Is64Bit())
+            alignedSize = (actualFrameSize + 15) & ~15;  // 16-byte align for MSVC CRT calls
+        else
+            alignedSize = (actualFrameSize + x86_32::STACK_ALIGNMENT_BIT_WISE) & ~x86_32::STACK_ALIGNMENT_BIT_WISE;
         out << "    sub esp, " << alignedSize << "\n";
     }
 }
@@ -595,6 +599,23 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         default:
             out << "    ; Unhandled opcode\n";
             break;
+    }
+}
+
+void X86_Emitter::EmitAfterFunctionLabel(const IRFunction* func, std::ostream& out)
+{
+    // On Windows 32-bit we use _mainCRTStartup which runs deferred inits before calling _main.
+    if (TargetArchitecture::GetOS() == OS::Windows && !TargetArchitecture::Is64Bit())
+        return;
+    if (func->GetName() != "main")
+        return;
+    IRModule* module = func->GetParent();
+    if (!module || !module->IsPrimaryModule())
+        return;
+    for (const auto& [target, source] : module->GetDeferredGlobalInits())
+    {
+        out << "    mov eax, [" << source << "]\n";
+        out << "    mov [" << target << "], eax\n";
     }
 }
 
@@ -1315,6 +1336,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
         case OS::Windows:
         {
             out << "_mainCRTStartup:\n";
+            out << "__mainCRTStartup:\n";
 
             for (const auto& [target, source] : module.GetDeferredGlobalInits())
             {
@@ -1322,16 +1344,12 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
                 out << "    mov [_" << target << "], eax\n";
             }
 
+            // 16-byte align stack before call (MSVC 32-bit: esp+4 must be 16-byte aligned at callee entry)
+            out << "    sub esp, 4\n";
             out << "    call _main\n";
-
-            // exit() flushes CRT stdio buffers
-            out << "    push eax\n";
-            out << "    call _exit\n";
             out << "    add esp, 4\n";
-
-            // Halt if exit returns (should not)
-            out << "    push eax\n";            // push exit code
-            out << "    call _ExitProcess@4\n"; // stdcall: callee cleans stack
+            out << "    push eax\n";
+            out << "    call _ExitProcess@4\n";
 
             // ---- Bump allocator: _heap_alloc(size) -> ptr (cdecl: [esp+4]=size) ----
             out << "\n";
@@ -1417,7 +1435,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov ebp, esp\n";
             out << "    sub esp, 320\n";
             out << "    push -10\n";
-            out << "    call GetStdHandle@4\n";
+            out << "    call _GetStdHandle@4\n";
             out << "    lea ecx, [ebp-288]\n";
             out << "    push 0\n";
             out << "    push ecx\n";
@@ -1425,7 +1443,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    lea ecx, [ebp-280]\n";
             out << "    push ecx\n";
             out << "    push eax\n";
-            out << "    call ReadFile@20\n";
+            out << "    call _ReadFile@20\n";
             out << "    mov eax, [ebp-288]\n";
             out << "    cmp eax, 0\n";
             out << "    jle ._Lreadln_empty\n";
@@ -1489,7 +1507,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    push ebx\n";
             out << "    sub esp, 336\n";
             out << "    push -10\n";
-            out << "    call GetStdHandle@4\n";
+            out << "    call _GetStdHandle@4\n";
             out << "    lea ecx, [ebp-288]\n";
             out << "    push 0\n";
             out << "    push ecx\n";
@@ -1497,7 +1515,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    lea ecx, [ebp-280]\n";
             out << "    push ecx\n";
             out << "    push eax\n";
-            out << "    call ReadFile@20\n";
+            out << "    call _ReadFile@20\n";
             out << "    mov eax, [ebp-288]\n";
             out << "    cmp eax, 0\n";
             out << "    jle ._read_int_zero\n";
@@ -1572,7 +1590,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    push edi\n";
             out << "    sub esp, 352\n";
             out << "    push -10\n";
-            out << "    call GetStdHandle@4\n";
+            out << "    call _GetStdHandle@4\n";
             out << "    lea ecx, [ebp-288]\n";
             out << "    push 0\n";
             out << "    push ecx\n";
@@ -1580,7 +1598,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    lea ecx, [ebp-280]\n";
             out << "    push ecx\n";
             out << "    push eax\n";
-            out << "    call ReadFile@20\n";
+            out << "    call _ReadFile@20\n";
             out << "    mov eax, [ebp-288]\n";
             out << "    cmp eax, 0\n";
             out << "    jle ._readdbl_zero\n";

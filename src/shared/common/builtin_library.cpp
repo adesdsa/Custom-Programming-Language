@@ -2,6 +2,8 @@
 #include "includes/shared/common/target_architecture.h"
 #include "includes/shared/utils/system_utils.h"
 
+#include <filesystem>
+
 const BuiltinFunction* BuiltinLibrary::FindFunction(const std::string& funcName) const
 {
     for (const auto& func : functions)
@@ -168,5 +170,5 @@ std::string BuiltinLibraryRegistry::GetObjPath(const std::string& libName)
 
     auto resolved = SystemUtils::BuildRelativePath(
         std::wstring(relativePath.begin(), relativePath.end()));
-    return resolved.string();
+    return std::filesystem::absolute(resolved).string();
 }

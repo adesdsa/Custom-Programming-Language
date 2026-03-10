@@ -158,6 +158,7 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 
     // function label (mangled for the target platform)
     out << MangledName(func->GetName()) << ":\n";
+    EmitAfterFunctionLabel(func, out);
 
     int frameSize = funcMetadata->ComputeFrameSize();
     EmitPrologue(func, frameSize, out);

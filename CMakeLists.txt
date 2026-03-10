@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(Custom-Programming-Language LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # -----------------------------
 # MSVC Runtime config
@@ -77,11 +79,7 @@ add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 
 target_link_libraries(CPLib PUBLIC mio::mio GTest::gtest)
 
-set_target_properties(CPLib PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-)
+set_target_properties(CPLib PROPERTIES CXX_EXTENSIONS OFF)
 
 # =============================
 # Compiler warnings
@@ -132,11 +130,7 @@ endif()
 # Main executable
 # =============================
 add_executable(Custom-Programming-Language main.cpp)
-target_link_libraries(Custom-Programming-Language PRIVATE CPLib mio::mio)
-set_target_properties(Custom-Programming-Language PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
+target_link_libraries(Custom-Programming-Language PRIVATE CPLib)
 
 # =============================
 # Tests
@@ -147,10 +141,6 @@ if(BUILD_TESTS)
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/test_scripts/*.cpp)
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE GTest::gtest_main CPLib)
-    set_target_properties(unit_tests PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-    )
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
@@ -180,10 +170,6 @@ if(BUILD_GUI)
     add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS} ${GUI_RESOURCES} ${GUI_RC})
     target_include_directories(picoc-gui PRIVATE ${CMAKE_SOURCE_DIR})
     target_link_libraries(picoc-gui PRIVATE CPLib Qt6::Widgets Qt6::SvgWidgets)
-    set_target_properties(picoc-gui PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-    )
 endif()
 
 # ==============================
@@ -224,7 +210,7 @@ else() # Linux/macOS
 endif()
 
 # ==============================
-# picoC stdlib (string, runtime) - required for linking programs that use strings
+# picoC stdlib (string, runtime, arraylib) - required for linking programs that use strings/arrays
 # ==============================
 set(STDLIB_OUT_DIR "${CMAKE_SOURCE_DIR}/lib")
 set(STDLIB_SRC_DIR "${CMAKE_SOURCE_DIR}/lib/stdlib")

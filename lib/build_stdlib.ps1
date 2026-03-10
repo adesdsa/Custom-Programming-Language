@@ -27,6 +27,8 @@ if (Test-Path $Nasm64) {
     Build-Asm $Nasm64 "elf64"  "$StdlibSrc/string_linux64.asm"  "$OutDir/string_linux64.o"
     Build-Asm $Nasm64 "win64"  "$StdlibSrc/runtime_win64.asm"   "$OutDir/runtime_win64.obj"
     Build-Asm $Nasm64 "elf64"  "$StdlibSrc/runtime_linux64.asm" "$OutDir/runtime_linux64.o"
+    Build-Asm $Nasm64 "win64"  "$StdlibSrc/arraylib_win64.asm"   "$OutDir/arraylib_win64.obj"
+    Build-Asm $Nasm64 "elf64"  "$StdlibSrc/arraylib_linux64.asm" "$OutDir/arraylib_linux64.o"
 }
 
 if (Test-Path $Nasm32) {
@@ -34,6 +36,8 @@ if (Test-Path $Nasm32) {
     Build-Asm $Nasm32 "elf32"  "$StdlibSrc/string_linux32.asm"  "$OutDir/string_linux32.o"
     Build-Asm $Nasm32 "win32"  "$StdlibSrc/runtime_win32.asm"   "$OutDir/runtime_win32.obj"
     Build-Asm $Nasm32 "elf32"  "$StdlibSrc/runtime_linux32.asm" "$OutDir/runtime_linux32.o"
+    Build-Asm $Nasm32 "win32"  "$StdlibSrc/arraylib_win32.asm"   "$OutDir/arraylib_win32.obj"
+    Build-Asm $Nasm32 "elf32"  "$StdlibSrc/arraylib_linux32.asm" "$OutDir/arraylib_linux32.o"
 }
 
 Write-Host "Done."
