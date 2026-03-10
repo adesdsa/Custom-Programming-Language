@@ -105,7 +105,7 @@
       "patterns": [
         {
           "name": "storage.type.primitive.picoc",
-          "match": "\\b(void|bool|unsigned|int|double|char)\\b"
+          "match": "\\b(void|bool|unsigned|int|double|char|string)\\b"
         }
       ]
     },
@@ -138,7 +138,9 @@
         { "name": "punctuation.section.parens.open.picoc", "match": "\\(" },
         { "name": "punctuation.section.parens.close.picoc", "match": "\\)" },
         { "name": "punctuation.section.braces.open.picoc", "match": "\\{" },
-        { "name": "punctuation.section.braces.close.picoc", "match": "\\}" }
+        { "name": "punctuation.section.braces.close.picoc", "match": "\\}" },
+        { "name": "punctuation.section.brackets.open.picoc", "match": "\\[" },
+        { "name": "punctuation.section.brackets.close.picoc", "match": "\\]" }
       ]
     },
     "operators": {

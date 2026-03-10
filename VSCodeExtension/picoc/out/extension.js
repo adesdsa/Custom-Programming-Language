@@ -513,11 +513,59 @@ function extractSymbolsFromFile(filePath) {
     }
     return symbols;
 }
+const BUILTIN_LIBRARIES = {
+    string: [
+        { name: "str_len", kind: "function", signature: "str_len(s: string) -> int", detail: "(s: string) -> int", doc: "Returns the length of the string" },
+        { name: "str_cmp", kind: "function", signature: "str_cmp(a: string, b: string) -> int", detail: "(a: string, b: string) -> int", doc: "Lexicographic comparison: returns <0, 0, or >0" },
+        { name: "str_concat", kind: "function", signature: "str_concat(a: string, b: string) -> string", detail: "(a: string, b: string) -> string", doc: "Concatenate two strings" },
+        { name: "str_from_char", kind: "function", signature: "str_from_char(c: char) -> string", detail: "(c: char) -> string", doc: "Convert a char to a 1-character string" },
+        { name: "str_find", kind: "function", signature: "str_find(s: string, ch: char) -> int", detail: "(s: string, ch: char) -> int", doc: "Index of first occurrence of ch, or EOS (-1) if not found" },
+        { name: "str_find_first_of", kind: "function", signature: "str_find_first_of(s: string, ch: char) -> int", detail: "(s: string, ch: char) -> int", doc: "Index of first occurrence of ch, or EOS (-1) if not found" },
+        { name: "str_find_last_of", kind: "function", signature: "str_find_last_of(s: string, ch: char) -> int", detail: "(s: string, ch: char) -> int", doc: "Index of last occurrence of ch, or EOS (-1) if not found" },
+        { name: "str_back", kind: "function", signature: "str_back(s: string) -> char", detail: "(s: string) -> char", doc: "Returns the last character of the string" },
+        { name: "str_front", kind: "function", signature: "str_front(s: string) -> char", detail: "(s: string) -> char", doc: "Returns the first character of the string" },
+        { name: "substr", kind: "function", signature: "substr(s: string, start: int, length: int) -> string", detail: "(s: string, start: int, length: int) -> string", doc: "Returns a substring starting at 'start' with given length" },
+        { name: "substr_step", kind: "function", signature: "substr_step(s: string, start: int, end: int, step: int) -> string", detail: "(s: string, start: int, end: int, step: int) -> string", doc: "Returns a stepped substring from start to end" },
+        { name: "char_at", kind: "function", signature: "char_at(s: string, index: int) -> char", detail: "(s: string, index: int) -> char", doc: "Returns the character at the given index" },
+        { name: "set_char_at", kind: "function", signature: "set_char_at(s: string, index: int, c: char) -> void", detail: "(s: string, index: int, c: char) -> void", doc: "Sets the character at the given index" },
+        { name: "EOS", kind: "variable", signature: "const EOS: int = -1", detail: "int (built-in constant)", doc: "End-of-string sentinel, returned by find functions when not found" },
+    ],
+};
+function isBuiltinLibrary(rawPath) {
+    return rawPath in BUILTIN_LIBRARIES;
+}
+function getBuiltinSymbols(rawPath, requestedNames) {
+    const lib = BUILTIN_LIBRARIES[rawPath];
+    if (!lib)
+        return [];
+    return lib
+        .filter((s) => requestedNames.length === 0 || requestedNames.includes(s.name))
+        .map((s) => ({
+        name: s.name,
+        kind: s.kind,
+        signature: s.signature,
+        detail: s.detail,
+        doc: s.doc,
+        filePath: `builtin:${rawPath}`,
+        line: 0,
+        column: 0,
+    }));
+}
 function getImportedSymbols(document) {
     const imports = parseImports(document);
     const result = [];
     const seen = new Set();
     for (const imp of imports) {
+        if (isBuiltinLibrary(imp.rawPath)) {
+            const builtinSyms = getBuiltinSymbols(imp.rawPath, imp.symbols);
+            for (const sym of builtinSyms) {
+                if (seen.has(sym.name))
+                    continue;
+                seen.add(sym.name);
+                result.push(sym);
+            }
+            continue;
+        }
         const fileSymbols = extractSymbolsFromFile(imp.filePath);
         for (const sym of fileSymbols) {
             if (seen.has(sym.name))
@@ -540,7 +588,7 @@ const KEYWORD_COMPLETIONS = [
     return item;
 });
 const TYPE_COMPLETIONS = [
-    "void", "bool", "int", "double", "unsigned", "char",
+    "void", "bool", "int", "double", "unsigned", "char", "string",
 ].map((t) => {
     const item = new vscode.CompletionItem(t, vscode.CompletionItemKind.TypeParameter);
     item.detail = "type";
@@ -554,16 +602,41 @@ const MODIFIER_COMPLETIONS = [
     return item;
 });
 const BUILTIN_COMPLETIONS = [
-    { name: "println", sig: "println(value)" },
-    { name: "sizeof", sig: "sizeof(type_or_expr)" },
-    { name: "true", sig: "true" },
-    { name: "false", sig: "false" },
+    { name: "println", sig: "println(value)", kind: "function" },
+    { name: "readln", sig: "readln() -> string", kind: "function" },
+    { name: "read_int", sig: "read_int() -> int", kind: "function" },
+    { name: "read_double", sig: "read_double() -> double", kind: "function" },
+    { name: "sizeof", sig: "sizeof(type_or_expr)", kind: "function" },
+    { name: "true", sig: "true", kind: "constant" },
+    { name: "false", sig: "false", kind: "constant" },
 ].map((b) => {
-    const item = new vscode.CompletionItem(b.name, b.name === "true" || b.name === "false"
+    const item = new vscode.CompletionItem(b.name, b.kind === "constant"
         ? vscode.CompletionItemKind.Constant
         : vscode.CompletionItemKind.Function);
     item.detail = "built-in";
     item.documentation = b.sig;
+    return item;
+});
+const STRING_LIB_COMPLETIONS = [
+    { name: "str_len", sig: "str_len(s: string) -> int", doc: "Returns the length of the string" },
+    { name: "str_cmp", sig: "str_cmp(a: string, b: string) -> int", doc: "Lexicographic comparison: <0, 0, or >0" },
+    { name: "str_concat", sig: "str_concat(a: string, b: string) -> string", doc: "Concatenate two strings" },
+    { name: "str_from_char", sig: "str_from_char(c: char) -> string", doc: "Convert a char to a 1-character string" },
+    { name: "str_find", sig: "str_find(s: string, ch: char) -> int", doc: "Index of first occurrence of ch, or EOS (-1)" },
+    { name: "str_find_first_of", sig: "str_find_first_of(s: string, ch: char) -> int", doc: "Index of first occurrence of ch, or EOS (-1)" },
+    { name: "str_find_last_of", sig: "str_find_last_of(s: string, ch: char) -> int", doc: "Index of last occurrence of ch, or EOS (-1)" },
+    { name: "str_back", sig: "str_back(s: string) -> char", doc: "Last character of the string" },
+    { name: "str_front", sig: "str_front(s: string) -> char", doc: "First character of the string" },
+    { name: "substr", sig: "substr(s: string, start: int, length: int) -> string", doc: "Substring from start with given length" },
+    { name: "substr_step", sig: "substr_step(s: string, start: int, end: int, step: int) -> string", doc: "Stepped substring from start to end" },
+    { name: "char_at", sig: "char_at(s: string, index: int) -> char", doc: "Character at index" },
+    { name: "set_char_at", sig: "set_char_at(s: string, index: int, c: char) -> void", doc: "Set character at index" },
+    { name: "EOS", sig: "const EOS: int = -1", doc: "End-of-string sentinel (not found)" },
+].map((f) => {
+    const isConst = f.name === "EOS";
+    const item = new vscode.CompletionItem(f.name, isConst ? vscode.CompletionItemKind.Constant : vscode.CompletionItemKind.Function);
+    item.detail = 'import from "string"';
+    item.documentation = new vscode.MarkdownString(`${f.doc}\n\n\`${f.sig}\``);
     return item;
 });
 function provideCompletionItems(document, position) {
@@ -572,6 +645,7 @@ function provideCompletionItems(document, position) {
         ...TYPE_COMPLETIONS,
         ...MODIFIER_COMPLETIONS,
         ...BUILTIN_COMPLETIONS,
+        ...STRING_LIB_COMPLETIONS,
     ];
     const text = document.getText();
     // Collect function names from definitions and forward declarations
@@ -696,6 +770,8 @@ function provideDefinition(document, position) {
         const importedSymbols = getImportedSymbols(document);
         for (const sym of importedSymbols) {
             if (sym.name === word) {
+                if (sym.filePath.startsWith("builtin:"))
+                    continue;
                 const uri = vscode.Uri.file(sym.filePath);
                 locations.push(new vscode.Location(uri, new vscode.Position(sym.line, sym.column)));
             }

@@ -196,5 +196,40 @@
       "let ${1:name}: char = '${2:a}';"
     ],
     "description": "Char variable declaration"
+  },
+  "String Variable": {
+    "prefix": "strvar",
+    "body": [
+      "let ${1:name}: string = \"${2:hello}\";"
+    ],
+    "description": "String variable declaration"
+  },
+  "Import String Library": {
+    "prefix": "importstring",
+    "body": [
+      "import { ${1:str_len} } from \"string\""
+    ],
+    "description": "Import from the built-in string library"
+  },
+  "Import String Library (all)": {
+    "prefix": "importstringall",
+    "body": [
+      "import * from \"string\""
+    ],
+    "description": "Import all from the built-in string library"
+  },
+  "String Slice": {
+    "prefix": "slice",
+    "body": [
+      "${1:str}[${2:start}:${3:end}]"
+    ],
+    "description": "String slice access s[start:end]"
+  },
+  "String Slice with Step": {
+    "prefix": "slicestep",
+    "body": [
+      "${1:str}[${2:start}:${3:end}:${4:step}]"
+    ],
+    "description": "String slice with step s[start:end:step]"
   }
 }
