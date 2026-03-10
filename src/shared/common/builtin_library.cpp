@@ -56,9 +56,31 @@ static BuiltinLibrary BuildStringLibrary()
     return lib;
 }
 
+/**
+ * Interface for math library, contains the built-in math functions
+*/
+static BuiltinLibrary BuildMathLibrary()
+{
+    BuiltinLibrary lib;
+    lib.name = "math";
+
+    auto mkParam = [](const std::string& name, Type type) {
+        return VarMetaData(name, type, AccessRights::DEFAULT_ACCESS, Scope::LET, 0);
+    };
+
+    lib.functions = {
+        { "sqrt", Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE) } },
+        { "pow",  Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE), mkParam("y", Type::DOUBLE_TYPE) } },
+        { "min",  Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE), mkParam("y", Type::DOUBLE_TYPE) } },
+        { "max",  Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE), mkParam("y", Type::DOUBLE_TYPE) } },
+    };
+
+    return lib;
+}
+
 const std::vector<BuiltinLibrary>& BuiltinLibraryRegistry::GetAll()
 {
-    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary() };
+    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildMathLibrary() };
     return libs;
 }
 

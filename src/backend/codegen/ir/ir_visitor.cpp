@@ -1689,9 +1689,14 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     }
     if (funcMetaData->IsExtern())
     {
-        const auto* lib = BuiltinLibraryRegistry::GetLibrary("string");
-        if (lib && lib->FindFunction(funcName))
-            this->m_currModule.AddRequiredLibrary("string");
+        for (const auto& lib : BuiltinLibraryRegistry::GetAll())
+        {
+            if (lib.FindFunction(funcName))
+            {
+                this->m_currModule.AddRequiredLibrary(lib.name);
+                break;
+            }
+        }
     }
 
     // Setting up the temporary holder

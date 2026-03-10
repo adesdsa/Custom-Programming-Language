@@ -35,7 +35,9 @@ bool Token::Append(char cAddedChar) noexcept
         {
             size_t backslashes = 0;
             for (size_t i = this->m_sValue.size() - 2; i > 0 && this->m_sValue[i] == '\\'; --i)
-                ++backslashes;
+            {
+                backslashes++;
+            }
             if (backslashes % 2 == 0)
                 return TokenStatus::k_bFinished;
         }
@@ -209,10 +211,11 @@ bool Token::CheckSoloLetters(
 
 bool Token::IsCommentToken(const std::string &sToken) const
 {
-    // Line comments start with '#': they are comments until (but not including) '\n'.
+    // Line comments start with '#': they are comments until (but not including) '\n' or EOF.
     if (!sToken.empty() && sToken[0] == '#')
     {
-        return sToken.find('\n') == std::string::npos;
+        return sToken.find('\n') == std::string::npos &&
+               sToken.find('\0') == std::string::npos;
     }
 
     // Block comments start with '/*' and end with '*/', possibly spanning multiple lines.
@@ -225,8 +228,8 @@ bool Token::IsCommentToken(const std::string &sToken) const
         const std::size_t endPos = sToken.find("*/", 2);
         if (endPos == std::string::npos)
         {
-            // No closing '*/' yet -> still inside block comment.
-            return true;
+            // No closing '*/' yet -> still inside block comment, unless we hit EOF.
+            return sToken.find('\0') == std::string::npos;
         }
 
         // We have a closing '*/'. Stay in the comment as long as there is

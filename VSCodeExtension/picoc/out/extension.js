@@ -530,6 +530,12 @@ const BUILTIN_LIBRARIES = {
         { name: "set_char_at", kind: "function", signature: "set_char_at(s: string, index: int, c: char) -> void", detail: "(s: string, index: int, c: char) -> void", doc: "Sets the character at the given index" },
         { name: "EOS", kind: "variable", signature: "const EOS: int = -1", detail: "int (built-in constant)", doc: "End-of-string sentinel, returned by find functions when not found" },
     ],
+    math: [
+        { name: "sqrt", kind: "function", signature: "sqrt(x: double) -> double", detail: "(x: double) -> double", doc: "Returns the square root of x" },
+        { name: "pow", kind: "function", signature: "pow(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns x raised to the power y" },
+        { name: "min", kind: "function", signature: "min(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns the smaller of x and y" },
+        { name: "max", kind: "function", signature: "max(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns the larger of x and y" },
+    ],
 };
 function isBuiltinLibrary(rawPath) {
     return rawPath in BUILTIN_LIBRARIES;
@@ -639,6 +645,17 @@ const STRING_LIB_COMPLETIONS = [
     item.documentation = new vscode.MarkdownString(`${f.doc}\n\n\`${f.sig}\``);
     return item;
 });
+const MATH_LIB_COMPLETIONS = [
+    { name: "sqrt", sig: "sqrt(x: double) -> double", doc: "Returns the square root of x" },
+    { name: "pow", sig: "pow(x: double, y: double) -> double", doc: "Returns x raised to the power y" },
+    { name: "min", sig: "min(x: double, y: double) -> double", doc: "Returns the smaller of x and y" },
+    { name: "max", sig: "max(x: double, y: double) -> double", doc: "Returns the larger of x and y" },
+].map((f) => {
+    const item = new vscode.CompletionItem(f.name, vscode.CompletionItemKind.Function);
+    item.detail = 'import from "math"';
+    item.documentation = new vscode.MarkdownString(`${f.doc}\n\n\`${f.sig}\``);
+    return item;
+});
 function provideCompletionItems(document, position) {
     const items = [
         ...KEYWORD_COMPLETIONS,
@@ -646,6 +663,7 @@ function provideCompletionItems(document, position) {
         ...MODIFIER_COMPLETIONS,
         ...BUILTIN_COMPLETIONS,
         ...STRING_LIB_COMPLETIONS,
+        ...MATH_LIB_COMPLETIONS,
     ];
     const text = document.getText();
     // Collect function names from definitions and forward declarations
