@@ -37,7 +37,5 @@ public:
     static const BuiltinLibrary* GetLibrary(const std::string& name);
     static bool IsBuiltinLibrary(const std::string& name);
     static std::string GetObjPath(const std::string& libName);
-
-private:
     static const std::vector<BuiltinLibrary>& GetAll();
 };
