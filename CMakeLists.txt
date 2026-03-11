@@ -26,7 +26,7 @@ if(NOT mio_FOUND)
     FetchContent_Declare(
         mio_external
         GIT_REPOSITORY https://github.com/mandreyel/mio.git
-        GIT_TAG master
+        GIT_TAG 8b6b7d878c89e81614d05edca7936de41ccdd2da
     )
     FetchContent_MakeAvailable(mio_external)
 
