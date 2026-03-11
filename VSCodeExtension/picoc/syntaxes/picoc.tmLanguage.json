@@ -104,6 +104,10 @@
     "primitive_types": {
       "patterns": [
         {
+          "name": "storage.type.array.picoc",
+          "match": "\\b(void|bool|unsigned|int|double|char|string)\\b(?=\\s*\\[)"
+        },
+        {
           "name": "storage.type.primitive.picoc",
           "match": "\\b(void|bool|unsigned|int|double|char|string)\\b"
         }

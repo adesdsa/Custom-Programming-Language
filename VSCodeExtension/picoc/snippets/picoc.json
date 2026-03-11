@@ -218,6 +218,48 @@
     ],
     "description": "Import all from the built-in string library"
   },
+  "Import Array Library": {
+    "prefix": "importarray",
+    "body": [
+      "import { ${1:len, front, back, find} } from \"arraylib\""
+    ],
+    "description": "Import from the built-in array library"
+  },
+  "Import Array Library (all)": {
+    "prefix": "importarrayall",
+    "body": [
+      "import * from \"arraylib\""
+    ],
+    "description": "Import all from the built-in array library"
+  },
+  "Array Declaration": {
+    "prefix": "array",
+    "body": [
+      "let ${1:name}: ${2:int}[${3:5}] = [${4:1, 2, 3, 4, 5}];"
+    ],
+    "description": "Array variable declaration with initializer"
+  },
+  "Array Declaration (empty)": {
+    "prefix": "arrayempty",
+    "body": [
+      "let ${1:name}: ${2:int}[${3:5}];"
+    ],
+    "description": "Array variable declaration without initializer"
+  },
+  "Array Access": {
+    "prefix": "arraccess",
+    "body": [
+      "${1:arr}[${2:0}]"
+    ],
+    "description": "Array element access"
+  },
+  "Array Slice": {
+    "prefix": "arrslice",
+    "body": [
+      "${1:arr}[${2:0}:${3:5}]"
+    ],
+    "description": "Array slice access"
+  },
   "String Slice": {
     "prefix": "slice",
     "body": [
