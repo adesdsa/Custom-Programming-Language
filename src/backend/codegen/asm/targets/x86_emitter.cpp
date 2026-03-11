@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/asm/targets/x86_emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 
 #include <cstring>
@@ -507,7 +508,11 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             int scale = GetTypeSize(instruction->GetType());
             if (scale <= 0) scale = 1;
             out << "    imul ebx, " << scale << "\n";
-            out << "    sub eax, ebx\n";  // stack grows down: arr[i] at base - i*scale
+            bool isGlobal = (dynamic_cast<const IRGlobalVariable*>(op1) != nullptr);
+            if (isGlobal)
+                out << "    add eax, ebx\n";  // global: base + index*scale
+            else
+                out << "    sub eax, ebx\n";  // stack: base - index*scale
             int slotOffset = m_nextTempStackOffset;
             m_nextTempStackOffset += x86_32::STACK_SLOT_SIZE;
             m_valueToStackOffset[instruction] = slotOffset;

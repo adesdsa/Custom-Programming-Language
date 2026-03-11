@@ -1,5 +1,7 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 #include <set>
 
 BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
@@ -68,7 +70,14 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
     {
         if (globalVar->IsExtern()) continue;
 
-        if (globalVar->GetInitializer())
+        if (globalVar->HasArrayInitializer())
+        {
+            int elemSize = GetTypeSize(globalVar->GetType()->GetElementType());
+            out << Indent() << MangledName(globalVar->GetName()) << ": ";
+            out << GetDataDirective(elemSize) << " ";
+            out << globalVar->GetArrayInitializerString() << "\n";
+        }
+        else if (globalVar->GetInitializer())
         {
             int varSize = GetTypeSize(globalVar->GetType());
             out << Indent() << MangledName(globalVar->GetName()) << ": ";
@@ -115,7 +124,7 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
     {
         if (global->IsExtern()) continue;
 
-        if (!global->GetInitializer())
+        if (!global->GetInitializer() && !global->HasArrayInitializer())
         {
             int size = GetTypeSize(global->GetType());
             out << Indent() << MangledName(global->GetName()) << ": ";

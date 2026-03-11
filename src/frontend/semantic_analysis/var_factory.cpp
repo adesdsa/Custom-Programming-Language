@@ -54,41 +54,31 @@ VarMetaData VarFactory::CreateVarMetadata(
 
 VarMetaData VarFactory::CreateVarMetadata(const ExportedVar& exportedVar) const
 {
-    int varOffsetInsideFrame = 0;
+    int elementSize = 0;
     switch (exportedVar.type)
     {
     case Type::BOOL_TYPE:
     case Type::CHAR_TYPE:
-        varOffsetInsideFrame = 1;
+        elementSize = 1;
         break;
-    
+
     case Type::DOUBLE_TYPE:
-        if (TargetArchitecture::Is32Bit())
-        {
-            varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
-        }
-        else
-        {
-            varOffsetInsideFrame = NORMAL_64BIT_TYPE_SIZE;
-        }
+        elementSize = TargetArchitecture::Is32Bit() ? NORMAL_32BIT_TYPE_SIZE : NORMAL_64BIT_TYPE_SIZE;
         break;
 
     case Type::INT_TYPE:
     case Type::UNSIGNED_INT_TYPE:
     case Type::STRING_TYPE:  // String vars hold a pointer to the character data, not the content itself
-        if (TargetArchitecture::Is32Bit())
-        {
-            varOffsetInsideFrame = NORMAL_32BIT_TYPE_SIZE;
-        }
-        else
-        {
-            varOffsetInsideFrame = NORMAL_64BIT_TYPE_SIZE;
-        }
+        elementSize = TargetArchitecture::Is32Bit() ? NORMAL_32BIT_TYPE_SIZE : NORMAL_64BIT_TYPE_SIZE;
         break;
 
     default:
         break;
     }
+
+    int varOffsetInsideFrame = exportedVar.arraySize.has_value()
+        ? static_cast<int>(elementSize * exportedVar.arraySize.value())
+        : elementSize;
 
     return VarMetaData(
         exportedVar.name,
@@ -96,6 +86,7 @@ VarMetaData VarFactory::CreateVarMetadata(const ExportedVar& exportedVar) const
         exportedVar.accessRights,
         Scope::GLOBAL,
         varOffsetInsideFrame,
-        true
+        true,
+        exportedVar.arraySize
     );
 }

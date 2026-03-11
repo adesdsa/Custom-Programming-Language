@@ -61,7 +61,27 @@ FileExportTable CollectExports(const AST& ast, const std::string& filePath)
                 var.name = ASTExtractor::ExtractVarName(cursor);
                 var.type = ASTExtractor::ExtractVarType(cursor);
                 var.accessRights = ASTExtractor::ExtractVarAccessRight(cursor);
+                var.arraySize = std::nullopt;
                 table.exportedVars.push_back(var);
+            }
+        }
+        else if (type == CommandTypes::ARRAY_DECLARATION)
+        {
+            Scope scope = ASTExtractor::ExtractVarScope(cursor);
+            if (scope == Scope::EXPORT)
+            {
+                std::optional<size_t> arraySize = ASTExtractor::ExtractArraySize(cursor);
+                if (!arraySize.has_value())
+                    arraySize = ASTExtractor::ExtractArraySizeFromInitializer(cursor);
+                if (arraySize.has_value() && arraySize.value() > 0)
+                {
+                    ExportedVar var;
+                    var.name = ASTExtractor::ExtractVarName(cursor);
+                    var.type = ASTExtractor::ExtractVarType(cursor);
+                    var.accessRights = ASTExtractor::ExtractVarAccessRight(cursor);
+                    var.arraySize = arraySize;
+                    table.exportedVars.push_back(var);
+                }
             }
         }
 

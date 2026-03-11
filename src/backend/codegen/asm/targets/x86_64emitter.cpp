@@ -1,5 +1,6 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
@@ -659,17 +660,22 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
 
         case IROpcode::GEP:
         {
-            // GEP(base, index): compute address = base - index * elementSize
-            // Stack grows down: arr[0] at rbp-X, arr[1] at rbp-X-8, arr[2] at rbp-X-16, ...
+            // GEP(base, index): compute address of arr[index]
+            // Stack: arr[0] at rbp-X, arr[1] at rbp-X-8, ... -> base - index*scale
+            // Global: arr[0] at symbol, arr[1] at symbol+8, ... -> base + index*scale
             out << "    ; GEP: array index\n";
-            tempAsmValue = GetOperandAsm(source1, out);  // base: [rbp-X]
+            tempAsmValue = GetOperandAsm(source1, out);  // base: [rbp-X] or [rel symbol]
             out << "    lea rax, " << tempAsmValue << "\n";  // rax = base address
             tempAsmValue = GetOperandAsm(source2, out);  // index
             out << "    mov rbx, " << tempAsmValue << "\n";
             int scale = GetTypeSize(instr->GetType());
             if (scale <= 0) scale = 1;
             out << "    imul rbx, " << scale << "\n";
-            out << "    sub rax, rbx\n";  // rax = base - index*scale (stack grows down)
+            bool isGlobal = (dynamic_cast<const IRGlobalVariable*>(source1) != nullptr);
+            if (isGlobal)
+                out << "    add rax, rbx\n";  // global: base + index*scale
+            else
+                out << "    sub rax, rbx\n";  // stack: base - index*scale
             int slotOffset = this->m_nextTempStackOffset;
             this->m_nextTempStackOffset += x86_64::STACK_SLOT_SIZE;
             this->m_valueToStackOffset[instr] = slotOffset;

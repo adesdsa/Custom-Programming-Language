@@ -1230,9 +1230,84 @@ void IRVisitor::VisitArrayValue(ASTNode* node)
 
     if (!this->m_currFunc)
     {
-        StoreInternalError("Global array initialization with multiple elements is not yet supported",
-            node->command);
+        IRGlobalVariable* globalVar = this->m_currModule.GetVariable(this->m_currVarMetaData.value().sName);
+        if (!globalVar)
+        {
+            this->m_expectedAssignment = false;
+            return;
+        }
+
+        Type varType = this->m_currVarMetaData.value().type;
+        auto elementType = TypeToIRType(varType);
+        std::vector<IRBaseValue*> elements;
+
+        for (size_t i = 0; i < arraySize; ++i)
+        {
+            IRBaseValue* elemVal = nullptr;
+            if (i < params.size())
+            {
+                elemVal = HandleExpression(params[i]);
+                if (!elemVal)
+                {
+                    StoreInternalError("Could not evaluate array initializer element " + std::to_string(i), params[i]);
+                    this->m_expectedAssignment = false;
+                    return;
+                }
+                if (varType == Type::STRING_TYPE && elemVal->GetType()->GetKind() == IRTypeKind::Int8)
+                {
+                    if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                    {
+                        this->m_currModule.AddFunction("str_from_char",
+                            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                    }
+                    this->m_currModule.AddRequiredLibrary("string");
+                    elemVal = this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("str_from_char"), { elemVal });
+                }
+                else if (varType != Type::STRING_TYPE)
+                {
+                    elemVal = ConvertIfNeeded(elemVal, elementType);
+                }
+            }
+            else
+            {
+                switch (varType)
+                {
+                case Type::INT_TYPE:
+                case Type::UNSIGNED_INT_TYPE:
+                    elemVal = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                    break;
+                case Type::DOUBLE_TYPE:
+                    elemVal = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetFloat(0.0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetDouble(0.0));
+                    break;
+                case Type::BOOL_TYPE:
+                    elemVal = this->m_irbuilder.GetFalse();
+                    break;
+                case Type::CHAR_TYPE:
+                    elemVal = static_cast<IRBaseValue*>(this->m_irbuilder.GetInt8(0));
+                    break;
+                case Type::STRING_TYPE:
+                    elemVal = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (elemVal)
+                elements.push_back(elemVal);
+        }
+
+        globalVar->SetArrayInitializer(std::move(elements));
         this->m_expectedAssignment = false;
+        this->m_handledInsides = true;
+        size_t logLine = node && !node->command.GetTokens().empty() ? node->command[0].GetLine() : 0;
+        this->m_entityLogger.Info("Added global ArrayValue IR handling.\nAt line: " + std::to_string(logLine));
         return;
     }
     else

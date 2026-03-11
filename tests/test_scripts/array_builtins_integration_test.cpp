@@ -168,3 +168,66 @@ TEST(ArrayBuiltinsIntegrationTest, CompileAndRunArrayTest)
 
     EXPECT_EQ(idx, lines.size()) << "Unexpected extra output lines";
 }
+
+/// Integration test: array export - module exports arrays, main imports and uses them.
+TEST(ArrayExportIntegrationTest, CompileAndRunArrayExportTest)
+{
+    fs::path projectRoot(PROJECT_ROOT);
+    fs::path moduleFile = projectRoot / "tests" / "inputs" / "array_export_module.picoc";
+    fs::path mainFile = projectRoot / "tests" / "inputs" / "array_export_main.picoc";
+    ASSERT_TRUE(fs::exists(moduleFile)) << "Module file not found: " << moduleFile.string();
+    ASSERT_TRUE(fs::exists(mainFile)) << "Main file not found: " << mainFile.string();
+
+    fs::path outDir = fs::temp_directory_path() / "picoc_array_export_test";
+    fs::create_directories(outDir);
+#ifdef _WIN32
+    fs::path outExe = outDir / "array_export_test.exe";
+#else
+    fs::path outExe = outDir / "array_export_test";
+#endif
+
+    CompilerOptions opts;
+    opts.inputFilesPath = { moduleFile.wstring(), mainFile.wstring() };
+    opts.outputFileName = L"array_export_test";
+    opts.outputDir = outDir.wstring();
+    opts.stopAtBin = false;
+    opts.stopAtAsm = false;
+
+    try
+    {
+        CompilerOrchestrator orchestrator(std::move(opts));
+        orchestrator.MainFlow();
+    }
+    catch (const std::exception& e)
+    {
+        FAIL() << "Compilation failed: " << e.what();
+    }
+
+    ASSERT_TRUE(fs::exists(outExe)) << "Output executable not produced: " << outExe.string();
+
+    std::string output;
+    int exitCode = SystemUtils::RunProcess(outExe.string(), output);
+
+    fs::remove_all(outDir);
+
+    ASSERT_EQ(exitCode, 0) << "Program exited with code " << exitCode << "\nOutput:\n" << output;
+
+    std::istringstream iss(output);
+    std::string line;
+    std::vector<std::string> lines;
+    while (std::getline(iss, line))
+    {
+        if (!line.empty())
+            lines.push_back(line);
+    }
+
+    ASSERT_EQ(lines.size(), 6u) << "Expected 6 output lines, got " << lines.size();
+
+    // numbers[0], numbers[2], numbers[4], chars[0], chars[1], chars[2]
+    EXPECT_EQ(lines[0], "10") << "numbers[0] should be 10";
+    EXPECT_EQ(lines[1], "30") << "numbers[2] should be 30";
+    EXPECT_EQ(lines[2], "50") << "numbers[4] should be 50";
+    EXPECT_EQ(lines[3], "A") << "chars[0] should be A";
+    EXPECT_EQ(lines[4], "B") << "chars[1] should be B";
+    EXPECT_EQ(lines[5], "C") << "chars[2] should be C";
+}
