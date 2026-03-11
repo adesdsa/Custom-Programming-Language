@@ -441,7 +441,18 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             if (op1 && dynamic_cast<const IRInstruction*>(op1) &&
                 static_cast<const IRInstruction*>(op1)->GetOpcode() == IROpcode::GEP)
             {
-                out << "    mov eax, [eax]\n";
+                auto elemType = instruction->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                    out << "    movzx eax, byte [eax]\n";
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                    out << "    mov eax, dword [eax]\n";
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movss xmm0, dword [eax]\n";
+                    out << "    movd eax, xmm0\n";
+                }
+                else
+                    out << "    mov eax, [eax]\n";
             }
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
@@ -456,7 +467,18 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
                 static_cast<const IRInstruction*>(op2)->GetOpcode() == IROpcode::GEP)
             {
                 out << "    mov ebx, " << destSlot << "\n";  // ebx = address (GEP slot holds it directly)
-                out << "    mov [ebx], eax\n";
+                auto elemType = static_cast<const IRInstruction*>(op2)->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                    out << "    mov [ebx], al\n";
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                    out << "    mov [ebx], eax\n";
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movd xmm0, eax\n";
+                    out << "    movss [ebx], xmm0\n";
+                }
+                else
+                    out << "    mov [ebx], eax\n";
             }
             else
             {
@@ -668,6 +690,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
 
             // ---- Built-in: println(value: int) -> void ----
             // Minimal integer println using Linux write(1, buf, len)
+            // Handles negative numbers: print minus, negate, then unsigned conversion
             out << "\n";
             out << "println:\n";
             out << "    push ebp\n";
@@ -684,6 +707,18 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov byte [esi], '0'\n";
             out << "    jmp .Lwrite\n";
             out << ".Lconvert:\n";
+            out << "    cmp eax, 0\n";
+            out << "    jge .Lpos\n";
+            out << "    push eax\n";
+            out << "    mov ecx, __println_minus\n";
+            out << "    mov edx, 1\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            out << "    pop eax\n";
+            out << "    neg eax\n";
+            out << "    lea esi, [edi+20]\n";
+            out << ".Lpos:\n";
             out << "    xor edx, edx\n";
             out << ".Lloop:\n";
             out << "    xor edx, edx\n";
@@ -1236,7 +1271,7 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    ret\n";
 
             // ---- Built-in: println_double(value: float32) -> void ----
-            // Prints a 32-bit float as "<int>.<frac6>\n" via write(1, ...).
+            // Prints float with minimal format: "1.5" not "1.500000", "1" not "1.000000"
             out << "\n";
             out << "println_double:\n";
             out << "    push ebp\n";
@@ -1289,16 +1324,9 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov eax, 4\n";
             out << "    mov ebx, 1\n";
             out << "    int 0x80\n";
-            // Print decimal point
-            out << "    mov ecx, __println_dot\n";
-            out << "    mov edx, 1\n";
-            out << "    mov eax, 4\n";
-            out << "    mov ebx, 1\n";
-            out << "    int 0x80\n";
             // Extract fractional part: frac = (value - int_part) * 1000000
             out << "    cvtsi2ss xmm1, dword [ebp-8]\n";
             out << "    movss xmm0, dword [ebp+8]\n";
-            // Abs in case of negative
             out << "    mov dword [ebp-4], 0x7FFFFFFF\n";
             out << "    andps xmm0, [ebp-4]\n";
             out << "    subss xmm0, xmm1\n";
@@ -1306,10 +1334,21 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    cvtsi2ss xmm1, eax\n";
             out << "    mulss xmm0, xmm1\n";
             out << "    cvttss2si eax, xmm0\n";
-            // Convert 6-digit fractional part (with leading zeros)
+            out << "    mov [ebp-12], eax\n";
+            // If frac==0, skip decimal part (whole number)
+            out << "    test eax, eax\n";
+            out << "    jz .Ldbl_newline\n";
+            // Print decimal point
+            out << "    mov ecx, __println_dot\n";
+            out << "    mov edx, 1\n";
+            out << "    mov eax, 4\n";
+            out << "    mov ebx, 1\n";
+            out << "    int 0x80\n";
+            // Convert 6-digit fractional part to buffer
             out << "    lea esi, [ebp-32]\n";
             out << "    add esi, 20\n";
             out << "    mov byte [esi], 0\n";
+            out << "    mov eax, [ebp-12]\n";
             out << "    mov ecx, 6\n";
             out << ".Ldbl_floop:\n";
             out << "    xor edx, edx\n";
@@ -1322,12 +1361,26 @@ void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov [esi], dl\n";
             out << "    dec ecx\n";
             out << "    jnz .Ldbl_floop\n";
-            // Write fractional digits
+            // Strip trailing zeros: scan from end for last non-zero
+            out << "    lea esi, [ebp-32]\n";
+            out << "    add esi, 14\n";
+            out << "    lea edi, [esi+5]\n";
+            out << ".Ldbl_strip:\n";
+            out << "    cmp edi, esi\n";
+            out << "    jl .Ldbl_stripped\n";
+            out << "    cmp byte [edi], '0'\n";
+            out << "    jne .Ldbl_stripped\n";
+            out << "    dec edi\n";
+            out << "    jmp .Ldbl_strip\n";
+            out << ".Ldbl_stripped:\n";
             out << "    mov ecx, esi\n";
-            out << "    mov edx, 6\n";
+            out << "    mov edx, edi\n";
+            out << "    sub edx, esi\n";
+            out << "    inc edx\n";
             out << "    mov eax, 4\n";
             out << "    mov ebx, 1\n";
             out << "    int 0x80\n";
+            out << ".Ldbl_newline:\n";
             // Write newline
             out << "    mov ecx, __println_newline\n";
             out << "    mov edx, 1\n";

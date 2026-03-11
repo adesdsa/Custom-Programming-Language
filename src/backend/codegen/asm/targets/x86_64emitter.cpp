@@ -947,6 +947,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
 
         // ---- Built-in: println(value: int) -> void ----
         // Minimal integer println using Linux write(1, buf, len)
+        // Handles negative numbers: print minus, negate, then unsigned conversion
         out << "\n";
         out << "println:\n";
         out << "    push rbp\n";
@@ -963,6 +964,18 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov byte [rsi], '0'\n";
         out << "    jmp .Lwrite\n";
         out << ".Lconvert:\n";
+        out << "    cmp rax, 0\n";
+        out << "    jge .Lpos\n";
+        out << "    push rax\n";
+        out << "    lea rsi, [rel __println_minus]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    pop rax\n";
+        out << "    neg rax\n";
+        out << "    lea rsi, [r8+20]\n";
+        out << ".Lpos:\n";
         out << "    xor rdx, rdx\n";
         out << ".Lloop:\n";
         out << "    xor rdx, rdx\n";
@@ -1511,7 +1524,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ret\n";
 
         // ---- Built-in: println_double(value: double) -> void ----
-        // Prints a 64-bit double as "<int>.<frac6>\n" via write(1, ...).
+        // Prints double with minimal format: "1.5" not "1.500000", "1" not "1.000000"
         // rdi contains the raw double bits (SysV integer ABI for this calling convention).
         out << "\n";
         out << "println_double:\n";
@@ -1541,7 +1554,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         // Extract integer part
         out << "    cvttsd2si rax, xmm0\n";
         out << "    mov [rbp-24], rax\n";
-        // Convert integer part via println (reuse int conversion), but inline here
+        // Convert integer part (inline)
         out << "    lea rsi, [rbp-48]\n";
         out << "    add rsi, 20\n";
         out << "    mov byte [rsi], 0\n";
@@ -1569,16 +1582,9 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov rax, 1\n";
         out << "    mov rdi, 1\n";
         out << "    syscall\n";
-        // Print decimal point
-        out << "    lea rsi, [rel __println_dot]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
         // Extract fractional part: frac = (value - int_part) * 1000000
         out << "    cvtsi2sd xmm1, qword [rbp-24]\n";
         out << "    movsd xmm0, qword [rbp-8]\n";
-        // Abs again in case of negative
         out << "    mov rax, 0x7FFFFFFFFFFFFFFF\n";
         out << "    mov [rbp-16], rax\n";
         out << "    andpd xmm0, [rbp-16]\n";
@@ -1586,13 +1592,23 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov rax, 1000000\n";
         out << "    cvtsi2sd xmm1, rax\n";
         out << "    mulsd xmm0, xmm1\n";
-        // Round to nearest
         out << "    roundsd xmm0, xmm0, 0\n";
         out << "    cvttsd2si rax, xmm0\n";
-        // Convert 6-digit fractional part (with leading zeros)
+        out << "    mov [rbp-32], rax\n";
+        // If frac==0, skip decimal part (whole number)
+        out << "    test rax, rax\n";
+        out << "    jz .Ldbl_newline\n";
+        // Print decimal point
+        out << "    lea rsi, [rel __println_dot]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        // Convert 6-digit fractional part to buffer (digits in reverse)
         out << "    lea rsi, [rbp-48]\n";
         out << "    add rsi, 20\n";
         out << "    mov byte [rsi], 0\n";
+        out << "    mov rax, [rbp-32]\n";
         out << "    mov rcx, 6\n";
         out << ".Ldbl_floop:\n";
         out << "    xor rdx, rdx\n";
@@ -1605,11 +1621,24 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov [rsi], dl\n";
         out << "    dec rcx\n";
         out << "    jnz .Ldbl_floop\n";
-        // Write fractional digits
-        out << "    mov rdx, 6\n";
+        // Strip trailing zeros in frac (e.g. 1.5 -> "5" not "500000")
+        // Digits: [rsi]=highest place, [rsi+5]=ones. Scan from end for last non-zero.
+        out << "    lea r9, [rsi+5]\n";
+        out << ".Ldbl_strip:\n";
+        out << "    cmp r9, rsi\n";
+        out << "    jl .Ldbl_stripped\n";
+        out << "    cmp byte [r9], '0'\n";
+        out << "    jne .Ldbl_stripped\n";
+        out << "    dec r9\n";
+        out << "    jmp .Ldbl_strip\n";
+        out << ".Ldbl_stripped:\n";
+        out << "    mov rdx, r9\n";
+        out << "    sub rdx, rsi\n";
+        out << "    inc rdx\n";
         out << "    mov rax, 1\n";
         out << "    mov rdi, 1\n";
         out << "    syscall\n";
+        out << ".Ldbl_newline:\n";
         // Write newline
         out << "    lea rsi, [rel __println_newline]\n";
         out << "    mov rdx, 1\n";

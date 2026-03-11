@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cmath>
 
 #include "includes/shared/utils/system_utils.h"
 #include "includes/compiler_orchestrator.h"
@@ -69,6 +70,15 @@ TEST(ArrayBuiltinsIntegrationTest, CompileAndRunArrayTest)
         EXPECT_EQ(lines[idx], expected) << "At output line " << (idx + 1);
         ++idx;
     };
+    // Linux32 uses float32 for double; allow small tolerance for float precision
+    auto expectFloat = [&lines, &idx](const std::string& expected, double tolerance = 0.001)
+    {
+        ASSERT_LT(idx, lines.size()) << "Expected \"" << expected << "\" but no more output";
+        double expVal = std::stod(expected);
+        double actVal = std::stod(lines[idx]);
+        EXPECT_NEAR(actVal, expVal, tolerance) << "At output line " << (idx + 1);
+        ++idx;
+    };
 
     // 1. a1: int[3] = [1,2,3]
     expect("1");
@@ -105,9 +115,9 @@ TEST(ArrayBuiltinsIntegrationTest, CompileAndRunArrayTest)
     expect("3");
     expect("-1");
 
-    // 7. e: front_double, back_double, len_double
-    expect("1.5");
-    expect("3.5");
+    // 7. e: front_double, back_double, len_double (use expectFloat for Linux32 float precision)
+    expectFloat("1.5");
+    expectFloat("3.5");
     expect("3");
 
     // 8. f: find_double family
