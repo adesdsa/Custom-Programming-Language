@@ -1,6 +1,0 @@
-main(void) -> int
-{
-    let d: int[6] = [3, 7, 3, 9, 3, 3];
-    println(find(d, 3));
-    return 0;
-}
