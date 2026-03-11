@@ -3,8 +3,6 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <fstream>
-#include <sstream>
-#include <cstdio>
 #endif
 
 Linker::Linker() :
@@ -115,8 +113,7 @@ std::string Linker::BuildLinkerCommand(
 
         if constexpr (TargetArchitecture::Is64Bit())
         {
-            inner += " kernel32.dll"
-                  +  std::string(" msvcrt.dll");
+            inner += " kernel32.dll msvcrt.dll";
         }
         else
         {
@@ -240,9 +237,7 @@ std::string Linker::BuildMsvcLinkCommandWin32(
     std::string vcvars32Str = vcvars32.string();
     std::string linkExeStr = linkExe.string();
     fs::path vcLibX86 = fs::path(vsRoot) / "VC" / "Tools" / "MSVC" / toolVersion / "lib" / "x86";
-    std::string inner = "call \"" + vcvars32Str + "\" && \"" + linkExeStr + "\" /nologo /subsystem:console /entry:_mainCRTStartup /out:\"" + exePath + "\"";
-    if (fs::exists(vcLibX86))
-        inner += " /libpath:\"" + vcLibX86.string() + "\"";
+
     const char* sdkVersions[] = { "10.0.22621.0", "10.0.19041.0", "10.0.20348.0" };
     const char* sdkRoot = "C:\\Program Files (x86)\\Windows Kits\\10\\Lib";
     std::string sdkUmPath;
@@ -258,18 +253,7 @@ std::string Linker::BuildMsvcLinkCommandWin32(
         if (!sdkUmPath.empty() || !sdkUcrtPath.empty())
             break;
     }
-    if (!sdkUmPath.empty())
-        inner += " /libpath:\"" + sdkUmPath + "\"";
-    if (!sdkUcrtPath.empty())
-        inner += " /libpath:\"" + sdkUcrtPath + "\"";
-    for (const auto& objPath : objPaths)
-        inner += " \"" + objPath + "\"";
-    if (!sdkUmPath.empty())
-        inner += " \"" + sdkUmPath + "\\kernel32.lib\"";
-    if (fs::exists(vcLibX86))
-        inner += " \"" + (vcLibX86 / "msvcrt.lib").string() + "\"";
-    else
-        inner += " kernel32.lib msvcrt.lib";
+
     fs::path outDir = fs::path(exePath).parent_path();
     fs::path batPath = outDir / "picoc_link_win32.bat";
     std::ofstream bat(batPath);
