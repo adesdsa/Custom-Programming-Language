@@ -210,7 +210,7 @@ else() # Linux/macOS
 endif()
 
 # ==============================
-# picoC stdlib (string, runtime, arraylib) - required for linking programs that use strings/arrays
+# picoC stdlib (string, arraylib) - required for linking programs that use strings/arrays
 # ==============================
 set(STDLIB_OUT_DIR "${CMAKE_SOURCE_DIR}/lib")
 set(STDLIB_SRC_DIR "${CMAKE_SOURCE_DIR}/lib/stdlib")
@@ -220,16 +220,12 @@ if(WIN32)
         set(NASM_FMT "win64")
         set(STDLIB_STRING_ASM string_win64.asm)
         set(STDLIB_STRING_OBJ string_win64.obj)
-        set(STDLIB_RUNTIME_ASM runtime_win64.asm)
-        set(STDLIB_RUNTIME_OBJ runtime_win64.obj)
         set(STDLIB_ARRAYLIB_ASM arraylib_win64.asm)
         set(STDLIB_ARRAYLIB_OBJ arraylib_win64.obj)
     else()
         set(NASM_FMT "win32")
         set(STDLIB_STRING_ASM string_win32.asm)
         set(STDLIB_STRING_OBJ string_win32.obj)
-        set(STDLIB_RUNTIME_ASM runtime_win32.asm)
-        set(STDLIB_RUNTIME_OBJ runtime_win32.obj)
         set(STDLIB_ARRAYLIB_ASM arraylib_win32.asm)
         set(STDLIB_ARRAYLIB_OBJ arraylib_win32.obj)
     endif()
@@ -238,16 +234,12 @@ else()
         set(NASM_FMT "elf64")
         set(STDLIB_STRING_ASM string_linux64.asm)
         set(STDLIB_STRING_OBJ string_linux64.o)
-        set(STDLIB_RUNTIME_ASM runtime_linux64.asm)
-        set(STDLIB_RUNTIME_OBJ runtime_linux64.o)
         set(STDLIB_ARRAYLIB_ASM arraylib_linux64.asm)
         set(STDLIB_ARRAYLIB_OBJ arraylib_linux64.o)
     else()
         set(NASM_FMT "elf32")
         set(STDLIB_STRING_ASM string_linux32.asm)
         set(STDLIB_STRING_OBJ string_linux32.o)
-        set(STDLIB_RUNTIME_ASM runtime_linux32.asm)
-        set(STDLIB_RUNTIME_OBJ runtime_linux32.o)
         set(STDLIB_ARRAYLIB_ASM arraylib_linux32.asm)
         set(STDLIB_ARRAYLIB_OBJ arraylib_linux32.o)
     endif()
@@ -260,12 +252,6 @@ add_custom_command(
     COMMENT "Assembling stdlib: ${STDLIB_STRING_ASM} -> ${STDLIB_STRING_OBJ}"
 )
 add_custom_command(
-    OUTPUT "${STDLIB_OUT_DIR}/${STDLIB_RUNTIME_OBJ}"
-    COMMAND ${NASM_EXECUTABLE} -f ${NASM_FMT} "${STDLIB_SRC_DIR}/${STDLIB_RUNTIME_ASM}" -o "${STDLIB_OUT_DIR}/${STDLIB_RUNTIME_OBJ}"
-    DEPENDS "${STDLIB_SRC_DIR}/${STDLIB_RUNTIME_ASM}"
-    COMMENT "Assembling stdlib: ${STDLIB_RUNTIME_ASM} -> ${STDLIB_RUNTIME_OBJ}"
-)
-add_custom_command(
     OUTPUT "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
     COMMAND ${NASM_EXECUTABLE} -f ${NASM_FMT} "${STDLIB_SRC_DIR}/${STDLIB_ARRAYLIB_ASM}" -o "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
     DEPENDS "${STDLIB_SRC_DIR}/${STDLIB_ARRAYLIB_ASM}"
@@ -273,5 +259,5 @@ add_custom_command(
 )
 
 add_custom_target(picoc_stdlib ALL
-    DEPENDS "${STDLIB_OUT_DIR}/${STDLIB_STRING_OBJ}" "${STDLIB_OUT_DIR}/${STDLIB_RUNTIME_OBJ}" "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
+    DEPENDS "${STDLIB_OUT_DIR}/${STDLIB_STRING_OBJ}" "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
 )

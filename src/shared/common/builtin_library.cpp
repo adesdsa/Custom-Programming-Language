@@ -58,16 +58,6 @@ static BuiltinLibrary BuildStringLibrary()
     return lib;
 }
 
-static BuiltinLibrary BuildRuntimeLibrary()
-{
-    BuiltinLibrary lib;
-    lib.name = "runtime";
-
-     lib.functions = {
-        { "bounds_check", Type::VOID_TYPE, { mkParam("index", Type::INT_TYPE), mkParam("size", Type::INT_TYPE) } }
-    };
-}
-
 /**
  * Interface for math library, contains the built-in math functions
 */
@@ -155,7 +145,7 @@ static BuiltinLibrary BuildArrayLibrary()
 
 const std::vector<BuiltinLibrary>& BuiltinLibraryRegistry::GetAll()
 {
-    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildRuntimeLibrary(), BuildArrayLibrary(), BuildMathLibrary() };
+    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildArrayLibrary(), BuildMathLibrary() };
 
     return libs;
 }

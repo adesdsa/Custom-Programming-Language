@@ -344,9 +344,7 @@ void IRVisitor::VisitAssignment(ASTNode* node)
 
             if (this->m_currVarMetaData && this->m_currVarMetaData.value().arraySize.has_value())
             {
-                // Static array: bounds check + GEP + Store
-                size_t arraySize = this->m_currVarMetaData.value().arraySize.value();
-                EmitArrayBoundsCheck(idx, arraySize);
+                // Static array: GEP + Store
                 auto elementType = TypeToIRType(this->m_currVarMetaData.value().type);
                 IRBaseValue* gep = this->m_irbuilder.CreateGEP(target, idx, elementType);
                 valueToStore = ConvertIfNeeded(valueToStore, elementType);
@@ -2863,11 +2861,9 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
     }
     if (varMeta.value().arraySize.has_value())
     {
-        // Static array: bounds check + GEP + Load (supports int, double, bool, char, string)
+        // Static array: GEP + Load (supports int, double, bool, char, string)
         IRBaseValue* base = FindPointer(varName);
         if (!base) return nullptr;
-        size_t arraySize = varMeta.value().arraySize.value();
-        EmitArrayBoundsCheck(idx, arraySize);
         auto elementType = TypeToIRType(varMeta.value().type);
         IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, idx, elementType);
         return this->m_irbuilder.CreateLoad(gep);
@@ -2887,22 +2883,6 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
     this->m_currModule.AddRequiredLibrary("string");
     return this->m_irbuilder.CreateCall(
         this->m_currModule.GetFunction("char_at"), { strPtr, idx });
-}
-
-void IRVisitor::EmitArrayBoundsCheck(IRBaseValue* index, size_t arraySize)
-{
-    if (!this->m_currModule.IsFuncExistByName("bounds_check"))
-    {
-        auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
-        this->m_currModule.AddFunction("bounds_check",
-            IRType::GetFunction(IRType::GetVoid(), { intType, intType }));
-    }
-    this->m_currModule.AddRequiredLibrary("runtime");
-    IRBaseValue* sizeConst = TargetArchitecture::Is32Bit()
-        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize)))
-        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize)));
-    this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction("bounds_check"), { index, sizeConst });
 }
 
 IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)

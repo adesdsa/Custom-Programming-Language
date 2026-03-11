@@ -254,9 +254,6 @@ private:
     /// @brief Handles string index access str[i] by lowering to char_at(str, i).
     IRBaseValue* HandleArrayAccess(const Command& command);
 
-    /// @brief Emits a runtime bounds check for array access: index must be in [0, size).
-    void EmitArrayBoundsCheck(IRBaseValue* index, size_t arraySize);
-
     /// @brief Handles string slice access str[a:b] by lowering to substr(str, a, b-a).
     IRBaseValue* HandleArraySlice(const Command& command);
 
