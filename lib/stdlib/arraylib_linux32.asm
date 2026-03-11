@@ -8,6 +8,9 @@ global arr_find_last_of_int
 global arr_find_str
 global arr_find_first_of_str
 global arr_find_last_of_str
+global arr_find_float
+global arr_find_first_of_float
+global arr_find_last_of_float
 global arr_find_double
 global arr_find_first_of_double
 global arr_find_last_of_double
@@ -21,12 +24,21 @@ section .text
 
 ; arr_find_int(arr: int*, size: int32, value: int32) -> int32
 ; picoC layout: arr[i] at base - i*4
+; i386 SysV: callee must preserve ebx, esi, edi
 arr_find_int:
 arr_find_first_of_int:
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
+    push edi
+    ; args: [ebp+8]=base, [ebp+12]=size, [ebp+16]=value
     xor eax, eax
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-    mov ebx, [esp+12]
+    mov ecx, [ebp+8]
+    mov edx, [ebp+12]
+    mov ebx, [ebp+16]
+    cmp edx, 0
+    jle .find_int_npos
 .find_int_loop:
     cmp eax, edx
     jge .find_int_npos
@@ -39,15 +51,30 @@ arr_find_first_of_int:
     inc eax
     jmp .find_int_loop
 .find_int_ret:
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
 .find_int_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
 
 arr_find_last_of_int:
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-    mov ebx, [esp+12]
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
+    push edi
+    mov ecx, [ebp+8]
+    mov edx, [ebp+12]
+    mov ebx, [ebp+16]
     mov eax, edx
     dec eax
 .findlast_int_loop:
@@ -62,18 +89,32 @@ arr_find_last_of_int:
     dec eax
     jmp .findlast_int_loop
 .findlast_int_ret:
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
 .findlast_int_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
 
 ; arr_find_str(arr: char**, size: int32, value: char*) -> int32
+; element size 4 (pointer). str_cmp(s1, s2) needs two char* pointers.
 arr_find_str:
 arr_find_first_of_str:
+    push ebx
+    push esi
+    push edi
     xor eax, eax
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-    mov ebx, [esp+12]
+    mov ecx, [esp+16]
+    mov edx, [esp+20]
+    mov ebx, [esp+24]
 .find_str_loop:
     cmp eax, edx
     jge .find_str_npos
@@ -85,30 +126,42 @@ arr_find_first_of_str:
     mov edi, eax
     imul edi, 4
     sub esi, edi
-    push dword [ebx]
+    push ebx
     push dword [esi]
     call str_cmp
     add esp, 8
+    test eax, eax
+    jz .find_str_found
     pop ebx
     pop edx
     pop ecx
-    pop edi
-    test eax, eax
-    jz .find_str_ret
-    mov eax, edi
+    pop eax
     inc eax
     jmp .find_str_loop
+.find_str_found:
+    pop ebx
+    pop edx
+    pop ecx
+    pop eax
 .find_str_ret:
-    mov eax, edi
+    pop edi
+    pop esi
+    pop ebx
     ret
 .find_str_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
     ret
 
 arr_find_last_of_str:
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-    mov ebx, [esp+12]
+    push ebx
+    push esi
+    push edi
+    mov ecx, [esp+16]
+    mov edx, [esp+20]
+    mov ebx, [esp+24]
     mov eax, edx
     dec eax
 .findlast_str_loop:
@@ -122,89 +175,126 @@ arr_find_last_of_str:
     mov edi, eax
     imul edi, 4
     sub esi, edi
-    push dword [ebx]
+    push ebx
     push dword [esi]
     call str_cmp
     add esp, 8
+    test eax, eax
+    jz .findlast_str_found
     pop ebx
     pop edx
     pop ecx
-    pop edi
-    test eax, eax
-    jz .findlast_str_ret
-    mov eax, edi
+    pop eax
     dec eax
     jmp .findlast_str_loop
+.findlast_str_found:
+    pop ebx
+    pop edx
+    pop ecx
+    pop eax
 .findlast_str_ret:
-    mov eax, edi
+    pop edi
+    pop esi
+    pop ebx
     ret
 .findlast_str_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
     ret
 
-; arr_find_double(arr: double*, size: int32, value: double) -> int32
-; [esp+4]=base, [esp+8]=size, [esp+12]=value_lo, [esp+16]=value_hi
+; arr_find_float / arr_find_double: on linux32 picoC uses float32 (4 bytes) for double
+; arr: float*, size: int32, value: float. [esp+4]=base, [esp+8]=size, [esp+12]=value
+arr_find_float:
+arr_find_first_of_float:
 arr_find_double:
 arr_find_first_of_double:
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
+    push edi
     xor eax, eax
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-.find_double_loop:
+    mov ecx, [ebp+8]
+    mov edx, [ebp+12]
+    mov ebx, [ebp+16]
+.find_float_loop:
     cmp eax, edx
-    jge .find_double_npos
+    jge .find_float_npos
     mov esi, ecx
     mov edi, eax
-    imul edi, 8
+    imul edi, 4
     sub esi, edi
-    mov ebx, [esp+12]
     cmp [esi], ebx
-    jne .find_double_next
-    mov ebx, [esp+16]
-    cmp [esi+4], ebx
-    je .find_double_ret
-.find_double_next:
+    je .find_float_ret
     inc eax
-    jmp .find_double_loop
-.find_double_ret:
+    jmp .find_float_loop
+.find_float_ret:
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
-.find_double_npos:
+.find_float_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
 
+arr_find_last_of_float:
 arr_find_last_of_double:
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
+    push edi
+    mov ecx, [ebp+8]
+    mov edx, [ebp+12]
+    mov ebx, [ebp+16]
     mov eax, edx
     dec eax
-.findlast_double_loop:
+.findlast_float_loop:
     cmp eax, 0
-    jl .findlast_double_npos
+    jl .findlast_float_npos
     mov esi, ecx
     mov edi, eax
-    imul edi, 8
+    imul edi, 4
     sub esi, edi
-    mov ebx, [esp+12]
     cmp [esi], ebx
-    jne .findlast_double_next
-    mov ebx, [esp+16]
-    cmp [esi+4], ebx
-    je .findlast_double_ret
-.findlast_double_next:
+    je .findlast_float_ret
     dec eax
-    jmp .findlast_double_loop
-.findlast_double_ret:
+    jmp .findlast_float_loop
+.findlast_float_ret:
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
-.findlast_double_npos:
+.findlast_float_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
     ret
 
 ; arr_find_char(arr: char*, size: int32, value: char) -> int32
 arr_find_char:
 arr_find_first_of_char:
+    push ebx
+    push esi
+    push edi
     xor eax, eax
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-    mov bl, [esp+12]
+    mov ecx, [esp+16]
+    mov edx, [esp+20]
+    mov bl, [esp+24]
 .find_char_loop:
     cmp eax, edx
     jge .find_char_npos
@@ -215,15 +305,24 @@ arr_find_first_of_char:
     inc eax
     jmp .find_char_loop
 .find_char_ret:
+    pop edi
+    pop esi
+    pop ebx
     ret
 .find_char_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
     ret
 
 arr_find_last_of_char:
-    mov ecx, [esp+4]
-    mov edx, [esp+8]
-    mov bl, [esp+12]
+    push ebx
+    push esi
+    push edi
+    mov ecx, [esp+16]
+    mov edx, [esp+20]
+    mov bl, [esp+24]
     mov eax, edx
     dec eax
 .findlast_char_loop:
@@ -236,7 +335,13 @@ arr_find_last_of_char:
     dec eax
     jmp .findlast_char_loop
 .findlast_char_ret:
+    pop edi
+    pop esi
+    pop ebx
     ret
 .findlast_char_npos:
     mov eax, -1
+    pop edi
+    pop esi
+    pop ebx
     ret

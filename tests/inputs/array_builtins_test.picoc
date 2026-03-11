@@ -1,0 +1,135 @@
+# Extensive array builtins and array functionality test
+# Tests: creation, access, modification, and all arraylib builtin functions
+# Output format: each println prints a value; test verifies expected sequence
+
+main(void) -> int
+{
+    # ============================================================
+    # 1. Array creation: arr[3] = [1,2,3]; arr[] = [1,2,3]; arr[5] = [1,2,3]
+    # ============================================================
+    let a1: int[3] = [1, 2, 3];
+    println(a1[0]);
+    println(a1[1]);
+    println(a1[2]);
+
+    let a2: int[] = [10, 20, 30];
+    println(a2[0]);
+    println(a2[1]);
+    println(a2[2]);
+
+    let a3: int[5] = [7, 8, 9];
+    println(a3[0]);
+    println(a3[1]);
+    println(a3[2]);
+    println(a3[3]);
+    println(a3[4]);
+
+    # ============================================================
+    # 2. Array access and modification
+    # ============================================================
+    let b: int[4] = [1, 2, 3, 4];
+    b[0] = 100;
+    b[2] = 300;
+    println(b[0]);
+    println(b[1]);
+    println(b[2]);
+    println(b[3]);
+
+    # ============================================================
+    # 3. int[] builtins: front, back, len
+    # ============================================================
+    let c: int[4] = [5, 10, 15, 20];
+    println(front(c));
+    println(back(c));
+    println(len(c));
+
+    # ============================================================
+    # 4. int[] builtins: find, find_first_of, find_last_of
+    # ============================================================
+    let d: int[6] = [3, 7, 3, 9, 3, 3];
+    println(find(d, 3));
+    println(find_first_of(d, 3));
+    println(find_last_of(d, 3));
+    println(find(d, 9));
+    println(find(d, 99));
+
+    # ============================================================
+    # 5. double[] builtins: front_double, back_double, len_double
+    # ============================================================
+    let e: double[3] = [1.5, 2.5, 3.5];
+    println(front_double(e));
+    println(back_double(e));
+    println(len_double(e));
+
+    # ============================================================
+    # 6. double[] builtins: find_double, find_first_of_double, find_last_of_double
+    # ============================================================
+    let f: double[4] = [1.5, 2.5, 1.5, 3.5];
+    println(find_double(f, 1.5));
+    println(find_first_of_double(f, 1.5));
+    println(find_last_of_double(f, 1.5));
+    println(find_double(f, 3.5));
+
+    # ============================================================
+    # 7. char[] builtins: front_char, back_char, len_char
+    # ============================================================
+    let g: char[4] = [65, 66, 67, 68];
+    println(front_char(g));
+    println(back_char(g));
+    println(len_char(g));
+
+    # ============================================================
+    # 8. char[] builtins: find_char, find_first_of_char, find_last_of_char
+    # ============================================================
+    let h: char[5] = [88, 89, 88, 90, 88];
+    println(find_char(h, 88));
+    println(find_first_of_char(h, 88));
+    println(find_last_of_char(h, 88));
+    println(find_char(h, 90));
+
+    # ============================================================
+    # 9. bool[] builtins: front_bool, back_bool, len_bool
+    # ============================================================
+    let b1: bool[3] = [true, false, true];
+    println(front_bool(b1));
+    println(back_bool(b1));
+    println(len_bool(b1));
+
+    # ============================================================
+    # 10. bool[] builtins: find_bool, find_first_of_bool, find_last_of_bool
+    # ============================================================
+    let b2: bool[5] = [false, true, false, true, false];
+    println(find_bool(b2, true));
+    println(find_first_of_bool(b2, true));
+    println(find_last_of_bool(b2, true));
+    println(find_bool(b2, false));
+
+    # ============================================================
+    # 11. double[5] = [1.0, 2.0] - zero-fill for double
+    # ============================================================
+    let dbl: double[5] = [1.0, 2.0];
+    println(front_double(dbl));
+    println(back_double(dbl));
+    println(len_double(dbl));
+    println(dbl[0]);
+    println(dbl[1]);
+    println(dbl[2]);
+    println(dbl[3]);
+    println(dbl[4]);
+
+    # ============================================================
+    # 12. Modify array after creation and verify
+    # ============================================================
+    let m: int[3] = [0, 0, 0];
+    m[0] = 11;
+    m[1] = 22;
+    m[2] = 33;
+    println(m[0]);
+    println(m[1]);
+    println(m[2]);
+    println(front(m));
+    println(back(m));
+    println(len(m));
+
+    return 0;
+}

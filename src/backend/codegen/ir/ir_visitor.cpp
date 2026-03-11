@@ -1220,7 +1220,7 @@ void IRVisitor::VisitArrayValue(ASTNode* node)
     if (params.empty()) return;
 
     size_t arraySize = this->m_currVarMetaData.value().arraySize.value();
-    if (params.size() != arraySize)
+    if (params.size() > arraySize)
     {
         StoreInternalError("Array initializer has " + std::to_string(params.size()) +
             " elements but array size is " + std::to_string(arraySize), node->command);
@@ -1247,30 +1247,64 @@ void IRVisitor::VisitArrayValue(ASTNode* node)
         auto elementType = TypeToIRType(this->m_currVarMetaData.value().type);
         Type varType = this->m_currVarMetaData.value().type;
 
-        for (size_t i = 0; i < params.size(); ++i)
+        auto GetZeroForType = [this, elementType, varType]() -> IRBaseValue*
         {
-            IRBaseValue* elemVal = HandleExpression(params[i]);
-            if (!elemVal)
+            switch (varType)
             {
-                StoreInternalError("Could not evaluate array initializer element " + std::to_string(i), params[i]);
-                this->m_expectedAssignment = false;
-                return;
+            case Type::INT_TYPE:
+            case Type::UNSIGNED_INT_TYPE:
+                return TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+            case Type::DOUBLE_TYPE:
+                return TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetFloat(0.0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetDouble(0.0));
+            case Type::BOOL_TYPE:
+                return this->m_irbuilder.GetFalse();
+            case Type::CHAR_TYPE:
+                return static_cast<IRBaseValue*>(this->m_irbuilder.GetInt8(0));
+            case Type::STRING_TYPE:
+                return TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+            default:
+                return nullptr;
             }
+        };
 
-            if (varType == Type::STRING_TYPE && elemVal->GetType()->GetKind() == IRTypeKind::Int8)
+        for (size_t i = 0; i < arraySize; ++i)
+        {
+            IRBaseValue* elemVal = nullptr;
+            if (i < params.size())
             {
-                if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                elemVal = HandleExpression(params[i]);
+                if (!elemVal)
                 {
-                    this->m_currModule.AddFunction("str_from_char",
-                        IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                    StoreInternalError("Could not evaluate array initializer element " + std::to_string(i), params[i]);
+                    this->m_expectedAssignment = false;
+                    return;
                 }
-                this->m_currModule.AddRequiredLibrary("string");
-                elemVal = this->m_irbuilder.CreateCall(
-                    this->m_currModule.GetFunction("str_from_char"), { elemVal });
+
+                if (varType == Type::STRING_TYPE && elemVal->GetType()->GetKind() == IRTypeKind::Int8)
+                {
+                    if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                    {
+                        this->m_currModule.AddFunction("str_from_char",
+                            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                    }
+                    this->m_currModule.AddRequiredLibrary("string");
+                    elemVal = this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("str_from_char"), { elemVal });
+                }
+                else if (varType != Type::STRING_TYPE)
+                {
+                    elemVal = ConvertIfNeeded(elemVal, elementType);
+                }
             }
-            else if (varType != Type::STRING_TYPE)
+            else
             {
-                elemVal = ConvertIfNeeded(elemVal, elementType);
+                elemVal = GetZeroForType();
             }
 
             IRBaseValue* idx = TargetArchitecture::Is32Bit()

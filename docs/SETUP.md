@@ -97,8 +97,9 @@ The `picoc.bat` script handles everything automatically. vcpkg will download and
 
 | Command | Description |
 |---------|-------------|
-| `picoc run [args]` | Build and run the compiler |
-| `picoc test` | Build and run unit tests |
+| `picoc run [args]` | Build and run the compiler (win64) |
+| `picoc test` | Build and run unit tests (win64) |
+| `picoc test32` | Build and run tests for Win32 (x86) |
 | `picoc release` | Build optimized release version |
 | `picoc rebuild` | Clean and rebuild from scratch |
 | `picoc help` | Show help message |
@@ -153,6 +154,37 @@ Delete the build folder and try again:
 ```batch
 rmdir /s /q build
 picoc run
+```
+
+---
+
+## Multi-Platform Support
+
+picoC supports **win64**, **win32**, **linux64**, and **linux32**.
+
+### CMake Presets
+
+| Preset | Platform | Build Dir |
+|--------|---------|-----------|
+| `debug` | win64 / linux64 | build |
+| `debug32` | Win32 (x86) | build32 |
+| `linux64` | Linux x64 | build-linux64 |
+| `linux32` | Linux x86 | build-linux32 |
+
+**Windows (Win32):**
+```batch
+cmake --preset debug32
+cmake --build build32 --config Debug
+ctest --test-dir build32 -C Debug
+```
+
+**Linux:**
+```bash
+# linux64 (default)
+./scripts/build.sh test
+
+# linux32 (requires: g++-multilib, gcc-multilib, libc6-dev-i386)
+./scripts/build.sh test32
 ```
 
 ---
