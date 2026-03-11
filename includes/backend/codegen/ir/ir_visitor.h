@@ -186,6 +186,7 @@ private:
 
     bool m_indexedAssignment;
     bool m_slicedAssignment;
+    bool m_lastExprWasString;
     Command m_pendingIndexCommand;
 
     bool m_returnedAlready;

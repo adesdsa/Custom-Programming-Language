@@ -42,7 +42,67 @@ bool SemanticCheckerFacade::IsFirstTokenStringOrCharLike(const Command& expressi
 {
     if (expression.GetTokens().empty()) return false;
     size_t paramIndex = 0;
-    return IsFirstTokenStringOrCharLikeFrom(expression, 0, expression.GetTokens().size(), paramIndex, funcTable, currVarTableNode);
+    if (!IsFirstTokenStringOrCharLikeFrom(expression, 0, expression.GetTokens().size(), paramIndex, funcTable, currVarTableNode))
+    {
+        return false;
+    }
+
+    const Token& first = expression[FIRST_TOKEN_INDEX];
+    if (first.GetType() == TokenTypes::STRING_LITERAL) return true;
+
+    if (expression.GetTokens().size() <= 1) return true;
+
+    size_t opIdx = 1;
+    if (first.GetValue() == "(")
+    {
+        int depth = 0;
+        for (size_t i = 0; i < expression.GetTokens().size(); i++)
+        {
+            if (expression[i].GetValue() == "(")
+            { 
+                depth++;
+            }
+            else if (expression[i].GetValue() == ")")
+            {
+                depth--;
+                if (depth == 0) 
+                { 
+                    opIdx = i + 1; 
+                    break; 
+                }
+            }
+        }
+    }
+
+    if (opIdx >= expression.GetTokens().size()) return true;
+
+    const std::string& op = expression[opIdx].GetValue();
+    if (op == "+" || op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+    {
+        return true;
+    }
+
+    // Math operator (-, *, /, //, %, etc.) — only use string handler if first operand is STRING
+    if (first.GetType() == TokenTypes::HAS_PARAM && !expression.GetParams().empty())
+    {
+        const Command& param = expression.GetParams()[0];
+        if (param.GetType() == CommandTypes::IDENTIFIER_VALUE)
+        {
+            auto varData = currVarTableNode.FindVar(param[IDENTIFIER_INDEX].GetValue());
+            if (varData.has_value() && varData->type == Type::STRING_TYPE)
+                return true;
+        }
+        else if (param.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+        {
+            FuncMetaData* func = funcTable.FindFunctionByName(param[IDENTIFIER_INDEX].GetValue());
+            if (func && func->GetRType() == Type::STRING_TYPE)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 bool SemanticCheckerFacade::IsFirstTokenStringOrCharLikeFrom(const Command& expression, size_t start, size_t end, size_t& paramIndex,
@@ -118,7 +178,13 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                 {
                     const std::string& op = expression[i + 1].GetValue();
                     if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+                    {
                         sawComparison = true;
+                    }
+                    else if (op != "+")
+                    {
+                        return ExpressionType::UNKNOWN;
+                    }
                 }
                 i += 2;
                 continue;
@@ -186,6 +252,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                             const std::string& op = expression[i + 1].GetValue();
                             if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
                                 sawComparison = true;
+                            else if (op != "+" && varData.value().type == Type::STRING_TYPE)
+                                return ExpressionType::UNKNOWN;
                         }
                         i += 2;
                         continue;
@@ -203,6 +271,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
                             const std::string& op = expression[i + 1].GetValue();
                             if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
                                 sawComparison = true;
+                            else if (op != "+" && funcData->GetRType() == Type::STRING_TYPE)
+                                return ExpressionType::UNKNOWN;
                         }
                         i += 2;
                         continue;

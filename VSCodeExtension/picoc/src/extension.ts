@@ -706,7 +706,12 @@ const BUILTIN_LIBRARIES: Record<string, BuiltinSymbol[]> = {
     { name: "back_uint", kind: "function", signature: "back_uint(arr: unsigned[]) -> unsigned", detail: "(arr: unsigned[]) -> unsigned", doc: "Returns the last element of an unsigned array" },
     { name: "find_uint", kind: "function", signature: "find_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of first occurrence in unsigned array, or -1 if not found" },
     { name: "find_first_of_uint", kind: "function", signature: "find_first_of_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of first occurrence in unsigned array, or -1 if not found" },
-    { name: "find_last_of_uint", kind: "function", signature: "find_last_of_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of last occurrence in unsigned array, or -1 if not found" },
+    { name: "find_last_of_uint", kind: "function", signature: "find_last_of_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of last occurrence in unsigned array, or -1 if not found" }],
+  math: [
+    { name: "sqrt", kind: "function", signature: "sqrt(x: double) -> double", detail: "(x: double) -> double", doc: "Returns the square root of x" },
+    { name: "pow", kind: "function", signature: "pow(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns x raised to the power y" },
+    { name: "min", kind: "function", signature: "min(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns the smaller of x and y" },
+    { name: "max", kind: "function", signature: "max(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns the larger of x and y" },
   ],
 };
 
@@ -865,6 +870,18 @@ const STRING_LIB_COMPLETIONS = [
   return item;
 });
 
+const MATH_LIB_COMPLETIONS = [
+  { name: "sqrt", sig: "sqrt(x: double) -> double", doc: "Returns the square root of x" },
+  { name: "pow", sig: "pow(x: double, y: double) -> double", doc: "Returns x raised to the power y" },
+  { name: "min", sig: "min(x: double, y: double) -> double", doc: "Returns the smaller of x and y" },
+  { name: "max", sig: "max(x: double, y: double) -> double", doc: "Returns the larger of x and y" },
+].map((f) => {
+  const item = new vscode.CompletionItem(f.name, vscode.CompletionItemKind.Function);
+  item.detail = 'import from "math"';
+  item.documentation = new vscode.MarkdownString(`${f.doc}\n\n\`${f.sig}\``);
+  return item;
+});
+
 function provideCompletionItems(
   document: vscode.TextDocument,
   position: vscode.Position
@@ -876,6 +893,7 @@ function provideCompletionItems(
     ...BUILTIN_COMPLETIONS,
     ...STRING_LIB_COMPLETIONS,
     ...ARRAY_LIB_COMPLETIONS,
+    ...MATH_LIB_COMPLETIONS,
   ];
 
   const text = document.getText();

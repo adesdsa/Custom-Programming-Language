@@ -30,6 +30,7 @@ IRVisitor::IRVisitor(
     m_expectedAssignment(false),
     m_indexedAssignment(false),
     m_slicedAssignment(false),
+    m_lastExprWasString(false),
     m_returnedAlready(false),
     m_handledInsides(false),
     m_insideFor(false)
@@ -303,9 +304,14 @@ void IRVisitor::VisitAssignment(ASTNode* node)
                         valueToStore = this->m_irbuilder.GetInt8(
                             static_cast<unsigned char>(strConst->GetValue()[0]));
                     }
+                    else if (auto* intConst = dynamic_cast<IRConstantInt*>(valueToStore))
+                    {
+                        valueToStore = this->m_irbuilder.GetInt8(
+                            static_cast<int>(intConst->GetValue() & 0xFF));
+                    }
                     else
                     {
-                        StoreInternalError("Global char variable cannot be initialized from non-constant string", node->command);
+                        StoreInternalError("Global char variable cannot be initialized from this expression", node->command);
                         valueToStore = nullptr;
                     }
                 }
@@ -442,28 +448,38 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             }
             else if (varType == Type::CHAR_TYPE && valueToStore->GetType()->GetKind() != IRTypeKind::Int8)
             {
-                if (!this->m_currModule.IsFuncExistByName("char_at"))
+                if (this->m_lastExprWasString || dynamic_cast<IRConstantString*>(valueToStore))
                 {
-                    this->m_currModule.AddFunction(
-                        "char_at",
-                        IRType::GetFunction(IRType::GetInt8(),
-                        { 
-                            TypeToIRType(Type::STRING_TYPE),
-                            TargetArchitecture::Is32Bit() ? 
-                                IRType::GetInt32() : 
-                                IRType::GetInt64() 
-                        }
-                    ));
+                    if (!this->m_currModule.IsFuncExistByName("char_at"))
+                    {
+                        this->m_currModule.AddFunction(
+                            "char_at",
+                            IRType::GetFunction(IRType::GetInt8(),
+                            { 
+                                TypeToIRType(Type::STRING_TYPE),
+                                TargetArchitecture::Is32Bit() ? 
+                                    IRType::GetInt32() : 
+                                    IRType::GetInt64() 
+                            }
+                        ));
+                    }
+                    this->m_currModule.AddRequiredLibrary("string");
+                    IRBaseValue* zero = TargetArchitecture::Is32Bit() ? 
+                        static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0)) : 
+                        static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                    
+                    valueToStore = this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("char_at"), 
+                        { valueToStore, zero }
+                    );
                 }
-                this->m_currModule.AddRequiredLibrary("string");
-                IRBaseValue* zero = TargetArchitecture::Is32Bit() ? 
-                    static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0)) : 
-                    static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
-                
-                valueToStore = this->m_irbuilder.CreateCall(
-                    this->m_currModule.GetFunction("char_at"), 
-                    { valueToStore, zero }
-                );
+                else
+                {
+                    IRBaseValue* mask = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0xFF))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0xFF));
+                    valueToStore = this->m_irbuilder.CreateAnd(valueToStore, mask);
+                }
             }
             else
             {
@@ -1176,6 +1192,7 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_expectedAssignment = false;
     this->m_indexedAssignment = false;
     this->m_slicedAssignment = false;
+    this->m_lastExprWasString = false;
     if (node) // If this is null it was called from blockEnd
     {
         this->m_entityLogger.Info("Added EndOfCommand IR handling.\nAt line: "
@@ -1912,6 +1929,8 @@ IRBaseValue* IRVisitor::HandleIdentifierValue(ASTNode* node)
         return nullptr;
     }
 
+    this->m_lastExprWasString = (varMetaData->type == Type::STRING_TYPE);
+
     if (!this->m_currFunc)
     {
         IRGlobalVariable* globalVar = this->m_currModule.GetVariable(varMetaData.value().sName);
@@ -2087,14 +2106,11 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
     }
     if (funcMetaData->IsExtern())
     {
-        for (const char* libName : { "string", "arraylib" })
+        for (const auto& lib : BuiltinLibraryRegistry::GetAll())
         {
-            const auto* lib = BuiltinLibraryRegistry::GetLibrary(libName);
-            if (lib && lib->FindFunction(funcName))
+            if (lib.FindFunction(funcName))
             {
-                this->m_currModule.AddRequiredLibrary(libName);
-                if (std::strcmp(libName, "arraylib") == 0)
-                    this->m_currModule.AddRequiredLibrary("string");  // arraylib_win64.obj has extern str_cmp
+                this->m_currModule.AddRequiredLibrary(lib.name);
                 break;
             }
         }
@@ -2204,6 +2220,8 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         this->m_currModule.GetFunction(targetFuncName),
         tempInstructionHolder
     );
+
+    this->m_lastExprWasString = (funcMetaData->GetRType() == Type::STRING_TYPE);
 
     return funcCallValue;
 }
@@ -2423,6 +2441,14 @@ IRBaseValue* IRVisitor::ConvertIfNeeded(IRBaseValue* value, std::shared_ptr<cons
     else if (srcIsInt && dstIsFloat)
     {
         return this->m_irbuilder.CreateSIToFP(value, targetType);
+    }
+
+    if (srcIsInt && dstIsInt && dstKind == IRTypeKind::Int8 && srcKind != IRTypeKind::Int8)
+    {
+        IRBaseValue* mask = (srcKind == IRTypeKind::Int32)
+            ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0xFF))
+            : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0xFF));
+        return this->m_irbuilder.CreateAnd(value, mask);
     }
 
     return value; // same category, no conversion (e.g. Int32 → Int64 handled by mov)
@@ -2966,6 +2992,8 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
 
     // Collapses by precedence (mul/div/rem before add/sub etc)
     ReduceExprByPrecedence(expr);
+
+    this->m_lastExprWasString = expr.front().isString;
 
     // Finaly apply any leftover 'not' and return
     IRBaseValue* finalVal = ApplyNotIfNeeded(expr.front().value, expr.front().notCnt);

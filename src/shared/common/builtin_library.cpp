@@ -63,12 +63,28 @@ static BuiltinLibrary BuildRuntimeLibrary()
     BuiltinLibrary lib;
     lib.name = "runtime";
 
+     lib.functions = {
+        { "bounds_check", Type::VOID_TYPE, { mkParam("index", Type::INT_TYPE), mkParam("size", Type::INT_TYPE) } }
+    };
+}
+
+/**
+ * Interface for math library, contains the built-in math functions
+*/
+static BuiltinLibrary BuildMathLibrary()
+{
+    BuiltinLibrary lib;
+    lib.name = "math";
+
     auto mkParam = [](const std::string& name, Type type) {
         return VarMetaData(name, type, AccessRights::DEFAULT_ACCESS, Scope::LET, 0);
     };
 
     lib.functions = {
-        { "bounds_check", Type::VOID_TYPE, { mkParam("index", Type::INT_TYPE), mkParam("size", Type::INT_TYPE) } }
+        { "sqrt", Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE) } },
+        { "pow",  Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE), mkParam("y", Type::DOUBLE_TYPE) } },
+        { "min",  Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE), mkParam("y", Type::DOUBLE_TYPE) } },
+        { "max",  Type::DOUBLE_TYPE, { mkParam("x", Type::DOUBLE_TYPE), mkParam("y", Type::DOUBLE_TYPE) } },
     };
 
     return lib;
@@ -139,7 +155,8 @@ static BuiltinLibrary BuildArrayLibrary()
 
 const std::vector<BuiltinLibrary>& BuiltinLibraryRegistry::GetAll()
 {
-    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildRuntimeLibrary(), BuildArrayLibrary() };
+    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildRuntimeLibrary(), BuildArrayLibrary(), BuildMathLibrary() };
+
     return libs;
 }
 
