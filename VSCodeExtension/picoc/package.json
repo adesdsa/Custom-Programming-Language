@@ -3,7 +3,7 @@
   "displayName": "PicoC Language Support",
   "publisher": "picocDevelopers",
   "description": "Full language support for PicoC — syntax highlighting, cross-file IntelliSense, Go to Definition, import/export support, snippets, doc comments, and more",
-  "version": "0.3.3",
+  "version": "0.3.5",
   "icon": "images/logo.png",
   "repository": {
     "type": "git",
@@ -56,6 +56,10 @@
           },
           {
             "scope": "storage.type.primitive.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "storage.type.array.picoc",
             "settings": { "foreground": "#569CD6" }
           },
           {
