@@ -1,5 +1,7 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 #include <set>
 
 BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
@@ -68,7 +70,14 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
     {
         if (globalVar->IsExtern()) continue;
 
-        if (globalVar->GetInitializer())
+        if (globalVar->HasArrayInitializer())
+        {
+            int elemSize = GetTypeSize(globalVar->GetType()->GetElementType());
+            out << Indent() << MangledName(globalVar->GetName()) << ": ";
+            out << GetDataDirective(elemSize) << " ";
+            out << globalVar->GetArrayInitializerString() << "\n";
+        }
+        else if (globalVar->GetInitializer())
         {
             int varSize = GetTypeSize(globalVar->GetType());
             out << Indent() << MangledName(globalVar->GetName()) << ": ";
@@ -115,12 +124,14 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
     {
         if (global->IsExtern()) continue;
 
-        if (!global->GetInitializer())
+        if (!global->GetInitializer() && !global->HasArrayInitializer())
         {
             int size = GetTypeSize(global->GetType());
             out << Indent() << MangledName(global->GetName()) << ": ";
-            /// @note we only save scalar (no arrays) so only 1 count is needed
-            out << GetReserveDirective(size) << " 1\n";
+            if (size > 8)
+                out << "resb " << size << "\n";  // Arrays: reserve exact byte count
+            else
+                out << GetReserveDirective(size) << " 1\n";
         }
     }
     EmitExtraBssContent(module, out);
@@ -156,6 +167,7 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 
     // function label (mangled for the target platform)
     out << MangledName(func->GetName()) << ":\n";
+    EmitAfterFunctionLabel(func, out);
 
     int frameSize = funcMetadata->ComputeFrameSize();
     EmitPrologue(func, frameSize, out);
@@ -205,6 +217,9 @@ int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
 
     case IRTypeKind::Int8:
         return 1;
+
+    case IRTypeKind::Array:
+        return static_cast<int>(type->GetSizeInBytes());
     
     default: // Incase of error or void (shouldnt get here)
         return 0;

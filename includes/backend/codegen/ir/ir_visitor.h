@@ -86,6 +86,7 @@ class IRVisitor : public IASTVisitor
     std::vector<std::unique_ptr<IRBaseValue>> DumpConstants() noexcept;
 
     void VisitVarDeclaration(ASTNode* node) override;
+    void VisitArrayDeclaration(ASTNode* node) override;
     void VisitExpression(ASTNode* node) override;
     void VisitIdentifier(ASTNode* node) override;
     void VisitIdentifierValue(ASTNode* node) override;
@@ -109,6 +110,7 @@ class IRVisitor : public IASTVisitor
     void VisitPass(ASTNode* node) override;
     void VisitEof(ASTNode* node) override;
     void VisitArrayAccess(ASTNode* node) override;
+    void VisitArrayValue(ASTNode* node) override;
 
 private:
     /**********************\
@@ -199,6 +201,7 @@ private:
     \**********************/
     /// @brief The func transforms a normal Type into an IRType object.
     std::shared_ptr<const IRType> TypeToIRType(Type type);
+    std::shared_ptr<const IRType> TypeToIRType(Type type, std::optional<size_t> arraySize);
     std::shared_ptr<const IRType> TypeToIRType(const std::string& type);
 
     /// @brief The func transforms a const value (e.g. 1, -3.4 true) into an IRConstValue
@@ -250,6 +253,9 @@ private:
 
     /// @brief Handles string index access str[i] by lowering to char_at(str, i).
     IRBaseValue* HandleArrayAccess(const Command& command);
+
+    /// @brief Emits a runtime bounds check for array access: index must be in [0, size).
+    void EmitArrayBoundsCheck(IRBaseValue* index, size_t arraySize);
 
     /// @brief Handles string slice access str[a:b] by lowering to substr(str, a, b-a).
     IRBaseValue* HandleArraySlice(const Command& command);

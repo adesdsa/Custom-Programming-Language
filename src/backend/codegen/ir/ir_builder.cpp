@@ -1223,6 +1223,34 @@ IRInstruction* IRBuilder::CreateStore(IRBaseValue* value, IRBaseValue* ptr)
     return Insert(std::move(inst));
 }
 
+IRInstruction* IRBuilder::CreateGEP(IRBaseValue* base, IRBaseValue* index,
+    std::shared_ptr<const IRType> elementType, const std::string& name)
+{
+    if (!this->m_insertBlock)
+    {
+        StoreInternalError("IRBuilder: No insert block set");
+        return nullptr;
+    }
+    if (!base || !index)
+    {
+        StoreInternalError("Code generation: CreateGEP: base or index is null");
+        return nullptr;
+    }
+
+    std::string instName = name.empty() ? NextTemp() : name;
+
+    auto inst = std::make_unique<IRInstruction>(
+        instName,
+        elementType,
+        IROpcode::GEP,
+        std::vector<IRBaseValue*>{base, index},
+        this->m_insertBlock
+    );
+
+    m_entitylogger.Info("Created a new GEP instruction");
+    return Insert(std::move(inst));
+}
+
 IRInstruction* IRBuilder::CreateFPToSI(
     IRBaseValue* value,
     std::shared_ptr<const IRType> destType,

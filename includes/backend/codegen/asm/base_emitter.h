@@ -30,6 +30,9 @@ protected:
     */
     virtual void EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out) = 0;
 
+    /// @brief Override to emit code immediately after the function label (e.g. deferred global inits for main).
+    virtual void EmitAfterFunctionLabel(const IRFunction* func, std::ostream& out) { (void)func; (void)out; }
+
     /** 
       * mov rsp, rbp  ; Restore stack pointer
       * pop rbp  ; Restore old base pointer
@@ -62,6 +65,9 @@ protected:
     /// @brief Get .bss keywords e.g., resb, resw, resd etc..
     /// @param bytes size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) const = 0;
+
+    /// @brief Returns the size in bytes of the given IR type (including arrays).
+    int GetTypeSize(std::shared_ptr<const IRType> type) const;
 
 private:
     /** 
@@ -97,6 +103,5 @@ private:
     //    Helper Functions    //
     //                        //
     //------------------------//
-    int GetTypeSize(std::shared_ptr<const IRType> type) const;
     std::string Indent() const;
 };

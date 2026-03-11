@@ -1,6 +1,7 @@
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
 
 #include <filesystem>
+#include <unordered_set>
 
 SemanticAnalysisVisitor::SemanticAnalysisVisitor(
     const EntityLogger& entityLogger,
@@ -63,7 +64,7 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     if (this->m_bStartedFuncDeclaration) return; // If we are in func declaration var's arent saved in this scope.
 
     VarMetaData var = this->m_varFactory.CreateVarMetadata(
-        varName, varType, varAccessRight, varScope
+        varName, varType, varAccessRight, varScope, std::nullopt
     );
 
     // `global` variables go to the root scope (visible from any function).
@@ -97,6 +98,104 @@ void SemanticAnalysisVisitor::VisitVarDeclaration(ASTNode* node)
     }
 
     // Set for assignment check when next sibling is ASSIGNMENT (e.g. let x: T = expr)
+    this->m_lastIdentifierName = varName;
+    this->m_isVarInitialization = true;
+}
+
+void SemanticAnalysisVisitor::VisitArrayDeclaration(ASTNode* node)
+{
+    if (!node) return;
+
+    const std::vector<Token>& tokens = node->command.GetTokens();
+    if (tokens.empty()) return;
+
+    const std::string& varName = ASTExtractor::ExtractVarName(node);
+    Type varType = ASTExtractor::ExtractVarType(node);
+    AccessRights varAccessRight = ASTExtractor::ExtractVarAccessRight(node);
+    Scope varScope = ASTExtractor::ExtractVarScope(node);
+    std::optional<size_t> arraySize = ASTExtractor::ExtractArraySize(node);
+
+    if (varType == Type::VOID_TYPE)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::TYPE_ERROR,
+                "Cannot declare array of void type",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
+                "Use a valid element type (int, double, bool, char, string)"
+            )
+        );
+        return;
+    }
+
+    if (!arraySize.has_value())
+    {
+        arraySize = ASTExtractor::ExtractArraySizeFromInitializer(node);
+    }
+    if (!arraySize.has_value() || arraySize.value() == 0)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Array size must be a constant positive integer or inferred from initializer (e.g. int[] = [1,2,3])",
+                tokens[0].GetLine(),
+                tokens[0].GetColumn(),
+                "Use a literal like 10, a const expression, or int[] = [1,2,3] to infer from initializer"
+            )
+        );
+        return;
+    }
+
+    if (this->m_facade.CheckVarExistence(*this->m_currentScope, varName))
+    {
+        if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT) return;
+
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Variable '" + varName + "' is already declared in this scope",
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                "Variable is already declared in this scope (shadowing is not allowed)"
+            )
+        );
+        return;
+    }
+
+    if (this->m_bStartedFuncDeclaration) return;
+
+    VarMetaData var = this->m_varFactory.CreateVarMetadata(
+        varName, varType, varAccessRight, varScope, arraySize
+    );
+
+    VarTableNode* targetScope;
+    if (varScope == Scope::GLOBAL || varScope == Scope::EXPORT)
+    {
+        targetScope = &this->m_varTable;
+    }
+    else if (varScope == Scope::VAR && this->m_functionScopeRoot != nullptr)
+    {
+        targetScope = this->m_functionScopeRoot;
+    }
+    else
+    {
+        targetScope = this->m_currentScope;
+    }
+
+    if (!targetScope->InsertVar(var))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::INTERNAL_ERROR,
+                "Failed to insert variable '" + varName + "'",
+                tokens[FIRST_TOKEN_INDEX].GetLine(),
+                tokens[FIRST_TOKEN_INDEX].GetColumn(),
+                "This is an internal error, please report it"
+            )
+        );
+    }
+
     this->m_lastIdentifierName = varName;
     this->m_isVarInitialization = true;
 }
@@ -553,6 +652,37 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
                 "Check that the argument count and types match the function declaration"
             )
         );
+    }
+
+    // arraylib functions require first arg to be an array
+    static const std::unordered_set<std::string> ARRAYLIB_FUNCS = {
+        "front", "back", "len", "find", "find_first_of", "find_last_of",
+        "front_str", "back_str", "len_str", "find_str", "find_first_of_str", "find_last_of_str",
+        "front_double", "back_double", "len_double", "find_double", "find_first_of_double", "find_last_of_double",
+        "front_uint", "back_uint", "len_uint", "find_uint", "find_first_of_uint", "find_last_of_uint",
+        "front_char", "back_char", "len_char", "find_char", "find_first_of_char", "find_last_of_char",
+        "front_bool", "back_bool", "len_bool", "find_bool", "find_first_of_bool", "find_last_of_bool"
+    };
+    if (ARRAYLIB_FUNCS.count(funcName) && node->nodeFirstChild)
+    {
+        const Command& firstArg = node->nodeFirstChild->command;
+        if (firstArg.GetType() == CommandTypes::IDENTIFIER_VALUE)
+        {
+            const std::string& varName = firstArg[0].GetValue();
+            auto var = this->m_currentScope->FindVar(varName);
+            if (var && !var->arraySize.has_value())
+            {
+                this->m_errorManager.StoreError(
+                    CompileTimeError(
+                        ErrorTypes::TYPE_ERROR,
+                        "'" + funcName + "' requires an array argument, but '" + varName + "' is not an array",
+                        firstArg[0].GetLine(),
+                        firstArg[0].GetColumn(),
+                        "Pass an array variable (e.g. int[] or string[])"
+                    )
+                );
+            }
+        }
     }
 
     HandleSingleCommandAssignement(node);

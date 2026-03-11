@@ -53,6 +53,8 @@ private:
 
     void EmitStart(const IRModule& module, std::ostream& out) override final;
 
+    void EmitAfterFunctionLabel(const IRFunction* func, std::ostream& out) override final;
+
     std::string MangledName(const std::string& name) const override final;
 
     std::string GetGlobalDirective(const std::string& symbol) const override final;
@@ -66,4 +68,8 @@ private:
     void LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
 
     void EmitExtraBssContent(const IRModule& module, std::ostream& out) const override;
+
+    /// Preamble to emit before using an operand (e.g. float constant materialization).
+    /// Set by GetOperandAsm for float constants; callers must output it before the instruction.
+    mutable std::string m_operandPreamble;
 };

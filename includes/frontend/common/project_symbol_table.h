@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <optional>
 
 #include "includes/shared/common/common_consts.h"
 
@@ -11,6 +12,7 @@ struct ExportedVar
     std::string name;
     Type type;
     AccessRights accessRights;
+    std::optional<size_t> arraySize;  // When set, variable is an array of this many elements
 };
 
 struct ExportedFunc 

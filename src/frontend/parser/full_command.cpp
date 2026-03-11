@@ -406,12 +406,33 @@ void FullCommand::PrependVariableAndOperatorToExpression(Command& expr, const To
     expr.SetTokens(tokens);
 }
 
+void FullCommand::PrependCommandAndOperatorToExpression(Command& expr, const Command& lhsCommand, Operator op)
+{
+    auto tokens = expr.GetTokensMutable();
+    auto& params = expr.GetParams();
+    params.insert(params.begin(), lhsCommand);
+    const Token& firstToken = lhsCommand[0];
+    Token hasParamToken(TokenTypes::HAS_PARAM, firstToken.GetLine(), firstToken.GetColumn());
+    Token opToken = MakeOperatorToken(op, firstToken.GetLine(), firstToken.GetColumn());
+    tokens.insert(tokens.begin(), opToken);
+    tokens.insert(tokens.begin(), hasParamToken);
+    expr.SetTokens(tokens);
+}
+
 void FullCommand::ReformCommand(Command& checkedCommand)
 {
     if (this->m_hadAssignmentOperator != Operator::NONE)
     {
-        const Token& varToken = this->m_line[0][0];
-        PrependVariableAndOperatorToExpression(checkedCommand, varToken, this->m_hadAssignmentOperator);
+        const Command& lhsCommand = this->m_line[0];
+        if (lhsCommand.GetType() == CommandTypes::ARRAY_ACCESS || lhsCommand.GetType() == CommandTypes::ARRAY_SLICE)
+        {
+            PrependCommandAndOperatorToExpression(checkedCommand, lhsCommand, this->m_hadAssignmentOperator);
+        }
+        else
+        {
+            const Token& varToken = lhsCommand[0];
+            PrependVariableAndOperatorToExpression(checkedCommand, varToken, this->m_hadAssignmentOperator);
+        }
         this->m_hadAssignmentOperator = Operator::NONE;
     }
     if (checkedCommand.GetType() == CommandTypes::ELIF)
@@ -688,17 +709,18 @@ void FullCommand::ReformCommand(Command& checkedCommand)
         {
             return;
         }
-        else if (checkedCommand.GetParams().size() > 1) 
+        else if (checkedCommand.GetParams().size() > 1)
         {
             return this->FoundIllegal(checkedCommand,
                 "Too many args for an array",
                 "Try removing the extra args",
                 0);
         }
-        else
+        else if (checkedCommand.GetParams().size() == 1)
         {
             this->CheckParamExpectedExpression(checkedCommand, 0);
         }
+        // size 0: int[] with empty brackets; size inferred from initializer in semantic analysis
     }
     else if (checkedCommand.GetType() == CommandTypes::IDENTIFIER_VALUE)
     {

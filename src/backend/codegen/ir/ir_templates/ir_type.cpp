@@ -7,7 +7,9 @@ IRType::IRType(
 ) : 
     m_kind(kind),
     m_returnType(funcReturnType),
-    m_paramTypes(funcParams)
+    m_paramTypes(funcParams),
+    m_elementType(nullptr),
+    m_arrayCount(0)
 {}
 
 std::shared_ptr<const IRType> IRType::GetVoid() 
@@ -64,6 +66,22 @@ std::shared_ptr<const IRType> IRType::GetFunction(
     return instance;
 }
 
+IRType::IRType(std::shared_ptr<const IRType> elementType, size_t arrayCount)
+    : m_kind(IRTypeKind::Array),
+      m_returnType(nullptr),
+      m_paramTypes(),
+      m_elementType(std::move(elementType)),
+      m_arrayCount(arrayCount)
+{}
+
+std::shared_ptr<const IRType> IRType::GetArray(
+    std::shared_ptr<const IRType> elementType,
+    size_t count)
+{
+    // Use new (not make_shared) so the private Array constructor is accessible from within GetArray
+    return std::shared_ptr<const IRType>(new IRType(std::move(elementType), count));
+}
+
 size_t IRType::GetSizeInBytes() const noexcept
 {
     switch (this->m_kind) 
@@ -76,6 +94,8 @@ size_t IRType::GetSizeInBytes() const noexcept
         case IRTypeKind::Float32: return 4;
         case IRTypeKind::Float64: return 8;
         case IRTypeKind::Function: return 0;  // nosize
+        case IRTypeKind::Array:
+            return m_elementType ? m_elementType->GetSizeInBytes() * m_arrayCount : 0;
         default: return 0;
     }
 }
@@ -93,4 +113,14 @@ std::shared_ptr<const IRType> IRType::GetReturnType() const noexcept
 const std::vector<std::shared_ptr<const IRType>>& IRType::GetParameters() const noexcept
 {
     return this->m_paramTypes;
+}
+
+std::shared_ptr<const IRType> IRType::GetElementType() const noexcept
+{
+    return this->m_elementType;
+}
+
+size_t IRType::GetArrayCount() const noexcept
+{
+    return this->m_arrayCount;
 }

@@ -39,6 +39,7 @@ protected:
     */
 
     virtual void VisitVarDeclaration(ASTNode* node) = 0;
+    virtual void VisitArrayDeclaration(ASTNode* node) = 0;
     virtual void VisitExpression(ASTNode* node) = 0;
     virtual void VisitIdentifier(ASTNode* node) = 0;
     virtual void VisitIdentifierValue(ASTNode* node) = 0;
@@ -62,6 +63,9 @@ protected:
     virtual void VisitPass(ASTNode* node) = 0;
     virtual void VisitEof(ASTNode* node) = 0;
     virtual void VisitArrayAccess(ASTNode* node) = 0;
+
+    /// @brief Optional handler for ARRAY_VALUE (e.g. [1,2,3]). Default no-op.
+    virtual void VisitArrayValue(ASTNode* node) {}
 
     /// @brief Initialize dispatch map, each child should call it in constructor
     void InitializeHandlers();

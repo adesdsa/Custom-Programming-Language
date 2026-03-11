@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(Custom-Programming-Language LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # -----------------------------
 # MSVC Runtime config
@@ -24,7 +26,7 @@ if(NOT mio_FOUND)
     FetchContent_Declare(
         mio_external
         GIT_REPOSITORY https://github.com/mandreyel/mio.git
-        GIT_TAG master
+        GIT_TAG 8b6b7d878c89e81614d05edca7936de41ccdd2da
     )
     FetchContent_MakeAvailable(mio_external)
 
@@ -77,11 +79,7 @@ add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 
 target_link_libraries(CPLib PUBLIC mio::mio GTest::gtest)
 
-set_target_properties(CPLib PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-)
+set_target_properties(CPLib PROPERTIES CXX_EXTENSIONS OFF)
 
 # =============================
 # Compiler warnings
@@ -132,11 +130,7 @@ endif()
 # Main executable
 # =============================
 add_executable(Custom-Programming-Language main.cpp)
-target_link_libraries(Custom-Programming-Language PRIVATE CPLib mio::mio)
-set_target_properties(Custom-Programming-Language PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
+target_link_libraries(Custom-Programming-Language PRIVATE CPLib)
 
 # =============================
 # Tests
@@ -147,10 +141,6 @@ if(BUILD_TESTS)
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/test_scripts/*.cpp)
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE GTest::gtest_main CPLib)
-    set_target_properties(unit_tests PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-    )
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
@@ -180,10 +170,6 @@ if(BUILD_GUI)
     add_executable(picoc-gui ${GUI_SOURCES} ${GUI_HEADERS} ${GUI_RESOURCES} ${GUI_RC})
     target_include_directories(picoc-gui PRIVATE ${CMAKE_SOURCE_DIR})
     target_link_libraries(picoc-gui PRIVATE CPLib Qt6::Widgets Qt6::SvgWidgets)
-    set_target_properties(picoc-gui PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-    )
 endif()
 
 # ==============================
@@ -222,3 +208,70 @@ else() # Linux/macOS
     endif()
     message(STATUS "Using NASM: ${NASM_EXECUTABLE}")
 endif()
+
+# ==============================
+# picoC stdlib (string, runtime, arraylib) - required for linking programs that use strings/arrays
+# ==============================
+set(STDLIB_OUT_DIR "${CMAKE_SOURCE_DIR}/lib")
+set(STDLIB_SRC_DIR "${CMAKE_SOURCE_DIR}/lib/stdlib")
+
+if(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(NASM_FMT "win64")
+        set(STDLIB_STRING_ASM string_win64.asm)
+        set(STDLIB_STRING_OBJ string_win64.obj)
+        set(STDLIB_RUNTIME_ASM runtime_win64.asm)
+        set(STDLIB_RUNTIME_OBJ runtime_win64.obj)
+        set(STDLIB_ARRAYLIB_ASM arraylib_win64.asm)
+        set(STDLIB_ARRAYLIB_OBJ arraylib_win64.obj)
+    else()
+        set(NASM_FMT "win32")
+        set(STDLIB_STRING_ASM string_win32.asm)
+        set(STDLIB_STRING_OBJ string_win32.obj)
+        set(STDLIB_RUNTIME_ASM runtime_win32.asm)
+        set(STDLIB_RUNTIME_OBJ runtime_win32.obj)
+        set(STDLIB_ARRAYLIB_ASM arraylib_win32.asm)
+        set(STDLIB_ARRAYLIB_OBJ arraylib_win32.obj)
+    endif()
+else()
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(NASM_FMT "elf64")
+        set(STDLIB_STRING_ASM string_linux64.asm)
+        set(STDLIB_STRING_OBJ string_linux64.o)
+        set(STDLIB_RUNTIME_ASM runtime_linux64.asm)
+        set(STDLIB_RUNTIME_OBJ runtime_linux64.o)
+        set(STDLIB_ARRAYLIB_ASM arraylib_linux64.asm)
+        set(STDLIB_ARRAYLIB_OBJ arraylib_linux64.o)
+    else()
+        set(NASM_FMT "elf32")
+        set(STDLIB_STRING_ASM string_linux32.asm)
+        set(STDLIB_STRING_OBJ string_linux32.o)
+        set(STDLIB_RUNTIME_ASM runtime_linux32.asm)
+        set(STDLIB_RUNTIME_OBJ runtime_linux32.o)
+        set(STDLIB_ARRAYLIB_ASM arraylib_linux32.asm)
+        set(STDLIB_ARRAYLIB_OBJ arraylib_linux32.o)
+    endif()
+endif()
+
+add_custom_command(
+    OUTPUT "${STDLIB_OUT_DIR}/${STDLIB_STRING_OBJ}"
+    COMMAND ${NASM_EXECUTABLE} -f ${NASM_FMT} "${STDLIB_SRC_DIR}/${STDLIB_STRING_ASM}" -o "${STDLIB_OUT_DIR}/${STDLIB_STRING_OBJ}"
+    DEPENDS "${STDLIB_SRC_DIR}/${STDLIB_STRING_ASM}"
+    COMMENT "Assembling stdlib: ${STDLIB_STRING_ASM} -> ${STDLIB_STRING_OBJ}"
+)
+add_custom_command(
+    OUTPUT "${STDLIB_OUT_DIR}/${STDLIB_RUNTIME_OBJ}"
+    COMMAND ${NASM_EXECUTABLE} -f ${NASM_FMT} "${STDLIB_SRC_DIR}/${STDLIB_RUNTIME_ASM}" -o "${STDLIB_OUT_DIR}/${STDLIB_RUNTIME_OBJ}"
+    DEPENDS "${STDLIB_SRC_DIR}/${STDLIB_RUNTIME_ASM}"
+    COMMENT "Assembling stdlib: ${STDLIB_RUNTIME_ASM} -> ${STDLIB_RUNTIME_OBJ}"
+)
+add_custom_command(
+    OUTPUT "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
+    COMMAND ${NASM_EXECUTABLE} -f ${NASM_FMT} "${STDLIB_SRC_DIR}/${STDLIB_ARRAYLIB_ASM}" -o "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
+    DEPENDS "${STDLIB_SRC_DIR}/${STDLIB_ARRAYLIB_ASM}"
+    COMMENT "Assembling stdlib: ${STDLIB_ARRAYLIB_ASM} -> ${STDLIB_ARRAYLIB_OBJ}"
+)
+
+add_custom_target(picoc_stdlib ALL
+    DEPENDS "${STDLIB_OUT_DIR}/${STDLIB_STRING_OBJ}" "${STDLIB_OUT_DIR}/${STDLIB_RUNTIME_OBJ}" "${STDLIB_OUT_DIR}/${STDLIB_ARRAYLIB_OBJ}"
+)

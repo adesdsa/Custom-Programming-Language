@@ -1,5 +1,8 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 #include <cstring>
 
@@ -176,16 +179,21 @@ void X86_64Emitter::EmitPrologue(
 
     // The semantic analysis frame size may undercount when sibling scopes
     // reuse offsets, but the IR gives every variable its own alloca.
-    // Use the actual alloca count so temp slots never overlap var slots.
-    int numAllocas = 0;
+    // Use the actual alloca sizes (8-byte aligned) so temp slots never overlap var slots.
+    int allocaFrameSize = 0;
     if (func->GetEntryBlock())
     {
         for (const auto& instr : func->GetEntryBlock()->GetInstructions())
         {
-            if (instr->GetOpcode() == IROpcode::Alloca) numAllocas++;
+            if (instr->GetOpcode() == IROpcode::Alloca)
+            {
+                int sz = GetTypeSize(instr->GetType());
+                if (sz <= 0) sz = x86_64::STACK_SLOT_SIZE;
+                int allocSize = (sz + 7) & ~7;  // match Alloca emission
+                allocaFrameSize += allocSize;
+            }
         }
     }
-    int allocaFrameSize = numAllocas * x86_64::STACK_SLOT_SIZE;
     int actualFrameSize = std::max(frameSize, allocaFrameSize);
 
     // Calculate total frame = aligned frameSize
@@ -555,6 +563,34 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             out << "    ; Load from memory into register/slot\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
+            if (source1 && dynamic_cast<const IRInstruction*>(source1) &&
+                static_cast<const IRInstruction*>(source1)->GetOpcode() == IROpcode::GEP)
+            {
+                // GEP stores address in slot; load from that address with correct element size
+                auto elemType = instr->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                {
+                    out << "    movzx rax, byte [rax]\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                {
+                    out << "    mov eax, dword [rax]\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movss xmm0, dword [rax]\n";
+                    out << "    movq rax, xmm0\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float64)
+                {
+                    out << "    movsd xmm0, qword [rax]\n";
+                    out << "    movq rax, xmm0\n";
+                }
+                else
+                {
+                    out << "    mov rax, [rax]\n";  // Int64, pointer
+                }
+            }
             tempAsmValue = GetOperandAsm(instr, out);
             out << "    mov " << tempAsmValue << ", rax\n";
             break;
@@ -563,20 +599,87 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::Store:
         {
             out << "    ; Store value into memory\n";
-            // Load value to store into rax
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
-            out << "    mov " << tempAsmValue << ", rax\n";
+            if (source2 && dynamic_cast<const IRInstruction*>(source2) &&
+                static_cast<const IRInstruction*>(source2)->GetOpcode() == IROpcode::GEP)
+            {
+                out << "    mov rbx, " << tempAsmValue << "\n";  // rbx = address (GEP slot holds it directly)
+                auto elemType = static_cast<const IRInstruction*>(source2)->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                {
+                    out << "    mov [rbx], al\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                {
+                    out << "    mov [rbx], eax\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movq xmm0, rax\n";
+                    out << "    movss [rbx], xmm0\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float64)
+                {
+                    out << "    movq xmm0, rax\n";
+                    out << "    movsd [rbx], xmm0\n";
+                }
+                else
+                {
+                    out << "    mov [rbx], rax\n";  // Int64, pointer
+                }
+            }
+            else
+            {
+                out << "    mov " << tempAsmValue << ", rax\n";
+            }
             break;
         }
 
         case IROpcode::Alloca:
         {
-            // Allocate a new stack slot for new var
+            int varSize = GetTypeSize(instr->GetType());
+            if (varSize <= 0) varSize = x86_64::STACK_SLOT_SIZE;
+            // Align allocation to 8 bytes so zero-init and GEP never overflow
+            int allocSize = (varSize + 7) & ~7;
             int allocaOffset = this->m_nextVarStackOffset;
-            this->m_nextVarStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_nextVarStackOffset += allocSize;
             this->m_valueToStackOffset[instr] = allocaOffset;
+            if (varSize > x86_64::STACK_SLOT_SIZE && instr->GetType()->GetKind() == IRTypeKind::Array)
+            {
+                out << "    ; Zero-initialize array (calloc-style)\n";
+                out << "    xor eax, eax\n";
+                for (int i = 0; i < allocSize; i += x86_64::STACK_SLOT_SIZE)
+                {
+                    out << "    mov [rbp-" << (allocaOffset + i) << "], rax\n";
+                }
+            }
+            break;
+        }
+
+        case IROpcode::GEP:
+        {
+            // GEP(base, index): compute address of arr[index]
+            // Stack: arr[0] at rbp-X, arr[1] at rbp-X-8, ... -> base - index*scale
+            // Global: arr[0] at symbol, arr[1] at symbol+8, ... -> base + index*scale
+            out << "    ; GEP: array index\n";
+            tempAsmValue = GetOperandAsm(source1, out);  // base: [rbp-X] or [rel symbol]
+            out << "    lea rax, " << tempAsmValue << "\n";  // rax = base address
+            tempAsmValue = GetOperandAsm(source2, out);  // index
+            out << "    mov rbx, " << tempAsmValue << "\n";
+            int scale = GetTypeSize(instr->GetType());
+            if (scale <= 0) scale = 1;
+            out << "    imul rbx, " << scale << "\n";
+            bool isGlobal = (dynamic_cast<const IRGlobalVariable*>(source1) != nullptr);
+            if (isGlobal)
+                out << "    add rax, rbx\n";  // global: base + index*scale
+            else
+                out << "    sub rax, rbx\n";  // stack: base - index*scale
+            int slotOffset = this->m_nextTempStackOffset;
+            this->m_nextTempStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_valueToStackOffset[instr] = slotOffset;
+            out << "    mov [rbp-" << slotOffset << "], rax\n";
             break;
         }
 
@@ -659,15 +762,35 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 for (int i = numCallOperands - 1; i >= x86_64::SIX_ARGUEMENTS; --i)
                 {
                     tempAsmValue = GetOperandAsm(callOperands[i], out);
-                    out << "    push " << tempAsmValue << "\n";
+                    auto* argInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool argIsAlloca = (argInstr && argInstr->GetOpcode() == IROpcode::Alloca);
+                    if (argIsAlloca && tempAsmValue.front() == '[')
+                    {
+                        out << "    lea rax, " << tempAsmValue << "\n";
+                        out << "    push rax\n";
+                    }
+                    else
+                    {
+                        out << "    push " << tempAsmValue << "\n";
+                    }
                 }
 
                 // move register args
                 for (int i = 0; i < std::min(x86_64::SIX_ARGUEMENTS, numCallOperands); ++i)
                 {
-                    tempAsmValue = GetOperandAsm(callOperands[i], out);
-                    out << "    mov " << x86_64::linuxArgMapping[i]
-                        << ", " << tempAsmValue << "\n";
+                    std::string tempValue = GetOperandAsm(callOperands[i], out);
+                    auto* opInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                    if (isAlloca && tempValue.front() == '[')
+                    {
+                        out << "    lea " << x86_64::linuxArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
+                    else
+                    {
+                        out << "    mov " << x86_64::linuxArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
@@ -700,9 +823,14 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     int argIndex = x86_64::FOUR_ARGUEMENTS + i;
                     int argOffset = i * x86_64::STACK_SLOT_SIZE;
                     tempAsmValue = GetOperandAsm(callOperands[argIndex], out);
+                    auto* argInstr = dynamic_cast<const IRInstruction*>(callOperands[argIndex]);
+                    bool argIsAlloca = (argInstr && argInstr->GetOpcode() == IROpcode::Alloca);
                     if (tempAsmValue.front() == '[')
                     {
-                        out << "    mov rax, " << tempAsmValue << "\n";
+                        if (argIsAlloca)
+                            out << "    lea rax, " << tempAsmValue << "\n";
+                        else
+                            out << "    mov rax, " << tempAsmValue << "\n";
                         out << "    mov qword [rsp + " << argOffset << "], rax\n";
                     }
                     else
@@ -716,8 +844,18 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 for (int i = 0; i < std::min(x86_64::FOUR_ARGUEMENTS, numCallOperands); ++i)
                 {
                     std::string tempValue = GetOperandAsm(callOperands[i], out);
-                    out << "    mov " << x86_64::windowsArgMapping[i]
-                        << ", " << tempValue << "\n";
+                    auto* opInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                    if (isAlloca && tempValue.front() == '[')
+                    {
+                        out << "    lea " << x86_64::windowsArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
+                    else
+                    {
+                        out << "    mov " << x86_64::windowsArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
@@ -815,6 +953,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
 
         // ---- Built-in: println(value: int) -> void ----
         // Minimal integer println using Linux write(1, buf, len)
+        // Handles negative numbers: print minus, negate, then unsigned conversion
         out << "\n";
         out << "println:\n";
         out << "    push rbp\n";
@@ -831,6 +970,18 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov byte [rsi], '0'\n";
         out << "    jmp .Lwrite\n";
         out << ".Lconvert:\n";
+        out << "    cmp rax, 0\n";
+        out << "    jge .Lpos\n";
+        out << "    push rax\n";
+        out << "    lea rsi, [rel __println_minus]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        out << "    pop rax\n";
+        out << "    neg rax\n";
+        out << "    lea rsi, [r8+20]\n";
+        out << ".Lpos:\n";
         out << "    xor rdx, rdx\n";
         out << ".Lloop:\n";
         out << "    xor rdx, rdx\n";
@@ -1379,7 +1530,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ret\n";
 
         // ---- Built-in: println_double(value: double) -> void ----
-        // Prints a 64-bit double as "<int>.<frac6>\n" via write(1, ...).
+        // Prints double with minimal format: "1.5" not "1.500000", "1" not "1.000000"
         // rdi contains the raw double bits (SysV integer ABI for this calling convention).
         out << "\n";
         out << "println_double:\n";
@@ -1409,7 +1560,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         // Extract integer part
         out << "    cvttsd2si rax, xmm0\n";
         out << "    mov [rbp-24], rax\n";
-        // Convert integer part via println (reuse int conversion), but inline here
+        // Convert integer part (inline)
         out << "    lea rsi, [rbp-48]\n";
         out << "    add rsi, 20\n";
         out << "    mov byte [rsi], 0\n";
@@ -1437,16 +1588,9 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov rax, 1\n";
         out << "    mov rdi, 1\n";
         out << "    syscall\n";
-        // Print decimal point
-        out << "    lea rsi, [rel __println_dot]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
         // Extract fractional part: frac = (value - int_part) * 1000000
         out << "    cvtsi2sd xmm1, qword [rbp-24]\n";
         out << "    movsd xmm0, qword [rbp-8]\n";
-        // Abs again in case of negative
         out << "    mov rax, 0x7FFFFFFFFFFFFFFF\n";
         out << "    mov [rbp-16], rax\n";
         out << "    andpd xmm0, [rbp-16]\n";
@@ -1454,13 +1598,23 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov rax, 1000000\n";
         out << "    cvtsi2sd xmm1, rax\n";
         out << "    mulsd xmm0, xmm1\n";
-        // Round to nearest
         out << "    roundsd xmm0, xmm0, 0\n";
         out << "    cvttsd2si rax, xmm0\n";
-        // Convert 6-digit fractional part (with leading zeros)
+        out << "    mov [rbp-32], rax\n";
+        // If frac==0, skip decimal part (whole number)
+        out << "    test rax, rax\n";
+        out << "    jz .Ldbl_newline\n";
+        // Print decimal point
+        out << "    lea rsi, [rel __println_dot]\n";
+        out << "    mov rdx, 1\n";
+        out << "    mov rax, 1\n";
+        out << "    mov rdi, 1\n";
+        out << "    syscall\n";
+        // Convert 6-digit fractional part to buffer (digits in reverse)
         out << "    lea rsi, [rbp-48]\n";
         out << "    add rsi, 20\n";
         out << "    mov byte [rsi], 0\n";
+        out << "    mov rax, [rbp-32]\n";
         out << "    mov rcx, 6\n";
         out << ".Ldbl_floop:\n";
         out << "    xor rdx, rdx\n";
@@ -1473,11 +1627,24 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    mov [rsi], dl\n";
         out << "    dec rcx\n";
         out << "    jnz .Ldbl_floop\n";
-        // Write fractional digits
-        out << "    mov rdx, 6\n";
+        // Strip trailing zeros in frac (e.g. 1.5 -> "5" not "500000")
+        // Digits: [rsi]=highest place, [rsi+5]=ones. Scan from end for last non-zero.
+        out << "    lea r9, [rsi+5]\n";
+        out << ".Ldbl_strip:\n";
+        out << "    cmp r9, rsi\n";
+        out << "    jl .Ldbl_stripped\n";
+        out << "    cmp byte [r9], '0'\n";
+        out << "    jne .Ldbl_stripped\n";
+        out << "    dec r9\n";
+        out << "    jmp .Ldbl_strip\n";
+        out << ".Ldbl_stripped:\n";
+        out << "    mov rdx, r9\n";
+        out << "    sub rdx, rsi\n";
+        out << "    inc rdx\n";
         out << "    mov rax, 1\n";
         out << "    mov rdi, 1\n";
         out << "    syscall\n";
+        out << ".Ldbl_newline:\n";
         // Write newline
         out << "    lea rsi, [rel __println_newline]\n";
         out << "    mov rdx, 1\n";
@@ -1900,8 +2067,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     if (auto* intConst = dynamic_cast<const IRConstantInt*>(operand))
     {
         uint64_t bits = static_cast<uint64_t>(intConst->GetValue());
-        out << "    mov qword r10" << ", 0x" 
-            << std::hex << bits << std::dec << "\n";
+        out << "    mov r10, 0x" << std::hex << bits << std::dec << "\n";
         return "r10";
     }
     else if (auto* floatConst = dynamic_cast<const IRConstantFloat*>(operand))
@@ -1925,8 +2091,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     else if (auto* boolConst = dynamic_cast<const IRConstantBool*>(operand))
     {
         uint64_t bits = static_cast<uint64_t>(boolConst->GetValue());  // 0 or 1
-        out << "    mov qword r10" << ", 0x" 
-            << std::hex << bits << std::dec << "\n";
+        out << "    mov r10, 0x" << std::hex << bits << std::dec << "\n";
         return "r10";
     }
     else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))

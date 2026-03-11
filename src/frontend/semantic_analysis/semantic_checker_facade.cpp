@@ -318,7 +318,8 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     {
         auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
         if (!varData.has_value()) return ExpressionType::UNKNOWN;
-        if (varData->type == Type::STRING_TYPE) return ExpressionType::CHAR;
+        if (varData->type == Type::STRING_TYPE)
+            return varData->arraySize.has_value() ? ExpressionType::STRING : ExpressionType::CHAR;
         return ExpressionType::MATHEMATICAL;
     }
     if (expression.GetType() == CommandTypes::ARRAY_SLICE)
@@ -356,7 +357,10 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
             {
                 auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
                 if (!varData.has_value()) return ExpressionType::UNKNOWN;
-                paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::CHAR : ExpressionType::MATHEMATICAL;
+                if (varData->type == Type::STRING_TYPE)
+                    paramType = varData->arraySize.has_value() ? ExpressionType::STRING : ExpressionType::CHAR;
+                else
+                    paramType = ExpressionType::MATHEMATICAL;
             }
             else if (currCommand.GetType() == CommandTypes::ARRAY_SLICE)
             {

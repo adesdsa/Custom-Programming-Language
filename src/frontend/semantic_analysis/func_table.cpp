@@ -1,4 +1,5 @@
 #include "includes/frontend/semantic_analysis/func_table.h"
+#include "includes/shared/common/builtin_library.h"
 
 FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName) const
 {
@@ -99,6 +100,27 @@ void FuncTable::RegisterBuiltins()
     );
     read_doubleFunc.SetDefined();
     this->InsertFunction(std::move(read_doubleFunc));
+
+    // Register arraylib and string builtins so semantic analysis can resolve them
+    for (const std::string& libName : { "arraylib", "string" })
+    {
+        const BuiltinLibrary* lib = BuiltinLibraryRegistry::GetLibrary(libName);
+        if (!lib) continue;
+        for (const BuiltinFunction& bf : lib->functions)
+        {
+            if (this->FindFunctionByName(bf.name)) continue;
+            FuncMetaData meta(
+                this->m_entityLogger,
+                bf.name,
+                bf.returnType,
+                bf.params,
+                0, 0,
+                nullptr
+            );
+            meta.SetDefined();
+            this->InsertFunction(std::move(meta));
+        }
+    }
 
     this->m_entityLogger.Info("Registered built-in functions");
 }

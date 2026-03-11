@@ -1,4 +1,6 @@
 #include "includes/backend/codegen/ir/ir_visitor.h"
+#include <cstring>
+#include <unordered_set>
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_int.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
 #include "includes/shared/common/builtin_library.h"
@@ -43,19 +45,25 @@ IRVisitor::IRVisitor(
     {
         if (varMeta.scope == Scope::GLOBAL)
         {
+            auto irType = varMeta.arraySize.has_value()
+                ? TypeToIRType(varMeta.type, varMeta.arraySize)
+                : TypeToIRType(varMeta.type);
             if (varMeta.isExtern)
             {
-                this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type), true);
+                this->m_currModule.AddVariable(name, irType, true);
                 this->m_currModule.AddImport(name);
             }
             else
             {
-                this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+                this->m_currModule.AddVariable(name, irType);
             }
         }
         else if (varMeta.scope == Scope::EXPORT)
         {
-            this->m_currModule.AddVariable(name, TypeToIRType(varMeta.type));
+            auto irType = varMeta.arraySize.has_value()
+                ? TypeToIRType(varMeta.type, varMeta.arraySize)
+                : TypeToIRType(varMeta.type);
+            this->m_currModule.AddVariable(name, irType);
             this->m_currModule.AddExport(name);
         }
     }
@@ -151,6 +159,57 @@ void IRVisitor::VisitVarDeclaration(ASTNode* node)
         this->m_irbuilder.SetInsertPoint(tempSave); //reset
     }
     this->m_entityLogger.Info("Added VarDeclaration IR handling.\nAt line: "
+        + std::to_string(node->command[0].GetLine()));
+}
+
+void IRVisitor::VisitArrayDeclaration(ASTNode* node)
+{
+    if (this->m_returnedAlready) return;
+    if (this->m_handledInsides) return;
+
+    if (!this->m_currVarTableNode)
+    {
+        StoreInternalError("Array declaration failed symbol table is unavailable", node->command);
+        return;
+    }
+
+    std::string varName = ASTExtractor::ExtractVarName(node);
+    auto varMetaData = this->m_currVarTableNode->FindVar(varName);
+    if (!varMetaData)
+    {
+        return;
+    }
+    this->m_currVarMetaData = varMetaData;
+
+    if (!varMetaData.value().arraySize.has_value())
+    {
+        StoreInternalError("Array declaration missing array size", node->command);
+        return;
+    }
+
+    auto arrayIRType = TypeToIRType(varMetaData.value().type, varMetaData.value().arraySize);
+
+    if (varMetaData.value().scope == Scope::GLOBAL || !this->m_currFunc)
+    {
+        this->m_currModule.AddVariable(varMetaData.value().sName, arrayIRType);
+    }
+    else
+    {
+        if (this->m_currFunc->GetEntryBlock() == nullptr)
+        {
+            this->m_entityLogger.Info("Added ArrayDeclaration IR handling (param skipped).\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
+            return;
+        }
+
+        auto tempSave = this->m_irbuilder.GetInsertBlock();
+        this->m_irbuilder.SetInsertPoint(this->m_currFunc->GetEntryBlock());
+
+        this->m_irbuilder.CreateAlloca(arrayIRType, varMetaData.value().sName);
+
+        this->m_irbuilder.SetInsertPoint(tempSave);
+    }
+    this->m_entityLogger.Info("Added ArrayDeclaration IR handling.\nAt line: "
         + std::to_string(node->command[0].GetLine()));
 }
 
@@ -280,36 +339,52 @@ void IRVisitor::VisitAssignment(ASTNode* node)
         }
         else if (this->m_indexedAssignment)
         {
-            IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(target);
             IRBaseValue* idx = HandleExpression(this->m_pendingIndexCommand.GetParams()[0]);
+            if (!idx) return;
 
-            IRBaseValue* charVal = valueToStore;
-            if (dynamic_cast<IRConstantString*>(charVal) || charVal->GetType()->GetKind() != IRTypeKind::Int8)
+            if (this->m_currVarMetaData && this->m_currVarMetaData.value().arraySize.has_value())
             {
-                if (!this->m_currModule.IsFuncExistByName("char_at"))
+                // Static array: bounds check + GEP + Store
+                size_t arraySize = this->m_currVarMetaData.value().arraySize.value();
+                EmitArrayBoundsCheck(idx, arraySize);
+                auto elementType = TypeToIRType(this->m_currVarMetaData.value().type);
+                IRBaseValue* gep = this->m_irbuilder.CreateGEP(target, idx, elementType);
+                valueToStore = ConvertIfNeeded(valueToStore, elementType);
+                if (valueToStore)
+                    this->m_irbuilder.CreateStore(valueToStore, gep);
+            }
+            else
+            {
+                IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(target);
+
+                IRBaseValue* charVal = valueToStore;
+                if (dynamic_cast<IRConstantString*>(charVal) || charVal->GetType()->GetKind() != IRTypeKind::Int8)
                 {
-                    this->m_currModule.AddFunction("char_at",
-                        IRType::GetFunction(IRType::GetInt8(),
-                            { TypeToIRType(Type::STRING_TYPE),
-                              TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
+                    if (!this->m_currModule.IsFuncExistByName("char_at"))
+                    {
+                        this->m_currModule.AddFunction("char_at",
+                            IRType::GetFunction(IRType::GetInt8(),
+                                { TypeToIRType(Type::STRING_TYPE),
+                                TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
+                    }
+                    IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                    charVal = this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("char_at"), { charVal, zero });
                 }
-                IRBaseValue* zero = TargetArchitecture::Is32Bit()
-                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
-                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
-                charVal = this->m_irbuilder.CreateCall(
-                    this->m_currModule.GetFunction("char_at"), { charVal, zero });
-            }
 
-            if (!this->m_currModule.IsFuncExistByName("set_char_at"))
-            {
-                auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
-                this->m_currModule.AddFunction("set_char_at",
-                    IRType::GetFunction(IRType::GetVoid(),
-                        { TypeToIRType(Type::STRING_TYPE), intType, IRType::GetInt8() }));
+                if (!this->m_currModule.IsFuncExistByName("set_char_at"))
+                {
+                    auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+                    this->m_currModule.AddFunction("set_char_at",
+                        IRType::GetFunction(IRType::GetVoid(),
+                            { TypeToIRType(Type::STRING_TYPE), intType, IRType::GetInt8() }));
+                }
+                this->m_currModule.AddRequiredLibrary("string");
+                this->m_irbuilder.CreateCall(
+                    this->m_currModule.GetFunction("set_char_at"), { strPtr, idx, charVal });
             }
-            this->m_currModule.AddRequiredLibrary("string");
-            this->m_irbuilder.CreateCall(
-                this->m_currModule.GetFunction("set_char_at"), { strPtr, idx, charVal });
         }
         else if (this->m_slicedAssignment)
         {
@@ -1152,6 +1227,193 @@ void IRVisitor::VisitEof(ASTNode* node)
     return;
 }
 
+void IRVisitor::VisitArrayValue(ASTNode* node)
+{
+    if (this->m_returnedAlready) return;
+    if (!this->m_expectedAssignment || !this->m_currVarMetaData.has_value()) return;
+    if (!this->m_currVarMetaData.value().arraySize.has_value()) return;
+
+    const auto& params = node->command.GetParams();
+    if (params.empty()) return;
+
+    size_t arraySize = this->m_currVarMetaData.value().arraySize.value();
+    if (params.size() > arraySize)
+    {
+        StoreInternalError("Array initializer has " + std::to_string(params.size()) +
+            " elements but array size is " + std::to_string(arraySize), node->command);
+        this->m_expectedAssignment = false;
+        return;
+    }
+
+    if (!this->m_currFunc)
+    {
+        IRGlobalVariable* globalVar = this->m_currModule.GetVariable(this->m_currVarMetaData.value().sName);
+        if (!globalVar)
+        {
+            this->m_expectedAssignment = false;
+            return;
+        }
+
+        Type varType = this->m_currVarMetaData.value().type;
+        auto elementType = TypeToIRType(varType);
+        std::vector<IRBaseValue*> elements;
+
+        for (size_t i = 0; i < arraySize; ++i)
+        {
+            IRBaseValue* elemVal = nullptr;
+            if (i < params.size())
+            {
+                elemVal = HandleExpression(params[i]);
+                if (!elemVal)
+                {
+                    StoreInternalError("Could not evaluate array initializer element " + std::to_string(i), params[i]);
+                    this->m_expectedAssignment = false;
+                    return;
+                }
+                if (varType == Type::STRING_TYPE && elemVal->GetType()->GetKind() == IRTypeKind::Int8)
+                {
+                    if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                    {
+                        this->m_currModule.AddFunction("str_from_char",
+                            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                    }
+                    this->m_currModule.AddRequiredLibrary("string");
+                    elemVal = this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("str_from_char"), { elemVal });
+                }
+                else if (varType != Type::STRING_TYPE)
+                {
+                    elemVal = ConvertIfNeeded(elemVal, elementType);
+                }
+            }
+            else
+            {
+                switch (varType)
+                {
+                case Type::INT_TYPE:
+                case Type::UNSIGNED_INT_TYPE:
+                    elemVal = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                    break;
+                case Type::DOUBLE_TYPE:
+                    elemVal = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetFloat(0.0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetDouble(0.0));
+                    break;
+                case Type::BOOL_TYPE:
+                    elemVal = this->m_irbuilder.GetFalse();
+                    break;
+                case Type::CHAR_TYPE:
+                    elemVal = static_cast<IRBaseValue*>(this->m_irbuilder.GetInt8(0));
+                    break;
+                case Type::STRING_TYPE:
+                    elemVal = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (elemVal)
+                elements.push_back(elemVal);
+        }
+
+        globalVar->SetArrayInitializer(std::move(elements));
+        this->m_expectedAssignment = false;
+        this->m_handledInsides = true;
+        size_t logLine = node && !node->command.GetTokens().empty() ? node->command[0].GetLine() : 0;
+        this->m_entityLogger.Info("Added global ArrayValue IR handling.\nAt line: " + std::to_string(logLine));
+        return;
+    }
+    else
+    {
+        IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
+        if (!target)
+        {
+            this->m_expectedAssignment = false;
+            return;
+        }
+
+        auto elementType = TypeToIRType(this->m_currVarMetaData.value().type);
+        Type varType = this->m_currVarMetaData.value().type;
+
+        auto GetZeroForType = [this, elementType, varType]() -> IRBaseValue*
+        {
+            switch (varType)
+            {
+            case Type::INT_TYPE:
+            case Type::UNSIGNED_INT_TYPE:
+                return TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+            case Type::DOUBLE_TYPE:
+                return TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetFloat(0.0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetDouble(0.0));
+            case Type::BOOL_TYPE:
+                return this->m_irbuilder.GetFalse();
+            case Type::CHAR_TYPE:
+                return static_cast<IRBaseValue*>(this->m_irbuilder.GetInt8(0));
+            case Type::STRING_TYPE:
+                return TargetArchitecture::Is32Bit()
+                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+            default:
+                return nullptr;
+            }
+        };
+
+        for (size_t i = 0; i < arraySize; ++i)
+        {
+            IRBaseValue* elemVal = nullptr;
+            if (i < params.size())
+            {
+                elemVal = HandleExpression(params[i]);
+                if (!elemVal)
+                {
+                    StoreInternalError("Could not evaluate array initializer element " + std::to_string(i), params[i]);
+                    this->m_expectedAssignment = false;
+                    return;
+                }
+
+                if (varType == Type::STRING_TYPE && elemVal->GetType()->GetKind() == IRTypeKind::Int8)
+                {
+                    if (!this->m_currModule.IsFuncExistByName("str_from_char"))
+                    {
+                        this->m_currModule.AddFunction("str_from_char",
+                            IRType::GetFunction(TypeToIRType(Type::STRING_TYPE), { IRType::GetInt8() }));
+                    }
+                    this->m_currModule.AddRequiredLibrary("string");
+                    elemVal = this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("str_from_char"), { elemVal });
+                }
+                else if (varType != Type::STRING_TYPE)
+                {
+                    elemVal = ConvertIfNeeded(elemVal, elementType);
+                }
+            }
+            else
+            {
+                elemVal = GetZeroForType();
+            }
+
+            IRBaseValue* idx = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(i)))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(i)));
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(target, idx, elementType);
+            if (elemVal)
+                this->m_irbuilder.CreateStore(elemVal, gep);
+        }
+    }
+
+    this->m_expectedAssignment = false;
+    this->m_handledInsides = true;
+    size_t logLine = node && !node->command.GetTokens().empty() ? node->command[0].GetLine() : 0;
+    this->m_entityLogger.Info("Added ArrayValue IR handling.\nAt line: " + std::to_string(logLine));
+}
+
 void IRVisitor::VisitArrayAccess(ASTNode* node)
 {
     if (this->m_returnedAlready) return;
@@ -1217,6 +1479,15 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
         return IRType::GetVoid();
         break;
     }
+}
+
+std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type, std::optional<size_t> arraySize)
+{
+    if (arraySize.has_value() && arraySize.value() > 0)
+    {
+        return IRType::GetArray(TypeToIRType(type), arraySize.value());
+    }
+    return TypeToIRType(type);
 }
 
 std::shared_ptr<const IRType> IRVisitor::TypeToIRType(const std::string& type)
@@ -1693,16 +1964,143 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
         StoreInternalError("Unknown function encountered", command);
         return nullptr;
     }
+    const std::string& funcName = funcMetaData->GetName();
+
+    // arraylib intrinsics: front, back, len (no runtime call)
+    static const std::unordered_set<std::string> ARRAYLIB_FRONT_BACK_LEN = {
+        "front", "back", "len", "front_str", "back_str", "len_str",
+        "front_double", "back_double", "len_double", "front_uint", "back_uint", "len_uint",
+        "front_char", "back_char", "len_char", "front_bool", "back_bool", "len_bool"
+    };
+    if (ARRAYLIB_FRONT_BACK_LEN.count(funcName))
+    {
+        const auto& argExprs = command.GetParams();
+        if (argExprs.empty()) { StoreInternalError("arraylib function requires array argument", command); return nullptr; }
+        const Command& firstArg = argExprs[0];
+        if (firstArg.GetType() != CommandTypes::IDENTIFIER_VALUE)
+        {
+            StoreInternalError("arraylib front/back/len require array variable (not expression)", command);
+            return nullptr;
+        }
+        const std::string& varName = firstArg[0].GetValue();
+        auto varMeta = this->m_currVarTableNode->FindVar(varName);
+        if (!varMeta || !varMeta->arraySize.has_value())
+        {
+            StoreInternalError("arraylib front/back/len require array variable", command);
+            return nullptr;
+        }
+        size_t arraySize = varMeta->arraySize.value();
+        IRBaseValue* base = FindPointer(varName);
+        if (!base) return nullptr;
+        auto elemType = TypeToIRType(varMeta->type);
+
+        if (funcName == "len" || funcName == "len_str" || funcName == "len_double" ||
+            funcName == "len_uint" || funcName == "len_char" || funcName == "len_bool")
+        {
+            auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+            return TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize)))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize)));
+        }
+        if (funcName == "front" || funcName == "front_str" || funcName == "front_double" ||
+            funcName == "front_uint" || funcName == "front_char" || funcName == "front_bool")
+        {
+            IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, zero, elemType);
+            return this->m_irbuilder.CreateLoad(gep);
+        }
+        if (funcName == "back" || funcName == "back_str" || funcName == "back_double" ||
+            funcName == "back_uint" || funcName == "back_char" || funcName == "back_bool")
+        {
+            IRBaseValue* lastIdx = TargetArchitecture::Is32Bit()
+                ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize - 1)))
+                : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize - 1)));
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, lastIdx, elemType);
+            return this->m_irbuilder.CreateLoad(gep);
+        }
+    }
+
+    // arraylib find family: emit call to arr_find_* with (base, size, value)
+    static const std::unordered_set<std::string> ARRAYLIB_FIND_FUNCS = {
+        "find", "find_first_of", "find_last_of", "find_str", "find_first_of_str", "find_last_of_str",
+        "find_double", "find_first_of_double", "find_last_of_double", "find_uint", "find_first_of_uint", "find_last_of_uint",
+        "find_char", "find_first_of_char", "find_last_of_char", "find_bool", "find_first_of_bool", "find_last_of_bool"
+    };
+    if (ARRAYLIB_FIND_FUNCS.count(funcName))
+    {
+        const auto& argExprs = command.GetParams();
+        if (argExprs.size() < 2) { StoreInternalError("find requires (arr, value)", command); return nullptr; }
+        const Command& firstArg = argExprs[0];
+        if (firstArg.GetType() != CommandTypes::IDENTIFIER_VALUE)
+        {
+            StoreInternalError("find requires array variable as first argument", command);
+            return nullptr;
+        }
+        const std::string& varName = firstArg[0].GetValue();
+        auto varMeta = this->m_currVarTableNode->FindVar(varName);
+        if (!varMeta || !varMeta->arraySize.has_value())
+        {
+            StoreInternalError("find requires array variable", command);
+            return nullptr;
+        }
+        size_t arraySize = varMeta->arraySize.value();
+        IRBaseValue* base = FindPointer(varName);
+        IRBaseValue* value = HandleExpression(argExprs[1]);
+        if (!base || !value) return nullptr;
+
+        auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+        IRBaseValue* sizeConst = TargetArchitecture::Is32Bit()
+            ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize)))
+            : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize)));
+
+        // Map (funcName, element type) to runtime symbol. uint->int, bool->char (same size).
+        std::string runtimeName;
+        bool isLastOf = (funcName.find("find_last_of") != std::string::npos);
+        if (funcName.find("_str") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_str" : "arr_find_str";
+        else if (funcName.find("_double") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_double" : "arr_find_double";
+        else if (funcName.find("_uint") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_int" : "arr_find_int";
+        else if (funcName.find("_char") != std::string::npos || funcName.find("_bool") != std::string::npos)
+            runtimeName = isLastOf ? "arr_find_last_of_char" : "arr_find_char";
+        else
+            runtimeName = isLastOf ? "arr_find_last_of_int" : "arr_find_int";
+
+        // Value type for runtime: uint uses int, bool uses char
+        auto valueIRType = TypeToIRType(varMeta->type);
+        if (varMeta->type == Type::UNSIGNED_INT_TYPE) valueIRType = TypeToIRType(Type::INT_TYPE);
+        else if (varMeta->type == Type::BOOL_TYPE) valueIRType = TypeToIRType(Type::CHAR_TYPE);
+
+        auto ptrType = intType;
+        if (!this->m_currModule.IsFuncExistByName(runtimeName))
+        {
+            this->m_currModule.AddFunction(runtimeName,
+                IRType::GetFunction(intType, { ptrType, intType, valueIRType }));
+        }
+        this->m_currModule.AddRequiredLibrary("arraylib");
+        this->m_currModule.AddRequiredLibrary("string");  // arraylib_win64.obj has extern str_cmp
+        return this->m_irbuilder.CreateCall(
+            this->m_currModule.GetFunction(runtimeName),
+            { base, sizeConst, value });
+    }
+
     const std::vector<VarMetaData>& params = funcMetaData->GetFuncParams();
 
     // For built-in functions (e.g. println), lazily add a stub
     // IRFunction to the module so that CreateCall has a target.
-    const std::string& funcName = funcMetaData->GetName();
     if (!this->m_currModule.IsFuncExistByName(funcName))
     {
         std::vector<std::shared_ptr<const IRType>> paramTypes;
         for (const auto& p : params)
-            paramTypes.push_back(TypeToIRType(p.type));
+        {
+            if (p.arraySize.has_value())
+                paramTypes.push_back(TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64());
+            else
+                paramTypes.push_back(TypeToIRType(p.type));
+        }
         this->m_currModule.AddFunction(funcName,
             IRType::GetFunction(TypeToIRType(funcMetaData->GetRType()), std::move(paramTypes)));
     }
@@ -1788,7 +2186,9 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                 }
                 else if (firstArg.GetType() == CommandTypes::ARRAY_ACCESS)
                 {
-                    // single index on string returns char, not string
+                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                    if (varMeta && varMeta->type == Type::STRING_TYPE && varMeta->arraySize.has_value())
+                        isStringArg = true;  // string array: arr[i] returns string
                 }
                 else if (firstArg.GetType() == CommandTypes::EXPRESSION)
                 {
@@ -1869,6 +2269,10 @@ IRBaseValue* IRVisitor::HandleSizeof(Command command)
     else if (sizeofType == IRType::GetVoid())
     {
         return this->m_irbuilder.GetInt32(0);
+    }
+    else if (sizeofType->GetKind() == IRTypeKind::Array)
+    {
+        return this->m_irbuilder.GetInt32(static_cast<int>(sizeofType->GetSizeInBytes()));
     }
     else
     {
@@ -2442,7 +2846,6 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
 IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
 {
     const std::string& varName = command[0].GetValue();
-    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(FindPointer(varName));
 
     if (command.GetParams().empty())
     {
@@ -2452,6 +2855,28 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
     IRBaseValue* idx = HandleExpression(command.GetParams()[0]);
     if (!idx) return nullptr;
 
+    auto varMeta = this->m_currVarTableNode->FindVar(varName);
+    if (!varMeta)
+    {
+        StoreInternalError("Unknown variable '" + varName + "' in array access", command);
+        return nullptr;
+    }
+    if (varMeta.value().arraySize.has_value())
+    {
+        // Static array: bounds check + GEP + Load (supports int, double, bool, char, string)
+        IRBaseValue* base = FindPointer(varName);
+        if (!base) return nullptr;
+        size_t arraySize = varMeta.value().arraySize.value();
+        EmitArrayBoundsCheck(idx, arraySize);
+        auto elementType = TypeToIRType(varMeta.value().type);
+        IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, idx, elementType);
+        return this->m_irbuilder.CreateLoad(gep);
+    }
+
+    // Plain string: char_at
+    IRBaseValue* basePtr = FindPointer(varName);
+    if (!basePtr) return nullptr;
+    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(basePtr);
     if (!this->m_currModule.IsFuncExistByName("char_at"))
     {
         this->m_currModule.AddFunction("char_at",
@@ -2462,6 +2887,22 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
     this->m_currModule.AddRequiredLibrary("string");
     return this->m_irbuilder.CreateCall(
         this->m_currModule.GetFunction("char_at"), { strPtr, idx });
+}
+
+void IRVisitor::EmitArrayBoundsCheck(IRBaseValue* index, size_t arraySize)
+{
+    if (!this->m_currModule.IsFuncExistByName("bounds_check"))
+    {
+        auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+        this->m_currModule.AddFunction("bounds_check",
+            IRType::GetFunction(IRType::GetVoid(), { intType, intType }));
+    }
+    this->m_currModule.AddRequiredLibrary("runtime");
+    IRBaseValue* sizeConst = TargetArchitecture::Is32Bit()
+        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(static_cast<int64_t>(arraySize)))
+        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(static_cast<int64_t>(arraySize)));
+    this->m_irbuilder.CreateCall(
+        this->m_currModule.GetFunction("bounds_check"), { index, sizeConst });
 }
 
 IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)

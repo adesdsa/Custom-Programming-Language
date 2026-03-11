@@ -24,7 +24,8 @@ public:
         std::string sVarName,
         Type varType,
         AccessRights varAccessRights,
-        Scope varScope
+        Scope varScope,
+        std::optional<size_t> arraySize
     ) const;
 
     VarMetaData CreateVarMetadata(const ExportedVar& exportedVar) const;

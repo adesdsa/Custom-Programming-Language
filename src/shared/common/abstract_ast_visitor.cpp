@@ -24,6 +24,7 @@ void IASTVisitor::InitializeHandlers()
     this->m_handlers.reserve(23);  // pre-allocate for efficiency
     
     this->m_handlers.emplace(CommandTypes::VAR_DECLARATION,          [this](ASTNode* n) { VisitVarDeclaration(n); });
+    this->m_handlers.emplace(CommandTypes::ARRAY_DECLARATION,         [this](ASTNode* n) { VisitArrayDeclaration(n); });
     this->m_handlers.emplace(CommandTypes::EXPRESSION,               [this](ASTNode* n) { VisitExpression(n); });
     this->m_handlers.emplace(CommandTypes::EXPRESSION_VALUE,         [this](ASTNode* n) { VisitExpression(n); });
     this->m_handlers.emplace(CommandTypes::EXPRESSION_OPERATOR,      [this](ASTNode* n) { VisitExpression(n); });
@@ -50,4 +51,5 @@ void IASTVisitor::InitializeHandlers()
     this->m_handlers.emplace(CommandTypes::IMPORT_STATEMENT,         [this](ASTNode* n) { VisitImportStatement(n); });
     this->m_handlers.emplace(CommandTypes::PASS,                     [this](ASTNode* n) { VisitPass(n); });
     this->m_handlers.emplace(CommandTypes::EOF_TOKEN,                [this](ASTNode* n) { VisitEof(n); });
+    this->m_handlers.emplace(CommandTypes::ARRAY_VALUE,              [this](ASTNode* n) { VisitArrayValue(n); });
 }

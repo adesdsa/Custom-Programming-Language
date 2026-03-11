@@ -27,7 +27,7 @@ variables:
   VCPKG_DEFAULT_BINARY_CACHE: ${CI_PROJECT_DIR}/.vcpkg_cache
 
 # =====================
-# Build
+# Build (linux64)
 # =====================
 build:
   stage: build
@@ -59,6 +59,27 @@ build:
     when: always
     paths:
       - build/
+    expire_in: 1 week
+
+# =====================
+# Build linux32
+# =====================
+build-linux32:
+  stage: build
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update && apt-get install -y cmake g++ valgrind python3-pip git curl zip unzip tar pkg-config nasm g++-multilib gcc-multilib libc6-dev-i386
+  script:
+    - rm -rf build-linux32
+    - mkdir -p build-linux32
+    - cmake -S . -B build-linux32 -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
+      -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32"
+      -DCMAKE_EXE_LINKER_FLAGS="-m32" -DCMAKE_SHARED_LINKER_FLAGS="-m32"
+    - cmake --build build-linux32
+  artifacts:
+    when: always
+    paths:
+      - build-linux32/
     expire_in: 1 week
 
 # =====================
@@ -161,6 +182,47 @@ test-ir:
       - build/test_results/
     expire_in: 1h
 
+# =====================
+# Array Builtins Integration Test
+# =====================
+test-array-builtins:
+  stage: test
+  image: ubuntu:22.04
+  needs:
+    - job: build
+      artifacts: true
+  script:
+    - ln -s $CI_PROJECT_DIR/tests /tests
+    - chmod +x build/unit_tests
+    - mkdir -p build/test_results
+    - ./build/unit_tests --gtest_filter=ArrayBuiltinsIntegrationTest.* --gtest_output=xml:build/test_results/array_builtins.xml
+  artifacts:
+    reports:
+      junit: build/test_results/array_builtins.xml
+    paths:
+      - build/test_results/
+    expire_in: 1h
+
+# =====================
+# Linux32 Tests (full suite on 32-bit build)
+# =====================
+test-linux32:
+  stage: test
+  image: ubuntu:22.04
+  needs:
+    - job: build-linux32
+      artifacts: true
+  script:
+    - ln -s $CI_PROJECT_DIR/tests /tests
+    - chmod +x build-linux32/unit_tests
+    - mkdir -p build-linux32/test_results
+    - ./build-linux32/unit_tests --gtest_output=xml:build-linux32/test_results/linux32.xml
+  artifacts:
+    reports:
+      junit: build-linux32/test_results/linux32.xml
+    paths:
+      - build-linux32/test_results/
+    expire_in: 1h
 
 # =============================
 # Coding Conventions Checker

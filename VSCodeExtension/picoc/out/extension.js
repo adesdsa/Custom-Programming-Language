@@ -530,6 +530,44 @@ const BUILTIN_LIBRARIES = {
         { name: "set_char_at", kind: "function", signature: "set_char_at(s: string, index: int, c: char) -> void", detail: "(s: string, index: int, c: char) -> void", doc: "Sets the character at the given index" },
         { name: "EOS", kind: "variable", signature: "const EOS: int = -1", detail: "int (built-in constant)", doc: "End-of-string sentinel, returned by find functions when not found" },
     ],
+    arraylib: [
+        { name: "len", kind: "function", signature: "len(arr: int[]) -> int", detail: "(arr: int[]) -> int", doc: "Returns the number of elements in the array" },
+        { name: "front", kind: "function", signature: "front(arr: int[]) -> int", detail: "(arr: int[]) -> int", doc: "Returns the first element of the array" },
+        { name: "back", kind: "function", signature: "back(arr: int[]) -> int", detail: "(arr: int[]) -> int", doc: "Returns the last element of the array" },
+        { name: "find", kind: "function", signature: "find(arr: int[], value: int) -> int", detail: "(arr: int[], value: int) -> int", doc: "Index of first occurrence of value, or -1 if not found" },
+        { name: "find_first_of", kind: "function", signature: "find_first_of(arr: int[], value: int) -> int", detail: "(arr: int[], value: int) -> int", doc: "Index of first occurrence of value, or -1 if not found" },
+        { name: "find_last_of", kind: "function", signature: "find_last_of(arr: int[], value: int) -> int", detail: "(arr: int[], value: int) -> int", doc: "Index of last occurrence of value, or -1 if not found" },
+        { name: "len_str", kind: "function", signature: "len_str(arr: string[]) -> int", detail: "(arr: string[]) -> int", doc: "Returns the number of elements in a string array" },
+        { name: "front_str", kind: "function", signature: "front_str(arr: string[]) -> string", detail: "(arr: string[]) -> string", doc: "Returns the first element of a string array" },
+        { name: "back_str", kind: "function", signature: "back_str(arr: string[]) -> string", detail: "(arr: string[]) -> string", doc: "Returns the last element of a string array" },
+        { name: "find_str", kind: "function", signature: "find_str(arr: string[], value: string) -> int", detail: "(arr: string[], value: string) -> int", doc: "Index of first occurrence in string array, or -1 if not found" },
+        { name: "find_first_of_str", kind: "function", signature: "find_first_of_str(arr: string[], value: string) -> int", detail: "(arr: string[], value: string) -> int", doc: "Index of first occurrence in string array, or -1 if not found" },
+        { name: "find_last_of_str", kind: "function", signature: "find_last_of_str(arr: string[], value: string) -> int", detail: "(arr: string[], value: string) -> int", doc: "Index of last occurrence in string array, or -1 if not found" },
+        { name: "len_double", kind: "function", signature: "len_double(arr: double[]) -> int", detail: "(arr: double[]) -> int", doc: "Returns the number of elements in a double array" },
+        { name: "front_double", kind: "function", signature: "front_double(arr: double[]) -> double", detail: "(arr: double[]) -> double", doc: "Returns the first element of a double array" },
+        { name: "back_double", kind: "function", signature: "back_double(arr: double[]) -> double", detail: "(arr: double[]) -> double", doc: "Returns the last element of a double array" },
+        { name: "find_double", kind: "function", signature: "find_double(arr: double[], value: double) -> int", detail: "(arr: double[], value: double) -> int", doc: "Index of first occurrence in double array, or -1 if not found" },
+        { name: "find_first_of_double", kind: "function", signature: "find_first_of_double(arr: double[], value: double) -> int", detail: "(arr: double[], value: double) -> int", doc: "Index of first occurrence in double array, or -1 if not found" },
+        { name: "find_last_of_double", kind: "function", signature: "find_last_of_double(arr: double[], value: double) -> int", detail: "(arr: double[], value: double) -> int", doc: "Index of last occurrence in double array, or -1 if not found" },
+        { name: "len_char", kind: "function", signature: "len_char(arr: char[]) -> int", detail: "(arr: char[]) -> int", doc: "Returns the number of elements in a char array" },
+        { name: "front_char", kind: "function", signature: "front_char(arr: char[]) -> char", detail: "(arr: char[]) -> char", doc: "Returns the first element of a char array" },
+        { name: "back_char", kind: "function", signature: "back_char(arr: char[]) -> char", detail: "(arr: char[]) -> char", doc: "Returns the last element of a char array" },
+        { name: "find_char", kind: "function", signature: "find_char(arr: char[], value: char) -> int", detail: "(arr: char[], value: char) -> int", doc: "Index of first occurrence in char array, or -1 if not found" },
+        { name: "find_first_of_char", kind: "function", signature: "find_first_of_char(arr: char[], value: char) -> int", detail: "(arr: char[], value: char) -> int", doc: "Index of first occurrence in char array, or -1 if not found" },
+        { name: "find_last_of_char", kind: "function", signature: "find_last_of_char(arr: char[], value: char) -> int", detail: "(arr: char[], value: char) -> int", doc: "Index of last occurrence in char array, or -1 if not found" },
+        { name: "len_bool", kind: "function", signature: "len_bool(arr: bool[]) -> int", detail: "(arr: bool[]) -> int", doc: "Returns the number of elements in a bool array" },
+        { name: "front_bool", kind: "function", signature: "front_bool(arr: bool[]) -> bool", detail: "(arr: bool[]) -> bool", doc: "Returns the first element of a bool array" },
+        { name: "back_bool", kind: "function", signature: "back_bool(arr: bool[]) -> bool", detail: "(arr: bool[]) -> bool", doc: "Returns the last element of a bool array" },
+        { name: "find_bool", kind: "function", signature: "find_bool(arr: bool[], value: bool) -> int", detail: "(arr: bool[], value: bool) -> int", doc: "Index of first occurrence in bool array, or -1 if not found" },
+        { name: "find_first_of_bool", kind: "function", signature: "find_first_of_bool(arr: bool[], value: bool) -> int", detail: "(arr: bool[], value: bool) -> int", doc: "Index of first occurrence in bool array, or -1 if not found" },
+        { name: "find_last_of_bool", kind: "function", signature: "find_last_of_bool(arr: bool[], value: bool) -> int", detail: "(arr: bool[], value: bool) -> int", doc: "Index of last occurrence in bool array, or -1 if not found" },
+        { name: "len_uint", kind: "function", signature: "len_uint(arr: unsigned[]) -> int", detail: "(arr: unsigned[]) -> int", doc: "Returns the number of elements in an unsigned array" },
+        { name: "front_uint", kind: "function", signature: "front_uint(arr: unsigned[]) -> unsigned", detail: "(arr: unsigned[]) -> unsigned", doc: "Returns the first element of an unsigned array" },
+        { name: "back_uint", kind: "function", signature: "back_uint(arr: unsigned[]) -> unsigned", detail: "(arr: unsigned[]) -> unsigned", doc: "Returns the last element of an unsigned array" },
+        { name: "find_uint", kind: "function", signature: "find_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of first occurrence in unsigned array, or -1 if not found" },
+        { name: "find_first_of_uint", kind: "function", signature: "find_first_of_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of first occurrence in unsigned array, or -1 if not found" },
+        { name: "find_last_of_uint", kind: "function", signature: "find_last_of_uint(arr: unsigned[], value: unsigned) -> int", detail: "(arr: unsigned[], value: unsigned) -> int", doc: "Index of last occurrence in unsigned array, or -1 if not found" }],
+
     math: [
         { name: "sqrt", kind: "function", signature: "sqrt(x: double) -> double", detail: "(x: double) -> double", doc: "Returns the square root of x" },
         { name: "pow", kind: "function", signature: "pow(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns x raised to the power y" },
@@ -623,6 +661,35 @@ const BUILTIN_COMPLETIONS = [
     item.documentation = b.sig;
     return item;
 });
+const ARRAY_LIB_COMPLETIONS = [
+    { name: "len", sig: "len(arr: int[]) -> int", doc: "Returns the number of elements in the array" },
+    { name: "front", sig: "front(arr: int[]) -> int", doc: "Returns the first element of the array" },
+    { name: "back", sig: "back(arr: int[]) -> int", doc: "Returns the last element of the array" },
+    { name: "find", sig: "find(arr: int[], value: int) -> int", doc: "Index of first occurrence of value, or -1 if not found" },
+    { name: "find_first_of", sig: "find_first_of(arr: int[], value: int) -> int", doc: "Index of first occurrence of value, or -1 if not found" },
+    { name: "find_last_of", sig: "find_last_of(arr: int[], value: int) -> int", doc: "Index of last occurrence of value, or -1 if not found" },
+    { name: "len_str", sig: "len_str(arr: string[]) -> int", doc: "Number of elements in string array" },
+    { name: "front_str", sig: "front_str(arr: string[]) -> string", doc: "First element of string array" },
+    { name: "back_str", sig: "back_str(arr: string[]) -> string", doc: "Last element of string array" },
+    { name: "find_str", sig: "find_str(arr: string[], value: string) -> int", doc: "Index of first occurrence in string array, or -1" },
+    { name: "len_double", sig: "len_double(arr: double[]) -> int", doc: "Number of elements in double array" },
+    { name: "front_double", sig: "front_double(arr: double[]) -> double", doc: "First element of double array" },
+    { name: "back_double", sig: "back_double(arr: double[]) -> double", doc: "Last element of double array" },
+    { name: "find_double", sig: "find_double(arr: double[], value: double) -> int", doc: "Index of first occurrence in double array, or -1" },
+    { name: "len_char", sig: "len_char(arr: char[]) -> int", doc: "Number of elements in char array" },
+    { name: "front_char", sig: "front_char(arr: char[]) -> char", doc: "First element of char array" },
+    { name: "back_char", sig: "back_char(arr: char[]) -> char", doc: "Last element of char array" },
+    { name: "find_char", sig: "find_char(arr: char[], value: char) -> int", doc: "Index of first occurrence in char array, or -1" },
+    { name: "len_bool", sig: "len_bool(arr: bool[]) -> int", doc: "Number of elements in bool array" },
+    { name: "front_bool", sig: "front_bool(arr: bool[]) -> bool", doc: "First element of bool array" },
+    { name: "back_bool", sig: "back_bool(arr: bool[]) -> bool", doc: "Last element of bool array" },
+    { name: "find_bool", sig: "find_bool(arr: bool[], value: bool) -> int", doc: "Index of first occurrence in bool array, or -1" },
+].map((f) => {
+    const item = new vscode.CompletionItem(f.name, vscode.CompletionItemKind.Function);
+    item.detail = 'import from "arraylib"';
+    item.documentation = new vscode.MarkdownString(`${f.doc}\n\n\`${f.sig}\``);
+    return item;
+});
 const STRING_LIB_COMPLETIONS = [
     { name: "str_len", sig: "str_len(s: string) -> int", doc: "Returns the length of the string" },
     { name: "str_cmp", sig: "str_cmp(a: string, b: string) -> int", doc: "Lexicographic comparison: <0, 0, or >0" },
@@ -663,6 +730,7 @@ function provideCompletionItems(document, position) {
         ...MODIFIER_COMPLETIONS,
         ...BUILTIN_COMPLETIONS,
         ...STRING_LIB_COMPLETIONS,
+        ...ARRAY_LIB_COMPLETIONS,
         ...MATH_LIB_COMPLETIONS,
     ];
     const text = document.getText();

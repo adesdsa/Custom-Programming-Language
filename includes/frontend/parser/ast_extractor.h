@@ -19,6 +19,15 @@ public:
     static Scope ExtractVarScope(ASTNode* varDecNode);
     static AccessRights ExtractVarAccessRight(ASTNode* varDecNode);
 
+    /// @brief For ARRAY_DECLARATION nodes, extracts the array size from params[0].
+    /// @return The size if params[0] is a constant positive integer; nullopt otherwise.
+    static std::optional<size_t> ExtractArraySize(ASTNode* arrayDeclNode);
+
+    /// @brief For ARRAY_DECLARATION with empty brackets, extracts size from initializer.
+    /// Looks at next sibling (ASSIGNMENT) and next (ARRAY_VALUE) to get element count.
+    /// @return The size from initializer if present; nullopt otherwise.
+    static std::optional<size_t> ExtractArraySizeFromInitializer(ASTNode* arrayDeclNode);
+
     static Type ExtractFuncReturnType(ASTNode* funcDecNode);
     static const std::vector<VarMetaData> ExtractFuncParams(
         ASTNode* funcDecNode, 

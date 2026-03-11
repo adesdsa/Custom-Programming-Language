@@ -95,6 +95,8 @@ public:
     IRInstruction* CreateAlloca(std::shared_ptr<const IRType> type, const std::string& name = "");
     IRInstruction* CreateLoad(IRBaseValue* ptr, const std::string& name = "");
     IRInstruction* CreateStore(IRBaseValue* value, IRBaseValue* ptr);
+    IRInstruction* CreateGEP(IRBaseValue* base, IRBaseValue* index,
+        std::shared_ptr<const IRType> elementType, const std::string& name = "");
 
     // ===== TYPE CONVERSION =====
     IRInstruction* CreateFPToSI(IRBaseValue* value, std::shared_ptr<const IRType> destType, const std::string& name = "");
