@@ -640,8 +640,18 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     {
         argTypes.push_back(this->EvaluateNodeType(arg));
     }
+
+    static const std::unordered_set<std::string> ARRAYLIB_FUNCS = {
+        "front", "back", "len", "find", "find_first_of", "find_last_of",
+        "front_str", "back_str", "len_str", "find_str", "find_first_of_str", "find_last_of_str",
+        "front_double", "back_double", "len_double", "find_double", "find_first_of_double", "find_last_of_double",
+        "front_uint", "back_uint", "len_uint", "find_uint", "find_first_of_uint", "find_last_of_uint",
+        "front_char", "back_char", "len_char", "find_char", "find_first_of_char", "find_last_of_char",
+        "front_bool", "back_bool", "len_bool", "find_bool", "find_first_of_bool", "find_last_of_bool"
+    };
     
-    if (!this->m_facade.CheckFuncArguments(argTypes, funcName, this->m_funcTable))
+    if (!this->m_facade.CheckFuncArguments(argTypes, funcName, this->m_funcTable) &&
+        ARRAYLIB_FUNCS.count(funcName) == 0)
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -655,14 +665,6 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     }
 
     // arraylib functions require first arg to be an array
-    static const std::unordered_set<std::string> ARRAYLIB_FUNCS = {
-        "front", "back", "len", "find", "find_first_of", "find_last_of",
-        "front_str", "back_str", "len_str", "find_str", "find_first_of_str", "find_last_of_str",
-        "front_double", "back_double", "len_double", "find_double", "find_first_of_double", "find_last_of_double",
-        "front_uint", "back_uint", "len_uint", "find_uint", "find_first_of_uint", "find_last_of_uint",
-        "front_char", "back_char", "len_char", "find_char", "find_first_of_char", "find_last_of_char",
-        "front_bool", "back_bool", "len_bool", "find_bool", "find_first_of_bool", "find_last_of_bool"
-    };
     if (ARRAYLIB_FUNCS.count(funcName) && node->nodeFirstChild)
     {
         const Command& firstArg = node->nodeFirstChild->command;
@@ -1175,7 +1177,7 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
 {
     if (!node || this->m_facade.IsBlockFinished()) return;
 
-    bool nextIsAssignment = node->nodeNextSibling->command.GetType() == CommandTypes::ASSIGNMENT;
+    bool nextIsAssignment = node->nodeNextSibling && node->nodeNextSibling->command.GetType() == CommandTypes::ASSIGNMENT;
     const auto& type = node->command.GetType();
     const std::string& name = ASTExtractor::ExtractVarName(node);
 
