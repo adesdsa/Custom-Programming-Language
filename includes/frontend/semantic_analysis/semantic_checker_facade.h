@@ -114,6 +114,11 @@ public:
     /// @brief The func turns a Type into ExpressionType
     ExpressionType TypeToExpressionType(const Type& type);
 
+    /// @brief Returns true if the given ARRAY_SLICE is applied to a string (simple or chained).
+    ///        Slicing is only legal on strings.
+    bool IsSliceBaseString(const Command& sliceCommand,
+        const FuncTable& funcTable, const VarTableNode& currVarTableNode);
+
     /// @brief Suppress DefaultExpressionChecks so that condition evaluation
     /// @note(if/elif/while headers) does not overwrite the operation history.
     void SetSuppressDefaultExprCheck(bool suppress);
@@ -141,9 +146,9 @@ private:
     bool m_bSuppressDefaultExprCheck;       // When true, DefaultExpressionChecks is a no-op (used during condition evaluation).
 
     /// @brief Returns true if the first token of the expression is string-like or char-like (string/char literal, string/char var, or string-returning func).
-    static bool IsFirstTokenStringOrCharLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode);
+    bool IsFirstTokenStringOrCharLike(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode);
     /// @brief Helper for IsFirstTokenStringOrCharLike that works on a token range (handles leading parentheses).
-    static bool IsFirstTokenStringOrCharLikeFrom(const Command& expression, size_t start, size_t end, size_t& paramIndex,
+    bool IsFirstTokenStringOrCharLikeFrom(const Command& expression, size_t start, size_t end, size_t& paramIndex,
         const FuncTable& funcTable, const VarTableNode& currVarTableNode);
 
     /// @brief The func changes a Token into and ExpressionType.

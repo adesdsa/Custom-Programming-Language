@@ -9,7 +9,8 @@ Command::Command() :
     m_bIgnoreEON(false),
     m_bExpression(false), 
     m_iParanthesesCounter(0), 
-    m_bFirstParanthesesEnter(false)
+    m_bFirstParanthesesEnter(false),
+    m_bSawColonInArrayBrackets(false)
 {}
 
 std::string_view Command::GetType() const
@@ -722,16 +723,59 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
         }
         else if (this->m_iParanthesesCounter == 0)
         {
-            this->m_bIgnoreCurrToken = false;
             if (this->m_parameters.size() >= 2)
             {
+                this->m_bIgnoreCurrToken = false;
+                // Chained: params[0]=base. 2 params -> char access arr[0][0]; 3+ params -> slice arr[0][1:3]
+                if (this->m_parameters[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+                    this->m_parameters[0].GetType() == CommandTypes::ARRAY_SLICE)
+                {
+                    if (this->m_parameters.size() >= 3)
+                    {
+                        if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_SLICE, currToken))
+                            return this->FoundUnknown(currToken);
+                        return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
+                    }
+                    if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_ACCESS, currToken))
+                        return this->FoundUnknown(currToken);
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+                if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_SLICE, currToken))
+                    return this->FoundUnknown(currToken);
                 return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
             }
+            // Chained array access: arr[0][0] — next token is [
+            if (nextToken.GetValue() == "[")
+            {
+                this->m_bIgnoreCurrToken = true;
+                Command innerAccess;
+                innerAccess.m_tokens = std::move(this->m_tokens);
+                innerAccess.m_parameters = std::move(this->m_parameters);
+                innerAccess.m_sType = CommandTypes::ARRAY_ACCESS;
+
+                this->m_tokens.clear();
+                this->m_tokens.push_back(Token(
+                    TokenTypes::HAS_PARAM,
+                    currToken.GetLine(),
+                    currToken.GetColumn()));
+                this->m_parameters.clear();
+                this->m_parameters.push_back(std::move(innerAccess));
+                this->m_uParameterIndex = 1;
+                this->m_iParanthesesCounter = 1;
+                this->m_bFirstParanthesesEnter = false;
+                this->m_bSawColonInArrayBrackets = false;
+                this->m_sType = CommandTypes::ARRAY_ACCESS_START;
+                return false;
+            }
+            this->m_bIgnoreCurrToken = false;
+            if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_ACCESS, currToken))
+                return this->FoundUnknown(currToken);
             return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
         }
     }
     else if (currToken.GetValue() == ":" && this->m_iParanthesesCounter == 1)
     {
+        this->m_bSawColonInArrayBrackets = true;
         this->m_tokens.push_back(currToken);
         this->m_bIgnoreCurrToken = true;
         if (this->m_uParameterIndex < this->m_parameters.size())
@@ -1118,4 +1162,70 @@ bool Command::HandleArrayParanthesesParams(
 
     this->HandleFuncLikeParams(currToken, nextToken);
     return false;
+}
+
+bool Command::ValidateArrayAccessForm(std::string_view finishedType,
+    const Token& errToken)
+{
+    const auto& params = this->m_parameters;
+    const size_t n = params.size();
+
+    if (finishedType == CommandTypes::ARRAY_ACCESS)
+    {
+        if (n == 0 || n > 2)
+        {
+            this->m_errors.push_back(CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Invalid array access form",
+                errToken.GetLine(), errToken.GetColumn(),
+                "Legal forms: arr[x] or arr[x][x]"));
+            return false;
+        }
+        if (n == 2 && params[0].GetType() != CommandTypes::ARRAY_ACCESS &&
+            params[0].GetType() != CommandTypes::ARRAY_SLICE)
+        {
+            this->m_errors.push_back(CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Invalid array access — use colon : for slice",
+                errToken.GetLine(), errToken.GetColumn(),
+                "Legal forms: arr[x], arr[x][x], arr[x:x], arr[x:x:x]"));
+            return false;
+        }
+        return true;
+    }
+
+    if (finishedType == CommandTypes::ARRAY_SLICE)
+    {
+        if (n < 2 || n > 4)
+        {
+            this->m_errors.push_back(CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Invalid array slice form",
+                errToken.GetLine(), errToken.GetColumn(),
+                "Legal forms: arr[x:x], arr[x:x:x], arr[x][x:x], arr[x][x:x:x]"));
+            return false;
+        }
+        if (!this->m_bSawColonInArrayBrackets)
+        {
+            this->m_errors.push_back(CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Use colon : for slice",
+                errToken.GetLine(), errToken.GetColumn(),
+                "Legal forms: arr[x:x] or arr[x:x:x]"));
+            return false;
+        }
+        if (n == 4 && params[0].GetType() != CommandTypes::ARRAY_ACCESS &&
+            params[0].GetType() != CommandTypes::ARRAY_SLICE)
+        {
+            this->m_errors.push_back(CompileTimeError(
+                ErrorTypes::SYNTAX_ERROR,
+                "Invalid array slice form",
+                errToken.GetLine(), errToken.GetColumn(),
+                "Legal forms: arr[x:x], arr[x:x:x], arr[x][x:x], arr[x][x:x:x]"));
+            return false;
+        }
+        return true;
+    }
+
+    return true;
 }

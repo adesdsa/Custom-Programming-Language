@@ -1178,6 +1178,20 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
 
+    if (node->command.GetType() == CommandTypes::ARRAY_SLICE &&
+        !this->m_facade.IsSliceBaseString(node->command, this->m_funcTable, *this->m_currentScope))
+    {
+        const Token& errToken = tokens[0];
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::TYPE_ERROR,
+                "Array slicing is only allowed on strings",
+                errToken.GetLine(), errToken.GetColumn(),
+                "Use arr[x:x] or arr[x:x:x] only with string variables or string array elements"));
+        this->SignalFailureForNextHandlers();
+        return;
+    }
+
     const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
 
     if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
@@ -1262,6 +1276,48 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
         this->m_lastIdentifierName = identifierName;
         this->m_identifierError = false;
     }
+}
+
+void SemanticAnalysisVisitor::VisitArrayValue(ASTNode* node)
+{
+    if (!node || this->m_facade.IsBlockFinished()) return;
+    if (!this->m_pendingAssignment || this->m_lastIdentifierName.empty())
+    {
+        return;
+    }
+
+    auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+    if (!var.has_value() || var->type != Type::CHAR_TYPE || !var->arraySize.has_value())
+    {
+        ResetAssignmentState();
+        return;
+    }
+
+    const auto& params = node->command.GetParams();
+    for (size_t i = 0; i < params.size(); ++i)
+    {
+        ExpressionType elemType = this->m_facade.CheckExpression(
+            params[i], this->m_funcTable, *this->m_currentScope);
+
+        if (elemType == ExpressionType::STRING)
+        {
+            const std::vector<Token>& elemTokens = params[i].GetTokens();
+            size_t line = elemTokens.empty() ? this->m_assignmentLine : elemTokens[0].GetLine();
+            size_t col = elemTokens.empty() ? this->m_assignmentColumn : elemTokens[0].GetColumn();
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "Cannot use string in char array initializer — element " + std::to_string(i + 1) +
+                        " must be of type char",
+                    line,
+                    col,
+                    "Use char literals (e.g. 'a') or char expressions, not string literals"
+                )
+            );
+        }
+    }
+
+    ResetAssignmentState();
 }
 
 void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)

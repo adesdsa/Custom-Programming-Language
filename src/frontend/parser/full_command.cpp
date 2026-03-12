@@ -766,14 +766,22 @@ void FullCommand::ReformCommand(Command& checkedCommand)
         Operator op = ParseIncrementDecrementOperator(checkedCommand);
         if (op != Operator::NONE && this->m_line.size() > 0)
         {
-            const Token& varToken = this->m_line[0][0];
+            const Command& lhsCommand = this->m_line[0];
             checkedCommand.SetTokens({Token("=", TokenTypes::OPERATOR, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn())});
             checkedCommand.SetType(CommandTypes::ASSIGNMENT);
             Command exprCmd;
             exprCmd.SetValue(Token("1", TokenTypes::VALUE, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn()));
             exprCmd.SetType(CommandTypes::EXPRESSION);
             exprCmd.SetExpression(true);
-            PrependVariableAndOperatorToExpression(exprCmd, varToken, op);
+            if (lhsCommand.GetType() == CommandTypes::ARRAY_ACCESS || lhsCommand.GetType() == CommandTypes::ARRAY_SLICE)
+            {
+                PrependCommandAndOperatorToExpression(exprCmd, lhsCommand, op);
+            }
+            else
+            {
+                const Token& varToken = lhsCommand[0];
+                PrependVariableAndOperatorToExpression(exprCmd, varToken, op);
+            }
             this->m_line.insert(this->m_line.begin() + this->m_uLineIndex + 1, exprCmd);
             this->m_insertedCommandsCount = 1;
         }

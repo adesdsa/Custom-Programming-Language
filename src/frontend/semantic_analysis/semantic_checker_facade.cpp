@@ -100,6 +100,12 @@ bool SemanticCheckerFacade::IsFirstTokenStringOrCharLike(const Command& expressi
                 return true;
             }
         }
+        else if (param.GetType() == CommandTypes::ARRAY_ACCESS || param.GetType() == CommandTypes::ARRAY_SLICE)
+        {
+            ExpressionType paramType = CheckExpression(param, funcTable, currVarTableNode);
+            if (paramType == ExpressionType::STRING || paramType == ExpressionType::CHAR)
+                return true;
+        }
     }
 
     return false;
@@ -144,6 +150,11 @@ bool SemanticCheckerFacade::IsFirstTokenStringOrCharLikeFrom(const Command& expr
         }
         if (param.GetType() == CommandTypes::EXPRESSION)
             return IsFirstTokenStringOrCharLike(param, funcTable, currVarTableNode);
+        if (param.GetType() == CommandTypes::ARRAY_ACCESS || param.GetType() == CommandTypes::ARRAY_SLICE)
+        {
+            ExpressionType paramType = CheckExpression(param, funcTable, currVarTableNode);
+            return paramType == ExpressionType::STRING || paramType == ExpressionType::CHAR;
+        }
     }
     return false;
 }
@@ -316,6 +327,16 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     }
     if (expression.GetType() == CommandTypes::ARRAY_ACCESS)
     {
+        if (expression.GetParams().size() >= 2 &&
+            (expression.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+             expression.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+        {
+            ExpressionType baseType = CheckExpression(
+                expression.GetParams()[0], funcTable, currVarTableNode);
+            if (baseType == ExpressionType::STRING)
+                return ExpressionType::CHAR;
+            return ExpressionType::UNKNOWN;
+        }
         auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
         if (!varData.has_value()) return ExpressionType::UNKNOWN;
         if (varData->type == Type::STRING_TYPE)
@@ -324,6 +345,14 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
     }
     if (expression.GetType() == CommandTypes::ARRAY_SLICE)
     {
+        if (expression.GetParams().size() >= 3 &&
+            (expression.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+             expression.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+        {
+            ExpressionType baseType = CheckExpression(
+                expression.GetParams()[0], funcTable, currVarTableNode);
+            return (baseType == ExpressionType::STRING) ? ExpressionType::STRING : ExpressionType::UNKNOWN;
+        }
         auto varData = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
         if (!varData.has_value()) return ExpressionType::UNKNOWN;
         if (varData->type == Type::STRING_TYPE) return ExpressionType::STRING;
@@ -355,18 +384,40 @@ ExpressionType SemanticCheckerFacade::CheckExpression(
             }
             else if (currCommand.GetType() == CommandTypes::ARRAY_ACCESS)
             {
-                auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
-                if (!varData.has_value()) return ExpressionType::UNKNOWN;
-                if (varData->type == Type::STRING_TYPE)
-                    paramType = varData->arraySize.has_value() ? ExpressionType::STRING : ExpressionType::CHAR;
+                if (currCommand.GetParams().size() >= 2 &&
+                    (currCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+                     currCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+                {
+                    ExpressionType baseType = CheckExpression(
+                        currCommand.GetParams()[0], funcTable, currVarTableNode);
+                    paramType = (baseType == ExpressionType::STRING) ? ExpressionType::CHAR : ExpressionType::UNKNOWN;
+                }
                 else
-                    paramType = ExpressionType::MATHEMATICAL;
+                {
+                    auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                    if (!varData.has_value()) return ExpressionType::UNKNOWN;
+                    if (varData->type == Type::STRING_TYPE)
+                        paramType = varData->arraySize.has_value() ? ExpressionType::STRING : ExpressionType::CHAR;
+                    else
+                        paramType = ExpressionType::MATHEMATICAL;
+                }
             }
             else if (currCommand.GetType() == CommandTypes::ARRAY_SLICE)
             {
-                auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
-                if (!varData.has_value()) return ExpressionType::UNKNOWN;
-                paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::STRING : ExpressionType::UNKNOWN;
+                if (currCommand.GetParams().size() >= 3 &&
+                    (currCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+                     currCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+                {
+                    ExpressionType baseType = CheckExpression(
+                        currCommand.GetParams()[0], funcTable, currVarTableNode);
+                    paramType = (baseType == ExpressionType::STRING) ? ExpressionType::STRING : ExpressionType::UNKNOWN;
+                }
+                else
+                {
+                    auto varData = currVarTableNode.FindVar(currCommand[IDENTIFIER_INDEX].GetValue());
+                    if (!varData.has_value()) return ExpressionType::UNKNOWN;
+                    paramType = (varData->type == Type::STRING_TYPE) ? ExpressionType::STRING : ExpressionType::UNKNOWN;
+                }
             }
             else if (currCommand.GetType() == CommandTypes::SIZEOF)
             {
@@ -643,6 +694,23 @@ ExpressionType SemanticCheckerFacade::TypeToExpressionType(const Type& type)
     else return ExpressionType::MATHEMATICAL;
 }
 
+bool SemanticCheckerFacade::IsSliceBaseString(const Command& sliceCommand,
+    const FuncTable& funcTable, const VarTableNode& currVarTableNode)
+{
+    if (sliceCommand.GetType() != CommandTypes::ARRAY_SLICE) return false;
+    if (sliceCommand.GetParams().size() >= 3 &&
+        (sliceCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+         sliceCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+    {
+        ExpressionType baseType = CheckExpression(
+            sliceCommand.GetParams()[0], funcTable, currVarTableNode);
+        return baseType == ExpressionType::STRING;
+    }
+    auto varData = currVarTableNode.FindVar(sliceCommand[IDENTIFIER_INDEX].GetValue());
+    if (!varData.has_value()) return false;
+    return varData->type == Type::STRING_TYPE;
+}
+
 ExpressionType SemanticCheckerFacade::TokenToExpressionType(const Token& token)
 {
     /// First we check if the token is an operator
@@ -691,7 +759,7 @@ bool SemanticCheckerFacade::CompareTypes(const Type& expectedType, const Express
     if (expectedType == Type::BOOL_TYPE && gottenType == ExpressionType::BOOLEAN) return true;
     if (expectedType == Type::VOID_TYPE && gottenType == ExpressionType::VOID_TYPE) return true;
     if (expectedType == Type::STRING_TYPE && (gottenType == ExpressionType::STRING || gottenType == ExpressionType::CHAR)) return true;  // char can assign to string
-    if (expectedType == Type::CHAR_TYPE && (gottenType == ExpressionType::CHAR || gottenType == ExpressionType::STRING)) return true;
+    if (expectedType == Type::CHAR_TYPE && gottenType == ExpressionType::CHAR) return true;
     if (gottenType == ExpressionType::MATHEMATICAL &&
         (expectedType == Type::DOUBLE_TYPE ||
         expectedType == Type::INT_TYPE ||
