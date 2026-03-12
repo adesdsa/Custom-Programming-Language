@@ -154,7 +154,7 @@ private:
     bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
     int m_iParanthesesCounter;              // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
-    bool m_bSawColonInArrayBrackets;        // True if ":" was seen (required for slice; distinguishes from comma/semicolon).
+    size_t m_bSawColonInArrayBrackets;        // Counts if ":" was seen (required for slice; distinguishes from comma/semicolon).
     std::vector<CompileTimeError> m_errors;
 
 
@@ -438,10 +438,4 @@ private:
     // @return: True-> Finished the checks. False-> Otherwise.
     bool HandleArrayParanthesesParams(Token& currToken, Token& nextToken, 
         std::string_view sFinishedType);
-
-    /// Validates that array access/slice matches legal forms: arr[x], arr[x][x],
-    /// arr[x:x], arr[x:x:x], arr[x][x:x], arr[x][x:x:x]. Returns false and stores
-    /// error if invalid. Uses m_bSawColonInArrayBrackets for slice delimiter check.
-    bool ValidateArrayAccessForm(std::string_view finishedType,
-        const Token& errToken);
 };

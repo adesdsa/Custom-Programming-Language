@@ -160,7 +160,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
     {
         bReturnValue = this->ParseNotFuncIdentifier(currToken);
     }
-    else if (this->m_sType == CommandTypes::ARRAY_ACCESS_START)
+    else if (this->m_sType == CommandTypes::ARRAY_ACCESS_START || 
+        this->m_sType == CommandTypes::ARRAY_ACCESS)
     {
         bReturnValue = this->ParseArrayAccessStart(currToken, nextToken);
     }
@@ -718,105 +719,96 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
 {
     if (this->HandleDefaultPossibleParamChecks(currToken, "["))
     {
+        this->m_bIgnoreCurrToken = false;
         return false;
     }
+    else if (currToken.GetValue() == "[")
+    {
+        this->m_bIgnoreCurrToken = false;
+        return false;
+    }
+
     else if (currToken.GetValue() == "]")
     {
+        this->m_bIgnoreCurrToken = false;
         if (this->LowerParanthesesCounter(currToken))
         {
             return true;
         }
         else if (this->m_iParanthesesCounter == 0)
         {
-            if (this->m_parameters.size() >= 2)
+            if (this->m_uParameterIndex < this->m_parameters.size())
             {
-                this->m_bIgnoreCurrToken = false;
-                // Chained: params[0]=base. 2 params -> char access arr[0][0]; 3+ params -> slice arr[0][1:3]
-                if (this->m_parameters[0].GetType() == CommandTypes::ARRAY_ACCESS ||
-                    this->m_parameters[0].GetType() == CommandTypes::ARRAY_SLICE)
+                this->m_uParameterIndex++;
+            }
+            if (this->m_bSawColonInArrayBrackets)
+            {
+                if (this->m_bSawColonInArrayBrackets > 2)
                 {
-                    if (this->m_parameters.size() >= 3)
-                    {
-                        if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_SLICE, currToken))
-                            return this->FoundUnknown(currToken);
-                        return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
-                    }
-                    if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_ACCESS, currToken))
-                        return this->FoundUnknown(currToken);
+                    this->m_errors.push_back(CompileTimeError(
+                        ErrorTypes::SYNTAX_ERROR,
+                        "Too many colons inside array access",
+                        currToken.GetLine(), currToken.GetColumn(),
+                        "Check for a mistaken ':', keep it as [start : stop : step]"));
+                    this->m_bSawColonInArrayBrackets = 0;
+                    return this->FoundUnknown(currToken);
+                }
+                else if (this->m_sType == CommandTypes::ARRAY_ACCESS)
+                {
+                    this->m_bSawColonInArrayBrackets = 0;
+                    return this->FinishAndAssignType(CommandTypes::STRING_ARRAY_SLICE);
+                }
+                else
+                {
+                    this->m_bSawColonInArrayBrackets = 0;
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
+                }
+            }
+            else
+            {
+                if (this->IsValue(nextToken, "["))
+                {
+                    return this->NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+                if (this->m_sType == CommandTypes::ARRAY_ACCESS)
+                {
+                    return this->FinishAndAssignType(CommandTypes::STRING_ARRAY_ACCESS);
+                }
+                if (this->IsIncrementDecrement(nextToken))
+                {
                     return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
                 }
-                if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_SLICE, currToken))
-                    return this->FoundUnknown(currToken);
-                return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
+                if (this->IsAssignmentOperator(nextToken))
+                {
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+                if (this->IsOperator(nextToken))
+                {
+                    this->m_bIgnoreCurrToken = true;
+                    this->m_tokens.push_back(currToken);
+                    this->m_sType = CommandTypes::ARRAY_ACCESS;
+                    this->MoveThisIntoParam();
+                    return this->NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+                }
+                else
+                {
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
             }
-            // Chained array access: arr[0][0] — next token is [
-            if (nextToken.GetValue() == "[")
-            {
-                this->m_bIgnoreCurrToken = true;
-                Command innerAccess;
-                innerAccess.m_tokens = std::move(this->m_tokens);
-                innerAccess.m_tokens.push_back(currToken);  // include closing ]
-                innerAccess.m_parameters = std::move(this->m_parameters);
-                innerAccess.m_sType = CommandTypes::ARRAY_ACCESS;
-
-                this->m_tokens.clear();
-                this->m_tokens.push_back(Token(
-                    TokenTypes::HAS_PARAM,
-                    currToken.GetLine(),
-                    currToken.GetColumn()));
-                this->m_parameters.clear();
-                this->m_parameters.push_back(std::move(innerAccess));
-                this->m_uParameterIndex = 1;
-                this->m_iParanthesesCounter = 1;
-                this->m_bFirstParanthesesEnter = true;  // next [ is start of new bracket pair
-                this->m_bSawColonInArrayBrackets = false;
-                this->m_sType = CommandTypes::ARRAY_ACCESS_START;
-                return false;
-            }
-            // Array access in expression: arr[x] + x — next token is binary operator, chain into EXPRESSION_OPERATOR
-            // Do NOT chain for ++/-- (arr[0]++) or +=/-= (arr[1] += 5) — those are postfix/compound
-            if (this->IsOperator(nextToken) && !this->IsIncrementDecrement(nextToken) &&
-                !this->IsAssignmentOperator(nextToken))
-            {
-                this->m_bIgnoreCurrToken = true;
-                Command innerAccess;
-                innerAccess.m_tokens = std::move(this->m_tokens);
-                innerAccess.m_tokens.push_back(currToken);  // include closing ]
-                innerAccess.m_parameters = std::move(this->m_parameters);
-                innerAccess.m_sType = CommandTypes::ARRAY_ACCESS;
-                innerAccess.m_bExpression = true;
-
-                this->m_tokens.clear();
-                this->m_tokens.push_back(Token(
-                    TokenTypes::HAS_PARAM,
-                    currToken.GetLine(),
-                    currToken.GetColumn()));
-                this->m_parameters.clear();
-                this->m_parameters.push_back(std::move(innerAccess));
-                this->m_uParameterIndex = 1;
-                this->m_iParanthesesCounter = 0;
-                this->m_bBuildingParam = false;  // next token (+) will be the operator
-                this->m_sType = CommandTypes::EXPRESSION_VALUE;
-                return false;
-            }
-            this->m_bIgnoreCurrToken = false;
-            if (!this->ValidateArrayAccessForm(CommandTypes::ARRAY_ACCESS, currToken))
-                return this->FoundUnknown(currToken);
-            return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
         }
     }
-    else if (currToken.GetValue() == ":" && this->m_iParanthesesCounter == 1)
+    else if (currToken.GetValue() == ":")
     {
-        this->m_bSawColonInArrayBrackets = true;
-        this->m_tokens.push_back(currToken);
-        this->m_bIgnoreCurrToken = true;
+        this->m_bSawColonInArrayBrackets++;
         if (this->m_uParameterIndex < this->m_parameters.size())
         {
             this->m_uParameterIndex++;
         }
+        this->m_bIgnoreCurrToken = false;
         return false;
     }
 
+    this->m_bIgnoreCurrToken = true;
     this->AddToCurrParam(currToken, nextToken);
     return false;
 }
@@ -1194,70 +1186,4 @@ bool Command::HandleArrayParanthesesParams(
 
     this->HandleFuncLikeParams(currToken, nextToken);
     return false;
-}
-
-bool Command::ValidateArrayAccessForm(std::string_view finishedType,
-    const Token& errToken)
-{
-    const auto& params = this->m_parameters;
-    const size_t n = params.size();
-
-    if (finishedType == CommandTypes::ARRAY_ACCESS)
-    {
-        if (n == 0 || n > 2)
-        {
-            this->m_errors.push_back(CompileTimeError(
-                ErrorTypes::SYNTAX_ERROR,
-                "Invalid array access form",
-                errToken.GetLine(), errToken.GetColumn(),
-                "Legal forms: arr[x] or arr[x][x]"));
-            return false;
-        }
-        if (n == 2 && params[0].GetType() != CommandTypes::ARRAY_ACCESS &&
-            params[0].GetType() != CommandTypes::ARRAY_SLICE)
-        {
-            this->m_errors.push_back(CompileTimeError(
-                ErrorTypes::SYNTAX_ERROR,
-                "Invalid array access — use colon : for slice",
-                errToken.GetLine(), errToken.GetColumn(),
-                "Legal forms: arr[x], arr[x][x], arr[x:x], arr[x:x:x]"));
-            return false;
-        }
-        return true;
-    }
-
-    if (finishedType == CommandTypes::ARRAY_SLICE)
-    {
-        if (n < 2 || n > 4)
-        {
-            this->m_errors.push_back(CompileTimeError(
-                ErrorTypes::SYNTAX_ERROR,
-                "Invalid array slice form",
-                errToken.GetLine(), errToken.GetColumn(),
-                "Legal forms: arr[x:x], arr[x:x:x], arr[x][x:x], arr[x][x:x:x]"));
-            return false;
-        }
-        if (!this->m_bSawColonInArrayBrackets)
-        {
-            this->m_errors.push_back(CompileTimeError(
-                ErrorTypes::SYNTAX_ERROR,
-                "Use colon : for slice",
-                errToken.GetLine(), errToken.GetColumn(),
-                "Legal forms: arr[x:x] or arr[x:x:x]"));
-            return false;
-        }
-        if (n == 4 && params[0].GetType() != CommandTypes::ARRAY_ACCESS &&
-            params[0].GetType() != CommandTypes::ARRAY_SLICE)
-        {
-            this->m_errors.push_back(CompileTimeError(
-                ErrorTypes::SYNTAX_ERROR,
-                "Invalid array slice form",
-                errToken.GetLine(), errToken.GetColumn(),
-                "Legal forms: arr[x:x], arr[x:x:x], arr[x][x:x], arr[x][x:x:x]"));
-            return false;
-        }
-        return true;
-    }
-
-    return true;
 }
