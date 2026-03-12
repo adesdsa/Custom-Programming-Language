@@ -1557,7 +1557,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
         const std::string& varName = varTokens[VAR_NAME_TOKEN_INDEX].GetValue();
         auto var = this->m_currentScope->FindVar(varName);
 
-        if (var.has_value()) 
+        if (var.has_value() && var->arraySize == 0) 
         {
             return this->m_facade.TypeToExpressionType(var->type);
         }
