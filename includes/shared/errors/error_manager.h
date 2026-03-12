@@ -42,6 +42,8 @@ public:
     // @return: true -> Errors stored in the `m_errorList`, false -> Otherwise.
     bool HasErrorsOccured() const noexcept;
 
+    std::vector<CompileTimeError> GetErrorsCopy() const;
+
     /// @brief Enable/disable deferred mode.
     /// When deferred, HandleErrors() is a no-op so that all files can be
     /// processed before errors are displayed. Call with false and then

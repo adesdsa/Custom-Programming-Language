@@ -899,7 +899,13 @@ bool FullCommand::CheckLastFuncParamComa(
 
 void FullCommand::HandleSingleParamKeyword(Command& checkedCommand)
 {
-    if (this->CheckConstSize(checkedCommand, 4))
+    // Simple arr[i]: 4 tokens [identifier, "[", HAS_PARAM, "]"].
+    // Chained arr[i][j]: outer command has 3 tokens [HAS_PARAM, HAS_PARAM, "]"] because the inner arr[i] is collapsed into the first HAS_PARAM.
+    bool isChainedArrayAccess = (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS &&
+        checkedCommand.GetParams().size() >= 2 &&
+        (checkedCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+         checkedCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE));
+    if (!isChainedArrayAccess && this->CheckConstSize(checkedCommand, 4))
     {
         return;
     }
@@ -963,7 +969,11 @@ void FullCommand::HandleFuncLikeExpressions(
 
 inline bool FullCommand::CheckLastExpressionOperator(Command& checkedCommand)
 {
-    const Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 2];
+    const auto& tokens = checkedCommand.GetTokens();
+    if (tokens.size() < 2) return false;
+    // Binary expression (a op b) has tokens [HAS_PARAM, op, HAS_PARAM] — size-2 is the operator; that's valid
+    if (checkedCommand.GetParams().size() == 2) return false;
+    const Token lastToken = checkedCommand[tokens.size() - 2];
     if ((lastToken.GetType() == TokenTypes::OPERATOR ||
          lastToken.GetType() == TokenTypes::KEYWORD)
         && lastToken.GetValue() != ")")

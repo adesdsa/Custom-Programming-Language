@@ -120,7 +120,7 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
 
                 header << "section .data\n";
                 header << "    __println_fmt_int db \"%lld\", 10, 0\n";
-                header << "    __println_fmt_double db \"%g\", 10, 0\n";
+                header << "    __println_fmt_double db \"%.6f\", 10, 0\n";
                 header << "    __println_fmt_str db \"%s\", 10, 0\n";
                 header << "    __println_fmt_char db \"%c\", 10, 0\n";
                 header << "    __println_bool_true db \"true\", 0\n";
@@ -1714,7 +1714,7 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    ret\n";
 
         // ---- Built-in: println_double(value: double) -> void ----
-        // Wraps printf with a "%g\n" format string.
+        // Wraps printf with a "%.6f\n" format string (decimal, not scientific).
         // Caller passes double bits in rcx (standard int register ABI).
         // printf variadic needs the double in BOTH rdx and xmm1.
         out << "\n";

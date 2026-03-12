@@ -470,6 +470,11 @@ bool Command::ParseScope(Token& currToken)
     {
         return this->NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
     }
+    else if (this->IsScope(currToken))
+    {
+        // e.g. export let, export var — allow chained scope keywords
+        return this->NoFinishAndAssignType(CommandTypes::SCOPE);
+    }
     else if (this->IsType(currToken, TokenTypes::IDENTIFIER))
     {
         return this->NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
@@ -750,6 +755,7 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
                 this->m_bIgnoreCurrToken = true;
                 Command innerAccess;
                 innerAccess.m_tokens = std::move(this->m_tokens);
+                innerAccess.m_tokens.push_back(currToken);  // include closing ]
                 innerAccess.m_parameters = std::move(this->m_parameters);
                 innerAccess.m_sType = CommandTypes::ARRAY_ACCESS;
 
@@ -762,9 +768,35 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
                 this->m_parameters.push_back(std::move(innerAccess));
                 this->m_uParameterIndex = 1;
                 this->m_iParanthesesCounter = 1;
-                this->m_bFirstParanthesesEnter = false;
+                this->m_bFirstParanthesesEnter = true;  // next [ is start of new bracket pair
                 this->m_bSawColonInArrayBrackets = false;
                 this->m_sType = CommandTypes::ARRAY_ACCESS_START;
+                return false;
+            }
+            // Array access in expression: arr[x] + x — next token is binary operator, chain into EXPRESSION_OPERATOR
+            // Do NOT chain for ++/-- (arr[0]++) or +=/-= (arr[1] += 5) — those are postfix/compound
+            if (this->IsOperator(nextToken) && !this->IsIncrementDecrement(nextToken) &&
+                !this->IsAssignmentOperator(nextToken))
+            {
+                this->m_bIgnoreCurrToken = true;
+                Command innerAccess;
+                innerAccess.m_tokens = std::move(this->m_tokens);
+                innerAccess.m_tokens.push_back(currToken);  // include closing ]
+                innerAccess.m_parameters = std::move(this->m_parameters);
+                innerAccess.m_sType = CommandTypes::ARRAY_ACCESS;
+                innerAccess.m_bExpression = true;
+
+                this->m_tokens.clear();
+                this->m_tokens.push_back(Token(
+                    TokenTypes::HAS_PARAM,
+                    currToken.GetLine(),
+                    currToken.GetColumn()));
+                this->m_parameters.clear();
+                this->m_parameters.push_back(std::move(innerAccess));
+                this->m_uParameterIndex = 1;
+                this->m_iParanthesesCounter = 0;
+                this->m_bBuildingParam = false;  // next token (+) will be the operator
+                this->m_sType = CommandTypes::EXPRESSION_VALUE;
                 return false;
             }
             this->m_bIgnoreCurrToken = false;

@@ -129,7 +129,7 @@ std::string X86_Emitter::EmitHeader(const IRModule& module) const
 
                 header << "section .data\n";
                 header << "    __println_fmt_int db \"%d\", 10, 0\n";
-                header << "    __println_fmt_double db \"%g\", 10, 0\n";
+                header << "    __println_fmt_double db \"%.6f\", 10, 0\n";
                 header << "    __println_fmt_str db \"%s\", 10, 0\n";
                 header << "    __println_fmt_char db \"%c\", 10, 0\n";
                 header << "    __println_bool_true db \"true\", 0\n";

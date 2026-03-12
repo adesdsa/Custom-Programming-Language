@@ -133,15 +133,15 @@ void SemanticAnalysisVisitor::VisitArrayDeclaration(ASTNode* node)
     {
         arraySize = ASTExtractor::ExtractArraySizeFromInitializer(node);
     }
-    if (!arraySize.has_value() || arraySize.value() == 0)
+    if (!arraySize.has_value())
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::SYNTAX_ERROR,
-                "Array size must be a constant positive integer or inferred from initializer (e.g. int[] = [1,2,3])",
+                "Array size must be a constant non-negative integer or inferred from initializer (e.g. int[] = [1,2,3])",
                 tokens[0].GetLine(),
                 tokens[0].GetColumn(),
-                "Use a literal like 10, a const expression, or int[] = [1,2,3] to infer from initializer"
+                "Use a literal like 0, 10, a const expression, or int[] = [1,2,3] to infer from initializer"
             )
         );
         return;
@@ -1178,7 +1178,8 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
     const std::vector<Token>& tokens = node->command.GetTokens();
     if (tokens.empty()) return;
 
-    if (node->command.GetType() == CommandTypes::ARRAY_SLICE &&
+    if ((node->command.GetType() == CommandTypes::ARRAY_SLICE ||
+         node->command.GetType() == CommandTypes::STRING_ARRAY_SLICE) &&
         !this->m_facade.IsSliceBaseString(node->command, this->m_funcTable, *this->m_currentScope))
     {
         const Token& errToken = tokens[0];
@@ -1192,16 +1193,92 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
         return;
     }
 
-    const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
+    if ((node->command.GetType() == CommandTypes::STRING_ARRAY_ACCESS ||
+         node->command.GetType() == CommandTypes::STRING_ARRAY_SLICE))
+    {
+        auto var = this->m_currentScope->FindVar(tokens[IDENTIFIER_NAME_INDEX].GetValue());
+        if (!var.has_value() || var->type != Type::STRING_TYPE || !var->arraySize.has_value())
+        {
+            const Token& errToken = tokens[0];
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "Double array access (arr[i][j]) and string array slicing (arr[i][j:k]) are only allowed on string arrays",
+                    errToken.GetLine(), errToken.GetColumn(),
+                    "Use arr[i][j] or arr[i][j:k] only with string[] variables"));
+            this->SignalFailureForNextHandlers();
+            return;
+        }
+    }
+    else if (node->command.GetType() == CommandTypes::ARRAY_ACCESS &&
+             node->command.GetParams().size() >= 2 &&
+             (node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+              node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+    {
+        ExpressionType baseType = this->m_facade.CheckExpression(
+            node->command.GetParams()[0], this->m_funcTable, *this->m_currentScope);
+        if (baseType != ExpressionType::STRING)
+        {
+            const Token& errToken = tokens[0];
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "Double array access (arr[i][j]) is only allowed on string arrays",
+                    errToken.GetLine(), errToken.GetColumn(),
+                    "Use arr[i][j] only with string[] variables"));
+            this->SignalFailureForNextHandlers();
+            return;
+        }
+    }
+    else if (node->command.GetType() == CommandTypes::ARRAY_SLICE &&
+             node->command.GetParams().size() >= 3 &&
+             (node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+              node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+    {
+        ExpressionType baseType = this->m_facade.CheckExpression(
+            node->command.GetParams()[0], this->m_funcTable, *this->m_currentScope);
+        if (baseType != ExpressionType::STRING)
+        {
+            const Token& errToken = tokens[0];
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "String array slicing (arr[i][j:k]) is only allowed on string arrays",
+                    errToken.GetLine(), errToken.GetColumn(),
+                    "Use arr[i][j:k] only with string[] variables"));
+            this->SignalFailureForNextHandlers();
+            return;
+        }
+    }
 
-    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
+    // For chained arr[i][j], identifier is in params[0]; for simple arr[i], in tokens[0]
+    std::string identifierName;
+    const Token* identifierToken = nullptr;
+    if (node->command.GetParams().size() >= 2 &&
+        (node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+         node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+    {
+        const auto& innerTokens = node->command.GetParams()[0].GetTokens();
+        if (!innerTokens.empty())
+        {
+            identifierName = innerTokens[IDENTIFIER_NAME_INDEX].GetValue();
+            identifierToken = &innerTokens[IDENTIFIER_NAME_INDEX];
+        }
+    }
+    if (identifierToken == nullptr)
+    {
+        identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
+        identifierToken = &tokens[IDENTIFIER_NAME_INDEX];
+    }
+
+    if (identifierName.empty() || !this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
                 "Undefined variable '" + identifierName + "'",
-                tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                identifierToken->GetLine(),
+                identifierToken->GetColumn(),
                 "Declare the variable before using it"
             )
         );
@@ -1230,8 +1307,8 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
                         ErrorTypes::TYPE_ERROR,
                         "Type mismatch: cannot assign '" + gotType + "' to variable '" +
                             this->m_lastIdentifierName + "' of type '" + expectedType + "'",
-                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        identifierToken->GetLine(),
+                        identifierToken->GetColumn(),
                         "Ensure the expression type matches the variable type"
                     )
                 );
@@ -1250,8 +1327,8 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
                     CompileTimeError(
                         ErrorTypes::ACCESS_RIGHT_ERROR,
                         "Cannot assign to constant variable '" + identifierName + "'",
-                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        identifierToken->GetLine(),
+                        identifierToken->GetColumn(),
                         "Constant variables cannot be modified after declaration"
                     )
                 );
@@ -1264,8 +1341,8 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
                     CompileTimeError(
                         ErrorTypes::ACCESS_RIGHT_ERROR,
                         "Cannot assign to read-only variable '" + identifierName + "'",
-                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                        identifierToken->GetLine(),
+                        identifierToken->GetColumn(),
                         "Read-only variables cannot be modified"
                     )
                 );
@@ -1523,7 +1600,9 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
     }
 
     else if (nodeType == CommandTypes::ARRAY_ACCESS ||
-             nodeType == CommandTypes::ARRAY_SLICE)
+             nodeType == CommandTypes::ARRAY_SLICE ||
+             nodeType == CommandTypes::STRING_ARRAY_ACCESS ||
+             nodeType == CommandTypes::STRING_ARRAY_SLICE)
     {
         return this->m_facade.CheckExpression(
             node->command,

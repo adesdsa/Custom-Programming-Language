@@ -73,7 +73,7 @@ FileExportTable CollectExports(const AST& ast, const std::string& filePath)
                 std::optional<size_t> arraySize = ASTExtractor::ExtractArraySize(cursor);
                 if (!arraySize.has_value())
                     arraySize = ASTExtractor::ExtractArraySizeFromInitializer(cursor);
-                if (arraySize.has_value() && arraySize.value() > 0)
+                if (arraySize.has_value())
                 {
                     ExportedVar var;
                     var.name = ASTExtractor::ExtractVarName(cursor);

@@ -3,6 +3,7 @@
 ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
     m_entityLogger("PARSER"),
     m_errorManager(ErrorManager::GetInstance()),
+    m_filePath(filePath),
     m_ast(m_entityLogger),
     m_lexer(filePath),
     m_currentToken(this->FetchToken()),
@@ -14,6 +15,7 @@ ParserLogic::ParserLogic(const std::filesystem::path& filePath) :
 const AST& ParserLogic::MainFlow()
 {
     ErrorManager::SetCurrentReporter("PARSER");
+    ErrorManager::SetCurrentFilePath(this->m_filePath.string());
     this->m_entityLogger.Info("Start parsing file");
 
     bool importStillLegal = true;
