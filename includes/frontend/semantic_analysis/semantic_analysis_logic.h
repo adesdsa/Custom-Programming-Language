@@ -42,6 +42,9 @@ public:
      ****************************************************************************/
     const DecoratedAST& MainFlow();
 
+    /// @return Reference to the decorated AST produced by MainFlow() (valid after MainFlow() has been called).
+    const DecoratedAST& GetDecoratedAST() const;
+
 private:
     EntityLogger m_semanticAnalysisLogger;
     ErrorManager& m_errorManager;

@@ -42,6 +42,7 @@ public:
     void SetFilePath(const std::string& filePath);
     void SetReporter(const std::string& reporter);
 
+    const std::string& GetFilePath() const noexcept;
     const std::string& GetReporter() const noexcept;
 
 private:
