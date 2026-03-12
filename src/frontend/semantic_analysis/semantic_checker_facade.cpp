@@ -466,6 +466,60 @@ bool SemanticCheckerFacade::CheckAssignment(const std::string& sAssignedVarName,
     return CompareTypes(varData.type, assigmentExpressionType);
 }
 
+bool SemanticCheckerFacade::IsCompileTimeConstant(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode)
+{
+    if (expression.GetType() == CommandTypes::FINISHED_FUNC_CALL)
+    {
+        return false;
+    }
+    else if (expression.GetType() == CommandTypes::ARRAY_ACCESS || expression.GetType() == CommandTypes::ARRAY_SLICE)
+    {
+        return false;
+    }
+    else if (expression.GetType() == CommandTypes::SIZEOF)
+    {
+        return true;
+    }
+    else if (expression.GetType() == CommandTypes::IDENTIFIER_VALUE)
+    {
+        auto found = currVarTableNode.FindVar(expression[IDENTIFIER_INDEX].GetValue());
+        if (!found.has_value()) return false;
+        return found->accessRights == AccessRights::CONST_ACCESS;
+    }
+    else if (expression.GetType() != CommandTypes::EXPRESSION)
+    {
+        return false;
+    }
+
+    const std::vector<Token>& tokens = expression.GetTokens();
+    size_t paramIndex = 0;
+    for (size_t i = 0; i < tokens.size(); i++)
+    {
+        if (tokens[i].GetType() == TokenTypes::HAS_PARAM)
+        {
+            if (paramIndex >= expression.GetParams().size()) return false;
+            const Command& param = expression.GetParams()[paramIndex++];
+            if (!IsCompileTimeConstant(param, funcTable, currVarTableNode))
+            {
+                return false;
+            }
+        }
+        else if (
+            tokens[i].GetType() != TokenTypes::STRING_LITERAL &&
+            tokens[i].GetType() != TokenTypes::CHAR_LITERAL &&
+            tokens[i].GetType() != TokenTypes::VALUE &&
+            tokens[i].GetType() != TokenTypes::OPERATOR &&
+            tokens[i].GetType() != TokenTypes::KEYWORD)
+        {
+            if (tokens[i].GetValue() != "(" && tokens[i].GetValue() != ")")
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool SemanticCheckerFacade::CheckControlStatement()
 {
     // Use m_bLoopFlag to check if we're inside any loop, not just if the current block is a loop.

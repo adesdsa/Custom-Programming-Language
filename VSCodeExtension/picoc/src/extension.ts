@@ -579,7 +579,7 @@ function parseImports(document: vscode.TextDocument): ImportStatement[] {
 const RESERVED_WORDS = new Set([
   "if", "elif", "else", "for", "while", "break", "continue", "return", "pass",
   "and", "or", "not", "xor", "sizeof", "import", "export", "from",
-  "let", "var", "const", "readonly", "global", "println",
+  "let", "var", "const", "readonly", "global",
 ]);
 
 function extractSymbolsFromFile(filePath: string): ExternalSymbol[] {
@@ -713,6 +713,12 @@ const BUILTIN_LIBRARIES: Record<string, BuiltinSymbol[]> = {
     { name: "min", kind: "function", signature: "min(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns the smaller of x and y" },
     { name: "max", kind: "function", signature: "max(x: double, y: double) -> double", detail: "(x: double, y: double) -> double", doc: "Returns the larger of x and y" },
   ],
+  io: [
+    { name: "println", kind: "function", signature: "println(value) -> void", detail: "(value) -> void", doc: "Prints a value followed by a newline. Accepts int, double, bool, char, or string." },
+    { name: "readln", kind: "function", signature: "readln() -> string", detail: "() -> string", doc: "Reads a line from standard input and returns it as a string" },
+    { name: "read_int", kind: "function", signature: "read_int() -> int", detail: "() -> int", doc: "Reads a line from standard input and parses it as an integer" },
+    { name: "read_double", kind: "function", signature: "read_double() -> double", detail: "() -> double", doc: "Reads a line from standard input and parses it as a double" },
+  ],
 };
 
 function isBuiltinLibrary(rawPath: string): boolean {
@@ -795,10 +801,6 @@ const MODIFIER_COMPLETIONS = [
 });
 
 const BUILTIN_COMPLETIONS = [
-  { name: "println", sig: "println(value)", kind: "function" },
-  { name: "readln", sig: "readln() -> string", kind: "function" },
-  { name: "read_int", sig: "read_int() -> int", kind: "function" },
-  { name: "read_double", sig: "read_double() -> double", kind: "function" },
   { name: "sizeof", sig: "sizeof(type_or_expr)", kind: "function" },
   { name: "true", sig: "true", kind: "constant" },
   { name: "false", sig: "false", kind: "constant" },
@@ -882,6 +884,18 @@ const MATH_LIB_COMPLETIONS = [
   return item;
 });
 
+const IO_LIB_COMPLETIONS = [
+  { name: "println", sig: "println(value) -> void", doc: "Prints a value followed by a newline (int, double, bool, char, or string)" },
+  { name: "readln", sig: "readln() -> string", doc: "Reads a line from stdin and returns it as a string" },
+  { name: "read_int", sig: "read_int() -> int", doc: "Reads a line from stdin and parses it as an integer" },
+  { name: "read_double", sig: "read_double() -> double", doc: "Reads a line from stdin and parses it as a double" },
+].map((f) => {
+  const item = new vscode.CompletionItem(f.name, vscode.CompletionItemKind.Function);
+  item.detail = 'import from "io"';
+  item.documentation = new vscode.MarkdownString(`${f.doc}\n\n\`${f.sig}\``);
+  return item;
+});
+
 function provideCompletionItems(
   document: vscode.TextDocument,
   position: vscode.Position
@@ -894,6 +908,7 @@ function provideCompletionItems(
     ...STRING_LIB_COMPLETIONS,
     ...ARRAY_LIB_COMPLETIONS,
     ...MATH_LIB_COMPLETIONS,
+    ...IO_LIB_COMPLETIONS,
   ];
 
   const text = document.getText();

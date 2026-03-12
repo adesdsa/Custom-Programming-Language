@@ -428,6 +428,25 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
     // no pending assignment to complete
     if (!this->m_pendingAssignment || this->m_lastIdentifierName.empty()) return;
 
+    auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+    if (this->m_isVarInitialization && var.has_value() && var->accessRights == AccessRights::CONST_ACCESS)
+    {
+        if (!this->m_facade.IsCompileTimeConstant(node->command, this->m_funcTable, *this->m_currentScope))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::ACCESS_RIGHT_ERROR,
+                    "const variable '" + this->m_lastIdentifierName + "' must be initialized with a compile-time constant (e.g. literal, not read_int() or other runtime values)",
+                    this->m_assignmentLine,
+                    this->m_assignmentColumn,
+                    "Use a literal (42, 3.14, \"hi\", true) or another const variable; use readonly for runtime one-time assignment"
+                )
+            );
+            ResetAssignmentState();
+            return;
+        }
+    }
+
     /// complete assignment check, @see VisitAssignment docs
     if (
         expressionType != ExpressionType::UNKNOWN &&
@@ -438,8 +457,6 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
             this->m_isVarInitialization)
         )
     {
-        auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
-
         std::string expectedType = "unknown";
         if (var.has_value())
         {
@@ -1203,12 +1220,29 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
 
         if (!this->m_lastIdentifierName.empty())
         {
+            auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+            if (this->m_isVarInitialization && var.has_value() && var->accessRights == AccessRights::CONST_ACCESS)
+            {
+                if (!this->m_facade.IsCompileTimeConstant(node->command, this->m_funcTable, *this->m_currentScope))
+                {
+                    this->m_errorManager.StoreError(
+                        CompileTimeError(
+                            ErrorTypes::ACCESS_RIGHT_ERROR,
+                            "const variable '" + this->m_lastIdentifierName + "' must be initialized with a compile-time constant (e.g. literal, not read_int() or other runtime values)",
+                            tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                            tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                            "Use a literal (42, 3.14, \"hi\", true) or another const variable; use readonly for runtime one-time assignment"
+                        )
+                    );
+                    ResetAssignmentState();
+                    return;
+                }
+            }
             if (exprType != ExpressionType::UNKNOWN &&
                 !this->m_facade.CheckAssignment(
                     this->m_lastIdentifierName, exprType, *this->m_currentScope,
                     this->m_isVarInitialization))
             {
-                auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
                 std::string expectedType = var.has_value() ? this->TypeToString(var->type) : "unknown";
                 std::string gotType = this->ExpressionTypeToString(exprType);
                 this->m_errorManager.StoreError(
@@ -1577,6 +1611,25 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
     // no pending assignment to complete
     if (!this->m_pendingAssignment || this->m_lastIdentifierName.empty()) return;
 
+    auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+    if (this->m_isVarInitialization && var.has_value() && var->accessRights == AccessRights::CONST_ACCESS)
+    {
+        if (!this->m_facade.IsCompileTimeConstant(node->command, this->m_funcTable, *this->m_currentScope))
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::ACCESS_RIGHT_ERROR,
+                    "const variable '" + this->m_lastIdentifierName + "' must be initialized with a compile-time constant (e.g. literal, not read_int() or other runtime values)",
+                    this->m_assignmentLine,
+                    this->m_assignmentColumn,
+                    "Use a literal (42, 3.14, \"hi\", true) or another const variable; use readonly for runtime one-time assignment"
+                )
+            );
+            ResetAssignmentState();
+            return;
+        }
+    }
+
     /// complete assignment check, @see VisitAssignment docs
     if (
         expressionType != ExpressionType::UNKNOWN &&
@@ -1587,8 +1640,6 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
             this->m_isVarInitialization)
         )
     {
-        auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
-
         std::string expectedType = "unknown";
         if (var.has_value())
         {
