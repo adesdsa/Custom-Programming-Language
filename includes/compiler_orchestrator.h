@@ -65,4 +65,34 @@ private:
      * @brief Setup Compiler Orchestrator values
      */
     void Init();
+
+    /// @brief Parse all input source files into ASTs.
+    void ParseSourceFiles(
+        std::vector<std::unique_ptr<ParserLogic>>& parsers,
+        std::vector<const AST*>& asts);
+
+    /// @brief Build the import graph and detect circular dependencies via DFS.
+    /// @return true if a cycle was found (error already stored).
+    bool DetectCircularImports(
+        const std::vector<const AST*>& asts
+    ) const;
+
+    /// @brief Walk each AST and register exported symbols in the project table.
+    ProjectSymbolTable CollectProjectExports(
+        const std::vector<const AST*>& asts
+    ) const;
+
+    /// @brief Run semantic analysis + code generation for every source file.
+    void AnalyzeAndGenerate(
+        const std::vector<const AST*>& asts,
+        const ProjectSymbolTable& projectSymbols,
+        std::vector<std::string>& artifactPaths,
+        std::set<std::string>& requiredLibraries
+    );
+
+    /// @brief Link all object files (user artifacts + stdlib) into the final executable.
+    void LinkExecutable(
+        std::vector<std::string>& artifactPaths,
+        const std::set<std::string>& requiredLibraries
+    );
 };
