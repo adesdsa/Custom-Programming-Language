@@ -16,6 +16,226 @@ CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
     m_options(std::move(options))
 {}
 
+void CompilerOrchestrator::MainFlow()
+{
+    this->Init();
+
+    ErrorManager& errorManager = ErrorManager::GetInstance();
+    errorManager.Clear();
+    errorManager.SetDeferredMode(true);
+
+    // Phase 1: Parse all source files
+    std::vector<std::unique_ptr<ParserLogic>> parsers;
+    std::vector<const AST*> asts;
+    this->ParseSourceFiles(parsers, asts);
+
+    // Abort early if any syntax errors occurred during parsing
+    if (errorManager.HasErrorsOccured())
+    {
+        errorManager.SetDeferredMode(false);
+        errorManager.HandleErrors();
+        return;
+    }
+
+    // Phase 2: Detect circular imports (abort early if found)
+    if (this->DetectCircularImports(asts))
+    {
+        errorManager.SetDeferredMode(false);
+        if (errorManager.HasErrorsOccured())
+        {
+            errorManager.HandleErrors();
+        }
+        return;
+    }
+
+    ProjectSymbolTable projectSymbols = this->CollectProjectExports(asts);
+
+    std::vector<std::string> artifactPaths;
+    std::set<std::string> requiredLibraries;
+    this->AnalyzeAndGenerate(asts, projectSymbols, artifactPaths, requiredLibraries);
+
+    errorManager.SetDeferredMode(false);
+    if (errorManager.HasErrorsOccured())
+    {
+        errorManager.HandleErrors();
+    }
+
+    if (!this->m_options.stopAtBin && !this->m_options.stopAtAsm)
+    {
+        this->LinkExecutable(artifactPaths, requiredLibraries);
+    }
+}
+
+void CompilerOrchestrator::ParseSourceFiles(
+    std::vector<std::unique_ptr<ParserLogic>>& parsers,
+    std::vector<const AST*>& asts)
+{
+    for (const auto& filePath : this->m_options.inputFilesPath)
+    {
+        std::filesystem::path fsPath(filePath);
+        ErrorManager::SetCurrentFilePath(fsPath.string());
+
+        auto parser = std::make_unique<ParserLogic>(filePath);
+        const AST& ast = parser->MainFlow();
+        asts.push_back(&ast);
+        parsers.push_back(std::move(parser));
+    }
+}
+
+bool CompilerOrchestrator::DetectCircularImports(
+    const std::vector<const AST*>& asts) const
+{
+    std::unordered_map<std::string, std::vector<std::string>> importGraph;
+    std::unordered_set<std::string> fileStems;
+
+    for (size_t i = 0; i < asts.size(); i++)
+    {
+        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
+        std::string stem = inputPath.stem().string();
+        fileStems.insert(stem);
+        importGraph[stem] = CollectImports(*asts[i]);
+    }
+
+    // DFS cycle detection (white=0, gray=1, black=2)
+    std::unordered_map<std::string, int> color;
+    std::vector<std::string> stack;
+    std::string cycleStart;
+
+    auto dfs = [&](const std::string& node, auto& self) -> bool 
+    {
+        if (color[node] == 1) 
+        { 
+            cycleStart = node; 
+            return true; 
+        }
+
+        else if (color[node] == 2) 
+        {
+            return false;
+        }
+
+        color[node] = 1;
+        stack.push_back(node);
+        for (const auto& imp : importGraph[node])
+        {
+            if (fileStems.count(imp) == 0) 
+            {
+                continue;
+            }
+            if (self(imp, self)) 
+            {
+                return true;
+            }
+        }
+        stack.pop_back();
+        color[node] = 2;
+        return false;
+    };
+
+    for (const auto& [stem, _] : importGraph)
+    {
+        if (color[stem] != 0) 
+        {
+            continue;
+        }
+        stack.clear();
+
+        if (dfs(stem, dfs))
+        {
+            auto it = std::find(stack.begin(), stack.end(), cycleStart);
+            std::string cyclePath;
+            for (; it != stack.end(); it++)
+            {
+                if (!cyclePath.empty()) 
+                {
+                    cyclePath += " -> ";
+                }
+                cyclePath += *it;
+            }
+            cyclePath += " -> " + cycleStart;
+
+            ErrorManager::SetCurrentFilePath(
+                StringUtils::ToNarrow(this->m_options.inputFilesPath[0]));
+            ErrorManager::GetInstance().StoreError(CompileTimeError(
+                ErrorTypes::CIRCULAR_IMPORT,
+                "Circular import detected: " + cyclePath,
+                0, 0,
+                "Remove the circular dependency between these files"
+            ));
+            return true;
+        }
+    }
+    return false;
+}
+
+ProjectSymbolTable CompilerOrchestrator::CollectProjectExports(
+    const std::vector<const AST*>& asts) const
+{
+    ProjectSymbolTable projectSymbols;
+    for (size_t i = 0; i < asts.size(); i++)
+    {
+        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
+        std::string fileName  = inputPath.stem().string();
+        std::string filePath  = inputPath.string();
+
+        FileExportTable exports = CollectExports(*asts[i], filePath);
+        projectSymbols.Register(fileName, std::move(exports));
+    }
+    return projectSymbols;
+}
+
+void CompilerOrchestrator::AnalyzeAndGenerate(
+    const std::vector<const AST*>& asts,
+    const ProjectSymbolTable& projectSymbols,
+    std::vector<std::string>& artifactPaths,
+    std::set<std::string>& requiredLibraries)
+{
+    for (size_t i = 0; i < asts.size(); i++)
+    {
+        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
+        std::string perFileName = inputPath.stem().string();
+
+        ErrorManager::SetCurrentFilePath(inputPath.string());
+
+        SemanticAnalysisLogicComponent semantic(*asts[i], projectSymbols);
+        const DecoratedAST& decorated = semantic.MainFlow();
+
+        CompilerOptions perFileOptions = this->m_options;
+        perFileOptions.outputFileName = std::wstring(perFileName.begin(), perFileName.end());
+
+        CodeGenManager codegen(decorated, perFileOptions);
+        artifactPaths.push_back(codegen.MainFlow());
+
+        for (const auto& lib : codegen.GetRequiredLibraries())
+            requiredLibraries.insert(lib);
+    }
+}
+
+void CompilerOrchestrator::LinkExecutable(
+    std::vector<std::string>& artifactPaths,
+    const std::set<std::string>& requiredLibraries)
+{
+    std::string outputName = StringUtils::ToNarrow(this->m_options.outputFileName);
+    std::string outputDir  = StringUtils::ToNarrow(this->m_options.outputDir);
+
+    size_t userArtifactCount = artifactPaths.size();
+    for (const auto& libName : requiredLibraries)
+    {
+        std::string libObjPath = BuiltinLibraryRegistry::GetObjPath(libName);
+        if (std::filesystem::exists(libObjPath))
+            artifactPaths.push_back(libObjPath);
+    }
+
+    Linker linker;
+    linker.MainFlow(artifactPaths, outputName, outputDir);
+
+    if (!this->m_options.saveTemps)
+    {
+        for (size_t i = 0; i < userArtifactCount; i++)
+            std::filesystem::remove(artifactPaths[i]);
+    }
+}
+
 void CompilerOrchestrator::Init()
 {
     // ---- if -o contains a path (e.g. "dir1/dir2"), split into dir + name ----
@@ -120,164 +340,3 @@ void CompilerOrchestrator::Init()
         inputPath = filePath.wstring();
     }
 }
-
-void CompilerOrchestrator::MainFlow()
-{
-    this->Init();
-
-    ErrorManager& errorManager = ErrorManager::GetInstance();
-    errorManager.Clear();
-    errorManager.SetDeferredMode(true);
-
-    // Step 1: Parse all source files (sequential)
-    std::vector<std::unique_ptr<ParserLogic>> parsers;
-    std::vector<const AST*> asts;
-
-    for (const auto& filePath : this->m_options.inputFilesPath)
-    {
-        std::filesystem::path fsPath(filePath);
-        ErrorManager::SetCurrentFilePath(fsPath.string());
-
-        auto parser = std::make_unique<ParserLogic>(filePath);
-        const AST& ast = parser->MainFlow();
-        asts.push_back(&ast);
-        parsers.push_back(std::move(parser));
-    }
-
-    // Step 1.5: Check for circular imports
-    bool hasCircularImport = false;
-    {
-        std::unordered_map<std::string, std::vector<std::string>> importGraph;
-        std::unordered_set<std::string> fileStems;
-        for (size_t i = 0; i < parsers.size(); i++)
-        {
-            std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
-            std::string stem = inputPath.stem().string();
-            fileStems.insert(stem);
-            importGraph[stem] = CollectImports(*asts[i]);
-        }
-        // DFS to detect cycles
-        std::unordered_map<std::string, int> color; // 0=white, 1=gray (in stack), 2=black
-        std::vector<std::string> stack;
-        std::string cycleStart;
-        auto dfs = [&](const std::string& node, auto& self) -> bool {
-            if (color[node] == 1) { cycleStart = node; return true; }
-            if (color[node] == 2) return false;
-            color[node] = 1;
-            stack.push_back(node);
-            for (const auto& imp : importGraph[node])
-            {
-                if (fileStems.count(imp) == 0) continue;
-                if (self(imp, self)) return true;
-            }
-            stack.pop_back();
-            color[node] = 2;
-            return false;
-        };
-        for (const auto& [stem, _] : importGraph)
-        {
-            if (color[stem] != 0) continue;
-            stack.clear();
-            if (dfs(stem, dfs))
-            {
-                auto it = std::find(stack.begin(), stack.end(), cycleStart);
-                std::string cyclePath;
-                for (; it != stack.end(); ++it)
-                {
-                    if (!cyclePath.empty()) cyclePath += " -> ";
-                    cyclePath += *it;
-                }
-                cyclePath += " -> " + cycleStart;
-                ErrorManager::SetCurrentFilePath(StringUtils::ToNarrow(this->m_options.inputFilesPath[0]));
-                ErrorManager::GetInstance().StoreError(CompileTimeError(
-                    ErrorTypes::CIRCULAR_IMPORT,
-                    "Circular import detected: " + cyclePath,
-                    0, 0,
-                    "Remove the circular dependency between these files"
-                ));
-                hasCircularImport = true;
-                break;
-            }
-        }
-    }
-
-    if (hasCircularImport)
-    {
-        errorManager.SetDeferredMode(false);
-        if (errorManager.HasErrorsOccured())
-        {
-            errorManager.HandleErrors();
-        }
-        return;
-    }
-
-    // Step 2: Collect exports from each AST into the project-wide symbol table (sequential)
-    ProjectSymbolTable projectSymbols;
-    for (size_t i = 0; i < parsers.size(); i++)
-    {
-        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
-        std::string fileName = inputPath.stem().string();
-        std::string filePathNarrow = inputPath.string();
-
-        FileExportTable exports = CollectExports(*asts[i], filePathNarrow);
-        projectSymbols.Register(fileName, std::move(exports));
-    }
-
-    // Step 3: Semantic analysis + code generation (sequential)
-    std::vector<std::string> artifactPaths;
-    std::set<std::string> requiredLibraries;
-    for (size_t i = 0; i < parsers.size(); i++)
-    {
-        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
-        std::string perFileName = inputPath.stem().string();
-
-        ErrorManager::SetCurrentFilePath(inputPath.string());
-
-        SemanticAnalysisLogicComponent semantic(*asts[i], projectSymbols);
-        const DecoratedAST& decorated = semantic.MainFlow();
-
-        CompilerOptions perFileOptions = this->m_options;
-        perFileOptions.outputFileName = std::wstring(perFileName.begin(), perFileName.end());
-
-        CodeGenManager codegen(decorated, perFileOptions);
-        artifactPaths.push_back(codegen.MainFlow());
-
-        for (const auto& lib : codegen.GetRequiredLibraries())
-            requiredLibraries.insert(lib);
-    }
-
-    // Step 4:
-
-    // Step 5: Disable deferred mode, then display all errors at once and abort if any
-    errorManager.SetDeferredMode(false);
-    if (errorManager.HasErrorsOccured())
-    {
-        errorManager.HandleErrors();
-    }
-
-    // Step 6: Link all object files into the final executable
-    if (!this->m_options.stopAtBin && !this->m_options.stopAtAsm)
-    {
-        std::string outputName = StringUtils::ToNarrow(this->m_options.outputFileName);
-        std::string outputDir  = StringUtils::ToNarrow(this->m_options.outputDir);
-
-        size_t userArtifactCount = artifactPaths.size();
-        for (const auto& libName : requiredLibraries)
-        {
-            std::string libObjPath = BuiltinLibraryRegistry::GetObjPath(libName);
-            if (std::filesystem::exists(libObjPath))
-                artifactPaths.push_back(libObjPath);
-        }
-        Linker linker;
-        linker.MainFlow(artifactPaths, outputName, outputDir);
-
-        if (!this->m_options.saveTemps)
-        {
-            for (size_t i = 0; i < userArtifactCount; i++)
-            {
-                std::filesystem::remove(artifactPaths[i]);
-            }
-        }
-    }
-}
-
