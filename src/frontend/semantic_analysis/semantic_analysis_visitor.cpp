@@ -635,7 +635,7 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
 
         // Re-check after registering built-ins
         if (!this->m_facade.CheckFuncDeclaration(this->m_funcTable, funcName) &&
-            this->m_funcTable.FindFunctionByName(funcName))
+            !this->m_funcTable.FindFunctionByName(funcName))
         {
             this->m_errorManager.StoreError(
                 CompileTimeError(
