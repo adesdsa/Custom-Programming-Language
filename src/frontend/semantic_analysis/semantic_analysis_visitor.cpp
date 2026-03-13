@@ -1220,8 +1220,8 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::ACCESS_RIGHT_ERROR,
                 "Cannot assign to constant variable '" + name + "'",
-                tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                node->command[IDENTIFIER_NAME_INDEX].GetLine(),
+                node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
                 "Constant variables cannot be modified after declaration"
             )
         );
