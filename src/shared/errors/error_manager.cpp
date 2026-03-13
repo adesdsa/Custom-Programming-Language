@@ -49,6 +49,17 @@ bool ErrorManager::HasErrorsOccured() const noexcept
     return this->HasErrorsOccured_NoLock();
 }
 
+bool ErrorManager::HasErrorsForFile(const std::string& filePath) const noexcept
+{
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
+    for (const CompileTimeError& error : this->m_errorList)
+    {
+        if (error.GetFilePath() == filePath)
+            return true;
+    }
+    return false;
+}
+
 bool ErrorManager::HasErrorsOccured_NoLock() const noexcept
 {
     return !this->m_errorList.empty();

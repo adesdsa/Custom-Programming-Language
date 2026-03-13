@@ -42,6 +42,9 @@ public:
     // @return: true -> Errors stored in the `m_errorList`, false -> Otherwise.
     bool HasErrorsOccured() const noexcept;
 
+    /// @return: true if any stored error is for the given file path.
+    bool HasErrorsForFile(const std::string& filePath) const noexcept;
+
     /// @brief Enable/disable deferred mode.
     /// When deferred, HandleErrors() is a no-op so that all files can be
     /// processed before errors are displayed. Call with false and then

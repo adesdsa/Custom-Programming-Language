@@ -9,8 +9,20 @@
 #include "includes/shared/common/builtin_library.h"
 
 #include <algorithm>
+#include <future>
+#include <set>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
+
+namespace
+{
+    struct FileArtifactResult
+    {
+        std::string objectPath;
+        std::set<std::string> requiredLibraries;
+    };
+}
 
 CompilerOrchestrator::CompilerOrchestrator(CompilerOptions options) :
     m_options(std::move(options))
@@ -190,24 +202,82 @@ void CompilerOrchestrator::AnalyzeAndGenerate(
     std::vector<std::string>& artifactPaths,
     std::set<std::string>& requiredLibraries)
 {
+    if (asts.empty())
+        return;
+
+    size_t maxThreads = std::min(
+        asts.size(),
+        static_cast<size_t>(std::thread::hardware_concurrency()));
+    if (maxThreads == 0)
+        maxThreads = 1;
+
+    ThreadPool pool(maxThreads);
+
+    std::vector<std::future<FileArtifactResult>> futures;
+    futures.reserve(asts.size());
+
     for (size_t i = 0; i < asts.size(); i++)
     {
-        std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
-        std::string perFileName = inputPath.stem().string();
+        futures.push_back(pool.Enqueue([this, &asts, &projectSymbols, i]() -> FileArtifactResult
+        {
+            std::filesystem::path inputPath(this->m_options.inputFilesPath[i]);
+            std::string perFileName = inputPath.stem().string();
 
-        ErrorManager::SetCurrentFilePath(inputPath.string());
+            ErrorManager::SetCurrentFilePath(inputPath.string());
 
-        SemanticAnalysisLogicComponent semantic(*asts[i], projectSymbols);
-        const DecoratedAST& decorated = semantic.MainFlow();
+            SemanticAnalysisLogicComponent semantic(*asts[i], projectSymbols);
+            semantic.MainFlow();
 
-        CompilerOptions perFileOptions = this->m_options;
-        perFileOptions.outputFileName = std::wstring(perFileName.begin(), perFileName.end());
+            // If semantic analysis reported errors for this file only, skip IR/codegen for this file.
+            // Other files continue (per-file check, not global).
+            std::string thisFilePath = inputPath.string();
+            if (ErrorManager::GetInstance().HasErrorsForFile(thisFilePath))
+            {
+                return FileArtifactResult{};
+            }
 
-        CodeGenManager codegen(decorated, perFileOptions);
-        artifactPaths.push_back(codegen.MainFlow());
+            const DecoratedAST& decorated = semantic.GetDecoratedAST();
 
-        for (const auto& lib : codegen.GetRequiredLibraries())
-            requiredLibraries.insert(lib);
+            CompilerOptions perFileOptions = this->m_options;
+            perFileOptions.outputFileName = std::wstring(perFileName.begin(), perFileName.end());
+
+            CodeGenManager codegen(decorated, perFileOptions);
+            std::string objectPath = codegen.MainFlow();
+
+            FileArtifactResult result;
+            result.objectPath = std::move(objectPath);
+            result.requiredLibraries = codegen.GetRequiredLibraries();
+            return result;
+        }));
+    }
+
+    artifactPaths.clear();
+    artifactPaths.reserve(asts.size());
+    requiredLibraries.clear();
+
+    pool.WaitAll();
+
+    try
+    {
+        for (size_t i = 0; i < futures.size(); i++)
+        {
+            FileArtifactResult result = futures[i].get();
+            if (!result.objectPath.empty())
+            {
+                artifactPaths.push_back(std::move(result.objectPath));
+            }
+            for (const auto& lib : result.requiredLibraries)
+                requiredLibraries.insert(lib);
+        }
+    }
+    catch (...)
+    {
+        ErrorManager::GetInstance().SetDeferredMode(false);
+        if (ErrorManager::GetInstance().HasErrorsOccured())
+        {
+            ErrorManager::GetInstance().HandleErrors();
+        }
+        throw;
     }
 }
 
