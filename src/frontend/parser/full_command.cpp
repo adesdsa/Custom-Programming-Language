@@ -119,7 +119,7 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                 if (m_uBlockCloseCnt > m_uBlockStartCnt)
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-                        "Unexpected '}' — no matching opening block",
+                        "Unexpected '}' - no matching opening block",
                         this->m_line[this->m_uLineIndex][0].GetLine(),
                         this->m_line[this->m_uLineIndex][0].GetColumn(),
                         "Check for a missing '{' or an extra '}'");
@@ -150,7 +150,7 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                 if (this->m_line.size() != 0)
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-                        "Unexpected end of file — code is incomplete",
+                        "Unexpected end of file - code is incomplete",
                         this->m_line[0][0].GetLine(), this->m_line[0][0].GetColumn(),
                         "Possibly missing ';' at end of statement or '}' to close a block");
                     this->m_errors.push_back(error);
@@ -350,7 +350,7 @@ void FullCommand::CheckLine()
         this->m_entityLogger.Info("Found an illegal FullCommand");
         this->m_bLegal = false;
         CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-            "Invalid syntax — could not parse this line",
+            "Invalid syntax - could not parse this line",
             this->m_line[0][0].GetLine(), this->m_line[0][0].GetColumn(),
             "Check for typos, missing operators, or incorrect statement structure");
         this->m_errors.push_back(error);
@@ -982,7 +982,7 @@ bool FullCommand::CheckParantheses(Command& checkedCommand)
     {
         this->FoundIllegal(
             checkedCommand,
-            "Unmatched parentheses — " +
+            "Unmatched parentheses - " +
             std::to_string(checkedCommand.GetParanthesesCounter())
             + " opening '(' never closed",
             "Check for missing closing ')'",
@@ -1059,7 +1059,7 @@ bool FullCommand::CheckLastFuncParamComa(
     {
         this->FoundIllegal(
             checkedCommand,
-            "Trailing ',' in parameter list — expected another argument after ','",
+            "Trailing ',' in parameter list - expected another argument after ','",
             "Add the missing argument or remove the trailing ','",
             checkedCommand.GetTokens().size() - iBackSteps);
         return true;
@@ -1150,7 +1150,7 @@ inline bool FullCommand::CheckLastExpressionOperator(Command& checkedCommand)
     {
         this->FoundIllegal(
             checkedCommand,
-            "Expression ends with an operator — expected a value after it",
+            "Expression ends with an operator - expected a value after it",
             "Add a value after the operator or remove the trailing operator",
             0);
         return true;

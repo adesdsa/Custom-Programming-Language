@@ -1045,7 +1045,7 @@ bool Command::LowerParanthesesCounter(Token& currToken)
     {
         this->m_errors.push_back(CompileTimeError(
             ErrorTypes::SYNTAX_ERROR,
-            "Unexpected ')' — too many closing parentheses",
+            "Unexpected ')' - too many closing parentheses",
             currToken.GetLine(), currToken.GetColumn(),
             "Check for a missing opening '('"));
         return this->FoundUnknown(currToken);
