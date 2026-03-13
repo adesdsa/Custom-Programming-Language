@@ -55,6 +55,17 @@ std::vector<CompileTimeError> ErrorManager::GetErrorsCopy() const
     return this->m_errorList;
 }
 
+bool ErrorManager::HasErrorsForFile(const std::string& filePath) const noexcept
+{
+    std::lock_guard<std::mutex> lock(this->m_errorManagerMutex);
+    for (const CompileTimeError& error : this->m_errorList)
+    {
+        if (error.GetFilePath() == filePath)
+            return true;
+    }
+    return false;
+}
+
 bool ErrorManager::HasErrorsOccured_NoLock() const noexcept
 {
     return !this->m_errorList.empty();

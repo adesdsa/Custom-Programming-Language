@@ -42,6 +42,11 @@ const DecoratedAST& SemanticAnalysisLogicComponent::MainFlow()
     return this->m_decoratedAST;
 }
 
+const DecoratedAST& SemanticAnalysisLogicComponent::GetDecoratedAST() const
+{
+    return this->m_decoratedAST;
+}
+
 void SemanticAnalysisLogicComponent::CollectGlobalVariables()
 {
     ASTIterator prePass(this->m_decoratedAST.ast);

@@ -46,6 +46,11 @@ const std::string& CompileTimeError::GetReporter() const noexcept
     return this->m_reporter;
 }
 
+const std::string& CompileTimeError::GetFilePath() const noexcept
+{
+    return this->m_filePath;
+}
+
 const char* CompilationAbortException::what() const noexcept
 {
     return "Compilation Aborted";
