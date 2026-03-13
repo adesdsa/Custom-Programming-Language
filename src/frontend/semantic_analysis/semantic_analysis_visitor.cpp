@@ -1181,6 +1181,7 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
     const auto& type = node->command.GetType();
     const std::string& name = ASTExtractor::ExtractVarName(node);
 
+    auto varMetaData = this->m_currentScope->FindVar(name).value();
     if (!this->m_facade.CheckVarExistence(*this->m_currentScope, name))
     {
         this->m_errorManager.StoreError(
@@ -1193,7 +1194,21 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
             )
         );
     }
-    auto varMetaData = this->m_currentScope->FindVar(name).value();
+
+    if (nextIsAssignment && 
+        (varMetaData.accessRights == AccessRights::CONST_ACCESS ||
+        varMetaData.accessRights == AccessRights::READ_ONLY_ACCESS))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::ACCESS_RIGHT_ERROR,
+                "Cannot assign to constant variable '" + name + "'",
+                tokens[IDENTIFIER_NAME_INDEX].GetLine(),
+                tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                "Constant variables cannot be modified after declaration"
+            )
+        );
+    }
 
     if (!varMetaData.arraySize.has_value() && varMetaData.type != Type::STRING_TYPE)
     {
