@@ -80,6 +80,28 @@ static BuiltinLibrary BuildMathLibrary()
     return lib;
 }
 
+/**
+ * Interface for io library, contains the built-in I/O functions (println, readln, etc.)
+*/
+static BuiltinLibrary BuildIOLibrary()
+{
+    BuiltinLibrary lib;
+    lib.name = "io";
+
+    auto mkParam = [](const std::string& name, Type type) {
+        return VarMetaData(name, type, AccessRights::DEFAULT_ACCESS, Scope::LET, 0);
+    };
+
+    lib.functions = {
+        { "println",      Type::VOID_TYPE,   { mkParam("value", Type::INT_TYPE) } },
+        { "readln",       Type::STRING_TYPE,  {} },
+        { "read_int",     Type::INT_TYPE,     {} },
+        { "read_double",  Type::DOUBLE_TYPE,  {} },
+    };
+
+    return lib;
+}
+
 /// Array param: element type + arraySize=1 as sentinel for "array of this type"
 static VarMetaData MkArrayParam(const std::string& name, Type elemType)
 {
@@ -145,7 +167,7 @@ static BuiltinLibrary BuildArrayLibrary()
 
 const std::vector<BuiltinLibrary>& BuiltinLibraryRegistry::GetAll()
 {
-    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildArrayLibrary(), BuildMathLibrary() };
+    static std::vector<BuiltinLibrary> libs = { BuildStringLibrary(), BuildArrayLibrary(), BuildMathLibrary(), BuildIOLibrary() };
 
     return libs;
 }

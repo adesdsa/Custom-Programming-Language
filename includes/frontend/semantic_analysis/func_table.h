@@ -34,6 +34,7 @@ public:
 
 private:
     const EntityLogger& m_entityLogger;
+    bool m_builtinsRegistered = false;
 
     // Key: function name, Value: FuncMetaData struct
     std::unordered_map<std::string, std::unique_ptr<FuncMetaData>> m_functions;
