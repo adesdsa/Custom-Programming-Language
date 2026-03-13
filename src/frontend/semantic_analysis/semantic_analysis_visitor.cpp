@@ -393,7 +393,7 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Cannot evaluate expression — possible type mismatch or use of an undefined variable/function",
+                "Cannot evaluate expression - possible type mismatch or use of an undefined variable/function",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"
@@ -811,7 +811,7 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
                 "Return type mismatch in function '" + this->m_currentFunctionName +
-                    "' — returned value does not match declared return type",
+                    "' - returned value does not match declared return type",
                 line,
                 column,
                 "Ensure the returned value type matches the function's declared return type"
@@ -1277,7 +1277,7 @@ void SemanticAnalysisVisitor::VisitArrayValue(ASTNode* node)
             this->m_errorManager.StoreError(
                 CompileTimeError(
                     ErrorTypes::TYPE_ERROR,
-                    "Cannot use string in char array initializer — element " + std::to_string(i + 1) +
+                    "Cannot use string in char array initializer - element " + std::to_string(i + 1) +
                         " must be of type char",
                     line,
                     col,
@@ -1593,7 +1593,7 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Cannot evaluate expression — possible type mismatch or use of an undefined variable/function",
+                "Cannot evaluate expression - possible type mismatch or use of an undefined variable/function",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"
