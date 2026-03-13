@@ -13,14 +13,8 @@ X86BaseEmitter(funcTable)
 void X86_64Emitter::EmitExtraBssContent(const IRModule& module, std::ostream& out) const
 {
     if (!module.IsPrimaryModule()) return;
-    out << "    ; Bump allocator heap (1MB)\n";
     out << "    heap_mem: resb 1048576\n";
     out << "    heap_cur: resq 1\n";
-    out << "    ; Shared stdin buffer: when readln reads past first newline, remainder goes here\n";
-    out << "    stdin_buf: resb 256\n";
-    out << "    stdin_buf_len: resq 1\n";
-    out << "    ; Temp buffer for read_int/read_double (they consume one line at a time)\n";
-    out << "    __read_line_buf: resb 256\n";
     out << "\n";
 }
 
@@ -43,50 +37,26 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
             if (module.IsPrimaryModule())
             {
                 header << "global _start\n";
-                header << "global main\n\n";
-
-                header << "global println\n";
-                header << "global println_bool\n";
-                header << "global println_str\n";
-                header << "global println_double\n";
-                header << "global println_char\n";
-                header << "global readln\n";
-                header << "global read_int\n";
-                header << "global read_double\n";
+                header << "global main\n";
                 header << "global heap_alloc\n\n";
 
-                header << "global __println_bool_true\n";
-                header << "global __println_bool_false\n";
-                header << "global __println_newline\n";
-                header << "global __println_minus\n";
-                header << "global __println_dot\n\n";
-
-                header << "extern memcpy\n\n";
-                header << "section .data\n";
-                header << "    __println_bool_true db \"true\", 10, 0\n";
-                header << "    __println_bool_false db \"false\", 10, 0\n";
-                header << "    __println_newline db 10, 0\n";
-                header << "    __println_minus db \"-\", 0\n";
-                header << "    __println_dot db \".\", 0\n\n";
+                header << "extern memcpy\n";
             }
-            else
-            {
-                header << "extern println\n";
-                header << "extern println_bool\n";
-                header << "extern println_str\n";
-                header << "extern println_double\n";
-                header << "extern println_char\n";
-                header << "extern readln\n";
-                header << "extern read_int\n";
-                header << "extern read_double\n";
-                header << "extern heap_alloc\n\n";
+            header << "extern println\n";
+            header << "extern println_bool\n";
+            header << "extern println_str\n";
+            header << "extern println_double\n";
+            header << "extern println_char\n";
+            header << "extern readln\n";
+            header << "extern read_int\n";
+            header << "extern read_double\n";
+            header << "extern heap_alloc\n\n";
 
-                header << "extern __println_bool_true\n";
-                header << "extern __println_bool_false\n";
-                header << "extern __println_newline\n";
-                header << "extern __println_minus\n";
-                header << "extern __println_dot\n\n";
-            }
+            header << "extern __println_bool_true\n";
+            header << "extern __println_bool_false\n";
+            header << "extern __println_newline\n";
+            header << "extern __println_minus\n";
+            header << "extern __println_dot\n\n";
             break;
 
         case OS::Windows:
@@ -94,57 +64,27 @@ std::string X86_64Emitter::EmitHeader(const IRModule& module) const
             {
                 header << "global mainCRTStartup\n";
                 header << "global main\n";
+                header << "global heap_alloc\n";
                 header << "extern ExitProcess\n";
-                header << "extern printf\n";
                 header << "extern exit\n";
-                header << "extern memcpy\n";
-                header << "extern GetStdHandle\n";
-                header << "extern ReadFile\n\n";
-
-                header << "global println\n";
-                header << "global println_double\n";
-                header << "global println_str\n";
-                header << "global println_bool\n";
-                header << "global println_char\n";
-                header << "global readln\n";
-                header << "global read_int\n";
-                header << "global read_double\n";
-                header << "global heap_alloc\n\n";
-
-                header << "global __println_fmt_int\n";
-                header << "global __println_fmt_double\n";
-                header << "global __println_fmt_str\n";
-                header << "global __println_fmt_char\n";
-                header << "global __println_bool_true\n";
-                header << "global __println_bool_false\n\n";
-
-                header << "section .data\n";
-                header << "    __println_fmt_int db \"%lld\", 10, 0\n";
-                header << "    __println_fmt_double db \"%g\", 10, 0\n";
-                header << "    __println_fmt_str db \"%s\", 10, 0\n";
-                header << "    __println_fmt_char db \"%c\", 10, 0\n";
-                header << "    __println_bool_true db \"true\", 0\n";
-                header << "    __println_bool_false db \"false\", 0\n\n";
+                header << "extern memcpy\n\n";
             }
-            else
-            {
-                header << "extern println\n";
-                header << "extern println_double\n";
-                header << "extern println_str\n";
-                header << "extern println_bool\n";
-                header << "extern println_char\n";
-                header << "extern readln\n";
-                header << "extern read_int\n";
-                header << "extern read_double\n";
-                header << "extern heap_alloc\n\n";
+            header << "extern println\n";
+            header << "extern println_double\n";
+            header << "extern println_str\n";
+            header << "extern println_bool\n";
+            header << "extern println_char\n";
+            header << "extern readln\n";
+            header << "extern read_int\n";
+            header << "extern read_double\n";
+            header << "extern heap_alloc\n\n";
 
-                header << "extern __println_fmt_int\n";
-                header << "extern __println_fmt_double\n";
-                header << "extern __println_fmt_str\n";
-                header << "extern __println_fmt_char\n";
-                header << "extern __println_bool_true\n";
-                header << "extern __println_bool_false\n\n";
-            }
+            header << "extern __println_fmt_int\n";
+            header << "extern __println_fmt_double\n";
+            header << "extern __println_fmt_str\n";
+            header << "extern __println_fmt_char\n";
+            header << "extern __println_bool_true\n";
+            header << "extern __println_bool_false\n\n";
             break;
 
         default:
@@ -242,7 +182,7 @@ void X86_64Emitter::EmitPrologue(
     }
     else if (TargetArchitecture::GetOS() == OS::Linux)
     {
-        // Linux SysV ABI: no shadow space — spill into the local frame.
+        // Linux SysV ABI: no shadow space â€” spill into the local frame.
         // Each register argument gets a dedicated slot tracked via
         // m_valueToStackOffset so GetOperandAsm resolves them normally.
         int regArgs = std::min(numArgs, x86_64::SIX_ARGUEMENTS);
@@ -912,9 +852,6 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
     if (TargetArchitecture::GetOS() == OS::Linux)
     {
         out << "_start:\n";
-
-        // Kernel enters with RSP % 16 == 8
-        out << "    ; Align stack to 16 bytes (kernel provides RSP % 16 == 8 on entry)\n";
         out << "    and rsp, -16\n";
 
         for (const auto& [target, source] : module.GetDeferredGlobalInits())
@@ -923,19 +860,12 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov [rel " << target << "], rax\n";
         }
 
-        // call main()
-        out << "    ; call main() and pass its return value to sys_exit\n";
         out << "    call main\n";
-
-        // sys_exit(main_return)
         out << "    mov rdi, rax\n";
         out << "    mov rax, 60\n";
         out << "    syscall\n";
-
-        out << "    ; Halt after returning from main\n";
         out << "    hlt\n";
 
-        // ---- Bump allocator: heap_alloc(size) -> ptr (rdi=size, rax=ptr) ----
         out << "\n";
         out << "heap_alloc:\n";
         out << "    add rdi, 7\n";
@@ -950,720 +880,11 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    add rcx, rdi\n";
         out << "    mov [rel heap_cur], rcx\n";
         out << "    ret\n";
-
-        // ---- Built-in: println(value: int) -> void ----
-        // Minimal integer println using Linux write(1, buf, len)
-        // Handles negative numbers: print minus, negate, then unsigned conversion
-        out << "\n";
-        out << "println:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    lea rsi, [rsp]\n";
-        out << "    mov r8, rsi\n";
-        out << "    add rsi, 20\n";
-        out << "    mov byte [rsi], 10\n";
-        out << "    mov rax, rdi\n";
-        out << "    cmp rax, 0\n";
-        out << "    jne .Lconvert\n";
-        out << "    dec rsi\n";
-        out << "    mov byte [rsi], '0'\n";
-        out << "    jmp .Lwrite\n";
-        out << ".Lconvert:\n";
-        out << "    cmp rax, 0\n";
-        out << "    jge .Lpos\n";
-        out << "    push rax\n";
-        out << "    lea rsi, [rel __println_minus]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    pop rax\n";
-        out << "    neg rax\n";
-        out << "    lea rsi, [r8+20]\n";
-        out << ".Lpos:\n";
-        out << "    xor rdx, rdx\n";
-        out << ".Lloop:\n";
-        out << "    xor rdx, rdx\n";
-        out << "    mov rcx, 10\n";
-        out << "    div rcx\n";
-        out << "    dec rsi\n";
-        out << "    add dl, '0'\n";
-        out << "    mov [rsi], dl\n";
-        out << "    test rax, rax\n";
-        out << "    jnz .Lloop\n";
-        out << ".Lwrite:\n";
-        out << "    lea rdx, [r8+21]\n";
-        out << "    sub rdx, rsi\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    mov rsp, rbp\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_bool(value: bool) -> void ----
-        // Prints "true\n" or "false\n" via write(1, ...).
-        out << "\n";
-        out << "println_bool:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    cmp rdi, 0\n";
-        out << "    je .Lbool_false\n";
-        out << "    lea rsi, [rel __println_bool_true]\n";
-        out << "    mov rdx, 5\n";
-        out << "    jmp .Lbool_write\n";
-        out << ".Lbool_false:\n";
-        out << "    lea rsi, [rel __println_bool_false]\n";
-        out << "    mov rdx, 6\n";
-        out << ".Lbool_write:\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_str(ptr: char*) -> void ----
-        // Prints a null-terminated string followed by a newline via write(1, ...).
-        out << "\n";
-        out << "println_str:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    mov rsi, rdi\n";
-        out << "    xor rdx, rdx\n";
-        out << ".Lstr_len:\n";
-        out << "    cmp byte [rsi + rdx], 0\n";
-        out << "    je .Lstr_write\n";
-        out << "    inc rdx\n";
-        out << "    jmp .Lstr_len\n";
-        out << ".Lstr_write:\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    lea rsi, [rel __println_newline]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: readln() -> string ----
-        // Uses shared stdin_buf: when we read more than one line, remainder is saved for read_int/read_double.
-        out << "\n";
-        out << "readln:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 272\n";
-        out << "    ; Check if we have buffered data from a previous read\n";
-        out << "    mov rcx, [rel stdin_buf_len]\n";
-        out << "    cmp rcx, 0\n";
-        out << "    jg .Lreadln_has_buf\n";
-        out << ".Lreadln_read:\n";
-        out << "    xor edi, edi\n";
-        out << "    lea rsi, [rsp]\n";
-        out << "    mov edx, 255\n";
-        out << "    xor eax, eax\n";
-        out << "    syscall\n";
-        out << "    cmp rax, 0\n";
-        out << "    jle .Lreadln_empty\n";
-        out << "    xor rcx, rcx\n";
-        out << ".Lreadln_find_nl:\n";
-        out << "    cmp rcx, rax\n";
-        out << "    jge .Lreadln_no_nl\n";
-        out << "    cmp byte [rsp + rcx], 10\n";
-        out << "    je .Lreadln_found_nl\n";
-        out << "    inc rcx\n";
-        out << "    jmp .Lreadln_find_nl\n";
-        out << ".Lreadln_found_nl:\n";
-        out << "    ; strip trailing \\r if present (Windows CRLF)\n";
-        out << "    test rcx, rcx\n";
-        out << "    jz .Lreadln_do_copy\n";
-        out << "    cmp byte [rsp + rcx - 1], 13\n";
-        out << "    jne .Lreadln_do_copy\n";
-        out << "    dec rcx\n";
-        out << ".Lreadln_do_copy:\n";
-        out << "    mov byte [rsp + rcx], 0\n";
-        out << "    ; Save remainder (after newline) to stdin_buf for read_int/read_double\n";
-        out << "    lea r8, [rax]\n";
-        out << "    sub r8, rcx\n";
-        out << "    dec r8\n";
-        out << "    jle .Lreadln_copy\n";
-        out << "    lea rdi, [rel stdin_buf]\n";
-        out << "    lea rsi, [rsp + rcx + 1]\n";
-        out << "    mov rdx, r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << ".Lreadln_save_loop:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    mov [rdi], al\n";
-        out << "    inc rsi\n";
-        out << "    inc rdi\n";
-        out << "    dec rdx\n";
-        out << "    jnz .Lreadln_save_loop\n";
-        out << "    jmp .Lreadln_copy\n";
-        out << ".Lreadln_no_nl:\n";
-        out << "    mov byte [rsp + rax], 0\n";
-        out << "    mov rcx, rax\n";
-        out << "    xor r8, r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << ".Lreadln_copy:\n";
-        out << "    mov [rbp-16], rcx\n";
-        out << "    lea rdi, [rcx + 1]\n";
-        out << "    call heap_alloc\n";
-        out << "    mov [rbp-8], rax\n";
-        out << "    mov rdx, rax\n";
-        out << "    mov rcx, [rbp-16]\n";
-        out << "    xor r8, r8\n";
-        out << ".Lreadln_cpy:\n";
-        out << "    cmp r8, rcx\n";
-        out << "    jge .Lreadln_done\n";
-        out << "    mov al, [rsp + r8]\n";
-        out << "    mov [rdx], al\n";
-        out << "    inc r8\n";
-        out << "    inc rdx\n";
-        out << "    jmp .Lreadln_cpy\n";
-        out << ".Lreadln_done:\n";
-        out << "    mov byte [rdx], 0\n";
-        out << "    mov rax, [rbp-8]\n";
-        out << "    add rsp, 272\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".Lreadln_has_buf:\n";
-        out << "    ; Use buffered data: find newline in stdin_buf[0..len-1]\n";
-        out << "    lea rsi, [rel stdin_buf]\n";
-        out << "    xor rcx, rcx\n";
-        out << ".Lreadln_buf_find:\n";
-        out << "    cmp rcx, [rel stdin_buf_len]\n";
-        out << "    jge .Lreadln_buf_no_nl\n";
-        out << "    cmp byte [rsi + rcx], 10\n";
-        out << "    je .Lreadln_buf_found\n";
-        out << "    inc rcx\n";
-        out << "    jmp .Lreadln_buf_find\n";
-        out << ".Lreadln_buf_found:\n";
-        out << "    mov [rbp-16], rcx\n";
-        out << "    lea rdi, [rcx + 1]\n";
-        out << "    call heap_alloc\n";
-        out << "    mov [rbp-8], rax\n";
-        out << "    mov rdx, rax\n";
-        out << "    mov rcx, [rbp-16]\n";
-        out << "    xor r8, r8\n";
-        out << ".Lreadln_buf_cpy:\n";
-        out << "    cmp r8, rcx\n";
-        out << "    jge .Lreadln_buf_cpy_done\n";
-        out << "    mov al, [rsi + r8]\n";
-        out << "    mov [rdx], al\n";
-        out << "    inc r8\n";
-        out << "    inc rdx\n";
-        out << "    jmp .Lreadln_buf_cpy\n";
-        out << ".Lreadln_buf_cpy_done:\n";
-        out << "    mov byte [rdx], 0\n";
-        out << "    ; Shift remainder to front of stdin_buf\n";
-        out << "    mov r8, [rel stdin_buf_len]\n";
-        out << "    sub r8, rcx\n";
-        out << "    dec r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << "    jle .Lreadln_buf_ret\n";
-        out << "    lea rdi, [rel stdin_buf]\n";
-        out << "    lea rsi, [rel stdin_buf]\n";
-        out << "    add rsi, rcx\n";
-        out << "    inc rsi\n";
-        out << "    mov rdx, r8\n";
-        out << ".Lreadln_buf_shift:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    mov [rdi], al\n";
-        out << "    inc rsi\n";
-        out << "    inc rdi\n";
-        out << "    dec rdx\n";
-        out << "    jnz .Lreadln_buf_shift\n";
-        out << ".Lreadln_buf_ret:\n";
-        out << "    mov rax, [rbp-8]\n";
-        out << "    add rsp, 272\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".Lreadln_buf_no_nl:\n";
-        out << "    ; No newline in buffer - treat whole buffer as line, clear it\n";
-        out << "    mov rcx, [rel stdin_buf_len]\n";
-        out << "    xor r8, r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << "    mov [rbp-16], rcx\n";
-        out << "    lea rdi, [rcx + 1]\n";
-        out << "    call heap_alloc\n";
-        out << "    mov [rbp-8], rax\n";
-        out << "    mov rdx, rax\n";
-        out << "    mov rcx, [rbp-16]\n";
-        out << "    xor r8, r8\n";
-        out << ".Lreadln_buf_nl_cpy:\n";
-        out << "    cmp r8, rcx\n";
-        out << "    jge .Lreadln_buf_nl_done\n";
-        out << "    mov al, [rsi + r8]\n";
-        out << "    mov [rdx], al\n";
-        out << "    inc r8\n";
-        out << "    inc rdx\n";
-        out << "    jmp .Lreadln_buf_nl_cpy\n";
-        out << ".Lreadln_buf_nl_done:\n";
-        out << "    mov byte [rdx], 0\n";
-        out << "    mov rax, [rbp-8]\n";
-        out << "    add rsp, 272\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".Lreadln_empty:\n";
-        out << "    mov edi, 1\n";
-        out << "    call heap_alloc\n";
-        out << "    mov byte [rax], 0\n";
-        out << "    add rsp, 272\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Helper: __read_line - gets next line into __read_line_buf for read_int/read_double ----
-        out << "\n";
-        out << "__read_line:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    lea rdi, [rel __read_line_buf]\n";
-        out << "    mov rcx, [rel stdin_buf_len]\n";
-        out << "    cmp rcx, 0\n";
-        out << "    jg __read_line_has_buf\n";
-        out << "__read_line_read:\n";
-        out << "    xor eax, eax\n";
-        out << "    xor edi, edi\n";
-        out << "    lea rsi, [rel __read_line_buf]\n";
-        out << "    mov edx, 255\n";
-        out << "    syscall\n";
-        out << "    cmp rax, 0\n";
-        out << "    jle __read_line_empty\n";
-        out << "    xor rcx, rcx\n";
-        out << "__read_line_find:\n";
-        out << "    cmp rcx, rax\n";
-        out << "    jge __read_line_no_nl\n";
-        out << "    cmp byte [rsi + rcx], 10\n";
-        out << "    je __read_line_found\n";
-        out << "    inc rcx\n";
-        out << "    jmp __read_line_find\n";
-        out << "__read_line_found:\n";
-        out << "    mov byte [rsi + rcx], 0\n";
-        out << "    lea r8, [rax]\n";
-        out << "    sub r8, rcx\n";
-        out << "    dec r8\n";
-        out << "    jle __read_line_done\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << "    lea rdi, [rel stdin_buf]\n";
-        out << "    lea rsi, [rel __read_line_buf]\n";
-        out << "    add rsi, rcx\n";
-        out << "    inc rsi\n";
-        out << "    mov rdx, r8\n";
-        out << "__read_line_save:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    mov [rdi], al\n";
-        out << "    inc rsi\n";
-        out << "    inc rdi\n";
-        out << "    dec rdx\n";
-        out << "    jnz __read_line_save\n";
-        out << "    jmp __read_line_done\n";
-        out << "__read_line_no_nl:\n";
-        out << "    mov byte [rsi + rax], 0\n";
-        out << "    xor r8, r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << "__read_line_done:\n";
-        out << "    lea rsi, [rel __read_line_buf]\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << "__read_line_has_buf:\n";
-        out << "    lea rsi, [rel stdin_buf]\n";
-        out << "    xor rcx, rcx\n";
-        out << "__read_line_buf_find:\n";
-        out << "    cmp rcx, [rel stdin_buf_len]\n";
-        out << "    jge __read_line_buf_all\n";
-        out << "    cmp byte [rsi + rcx], 10\n";
-        out << "    je __read_line_buf_found\n";
-        out << "    inc rcx\n";
-        out << "    jmp __read_line_buf_find\n";
-        out << "__read_line_buf_found:\n";
-        out << "    ; First copy line to __read_line_buf (before we overwrite stdin_buf)\n";
-        out << "    mov [rbp-8], rcx\n";
-        out << "    lea rdi, [rel __read_line_buf]\n";
-        out << "    xor r8, r8\n";
-        out << "__read_line_buf_cpy_loop:\n";
-        out << "    cmp r8, rcx\n";
-        out << "    jge __read_line_buf_cpy_done\n";
-        out << "    mov al, [rsi + r8]\n";
-        out << "    mov [rdi + r8], al\n";
-        out << "    inc r8\n";
-        out << "    jmp __read_line_buf_cpy_loop\n";
-        out << "__read_line_buf_cpy_done:\n";
-        out << "    mov byte [rdi + rcx], 0\n";
-        out << "    ; Now shift remainder to front of stdin_buf\n";
-        out << "    mov rcx, [rbp-8]\n";
-        out << "    mov r8, [rel stdin_buf_len]\n";
-        out << "    sub r8, rcx\n";
-        out << "    dec r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << "    jle __read_line_buf_ret\n";
-        out << "    lea rdi, [rel stdin_buf]\n";
-        out << "    lea rsi, [rel stdin_buf]\n";
-        out << "    add rsi, rcx\n";
-        out << "    inc rsi\n";
-        out << "    mov rdx, r8\n";
-        out << "__read_line_buf_shift:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    mov [rdi], al\n";
-        out << "    inc rsi\n";
-        out << "    inc rdi\n";
-        out << "    dec rdx\n";
-        out << "    jnz __read_line_buf_shift\n";
-        out << "__read_line_buf_ret:\n";
-        out << "    lea rsi, [rel __read_line_buf]\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << "__read_line_buf_all:\n";
-        out << "    mov rcx, [rel stdin_buf_len]\n";
-        out << "    xor r8, r8\n";
-        out << "    mov [rel stdin_buf_len], r8\n";
-        out << "    lea rdi, [rel __read_line_buf]\n";
-        out << "__read_line_buf_all_cpy:\n";
-        out << "    cmp r8, rcx\n";
-        out << "    jge __read_line_buf_all_done\n";
-        out << "    mov al, [rsi + r8]\n";
-        out << "    mov [rdi + r8], al\n";
-        out << "    inc r8\n";
-        out << "    jmp __read_line_buf_all_cpy\n";
-        out << "__read_line_buf_all_done:\n";
-        out << "    mov byte [rdi + rcx], 0\n";
-        out << "    lea rsi, [rel __read_line_buf]\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << "__read_line_empty:\n";
-        out << "    lea rsi, [rel __read_line_buf]\n";
-        out << "    mov byte [rsi], 0\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: read_int() -> int ----
-        out << "\n";
-        out << "read_int:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    call __read_line\n";
-        out << "    xor eax, eax\n";
-        out << "    xor ecx, ecx\n";
-        out << "    xor r8, r8\n";
-        out << ".read_int_skip:\n";
-        out << "    mov cl, [rsi]\n";
-        out << "    cmp cl, 0\n";
-        out << "    je .read_int_zero\n";
-        out << "    cmp cl, ' '\n";
-        out << "    je .read_int_skip_inc\n";
-        out << "    cmp cl, 9\n";
-        out << "    je .read_int_skip_inc\n";
-        out << "    cmp cl, 10\n";
-        out << "    je .read_int_skip_inc\n";
-        out << "    cmp cl, '-'\n";
-        out << "    je .read_int_neg\n";
-        out << "    cmp cl, '0'\n";
-        out << "    jb .read_int_zero\n";
-        out << "    cmp cl, '9'\n";
-        out << "    ja .read_int_zero\n";
-        out << "    jmp .read_int_loop\n";
-        out << ".read_int_skip_inc:\n";
-        out << "    inc rsi\n";
-        out << "    jmp .read_int_skip\n";
-        out << ".read_int_neg:\n";
-        out << "    inc rsi\n";
-        out << "    mov r8, 1\n";
-        out << "    mov cl, [rsi]\n";
-        out << "    cmp cl, '0'\n";
-        out << "    jb .read_int_zero\n";
-        out << "    cmp cl, '9'\n";
-        out << "    ja .read_int_zero\n";
-        out << ".read_int_loop:\n";
-        out << "    mov cl, [rsi]\n";
-        out << "    cmp cl, 0\n";
-        out << "    je .read_int_done\n";
-        out << "    cmp cl, '0'\n";
-        out << "    jb .read_int_done\n";
-        out << "    cmp cl, '9'\n";
-        out << "    ja .read_int_done\n";
-        out << "    imul rax, 10\n";
-        out << "    movzx rcx, cl\n";
-        out << "    add rax, rcx\n";
-        out << "    sub rax, '0'\n";
-        out << "    inc rsi\n";
-        out << "    jmp .read_int_loop\n";
-        out << ".read_int_done:\n";
-        out << "    cmp r8, 1\n";
-        out << "    jne .read_int_ret\n";
-        out << "    neg rax\n";
-        out << ".read_int_ret:\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".read_int_zero:\n";
-        out << "    xor eax, eax\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: read_double() -> double ----
-        out << "\n";
-        out << "read_double:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 32\n";
-        out << "    call __read_line\n";
-        out << "    xor r8, r8\n";
-        out << "    xor r9, r9\n";
-        out << "    xor r10, r10\n";
-        out << "    mov r11, 1\n";
-        out << ".readdbl_skip:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .readdbl_zero\n";
-        out << "    cmp al, ' '\n";
-        out << "    je .readdbl_skip_inc\n";
-        out << "    cmp al, 9\n";
-        out << "    je .readdbl_skip_inc\n";
-        out << "    cmp al, 10\n";
-        out << "    je .readdbl_skip_inc\n";
-        out << "    cmp al, '-'\n";
-        out << "    je .readdbl_neg\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .readdbl_zero\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .readdbl_zero\n";
-        out << "    jmp .readdbl_int\n";
-        out << ".readdbl_skip_inc:\n";
-        out << "    inc rsi\n";
-        out << "    jmp .readdbl_skip\n";
-        out << ".readdbl_neg:\n";
-        out << "    inc rsi\n";
-        out << "    mov r10, 1\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .readdbl_zero\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .readdbl_zero\n";
-        out << ".readdbl_int:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .readdbl_conv\n";
-        out << "    cmp al, ' '\n";
-        out << "    je .readdbl_conv\n";
-        out << "    cmp al, 9\n";
-        out << "    je .readdbl_conv\n";
-        out << "    cmp al, 10\n";
-        out << "    je .readdbl_conv\n";
-        out << "    cmp al, '.'\n";
-        out << "    je .readdbl_frac\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .readdbl_conv\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .readdbl_conv\n";
-        out << "    imul r8, 10\n";
-        out << "    movzx rax, al\n";
-        out << "    add r8, rax\n";
-        out << "    sub r8, '0'\n";
-        out << "    inc rsi\n";
-        out << "    jmp .readdbl_int\n";
-        out << ".readdbl_frac:\n";
-        out << "    inc rsi\n";
-        out << "    xor r9, r9\n";
-        out << "    mov r11, 1\n";
-        out << ".readdbl_frac_loop:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .readdbl_conv\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .readdbl_conv\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .readdbl_conv\n";
-        out << "    imul r9, 10\n";
-        out << "    movzx rcx, al\n";
-        out << "    add r9, rcx\n";
-        out << "    sub r9, '0'\n";
-        out << "    imul r11, 10\n";
-        out << "    inc rsi\n";
-        out << "    jmp .readdbl_frac_loop\n";
-        out << ".readdbl_conv:\n";
-        out << "    cvtsi2sd xmm0, r8\n";
-        out << "    cvtsi2sd xmm1, r9\n";
-        out << "    cvtsi2sd xmm2, r11\n";
-        out << "    divsd xmm1, xmm2\n";
-        out << "    addsd xmm0, xmm1\n";
-        out << "    cmp r10, 1\n";
-        out << "    jne .readdbl_ret\n";
-        out << "    mov rax, 0x8000000000000000\n";
-        out << "    mov [rbp-8], rax\n";
-        out << "    xorpd xmm0, [rbp-8]\n";
-        out << ".readdbl_ret:\n";
-        out << "    movq rax, xmm0\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".readdbl_zero:\n";
-        out << "    xorpd xmm0, xmm0\n";
-        out << "    movq rax, xmm0\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_char(value: char) -> void ----
-        // Prints a single ASCII character followed by a newline via write(1, ...).
-        out << "\n";
-        out << "println_char:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 16\n";
-        out << "    mov byte [rbp-2], dil\n";
-        out << "    mov byte [rbp-1], 10\n";
-        out << "    lea rsi, [rbp-2]\n";
-        out << "    mov rdx, 2\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    add rsp, 16\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_double(value: double) -> void ----
-        // Prints double with minimal format: "1.5" not "1.500000", "1" not "1.000000"
-        // rdi contains the raw double bits (SysV integer ABI for this calling convention).
-        out << "\n";
-        out << "println_double:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 64\n";
-        out << "    mov [rbp-8], rdi\n";
-        out << "    movsd xmm0, qword [rbp-8]\n";
-        // Check sign
-        out << "    xorpd xmm1, xmm1\n";
-        out << "    ucomisd xmm0, xmm1\n";
-        out << "    jae .Ldbl_positive\n";
-        // Print minus sign
-        out << "    push rdi\n";
-        out << "    lea rsi, [rel __println_minus]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    pop rdi\n";
-        // Negate: xmm0 = -xmm0
-        out << "    movsd xmm0, qword [rbp-8]\n";
-        out << "    mov rax, 0x8000000000000000\n";
-        out << "    mov [rbp-16], rax\n";
-        out << "    xorpd xmm0, [rbp-16]\n";
-        out << ".Ldbl_positive:\n";
-        // Extract integer part
-        out << "    cvttsd2si rax, xmm0\n";
-        out << "    mov [rbp-24], rax\n";
-        // Convert integer part (inline)
-        out << "    lea rsi, [rbp-48]\n";
-        out << "    add rsi, 20\n";
-        out << "    mov byte [rsi], 0\n";
-        out << "    mov rax, [rbp-24]\n";
-        out << "    test rax, rax\n";
-        out << "    jnz .Ldbl_iconv\n";
-        out << "    dec rsi\n";
-        out << "    mov byte [rsi], '0'\n";
-        out << "    jmp .Ldbl_iwrite\n";
-        out << ".Ldbl_iconv:\n";
-        out << ".Ldbl_iloop:\n";
-        out << "    xor rdx, rdx\n";
-        out << "    mov rcx, 10\n";
-        out << "    div rcx\n";
-        out << "    add dl, '0'\n";
-        out << "    dec rsi\n";
-        out << "    mov [rsi], dl\n";
-        out << "    test rax, rax\n";
-        out << "    jnz .Ldbl_iloop\n";
-        out << ".Ldbl_iwrite:\n";
-        // Calculate length for integer part
-        out << "    lea rdx, [rbp-48]\n";
-        out << "    add rdx, 20\n";
-        out << "    sub rdx, rsi\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        // Extract fractional part: frac = (value - int_part) * 1000000
-        out << "    cvtsi2sd xmm1, qword [rbp-24]\n";
-        out << "    movsd xmm0, qword [rbp-8]\n";
-        out << "    mov rax, 0x7FFFFFFFFFFFFFFF\n";
-        out << "    mov [rbp-16], rax\n";
-        out << "    andpd xmm0, [rbp-16]\n";
-        out << "    subsd xmm0, xmm1\n";
-        out << "    mov rax, 1000000\n";
-        out << "    cvtsi2sd xmm1, rax\n";
-        out << "    mulsd xmm0, xmm1\n";
-        out << "    roundsd xmm0, xmm0, 0\n";
-        out << "    cvttsd2si rax, xmm0\n";
-        out << "    mov [rbp-32], rax\n";
-        // If frac==0, skip decimal part (whole number)
-        out << "    test rax, rax\n";
-        out << "    jz .Ldbl_newline\n";
-        // Print decimal point
-        out << "    lea rsi, [rel __println_dot]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        // Convert 6-digit fractional part to buffer (digits in reverse)
-        out << "    lea rsi, [rbp-48]\n";
-        out << "    add rsi, 20\n";
-        out << "    mov byte [rsi], 0\n";
-        out << "    mov rax, [rbp-32]\n";
-        out << "    mov rcx, 6\n";
-        out << ".Ldbl_floop:\n";
-        out << "    xor rdx, rdx\n";
-        out << "    push rcx\n";
-        out << "    mov rcx, 10\n";
-        out << "    div rcx\n";
-        out << "    pop rcx\n";
-        out << "    add dl, '0'\n";
-        out << "    dec rsi\n";
-        out << "    mov [rsi], dl\n";
-        out << "    dec rcx\n";
-        out << "    jnz .Ldbl_floop\n";
-        // Strip trailing zeros in frac (e.g. 1.5 -> "5" not "500000")
-        // Digits: [rsi]=highest place, [rsi+5]=ones. Scan from end for last non-zero.
-        out << "    lea r9, [rsi+5]\n";
-        out << ".Ldbl_strip:\n";
-        out << "    cmp r9, rsi\n";
-        out << "    jl .Ldbl_stripped\n";
-        out << "    cmp byte [r9], '0'\n";
-        out << "    jne .Ldbl_stripped\n";
-        out << "    dec r9\n";
-        out << "    jmp .Ldbl_strip\n";
-        out << ".Ldbl_stripped:\n";
-        out << "    mov rdx, r9\n";
-        out << "    sub rdx, rsi\n";
-        out << "    inc rdx\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << ".Ldbl_newline:\n";
-        // Write newline
-        out << "    lea rsi, [rel __println_newline]\n";
-        out << "    mov rdx, 1\n";
-        out << "    mov rax, 1\n";
-        out << "    mov rdi, 1\n";
-        out << "    syscall\n";
-        out << "    add rsp, 64\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
     }
     else if (TargetArchitecture::GetOS() == OS::Windows)
     {
         out << "mainCRTStartup:\n";
-
-        // Windows x64 ABI:
-        // - Stack is 16-byte aligned before CALL
-        // - 32 bytes of shadow space required
-        out << "    ; allocate shadow space + alignment for calling main\n";
-        out << "    sub rsp, 40\n"; // 32 shadow + 8 align
+        out << "    sub rsp, 40\n";
 
         for (const auto& [target, source] : module.GetDeferredGlobalInits())
         {
@@ -1671,18 +892,11 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
             out << "    mov [rel " << target << "], rax\n";
         }
 
-        // call main()
-        out << "    ; call main() (CRT entry -> user main)\n";
         out << "    call main\n";
-
-        // exit() flushes CRT stdio buffers (needed for printf / println)
         out << "    mov ecx, eax\n";
         out << "    call exit\n";
-
-        out << "    ; Halt if exit returns (should not)\n";
         out << "    hlt\n";
 
-        // ---- Bump allocator: heap_alloc(size) -> ptr (rcx=size, rax=ptr) ----
         out << "\n";
         out << "heap_alloc:\n";
         out << "    add rcx, 7\n";
@@ -1697,363 +911,10 @@ void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
         out << "    add r10, rcx\n";
         out << "    mov [rel heap_cur], r10\n";
         out << "    ret\n";
-
-        // ---- Built-in: println(value: int) -> void ----
-        // Wraps printf with a "%lld\n" format string.
-        out << "\n";
-        out << "println:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    ; rcx = value (first arg from caller)\n";
-        out << "    mov rdx, rcx\n";                          // 2nd printf arg = value
-        out << "    lea rcx, [rel __println_fmt_int]\n";      // 1st printf arg = fmt
-        out << "    sub rsp, 32\n";                            // shadow space
-        out << "    call printf\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_double(value: double) -> void ----
-        // Wraps printf with a "%g\n" format string.
-        // Caller passes double bits in rcx (standard int register ABI).
-        // printf variadic needs the double in BOTH rdx and xmm1.
-        out << "\n";
-        out << "println_double:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    mov [rbp+16], rcx\n";                     // store bits to shadow slot
-        out << "    movsd xmm1, qword [rbp+16]\n";            // load into xmm1 for %g
-        out << "    mov rdx, rcx\n";                           // also in rdx (variadic ABI)
-        out << "    lea rcx, [rel __println_fmt_double]\n";    // 1st printf arg = fmt
-        out << "    sub rsp, 32\n";
-        out << "    call printf\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_str(ptr: char*) -> void ----
-        // Wraps printf with a "%s\n" format string.
-        out << "\n";
-        out << "println_str:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    mov rdx, rcx\n";                           // 2nd printf arg = string ptr
-        out << "    lea rcx, [rel __println_fmt_str]\n";       // 1st printf arg = fmt
-        out << "    sub rsp, 32\n";
-        out << "    call printf\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: readln() -> string (Windows: GetStdHandle + ReadFile) ----
-        out << "\n";
-        out << "readln:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 320\n";
-        out << "    mov rcx, -10\n";
-        out << "    sub rsp, 32\n";
-        out << "    call GetStdHandle\n";
-        out << "    add rsp, 32\n";
-        out << "    mov rcx, rax\n";
-        out << "    lea rdx, [rbp-280]\n";
-        out << "    mov r8, 255\n";
-        out << "    lea r9, [rbp-288]\n";
-        out << "    mov qword [rsp+32], 0\n";
-        out << "    sub rsp, 32\n";
-        out << "    call ReadFile\n";
-        out << "    add rsp, 32\n";
-        out << "    mov rax, [rbp-288]\n";
-        out << "    cmp rax, 0\n";
-        out << "    jle .Lwreadln_empty\n";
-        out << "    xor rcx, rcx\n";
-        out << ".Lwreadln_find_nl:\n";
-        out << "    cmp rcx, [rbp-288]\n";
-        out << "    jge .Lwreadln_no_nl\n";
-        out << "    cmp byte [rbp-280+rcx], 10\n";
-        out << "    je .Lwreadln_found_nl\n";
-        out << "    inc rcx\n";
-        out << "    jmp .Lwreadln_find_nl\n";
-        out << ".Lwreadln_found_nl:\n";
-        out << "    ; strip trailing \\r if present (Windows CRLF)\n";
-        out << "    test rcx, rcx\n";
-        out << "    jz .Lwreadln_do_copy\n";
-        out << "    cmp byte [rbp-280+rcx-1], 13\n";
-        out << "    jne .Lwreadln_do_copy\n";
-        out << "    dec rcx\n";
-        out << ".Lwreadln_do_copy:\n";
-        out << "    mov byte [rbp-280+rcx], 0\n";
-        out << "    jmp .Lwreadln_copy\n";
-        out << ".Lwreadln_no_nl:\n";
-        out << "    mov rcx, [rbp-288]\n";
-        out << "    mov byte [rbp-280+rcx], 0\n";
-        out << ".Lwreadln_copy:\n";
-        out << "    lea rcx, [rcx + 1]\n";
-        out << "    sub rsp, 32\n";
-        out << "    call heap_alloc\n";
-        out << "    add rsp, 32\n";
-        out << "    mov [rbp-296], rax\n";
-        out << "    mov rdx, rax\n";
-        out << "    xor r8, r8\n";
-        out << ".Lwreadln_cpy:\n";
-        out << "    cmp byte [rbp-280+r8], 0\n";
-        out << "    je .Lwreadln_done\n";
-        out << "    mov al, [rbp-280+r8]\n";
-        out << "    mov [rdx], al\n";
-        out << "    inc r8\n";
-        out << "    inc rdx\n";
-        out << "    jmp .Lwreadln_cpy\n";
-        out << ".Lwreadln_done:\n";
-        out << "    mov byte [rdx], 0\n";
-        out << "    mov rax, [rbp-296]\n";
-        out << "    add rsp, 320\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".Lwreadln_empty:\n";
-        out << "    mov rcx, 1\n";
-        out << "    sub rsp, 32\n";
-        out << "    call heap_alloc\n";
-        out << "    add rsp, 32\n";
-        out << "    mov byte [rax], 0\n";
-        out << "    add rsp, 320\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: read_int() -> int (Windows) ----
-        out << "\n";
-        out << "read_int:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 336\n";
-        out << "    mov rcx, -10\n";
-        out << "    sub rsp, 32\n";
-        out << "    call GetStdHandle\n";
-        out << "    add rsp, 32\n";
-        out << "    mov rcx, rax\n";
-        out << "    lea rdx, [rbp-280]\n";
-        out << "    mov r8, 255\n";
-        out << "    lea r9, [rbp-288]\n";
-        out << "    mov qword [rsp+32], 0\n";
-        out << "    sub rsp, 32\n";
-        out << "    call ReadFile\n";
-        out << "    add rsp, 32\n";
-        out << "    mov rax, [rbp-288]\n";
-        out << "    cmp rax, 0\n";
-        out << "    jle .wread_int_zero\n";
-        out << "    mov byte [rbp-280+rax], 0\n";
-        out << "    lea rsi, [rbp-280]\n";
-        out << "    xor eax, eax\n";
-        out << "    xor r8, r8\n";
-        out << ".wread_int_skip:\n";
-        out << "    mov cl, [rsi]\n";
-        out << "    cmp cl, 0\n";
-        out << "    je .wread_int_zero\n";
-        out << "    cmp cl, ' '\n";
-        out << "    je .wread_int_skip_inc\n";
-        out << "    cmp cl, 9\n";
-        out << "    je .wread_int_skip_inc\n";
-        out << "    cmp cl, 10\n";
-        out << "    je .wread_int_skip_inc\n";
-        out << "    cmp cl, '-'\n";
-        out << "    je .wread_int_neg\n";
-        out << "    cmp cl, '0'\n";
-        out << "    jb .wread_int_zero\n";
-        out << "    cmp cl, '9'\n";
-        out << "    ja .wread_int_zero\n";
-        out << "    jmp .wread_int_loop\n";
-        out << ".wread_int_skip_inc:\n";
-        out << "    inc rsi\n";
-        out << "    jmp .wread_int_skip\n";
-        out << ".wread_int_neg:\n";
-        out << "    inc rsi\n";
-        out << "    mov r8, 1\n";
-        out << "    mov cl, [rsi]\n";
-        out << "    cmp cl, '0'\n";
-        out << "    jb .wread_int_zero\n";
-        out << "    cmp cl, '9'\n";
-        out << "    ja .wread_int_zero\n";
-        out << ".wread_int_loop:\n";
-        out << "    mov cl, [rsi]\n";
-        out << "    cmp cl, 0\n";
-        out << "    je .wread_int_done\n";
-        out << "    cmp cl, '0'\n";
-        out << "    jb .wread_int_done\n";
-        out << "    cmp cl, '9'\n";
-        out << "    ja .wread_int_done\n";
-        out << "    imul rax, 10\n";
-        out << "    movzx rcx, cl\n";
-        out << "    add rax, rcx\n";
-        out << "    sub rax, '0'\n";
-        out << "    inc rsi\n";
-        out << "    jmp .wread_int_loop\n";
-        out << ".wread_int_done:\n";
-        out << "    cmp r8, 1\n";
-        out << "    jne .wread_int_ret\n";
-        out << "    neg rax\n";
-        out << ".wread_int_ret:\n";
-        out << "    add rsp, 336\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".wread_int_zero:\n";
-        out << "    xor eax, eax\n";
-        out << "    add rsp, 336\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: read_double() -> double (Windows) ----
-        out << "\n";
-        out << "read_double:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    sub rsp, 352\n";
-        out << "    mov rcx, -10\n";
-        out << "    sub rsp, 32\n";
-        out << "    call GetStdHandle\n";
-        out << "    add rsp, 32\n";
-        out << "    mov rcx, rax\n";
-        out << "    lea rdx, [rbp-280]\n";
-        out << "    mov r8, 255\n";
-        out << "    lea r9, [rbp-288]\n";
-        out << "    mov qword [rsp+32], 0\n";
-        out << "    sub rsp, 32\n";
-        out << "    call ReadFile\n";
-        out << "    add rsp, 32\n";
-        out << "    mov rax, [rbp-288]\n";
-        out << "    cmp rax, 0\n";
-        out << "    jle .wreaddbl_zero\n";
-        out << "    mov byte [rbp-280+rax], 0\n";
-        out << "    lea rsi, [rbp-280]\n";
-        out << "    xor r8, r8\n";
-        out << "    xor r9, r9\n";
-        out << "    xor r10, r10\n";
-        out << "    mov r11, 1\n";
-        out << ".wreaddbl_skip:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .wreaddbl_zero\n";
-        out << "    cmp al, ' '\n";
-        out << "    je .wreaddbl_skip_inc\n";
-        out << "    cmp al, 9\n";
-        out << "    je .wreaddbl_skip_inc\n";
-        out << "    cmp al, 10\n";
-        out << "    je .wreaddbl_skip_inc\n";
-        out << "    cmp al, '-'\n";
-        out << "    je .wreaddbl_neg\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .wreaddbl_zero\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .wreaddbl_zero\n";
-        out << "    jmp .wreaddbl_int\n";
-        out << ".wreaddbl_skip_inc:\n";
-        out << "    inc rsi\n";
-        out << "    jmp .wreaddbl_skip\n";
-        out << ".wreaddbl_neg:\n";
-        out << "    inc rsi\n";
-        out << "    mov r10, 1\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .wreaddbl_zero\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .wreaddbl_zero\n";
-        out << ".wreaddbl_int:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .wreaddbl_conv\n";
-        out << "    cmp al, ' '\n";
-        out << "    je .wreaddbl_conv\n";
-        out << "    cmp al, 9\n";
-        out << "    je .wreaddbl_conv\n";
-        out << "    cmp al, 10\n";
-        out << "    je .wreaddbl_conv\n";
-        out << "    cmp al, '.'\n";
-        out << "    je .wreaddbl_frac\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .wreaddbl_conv\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .wreaddbl_conv\n";
-        out << "    imul r8, 10\n";
-        out << "    movzx rax, al\n";
-        out << "    add r8, rax\n";
-        out << "    sub r8, '0'\n";
-        out << "    inc rsi\n";
-        out << "    jmp .wreaddbl_int\n";
-        out << ".wreaddbl_frac:\n";
-        out << "    inc rsi\n";
-        out << "    xor r9, r9\n";
-        out << "    mov r11, 1\n";
-        out << ".wreaddbl_frac_loop:\n";
-        out << "    mov al, [rsi]\n";
-        out << "    cmp al, 0\n";
-        out << "    je .wreaddbl_conv\n";
-        out << "    cmp al, '0'\n";
-        out << "    jb .wreaddbl_conv\n";
-        out << "    cmp al, '9'\n";
-        out << "    ja .wreaddbl_conv\n";
-        out << "    imul r9, 10\n";
-        out << "    movzx rcx, al\n";
-        out << "    add r9, rcx\n";
-        out << "    sub r9, '0'\n";
-        out << "    imul r11, 10\n";
-        out << "    inc rsi\n";
-        out << "    jmp .wreaddbl_frac_loop\n";
-        out << ".wreaddbl_conv:\n";
-        out << "    cvtsi2sd xmm0, r8\n";
-        out << "    cvtsi2sd xmm1, r9\n";
-        out << "    cvtsi2sd xmm2, r11\n";
-        out << "    divsd xmm1, xmm2\n";
-        out << "    addsd xmm0, xmm1\n";
-        out << "    cmp r10, 1\n";
-        out << "    jne .wreaddbl_ret\n";
-        out << "    mov rax, 0x8000000000000000\n";
-        out << "    mov [rbp-8], rax\n";
-        out << "    xorpd xmm0, [rbp-8]\n";
-        out << ".wreaddbl_ret:\n";
-        out << "    movq rax, xmm0\n";
-        out << "    add rsp, 352\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-        out << ".wreaddbl_zero:\n";
-        out << "    xorpd xmm0, xmm0\n";
-        out << "    movq rax, xmm0\n";
-        out << "    add rsp, 352\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_bool(value: bool) -> void ----
-        // Prints "true" or "false" via printf("%s\n", ...).
-        out << "\n";
-        out << "println_bool:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    cmp rcx, 0\n";
-        out << "    je .println_bool_false\n";
-        out << "    lea rdx, [rel __println_bool_true]\n";
-        out << "    jmp .println_bool_out\n";
-        out << ".println_bool_false:\n";
-        out << "    lea rdx, [rel __println_bool_false]\n";
-        out << ".println_bool_out:\n";
-        out << "    lea rcx, [rel __println_fmt_str]\n";       // 1st printf arg = fmt
-        out << "    sub rsp, 32\n";
-        out << "    call printf\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
-
-        // ---- Built-in: println_char(value: char) -> void ----
-        // Wraps printf with a "%c\n" format string.
-        out << "\n";
-        out << "println_char:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    mov rdx, rcx\n";
-        out << "    lea rcx, [rel __println_fmt_char]\n";
-        out << "    sub rsp, 32\n";
-        out << "    call printf\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
-        out << "    ret\n";
     }
 }
+
+
 
 std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol) const
 {
@@ -2121,7 +982,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
                 }
             }
 
-            // Stack-passed args (7th+): [rbp+16], [rbp+24], …
+            // Stack-passed args (7th+): [rbp+16], [rbp+24], â€¦
             int stackOffset = x86_64::FIRST_STACK_ARG_OFFSET_LINUX + x86_64::STACK_SLOT_SIZE * static_cast<int>(foundIndex - x86_64::SIX_ARGUEMENTS);
             return "[rbp+" + std::to_string(stackOffset) + "]";
         }
@@ -2132,13 +993,13 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
                 // Register arguments were spilled to the caller's shadow
                 // space in the prologue.  Read from there so we are safe
                 // even after idiv / call clobber the volatile registers.
-                //   [rbp+16] = arg 0,  [rbp+24] = arg 1, …
+                //   [rbp+16] = arg 0,  [rbp+24] = arg 1, â€¦
                 int offset = 16 + static_cast<int>(foundIndex) * x86_64::STACK_SLOT_SIZE;
                 return "qword [rbp+" + std::to_string(offset) + "]";
             }
             else
             {
-                // Stack-passed args (5th+): [rbp+48], [rbp+56], …
+                // Stack-passed args (5th+): [rbp+48], [rbp+56], â€¦
                 int stackOffset = x86_64::FIRST_STACK_ARG_OFFSET_WINDOWS + x86_64::STACK_SLOT_SIZE * static_cast<int>(foundIndex - x86_64::FOUR_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
             }

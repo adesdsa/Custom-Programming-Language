@@ -80,6 +80,14 @@ public:
     /// @return bool: True-> The assignment is legal, False-> Otherwise.
     bool CheckAssignment(const std::string& sAssignedVarName, const ExpressionType& assigmentExpressionType, const VarTableNode& currVarTableNode, bool isInitialization = false);
 
+    /// @brief Checks if the expression is a compile-time constant (literals, const vars, constant expressions only).
+    /// Used to enforce that const variables are initialized only with compile-time known values, not e.g. read_int().
+    /// @param expression The initializer expression.
+    /// @param funcTable The function table (to reject any function calls).
+    /// @param currVarTableNode The var table (to allow const identifiers as constants).
+    /// @return bool: True if the expression is compile-time constant, false otherwise.
+    bool IsCompileTimeConstant(const Command& expression, const FuncTable& funcTable, const VarTableNode& currVarTableNode);
+
     /// @brief The func checks if a control statement is legal right now.
     /// @return bool: True-> Control statement is legal, False-> Otherwise.
     bool CheckControlStatement();

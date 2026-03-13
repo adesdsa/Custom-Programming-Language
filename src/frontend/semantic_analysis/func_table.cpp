@@ -48,58 +48,8 @@ FuncTable::GetAllFunctions() const noexcept
 void FuncTable::RegisterBuiltins()
 {
     // guard: only register once
-    if (this->FindFunctionByName("println")) return;
-
-    // println(value: int) -> void
-    std::vector<VarMetaData> printlnParams = {
-        VarMetaData("value", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
-    };
-    FuncMetaData printlnFunc(
-        this->m_entityLogger,
-        "println",
-        Type::VOID_TYPE,
-        printlnParams,
-        0, 0,  // no source location (built-in)
-        nullptr // no scope root (built-in)
-    );
-    printlnFunc.SetDefined();
-    this->InsertFunction(std::move(printlnFunc));
-
-    // readln() -> string
-    FuncMetaData readlnFunc(
-        this->m_entityLogger,
-        "readln",
-        Type::STRING_TYPE,
-        std::vector<VarMetaData>{},
-        0, 0,
-        nullptr
-    );
-    readlnFunc.SetDefined();
-    this->InsertFunction(std::move(readlnFunc));
-
-    // read_int() -> int
-    FuncMetaData read_intFunc(
-        this->m_entityLogger,
-        "read_int",
-        Type::INT_TYPE,
-        std::vector<VarMetaData>{},
-        0, 0,
-        nullptr
-    );
-    read_intFunc.SetDefined();
-    this->InsertFunction(std::move(read_intFunc));
-
-    // read_double() -> double
-    FuncMetaData read_doubleFunc(
-        this->m_entityLogger,
-        "read_double",
-        Type::DOUBLE_TYPE,
-        std::vector<VarMetaData>{},
-        0, 0,
-        nullptr
-    );
-    read_doubleFunc.SetDefined();
-    this->InsertFunction(std::move(read_doubleFunc));
+    if (this->m_builtinsRegistered) return;
+    this->m_builtinsRegistered = true;
 
     // Register arraylib and string builtins so semantic analysis can resolve them
     for (const std::string& libName : { "arraylib", "string" })
