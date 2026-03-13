@@ -30,7 +30,9 @@ void IASTVisitor::InitializeHandlers()
     this->m_handlers.emplace(CommandTypes::EXPRESSION_OPERATOR,      [this](ASTNode* n) { VisitExpression(n); });
     this->m_handlers.emplace(CommandTypes::IDENTIFIER,               [this](ASTNode* n) { VisitIdentifier(n); });
     this->m_handlers.emplace(CommandTypes::ARRAY_ACCESS,             [this](ASTNode* n) { VisitArrayAccess(n); });
+    this->m_handlers.emplace(CommandTypes::STRING_ARRAY_ACCESS,      [this](ASTNode* n) { VisitArrayAccess(n); });
     this->m_handlers.emplace(CommandTypes::ARRAY_SLICE,              [this](ASTNode* n) { VisitArrayAccess(n); });
+    this->m_handlers.emplace(CommandTypes::STRING_ARRAY_SLICE,       [this](ASTNode* n) { VisitArrayAccess(n); });
     this->m_handlers.emplace(CommandTypes::IDENTIFIER_VALUE,         [this](ASTNode* n) { VisitIdentifierValue(n); });
     this->m_handlers.emplace(CommandTypes::ASSIGNMENT,               [this](ASTNode* n) { VisitAssignment(n); });
     this->m_handlers.emplace(CommandTypes::FINISHED_FUNC_DECLARATION,[this](ASTNode* n) { VisitFuncDeclaration(n); });

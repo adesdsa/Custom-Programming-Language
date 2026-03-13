@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # -----------------------------
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "" FORCE)
+    add_compile_options(/FS)  # Allow multiple CL.EXE to write to same PDB (parallel builds)
 endif()
 
 # =============================

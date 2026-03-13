@@ -47,6 +47,8 @@ namespace CommandTypes
     inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
     inline constexpr std::string_view ARRAY_SLICE                   = "ARRAY_SLICE";
+    inline constexpr std::string_view STRING_ARRAY_ACCESS           = "STRING_ARRAY_ACCESS";   // arr[i][j] for string[][]
+    inline constexpr std::string_view STRING_ARRAY_SLICE            = "STRING_ARRAY_SLICE";   // arr[i][j:k] for string[][]
     inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
     inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";           // int, bool...
 
@@ -152,6 +154,7 @@ private:
     bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
     int m_iParanthesesCounter;              // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
+    size_t m_bSawColonInArrayBrackets;        // Counts if ":" was seen (required for slice; distinguishes from comma/semicolon).
     std::vector<CompileTimeError> m_errors;
 
 

@@ -133,15 +133,15 @@ void SemanticAnalysisVisitor::VisitArrayDeclaration(ASTNode* node)
     {
         arraySize = ASTExtractor::ExtractArraySizeFromInitializer(node);
     }
-    if (!arraySize.has_value() || arraySize.value() == 0)
+    if (!arraySize.has_value())
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::SYNTAX_ERROR,
-                "Array size must be a constant positive integer or inferred from initializer (e.g. int[] = [1,2,3])",
+                "Array size must be a constant non-negative integer or inferred from initializer (e.g. int[] = [1,2,3])",
                 tokens[0].GetLine(),
                 tokens[0].GetColumn(),
-                "Use a literal like 10, a const expression, or int[] = [1,2,3] to infer from initializer"
+                "Use a literal like 0, 10, a const expression, or int[] = [1,2,3] to infer from initializer"
             )
         );
         return;
@@ -393,7 +393,7 @@ void SemanticAnalysisVisitor::VisitExpression(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Cannot evaluate expression — possible type mismatch or use of an undefined variable/function",
+                "Cannot evaluate expression - possible type mismatch or use of an undefined variable/function",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"
@@ -657,8 +657,18 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     {
         argTypes.push_back(this->EvaluateNodeType(arg));
     }
+
+    static const std::unordered_set<std::string> ARRAYLIB_FUNCS = {
+        "front", "back", "len", "find", "find_first_of", "find_last_of",
+        "front_str", "back_str", "len_str", "find_str", "find_first_of_str", "find_last_of_str",
+        "front_double", "back_double", "len_double", "find_double", "find_first_of_double", "find_last_of_double",
+        "front_uint", "back_uint", "len_uint", "find_uint", "find_first_of_uint", "find_last_of_uint",
+        "front_char", "back_char", "len_char", "find_char", "find_first_of_char", "find_last_of_char",
+        "front_bool", "back_bool", "len_bool", "find_bool", "find_first_of_bool", "find_last_of_bool"
+    };
     
-    if (!this->m_facade.CheckFuncArguments(argTypes, funcName, this->m_funcTable))
+    if (!this->m_facade.CheckFuncArguments(argTypes, funcName, this->m_funcTable) &&
+        ARRAYLIB_FUNCS.count(funcName) == 0)
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -672,14 +682,6 @@ void SemanticAnalysisVisitor::VisitFuncCall(ASTNode* node)
     }
 
     // arraylib functions require first arg to be an array
-    static const std::unordered_set<std::string> ARRAYLIB_FUNCS = {
-        "front", "back", "len", "find", "find_first_of", "find_last_of",
-        "front_str", "back_str", "len_str", "find_str", "find_first_of_str", "find_last_of_str",
-        "front_double", "back_double", "len_double", "find_double", "find_first_of_double", "find_last_of_double",
-        "front_uint", "back_uint", "len_uint", "find_uint", "find_first_of_uint", "find_last_of_uint",
-        "front_char", "back_char", "len_char", "find_char", "find_first_of_char", "find_last_of_char",
-        "front_bool", "back_bool", "len_bool", "find_bool", "find_first_of_bool", "find_last_of_bool"
-    };
     if (ARRAYLIB_FUNCS.count(funcName) && node->nodeFirstChild)
     {
         const Command& firstArg = node->nodeFirstChild->command;
@@ -826,7 +828,7 @@ void SemanticAnalysisVisitor::VisitReturn(ASTNode* node)
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
                 "Return type mismatch in function '" + this->m_currentFunctionName +
-                    "' — returned value does not match declared return type",
+                    "' - returned value does not match declared return type",
                 line,
                 column,
                 "Ensure the returned value type matches the function's declared return type"
@@ -1192,110 +1194,132 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
 {
     if (!node || this->m_facade.IsBlockFinished()) return;
 
-    const std::vector<Token>& tokens = node->command.GetTokens();
-    if (tokens.empty()) return;
+    bool nextIsAssignment = node->nodeNextSibling && node->nodeNextSibling->command.GetType() == CommandTypes::ASSIGNMENT;
+    const auto& type = node->command.GetType();
+    const std::string& name = ASTExtractor::ExtractVarName(node);
 
-    const std::string& identifierName = tokens[IDENTIFIER_NAME_INDEX].GetValue();
-
-    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, identifierName))
+    auto varMetaData = this->m_currentScope->FindVar(name).value();
+    if (!this->m_facade.CheckVarExistence(*this->m_currentScope, name))
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::NAME_ERROR,
-                "Undefined variable '" + identifierName + "'",
-                tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
+                "Undefined variable '" + name + "' used in expression",
+                node->command[IDENTIFIER_NAME_INDEX].GetLine(),
+                node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
                 "Declare the variable before using it"
             )
         );
-        this->SignalFailureForNextHandlers();
+    }
+
+    if (nextIsAssignment && 
+        (varMetaData.accessRights == AccessRights::CONST_ACCESS ||
+        varMetaData.accessRights == AccessRights::READ_ONLY_ACCESS))
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::ACCESS_RIGHT_ERROR,
+                "Cannot assign to constant variable '" + name + "'",
+                node->command[IDENTIFIER_NAME_INDEX].GetLine(),
+                node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
+                "Constant variables cannot be modified after declaration"
+            )
+        );
+    }
+
+    if (!varMetaData.arraySize.has_value() && varMetaData.type != Type::STRING_TYPE)
+    {
+        this->m_errorManager.StoreError(
+            CompileTimeError(
+                ErrorTypes::NAME_ERROR,
+                "Found array access to '" + name + "' that is a normal variable",
+                node->command[IDENTIFIER_NAME_INDEX].GetLine(),
+                node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
+                "Turn " + name + " into an array"
+            )
+        );
+    }
+
+    if (type == CommandTypes::STRING_ARRAY_ACCESS ||
+        type == CommandTypes::STRING_ARRAY_SLICE)
+    {
+        if (varMetaData.type != Type::STRING_TYPE)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "2D array access only allowed for string arrays '",
+                    node->command[IDENTIFIER_NAME_INDEX].GetLine(),
+                    node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
+                    ""
+                )
+            );
+        }
+    }
+
+    if (type == CommandTypes::ARRAY_SLICE)
+    {
+        if (varMetaData.arraySize.has_value() || varMetaData.type != Type::STRING_TYPE)
+        {
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::NAME_ERROR,
+                    "Array slicing not allowed, Only string slicing is allowed",
+                    node->command[IDENTIFIER_NAME_INDEX].GetLine(),
+                    node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
+                    ""
+                )
+            );
+        }
+    }
+
+    if (nextIsAssignment)
+    {
+        this->m_lastIdentifierName = name;
+    }
+    HandleSingleCommandAssignement(node);
+}
+
+void SemanticAnalysisVisitor::VisitArrayValue(ASTNode* node)
+{
+    if (!node || this->m_facade.IsBlockFinished()) return;
+    if (!this->m_pendingAssignment || this->m_lastIdentifierName.empty())
+    {
         return;
     }
 
-    if (this->m_pendingAssignment)
+    auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
+    if (!var.has_value() || var->type != Type::CHAR_TYPE || !var->arraySize.has_value())
     {
-        ExpressionType exprType = this->m_facade.CheckExpression(
-            node->command, this->m_funcTable, *this->m_currentScope);
-        this->m_lastExpressionType = exprType;
+        ResetAssignmentState();
+        return;
+    }
 
-        if (!this->m_lastIdentifierName.empty())
-        {
-            auto var = this->m_currentScope->FindVar(this->m_lastIdentifierName);
-            if (this->m_isVarInitialization && var.has_value() && var->accessRights == AccessRights::CONST_ACCESS)
-            {
-                if (!this->m_facade.IsCompileTimeConstant(node->command, this->m_funcTable, *this->m_currentScope))
-                {
-                    this->m_errorManager.StoreError(
-                        CompileTimeError(
-                            ErrorTypes::ACCESS_RIGHT_ERROR,
-                            "const variable '" + this->m_lastIdentifierName + "' must be initialized with a compile-time constant (e.g. literal, not read_int() or other runtime values)",
-                            tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                            tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
-                            "Use a literal (42, 3.14, \"hi\", true) or another const variable; use readonly for runtime one-time assignment"
-                        )
-                    );
-                    ResetAssignmentState();
-                    return;
-                }
-            }
-            if (exprType != ExpressionType::UNKNOWN &&
-                !this->m_facade.CheckAssignment(
-                    this->m_lastIdentifierName, exprType, *this->m_currentScope,
-                    this->m_isVarInitialization))
-            {
-                std::string expectedType = var.has_value() ? this->TypeToString(var->type) : "unknown";
-                std::string gotType = this->ExpressionTypeToString(exprType);
-                this->m_errorManager.StoreError(
-                    CompileTimeError(
-                        ErrorTypes::TYPE_ERROR,
-                        "Type mismatch: cannot assign '" + gotType + "' to variable '" +
-                            this->m_lastIdentifierName + "' of type '" + expectedType + "'",
-                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
-                        "Ensure the expression type matches the variable type"
-                    )
-                );
-            }
-            ResetAssignmentState();
-        }
-    }
-    else
+    const auto& params = node->command.GetParams();
+    for (size_t i = 0; i < params.size(); ++i)
     {
-        auto var = this->m_currentScope->FindVar(identifierName);
-        if (var.has_value())
+        ExpressionType elemType = this->m_facade.CheckExpression(
+            params[i], this->m_funcTable, *this->m_currentScope);
+
+        if (elemType == ExpressionType::STRING)
         {
-            if (var->accessRights == AccessRights::CONST_ACCESS)
-            {
-                this->m_errorManager.StoreError(
-                    CompileTimeError(
-                        ErrorTypes::ACCESS_RIGHT_ERROR,
-                        "Cannot assign to constant variable '" + identifierName + "'",
-                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
-                        "Constant variables cannot be modified after declaration"
-                    )
-                );
-                this->SignalFailureForNextHandlers();
-                return;
-            }
-            else if (var->accessRights == AccessRights::READ_ONLY_ACCESS)
-            {
-                this->m_errorManager.StoreError(
-                    CompileTimeError(
-                        ErrorTypes::ACCESS_RIGHT_ERROR,
-                        "Cannot assign to read-only variable '" + identifierName + "'",
-                        tokens[IDENTIFIER_NAME_INDEX].GetLine(),
-                        tokens[IDENTIFIER_NAME_INDEX].GetColumn(),
-                        "Read-only variables cannot be modified"
-                    )
-                );
-                this->SignalFailureForNextHandlers();
-                return;
-            }
+            const std::vector<Token>& elemTokens = params[i].GetTokens();
+            size_t line = elemTokens.empty() ? this->m_assignmentLine : elemTokens[0].GetLine();
+            size_t col = elemTokens.empty() ? this->m_assignmentColumn : elemTokens[0].GetColumn();
+            this->m_errorManager.StoreError(
+                CompileTimeError(
+                    ErrorTypes::TYPE_ERROR,
+                    "Cannot use string in char array initializer - element " + std::to_string(i + 1) +
+                        " must be of type char",
+                    line,
+                    col,
+                    "Use char literals (e.g. 'a') or char expressions, not string literals"
+                )
+            );
         }
-        this->m_lastIdentifierName = identifierName;
-        this->m_identifierError = false;
     }
+
+    ResetAssignmentState();
 }
 
 void SemanticAnalysisVisitor::VisitIfOrElseIfOrWhile(ASTNode* node)
@@ -1458,7 +1482,7 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
         const std::string& varName = varTokens[VAR_NAME_TOKEN_INDEX].GetValue();
         auto var = this->m_currentScope->FindVar(varName);
 
-        if (var.has_value()) 
+        if (var.has_value() && !var->arraySize.has_value()) 
         {
             return this->m_facade.TypeToExpressionType(var->type);
         }
@@ -1501,7 +1525,9 @@ ExpressionType SemanticAnalysisVisitor::EvaluateNodeType(ASTNode* node) noexcept
     }
 
     else if (nodeType == CommandTypes::ARRAY_ACCESS ||
-             nodeType == CommandTypes::ARRAY_SLICE)
+             nodeType == CommandTypes::ARRAY_SLICE ||
+             nodeType == CommandTypes::STRING_ARRAY_ACCESS ||
+             nodeType == CommandTypes::STRING_ARRAY_SLICE)
     {
         return this->m_facade.CheckExpression(
             node->command,
@@ -1599,7 +1625,7 @@ void SemanticAnalysisVisitor::HandleSingleCommandAssignement(ASTNode* node)
         this->m_errorManager.StoreError(
             CompileTimeError(
                 ErrorTypes::TYPE_ERROR,
-                "Cannot evaluate expression — possible type mismatch or use of an undefined variable/function",
+                "Cannot evaluate expression - possible type mismatch or use of an undefined variable/function",
                 tokens[FIRST_TOKEN_INDEX].GetLine(),
                 tokens[FIRST_TOKEN_INDEX].GetColumn(),
                 "Ensure all variables and functions are defined, and operand types are compatible"

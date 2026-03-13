@@ -74,7 +74,7 @@ std::optional<size_t> ASTExtractor::ExtractArraySize(ASTNode* arrayDeclNode)
     if (*p != '\0')
         return std::nullopt;  // Non-integer (e.g. "10.5")
     unsigned long long n = std::strtoull(val.c_str(), nullptr, 10);
-    if (n > 0 && n <= SIZE_MAX)
+    if (n <= SIZE_MAX)
         return static_cast<size_t>(n);
     return std::nullopt;
 }

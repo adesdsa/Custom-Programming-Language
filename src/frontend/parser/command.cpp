@@ -9,7 +9,8 @@ Command::Command() :
     m_bIgnoreEON(false),
     m_bExpression(false), 
     m_iParanthesesCounter(0), 
-    m_bFirstParanthesesEnter(false)
+    m_bFirstParanthesesEnter(false),
+    m_bSawColonInArrayBrackets(false)
 {}
 
 std::string_view Command::GetType() const
@@ -159,7 +160,8 @@ bool Command::Append(Token& currToken, Token& nextToken)
     {
         bReturnValue = this->ParseNotFuncIdentifier(currToken);
     }
-    else if (this->m_sType == CommandTypes::ARRAY_ACCESS_START)
+    else if (this->m_sType == CommandTypes::ARRAY_ACCESS_START || 
+        this->m_sType == CommandTypes::ARRAY_ACCESS)
     {
         bReturnValue = this->ParseArrayAccessStart(currToken, nextToken);
     }
@@ -469,6 +471,11 @@ bool Command::ParseScope(Token& currToken)
     {
         return this->NoFinishAndAssignType(CommandTypes::ACCESS_RIGHTS);
     }
+    else if (this->IsScope(currToken))
+    {
+        // e.g. export let, export var — allow chained scope keywords
+        return this->NoFinishAndAssignType(CommandTypes::SCOPE);
+    }
     else if (this->IsType(currToken, TokenTypes::IDENTIFIER))
     {
         return this->NoFinishAndAssignType(CommandTypes::NOT_FUNC_IDENTIFIER);
@@ -712,35 +719,96 @@ bool Command::ParseArrayAccessStart(Token& currToken, Token& nextToken)
 {
     if (this->HandleDefaultPossibleParamChecks(currToken, "["))
     {
+        this->m_bIgnoreCurrToken = false;
         return false;
     }
+    else if (currToken.GetValue() == "[")
+    {
+        this->m_bIgnoreCurrToken = false;
+        return false;
+    }
+
     else if (currToken.GetValue() == "]")
     {
+        this->m_bIgnoreCurrToken = false;
         if (this->LowerParanthesesCounter(currToken))
         {
             return true;
         }
         else if (this->m_iParanthesesCounter == 0)
         {
-            this->m_bIgnoreCurrToken = false;
-            if (this->m_parameters.size() >= 2)
+            if (this->m_uParameterIndex < this->m_parameters.size())
             {
-                return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
+                this->m_uParameterIndex++;
             }
-            return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+            if (this->m_bSawColonInArrayBrackets)
+            {
+                if (this->m_bSawColonInArrayBrackets > 2)
+                {
+                    this->m_errors.push_back(CompileTimeError(
+                        ErrorTypes::SYNTAX_ERROR,
+                        "Too many colons inside array access",
+                        currToken.GetLine(), currToken.GetColumn(),
+                        "Check for a mistaken ':', keep it as [start : stop : step]"));
+                    this->m_bSawColonInArrayBrackets = 0;
+                    return this->FoundUnknown(currToken);
+                }
+                else if (this->m_sType == CommandTypes::ARRAY_ACCESS)
+                {
+                    this->m_bSawColonInArrayBrackets = 0;
+                    return this->FinishAndAssignType(CommandTypes::STRING_ARRAY_SLICE);
+                }
+                else
+                {
+                    this->m_bSawColonInArrayBrackets = 0;
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_SLICE);
+                }
+            }
+            else
+            {
+                if (this->IsValue(nextToken, "["))
+                {
+                    return this->NoFinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+                if (this->m_sType == CommandTypes::ARRAY_ACCESS)
+                {
+                    return this->FinishAndAssignType(CommandTypes::STRING_ARRAY_ACCESS);
+                }
+                if (this->IsIncrementDecrement(nextToken))
+                {
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+                if (this->IsAssignmentOperator(nextToken))
+                {
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+                if (this->IsOperator(nextToken))
+                {
+                    this->m_bIgnoreCurrToken = true;
+                    this->m_tokens.push_back(currToken);
+                    this->m_sType = CommandTypes::ARRAY_ACCESS;
+                    this->MoveThisIntoParam();
+                    return this->NoFinishAndAssignType(CommandTypes::EXPRESSION_VALUE);
+                }
+                else
+                {
+                    return this->FinishAndAssignType(CommandTypes::ARRAY_ACCESS);
+                }
+            }
         }
     }
-    else if (currToken.GetValue() == ":" && this->m_iParanthesesCounter == 1)
+    else if (currToken.GetValue() == ":")
     {
-        this->m_tokens.push_back(currToken);
-        this->m_bIgnoreCurrToken = true;
+        this->m_bSawColonInArrayBrackets++;
         if (this->m_uParameterIndex < this->m_parameters.size())
         {
             this->m_uParameterIndex++;
         }
+        this->m_bIgnoreCurrToken = false;
         return false;
     }
 
+    this->m_bIgnoreCurrToken = true;
     this->AddToCurrParam(currToken, nextToken);
     return false;
 }
@@ -977,7 +1045,7 @@ bool Command::LowerParanthesesCounter(Token& currToken)
     {
         this->m_errors.push_back(CompileTimeError(
             ErrorTypes::SYNTAX_ERROR,
-            "Unexpected ')' — too many closing parentheses",
+            "Unexpected ')' - too many closing parentheses",
             currToken.GetLine(), currToken.GetColumn(),
             "Check for a missing opening '('"));
         return this->FoundUnknown(currToken);

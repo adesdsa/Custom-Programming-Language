@@ -48,6 +48,7 @@ public:
     virtual void VisitPass(ASTNode* node) override;
     virtual void VisitEof(ASTNode* node) override;
     virtual void VisitArrayAccess(ASTNode* node) override;
+    virtual void VisitArrayValue(ASTNode* node) override;
 
 private:
     /**********************\

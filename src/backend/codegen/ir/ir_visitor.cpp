@@ -30,6 +30,7 @@ IRVisitor::IRVisitor(
     m_expectedAssignment(false),
     m_indexedAssignment(false),
     m_slicedAssignment(false),
+    m_chainedIndexedAssignment(false),
     m_lastExprWasString(false),
     m_returnedAlready(false),
     m_handledInsides(false),
@@ -229,13 +230,32 @@ void IRVisitor::VisitIdentifier(ASTNode* node)
 
     this->m_indexedAssignment = false;
     this->m_slicedAssignment = false;
+    this->m_chainedIndexedAssignment = false;
+    this->m_chainedIndexedAssignment = false;
 
     if (node->command.GetType() == CommandTypes::ARRAY_ACCESS)
     {
         this->m_indexedAssignment = true;
         this->m_pendingIndexCommand = node->command;
+        if (node->command.GetParams().size() >= 2 &&
+            (node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+             node->command.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+        {
+            this->m_chainedIndexedAssignment = true;
+            this->m_currVarMetaData = std::nullopt;
+            this->m_entityLogger.Info("Added Identifier IR handling (chained assignment).\nAt line: "
+                + std::to_string(node->command[0].GetLine()));
+            return;
+        }
     }
-    else if (node->command.GetType() == CommandTypes::ARRAY_SLICE)
+    else if (node->command.GetType() == CommandTypes::STRING_ARRAY_ACCESS)
+    {
+        this->m_indexedAssignment = true;
+        this->m_chainedIndexedAssignment = true;
+        this->m_pendingIndexCommand = node->command;
+    }
+    else if (node->command.GetType() == CommandTypes::ARRAY_SLICE ||
+             node->command.GetType() == CommandTypes::STRING_ARRAY_SLICE)
     {
         this->m_slicedAssignment = true;
         this->m_pendingIndexCommand = node->command;
@@ -328,6 +348,61 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             return;
         }
 
+        if (this->m_chainedIndexedAssignment)
+        {
+            const Command& cmd = this->m_pendingIndexCommand;
+            if (cmd.GetParams().size() < 2) { StoreInternalError("Chained array access requires base and index", node->command); }
+            else if (!valueToStore) { StoreInternalError("Code generation: CreateStore: value is null", node->command); }
+            else
+            {
+                IRBaseValue* baseStr = nullptr;
+                IRBaseValue* idx = nullptr;
+                if (cmd.GetType() == CommandTypes::STRING_ARRAY_ACCESS)
+                {
+                    IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
+                    if (!target) return;
+                    IRBaseValue* firstIdx = HandleExpression(cmd.GetParams()[0]);
+                    if (!firstIdx) return;
+                    baseStr = this->m_irbuilder.CreateLoad(
+                        this->m_irbuilder.CreateGEP(target, firstIdx, TypeToIRType(Type::STRING_TYPE)));
+                    idx = HandleExpression(cmd.GetParams()[1]);
+                }
+                else
+                {
+                    baseStr = HandleArrayAccess(cmd.GetParams()[0]);
+                    idx = HandleExpression(cmd.GetParams()[1]);
+                }
+                if (baseStr && idx)
+                {
+                    IRBaseValue* charVal = valueToStore;
+                    if (dynamic_cast<IRConstantString*>(charVal) || charVal->GetType()->GetKind() != IRTypeKind::Int8)
+                    {
+                        if (!this->m_currModule.IsFuncExistByName("char_at"))
+                            this->m_currModule.AddFunction("char_at",
+                                IRType::GetFunction(IRType::GetInt8(),
+                                    { TypeToIRType(Type::STRING_TYPE),
+                                      TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
+                        IRBaseValue* zero = TargetArchitecture::Is32Bit()
+                            ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(0))
+                            : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(0));
+                        charVal = this->m_irbuilder.CreateCall(
+                            this->m_currModule.GetFunction("char_at"), { charVal, zero });
+                    }
+                    if (!this->m_currModule.IsFuncExistByName("set_char_at"))
+                    {
+                        auto intType = TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64();
+                        this->m_currModule.AddFunction("set_char_at",
+                            IRType::GetFunction(IRType::GetVoid(),
+                                { TypeToIRType(Type::STRING_TYPE), intType, IRType::GetInt8() }));
+                    }
+                    this->m_currModule.AddRequiredLibrary("string");
+                    this->m_irbuilder.CreateCall(
+                        this->m_currModule.GetFunction("set_char_at"), { baseStr, idx, charVal });
+                }
+            }
+        }
+        else
+        {
         IRBaseValue* target = FindPointer(this->m_currVarMetaData.value().sName);
 
         if (!valueToStore || !target)
@@ -386,20 +461,39 @@ void IRVisitor::VisitAssignment(ASTNode* node)
         }
         else if (this->m_slicedAssignment)
         {
-            IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(target);
-            IRBaseValue* start = HandleExpression(this->m_pendingIndexCommand.GetParams()[0]);
-            IRBaseValue* end_idx = HandleExpression(this->m_pendingIndexCommand.GetParams()[1]);
-
+            IRBaseValue* strPtr = nullptr;
+            IRBaseValue* start = nullptr;
+            IRBaseValue* end_idx = nullptr;
             IRBaseValue* step = nullptr;
-            if (this->m_pendingIndexCommand.GetParams().size() >= 3)
+
+            const Command& sliceCmd = this->m_pendingIndexCommand;
+            if (sliceCmd.GetType() == CommandTypes::STRING_ARRAY_SLICE &&
+                sliceCmd.GetParams().size() >= 3)
             {
-                step = HandleExpression(this->m_pendingIndexCommand.GetParams()[2]);
+                IRBaseValue* firstIdx = HandleExpression(sliceCmd.GetParams()[0]);
+                if (!firstIdx) return;
+                strPtr = this->m_irbuilder.CreateLoad(
+                    this->m_irbuilder.CreateGEP(target, firstIdx, TypeToIRType(Type::STRING_TYPE)));
+                start = HandleExpression(sliceCmd.GetParams()[1]);
+                end_idx = HandleExpression(sliceCmd.GetParams()[2]);
+                if (sliceCmd.GetParams().size() >= 4)
+                    step = HandleExpression(sliceCmd.GetParams()[3]);
+                else
+                    step = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
             }
             else
             {
-                step = TargetArchitecture::Is32Bit()
-                    ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
-                    : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
+                strPtr = this->m_irbuilder.CreateLoad(target);
+                start = HandleExpression(sliceCmd.GetParams()[0]);
+                end_idx = HandleExpression(sliceCmd.GetParams()[1]);
+                if (sliceCmd.GetParams().size() >= 3)
+                    step = HandleExpression(sliceCmd.GetParams()[2]);
+                else
+                    step = TargetArchitecture::Is32Bit()
+                        ? static_cast<IRBaseValue*>(this->m_irbuilder.GetInt32(1))
+                        : static_cast<IRBaseValue*>(this->m_irbuilder.GetInt64(1));
             }
 
             if (!this->m_currModule.IsFuncExistByName("str_slice_set"))
@@ -485,9 +579,11 @@ void IRVisitor::VisitAssignment(ASTNode* node)
             }
             this->m_irbuilder.CreateStore(valueToStore, target);
         }
+        }
         this->m_expectedAssignment = false;
         this->m_indexedAssignment = false;
         this->m_slicedAssignment = false;
+        this->m_chainedIndexedAssignment = false;
         this->m_entityLogger.Info("Added Assignment IR handling.\nAt line: "
             + std::to_string(node->command[0].GetLine()));
     }
@@ -1190,6 +1286,7 @@ void IRVisitor::VisitEndOfCommand(ASTNode* node)
     this->m_expectedAssignment = false;
     this->m_indexedAssignment = false;
     this->m_slicedAssignment = false;
+    this->m_chainedIndexedAssignment = false;
     this->m_lastExprWasString = false;
     if (node) // If this is null it was called from blockEnd
     {
@@ -1419,11 +1516,13 @@ void IRVisitor::VisitArrayAccess(ASTNode* node)
     if (this->m_expectedAssignment)
     {
         IRBaseValue* result = nullptr;
-        if (node->command.GetType() == CommandTypes::ARRAY_ACCESS)
+        if (node->command.GetType() == CommandTypes::ARRAY_ACCESS ||
+            node->command.GetType() == CommandTypes::STRING_ARRAY_ACCESS)
         {
             result = HandleArrayAccess(node->command);
         }
-        else if (node->command.GetType() == CommandTypes::ARRAY_SLICE)
+        else if (node->command.GetType() == CommandTypes::ARRAY_SLICE ||
+                 node->command.GetType() == CommandTypes::STRING_ARRAY_SLICE)
         {
             result = HandleArraySlice(node->command);
         }
@@ -1481,7 +1580,7 @@ std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type)
 
 std::shared_ptr<const IRType> IRVisitor::TypeToIRType(Type type, std::optional<size_t> arraySize)
 {
-    if (arraySize.has_value() && arraySize.value() > 0)
+    if (arraySize.has_value())
     {
         return IRType::GetArray(TypeToIRType(type), arraySize.value());
     }
@@ -2177,10 +2276,29 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                     FuncMetaData* argFunc = this->m_decoratedAst.funcTable.FindFunctionByName(firstArg[FUNC_IDENTIFIER_INDEX].GetValue());
                     if (argFunc && argFunc->GetRType() == Type::STRING_TYPE) isStringArg = true;
                 }
+                else if (firstArg.GetType() == CommandTypes::STRING_ARRAY_SLICE)
+                {
+                    // arr[i][j:k] always returns string
+                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                    if (varMeta && varMeta->type == Type::STRING_TYPE && varMeta->arraySize.has_value())
+                        isStringArg = true;
+                }
                 else if (firstArg.GetType() == CommandTypes::ARRAY_SLICE)
                 {
-                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
-                    if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                    const auto& p0 = firstArg.GetParams();
+                    if (p0.size() > 0 && (p0[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+                                          p0[0].GetType() == CommandTypes::STRING_ARRAY_ACCESS))
+                    {
+                        // Chained slice: arr[i][j:k] — base is string[] so result is string
+                        auto varMeta = this->m_currVarTableNode->FindVar(p0[0][0].GetValue());
+                        if (varMeta && varMeta->type == Type::STRING_TYPE && varMeta->arraySize.has_value())
+                            isStringArg = true;
+                    }
+                    else
+                    {
+                        auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                        if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                    }
                 }
                 else if (firstArg.GetType() == CommandTypes::ARRAY_ACCESS)
                 {
@@ -2737,14 +2855,44 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
             {
                 currExpressionValue = HandleSizeof(innerCommand);
             }
-            else if (innerCommand.GetType() == CommandTypes::ARRAY_ACCESS)
+            else if (innerCommand.GetType() == CommandTypes::ARRAY_ACCESS ||
+                     innerCommand.GetType() == CommandTypes::STRING_ARRAY_ACCESS)
             {
                 currExpressionValue = HandleArrayAccess(innerCommand);
+                // Set floatness for double[], signage for unsigned[] (needed for arr[i]++/-- etc.)
+                if (innerCommand.GetType() == CommandTypes::ARRAY_ACCESS &&
+                    (innerCommand.GetParams().empty() ||
+                     (innerCommand.GetParams()[0].GetType() != CommandTypes::ARRAY_ACCESS &&
+                      innerCommand.GetParams()[0].GetType() != CommandTypes::ARRAY_SLICE)))
+                {
+                    const std::string& varName = innerCommand[0].GetValue();
+                    auto varMeta = this->m_currVarTableNode->FindVar(varName);
+                    if (varMeta)
+                    {
+                        if (varMeta->type == Type::DOUBLE_TYPE)
+                            localFloatness = true;
+                        else if (varMeta->type == Type::UNSIGNED_INT_TYPE)
+                            localSignage = true;
+                    }
+                }
+                else if (currExpressionValue)
+                {
+                    // Chained access: derive from result type (e.g. double[][] if supported)
+                    auto kind = currExpressionValue->GetType()->GetKind();
+                    if (kind == IRTypeKind::Float32 || kind == IRTypeKind::Float64)
+                        localFloatness = true;
+                }
             }
-            else if (innerCommand.GetType() == CommandTypes::ARRAY_SLICE)
+            else if (innerCommand.GetType() == CommandTypes::ARRAY_SLICE ||
+                     innerCommand.GetType() == CommandTypes::STRING_ARRAY_SLICE)
             {
                 localIsString = true;
                 currExpressionValue = HandleArraySlice(innerCommand);
+            }
+            else if (innerCommand.GetType() == CommandTypes::EXPRESSION ||
+                     innerCommand.GetType() == CommandTypes::EXPRESSION_VALUE)
+            {
+                currExpressionValue = HandleExpression(innerCommand);
             }
             else
             {
@@ -2843,36 +2991,81 @@ std::vector<ExprItem> IRVisitor::CollectExprItems(
 
 IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
 {
-    const std::string& varName = command[0].GetValue();
+    IRBaseValue* baseValue = nullptr;
+    IRBaseValue* idx = nullptr;
 
-    if (command.GetParams().empty())
+    // STRING_ARRAY_ACCESS: arr[i][j] — params are [index1, index2], tokens [identifier, "[", HAS_PARAM, "]", "[", HAS_PARAM, "]"]
+    if (command.GetType() == CommandTypes::STRING_ARRAY_ACCESS &&
+        command.GetParams().size() == 2)
     {
-        StoreInternalError("Array access missing index parameter", command);
-        return nullptr;
+        const std::string& varName = command[0].GetValue();
+        IRBaseValue* basePtr = FindPointer(varName);
+        if (!basePtr) return nullptr;
+        IRBaseValue* firstIdx = HandleExpression(command.GetParams()[0]);
+        if (!firstIdx) return nullptr;
+        IRBaseValue* firstLevel = this->m_irbuilder.CreateLoad(
+            this->m_irbuilder.CreateGEP(basePtr, firstIdx, TypeToIRType(Type::STRING_TYPE)));
+        IRBaseValue* secondIdx = HandleExpression(command.GetParams()[1]);
+        if (!secondIdx) return nullptr;
+        if (!this->m_currModule.IsFuncExistByName("char_at"))
+        {
+            this->m_currModule.AddFunction("char_at",
+                IRType::GetFunction(IRType::GetInt8(),
+                    { TypeToIRType(Type::STRING_TYPE),
+                      TargetArchitecture::Is32Bit() ? IRType::GetInt32() : IRType::GetInt64() }));
+        }
+        this->m_currModule.AddRequiredLibrary("string");
+        return this->m_irbuilder.CreateCall(
+            this->m_currModule.GetFunction("char_at"), { firstLevel, secondIdx });
     }
-    IRBaseValue* idx = HandleExpression(command.GetParams()[0]);
-    if (!idx) return nullptr;
 
-    auto varMeta = this->m_currVarTableNode->FindVar(varName);
-    if (!varMeta)
+    // Legacy chained: params[0]=base (ARRAY_ACCESS/SLICE), params[1]=index
+    if (command.GetParams().size() >= 2 &&
+        (command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+         command.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
     {
-        StoreInternalError("Unknown variable '" + varName + "' in array access", command);
-        return nullptr;
+        baseValue = command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS
+            ? HandleArrayAccess(command.GetParams()[0])
+            : HandleArraySlice(command.GetParams()[0]);
+        idx = HandleExpression(command.GetParams()[1]);
     }
-    if (varMeta.value().arraySize.has_value())
+    else
     {
-        // Static array: GEP + Load (supports int, double, bool, char, string)
-        IRBaseValue* base = FindPointer(varName);
-        if (!base) return nullptr;
-        auto elementType = TypeToIRType(varMeta.value().type);
-        IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, idx, elementType);
-        return this->m_irbuilder.CreateLoad(gep);
+        // Simple array access: arr[i]
+        if (command.GetParams().empty())
+        {
+            StoreInternalError("Array access missing index parameter", command);
+            return nullptr;
+        }
+        idx = HandleExpression(command.GetParams()[0]);
+        if (!idx) return nullptr;
+
+        const std::string& varName = command[0].GetValue();
+        auto varMeta = this->m_currVarTableNode->FindVar(varName);
+        if (!varMeta)
+        {
+            StoreInternalError("Unknown variable '" + varName + "' in array access", command);
+            return nullptr;
+        }
+        if (varMeta.value().arraySize.has_value())
+        {
+            // Static array: GEP + Load (supports int, double, bool, char, string)
+            IRBaseValue* base = FindPointer(varName);
+            if (!base) return nullptr;
+            auto elementType = TypeToIRType(varMeta.value().type);
+            IRBaseValue* gep = this->m_irbuilder.CreateGEP(base, idx, elementType);
+            return this->m_irbuilder.CreateLoad(gep);
+        }
+
+        // Plain string: char_at
+        IRBaseValue* basePtr = FindPointer(varName);
+        if (!basePtr) return nullptr;
+        baseValue = this->m_irbuilder.CreateLoad(basePtr);
     }
 
-    // Plain string: char_at
-    IRBaseValue* basePtr = FindPointer(varName);
-    if (!basePtr) return nullptr;
-    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(basePtr);
+    if (!baseValue || !idx) return nullptr;
+
+    // Index into string (char_at) — for chained arr[0][0] or plain str[i]
     if (!this->m_currModule.IsFuncExistByName("char_at"))
     {
         this->m_currModule.AddFunction("char_at",
@@ -2882,29 +3075,63 @@ IRBaseValue* IRVisitor::HandleArrayAccess(const Command& command)
     }
     this->m_currModule.AddRequiredLibrary("string");
     return this->m_irbuilder.CreateCall(
-        this->m_currModule.GetFunction("char_at"), { strPtr, idx });
+        this->m_currModule.GetFunction("char_at"), { baseValue, idx });
 }
 
 IRBaseValue* IRVisitor::HandleArraySlice(const Command& command)
 {
-    const std::string& varName = command[0].GetValue();
-    IRBaseValue* strPtr = this->m_irbuilder.CreateLoad(
-        FindPointer(varName)
-    );
+    IRBaseValue* strPtr = nullptr;
+    size_t startIdx = 0;
+    size_t endIdx = 1;
+    size_t stepIdx = 2;
 
-    if (command.GetParams().size() < 2)
+    // STRING_ARRAY_SLICE: arr[i][j:k] or arr[i][j:k:l] — params[0]=index, params[1,2,3]=start,end,step
+    if (command.GetType() == CommandTypes::STRING_ARRAY_SLICE &&
+        command.GetParams().size() >= 3)
+    {
+        const std::string& varName = command[0].GetValue();
+        IRBaseValue* basePtr = FindPointer(varName);
+        if (!basePtr) return nullptr;
+        IRBaseValue* firstIdx = HandleExpression(command.GetParams()[0]);
+        if (!firstIdx) return nullptr;
+        strPtr = this->m_irbuilder.CreateLoad(
+            this->m_irbuilder.CreateGEP(basePtr, firstIdx, TypeToIRType(Type::STRING_TYPE)));
+        startIdx = 1;
+        endIdx = 2;
+        stepIdx = 3;
+    }
+    // Legacy chained: params[0]=base (ARRAY_ACCESS/SLICE), params[1,2,3]=start,end,step
+    else if (command.GetParams().size() >= 3 &&
+        (command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+         command.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE))
+    {
+        strPtr = command.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS
+            ? HandleArrayAccess(command.GetParams()[0])
+            : HandleArraySlice(command.GetParams()[0]);
+        if (!strPtr) return nullptr;
+        startIdx = 1;
+        endIdx = 2;
+        stepIdx = 3;
+    }
+    else
+    {
+        const std::string& varName = command[0].GetValue();
+        strPtr = this->m_irbuilder.CreateLoad(FindPointer(varName));
+    }
+
+    if (command.GetParams().size() < endIdx + 1)
     {
         StoreInternalError("Array slice requires at least two parameters [start:end]", command);
         return nullptr;
     }
-    IRBaseValue* start = HandleExpression(command.GetParams()[0]);
-    IRBaseValue* end_idx = HandleExpression(command.GetParams()[1]);
+    IRBaseValue* start = HandleExpression(command.GetParams()[startIdx]);
+    IRBaseValue* end_idx = HandleExpression(command.GetParams()[endIdx]);
     if (!start || !end_idx) return nullptr;
 
     IRBaseValue* step = nullptr;
-    if (command.GetParams().size() >= 3)
+    if (command.GetParams().size() > stepIdx)
     {
-        step = HandleExpression(command.GetParams()[2]);
+        step = HandleExpression(command.GetParams()[stepIdx]);
     }
     else
     {
@@ -2949,11 +3176,13 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     {
         return HandleSizeof(command);
     }
-    else if (command.GetType() == CommandTypes::ARRAY_ACCESS)
+    else if (command.GetType() == CommandTypes::ARRAY_ACCESS ||
+        command.GetType() == CommandTypes::STRING_ARRAY_ACCESS)
     {
         return HandleArrayAccess(command);
     }
-    else if (command.GetType() == CommandTypes::ARRAY_SLICE)
+    else if (command.GetType() == CommandTypes::ARRAY_SLICE || 
+        command.GetType() == CommandTypes::STRING_ARRAY_SLICE)
     {
         return HandleArraySlice(command);
     }

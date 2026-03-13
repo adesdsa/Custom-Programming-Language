@@ -119,7 +119,7 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                 if (m_uBlockCloseCnt > m_uBlockStartCnt)
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-                        "Unexpected '}' — no matching opening block",
+                        "Unexpected '}' - no matching opening block",
                         this->m_line[this->m_uLineIndex][0].GetLine(),
                         this->m_line[this->m_uLineIndex][0].GetColumn(),
                         "Check for a missing '{' or an extra '}'");
@@ -150,7 +150,7 @@ bool FullCommand::AddToken(Token& currToken, Token& nextToken)
                 if (this->m_line.size() != 0)
                 {
                     CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-                        "Unexpected end of file — code is incomplete",
+                        "Unexpected end of file - code is incomplete",
                         this->m_line[0][0].GetLine(), this->m_line[0][0].GetColumn(),
                         "Possibly missing ';' at end of statement or '}' to close a block");
                     this->m_errors.push_back(error);
@@ -198,7 +198,9 @@ void FullCommand::CheckLine()
     {
         if (this->m_line.at(0).GetType() == CommandTypes::IDENTIFIER ||
             this->m_line.at(0).GetType() == CommandTypes::ARRAY_ACCESS ||
-            this->m_line.at(0).GetType() == CommandTypes::ARRAY_SLICE)
+            this->m_line.at(0).GetType() == CommandTypes::ARRAY_SLICE ||
+            this->m_line.at(0).GetType() == CommandTypes::STRING_ARRAY_SLICE || 
+            this->m_line.at(0).GetType() == CommandTypes::STRING_ARRAY_ACCESS)
         {
             if (this->m_line.at(1).GetType() == CommandTypes::ASSIGNMENT)
             {
@@ -348,7 +350,7 @@ void FullCommand::CheckLine()
         this->m_entityLogger.Info("Found an illegal FullCommand");
         this->m_bLegal = false;
         CompileTimeError error(ErrorTypes::SYNTAX_ERROR,
-            "Invalid syntax — could not parse this line",
+            "Invalid syntax - could not parse this line",
             this->m_line[0][0].GetLine(), this->m_line[0][0].GetColumn(),
             "Check for typos, missing operators, or incorrect statement structure");
         this->m_errors.push_back(error);
@@ -461,6 +463,197 @@ void FullCommand::ReformCommand(Command& checkedCommand)
             }
         }
         // wildcard import (import * from "...") has zero params — valid
+    }
+    else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS) // identifier [ expression ]
+    {
+        if (this->CheckConstSize(checkedCommand, 4))
+        {
+            return;
+        }
+        else if (this->CheckParantheses(checkedCommand))
+        {
+            return;
+        }
+
+        if (!this->CheckType(checkedCommand[0], TokenTypes::IDENTIFIER) ||
+            !this->CheckValue(checkedCommand[1], "[") ||
+            !this->CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
+            !this->CheckValue(checkedCommand[3], "]"))
+        {
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+
+        if (CheckParamExpectedExpression(checkedCommand, 0))
+        {
+            return;
+        }
+        checkedCommand.SetExpression(true);
+    }
+    else if (checkedCommand.GetType() == CommandTypes::ARRAY_SLICE) // identifier [ expression : expression ?: ?expression ]
+    {
+        if (checkedCommand.GetTokens().size() != 6 &&
+            checkedCommand.GetTokens().size() != 8)
+        {
+            this->FoundIllegal(
+                checkedCommand,
+                "'" + std::string(checkedCommand.GetType()) +
+                "' statement has wrong number of tokens (expected 6 or 8, got " +
+                std::to_string(checkedCommand.GetTokens().size()) + ")",
+                "Check for missing or extra tokens in this statement",
+                0);
+            return;
+        }
+        else if (this->CheckParantheses(checkedCommand))
+        {
+            return;
+        }
+
+        if (checkedCommand.GetTokens().size() == 6 && 
+            (
+                !this->CheckType(checkedCommand[0], TokenTypes::IDENTIFIER) ||
+                !this->CheckValue(checkedCommand[1], "[") ||
+                !this->CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[3], ":") ||
+                !this->CheckType(checkedCommand[4], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[5], "]")
+             )
+           )
+        {
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+        else if (checkedCommand.GetTokens().size() == 8 &&
+            (
+                !this->CheckType(checkedCommand[0], TokenTypes::IDENTIFIER) ||
+                !this->CheckValue(checkedCommand[1], "[") ||
+                !this->CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[3], ":") ||
+                !this->CheckType(checkedCommand[4], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[5], ":") ||
+                !this->CheckType(checkedCommand[6], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[7], "]")
+                )
+            )
+        {
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+
+        if (CheckParamExpectedExpression(checkedCommand, 0))
+        {
+            return;
+        }
+        if (CheckParamExpectedExpression(checkedCommand, 1))
+        {
+            return;
+        }
+        if (checkedCommand.GetParams().size() == 3 && CheckParamExpectedExpression(checkedCommand, 2))
+        {
+            return;
+        }
+        checkedCommand.SetExpression(true);
+    }
+    else if (checkedCommand.GetType() == CommandTypes::STRING_ARRAY_ACCESS) // identifier [ expression ] [ expression ]
+    {
+        if (this->CheckConstSize(checkedCommand, 7))
+        {
+            return;
+        }
+        else if (this->CheckParantheses(checkedCommand))
+        {
+            return;
+        }
+
+        if (!this->CheckType(checkedCommand[0], TokenTypes::IDENTIFIER) ||
+            !this->CheckValue(checkedCommand[1], "[") ||
+            !this->CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
+            !this->CheckValue(checkedCommand[3], "]") ||
+            !this->CheckValue(checkedCommand[4], "[") ||
+            !this->CheckType(checkedCommand[5], TokenTypes::HAS_PARAM) ||
+            !this->CheckValue(checkedCommand[6], "]"))
+        {
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+
+        if (CheckParamExpectedExpression(checkedCommand, 0))
+        {
+            return;
+        }
+        if (CheckParamExpectedExpression(checkedCommand, 1))
+        {
+            return;
+        }
+        checkedCommand.SetExpression(true);
+    }
+    else if (checkedCommand.GetType() == CommandTypes::STRING_ARRAY_SLICE) // identifier [ expression ] [ expression : expression ?: ?expression ]
+    {
+        if (checkedCommand.GetTokens().size() != 9 &&
+            checkedCommand.GetTokens().size() != 11)
+        {
+            this->FoundIllegal(
+                checkedCommand,
+                "'" + std::string(checkedCommand.GetType()) +
+                "' statement has wrong number of tokens (expected 9 or 11, got " +
+                std::to_string(checkedCommand.GetTokens().size()) + ")",
+                "Check for missing or extra tokens in this statement",
+                0);
+            return;
+        }
+        else if (this->CheckParantheses(checkedCommand))
+        {
+            return;
+        }
+
+        if (checkedCommand.GetTokens().size() == 9 &&
+            (
+                !this->CheckType(checkedCommand[0], TokenTypes::IDENTIFIER) ||
+                !this->CheckValue(checkedCommand[1], "[") ||
+                !this->CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[3], "]") ||
+                !this->CheckValue(checkedCommand[4], "[") ||
+                !this->CheckType(checkedCommand[5], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[6], ":") ||
+                !this->CheckType(checkedCommand[7], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[8], "]")
+                )
+            )
+        {
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+        else if (checkedCommand.GetTokens().size() == 11 &&
+            (
+                !this->CheckType(checkedCommand[0], TokenTypes::IDENTIFIER) ||
+                !this->CheckValue(checkedCommand[1], "[") ||
+                !this->CheckType(checkedCommand[2], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[3], "]") ||
+                !this->CheckValue(checkedCommand[4], "[") ||
+                !this->CheckType(checkedCommand[5], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[6], ":") ||
+                !this->CheckType(checkedCommand[7], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[8], ":") ||
+                !this->CheckType(checkedCommand[9], TokenTypes::HAS_PARAM) ||
+                !this->CheckValue(checkedCommand[10], "]")
+                )
+            )
+        {
+            checkedCommand.SetType(CommandTypes::UNKNOWN);
+        }
+
+        if (CheckParamExpectedExpression(checkedCommand, 0))
+        {
+            return;
+        }
+        if (CheckParamExpectedExpression(checkedCommand, 1))
+        {
+            return;
+        }
+        if (CheckParamExpectedExpression(checkedCommand, 2))
+        {
+            return;
+        }
+        if (checkedCommand.GetParams().size() == 4 && CheckParamExpectedExpression(checkedCommand, 3))
+        {
+            return;
+        }
+        checkedCommand.SetExpression(true);
     }
     else if (checkedCommand.GetType() == CommandTypes::SIZEOF)
     {
@@ -680,29 +873,6 @@ void FullCommand::ReformCommand(Command& checkedCommand)
     {
         this->HandleFuncLikeExpressions(checkedCommand, 2);
     }
-    else if (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS)
-    {
-        this->HandleSingleParamKeyword(checkedCommand);
-        if (this->m_bLegal)
-        {
-            checkedCommand.SetExpression(true);
-        }
-    }
-    else if (checkedCommand.GetType() == CommandTypes::ARRAY_SLICE)
-    {
-        size_t paramCount = checkedCommand.GetParams().size();
-        if (paramCount == 2 || paramCount == 3)
-        {
-            this->CheckParamExpectedExpression(checkedCommand, 0);
-            this->CheckParamExpectedExpression(checkedCommand, 1);
-            if (paramCount == 3)
-                this->CheckParamExpectedExpression(checkedCommand, 2);
-        }
-        if (this->m_bLegal)
-        {
-            checkedCommand.SetExpression(true);
-        }
-    }
     else if (checkedCommand.GetType() == CommandTypes::ARRAY_DECLARATION)
     {
         if (this->CheckParantheses(checkedCommand))
@@ -766,14 +936,22 @@ void FullCommand::ReformCommand(Command& checkedCommand)
         Operator op = ParseIncrementDecrementOperator(checkedCommand);
         if (op != Operator::NONE && this->m_line.size() > 0)
         {
-            const Token& varToken = this->m_line[0][0];
+            const Command& lhsCommand = this->m_line[0];
             checkedCommand.SetTokens({Token("=", TokenTypes::OPERATOR, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn())});
             checkedCommand.SetType(CommandTypes::ASSIGNMENT);
             Command exprCmd;
             exprCmd.SetValue(Token("1", TokenTypes::VALUE, checkedCommand[0].GetLine(), checkedCommand[0].GetColumn()));
             exprCmd.SetType(CommandTypes::EXPRESSION);
             exprCmd.SetExpression(true);
-            PrependVariableAndOperatorToExpression(exprCmd, varToken, op);
+            if (lhsCommand.GetType() == CommandTypes::ARRAY_ACCESS || lhsCommand.GetType() == CommandTypes::ARRAY_SLICE)
+            {
+                PrependCommandAndOperatorToExpression(exprCmd, lhsCommand, op);
+            }
+            else
+            {
+                const Token& varToken = lhsCommand[0];
+                PrependVariableAndOperatorToExpression(exprCmd, varToken, op);
+            }
             this->m_line.insert(this->m_line.begin() + this->m_uLineIndex + 1, exprCmd);
             this->m_insertedCommandsCount = 1;
         }
@@ -804,7 +982,7 @@ bool FullCommand::CheckParantheses(Command& checkedCommand)
     {
         this->FoundIllegal(
             checkedCommand,
-            "Unmatched parentheses — " +
+            "Unmatched parentheses - " +
             std::to_string(checkedCommand.GetParanthesesCounter())
             + " opening '(' never closed",
             "Check for missing closing ')'",
@@ -881,7 +1059,7 @@ bool FullCommand::CheckLastFuncParamComa(
     {
         this->FoundIllegal(
             checkedCommand,
-            "Trailing ',' in parameter list — expected another argument after ','",
+            "Trailing ',' in parameter list - expected another argument after ','",
             "Add the missing argument or remove the trailing ','",
             checkedCommand.GetTokens().size() - iBackSteps);
         return true;
@@ -891,7 +1069,13 @@ bool FullCommand::CheckLastFuncParamComa(
 
 void FullCommand::HandleSingleParamKeyword(Command& checkedCommand)
 {
-    if (this->CheckConstSize(checkedCommand, 4))
+    // Simple arr[i]: 4 tokens [identifier, "[", HAS_PARAM, "]"].
+    // Chained arr[i][j]: outer command has 3 tokens [HAS_PARAM, HAS_PARAM, "]"] because the inner arr[i] is collapsed into the first HAS_PARAM.
+    bool isChainedArrayAccess = (checkedCommand.GetType() == CommandTypes::ARRAY_ACCESS &&
+        checkedCommand.GetParams().size() >= 2 &&
+        (checkedCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+         checkedCommand.GetParams()[0].GetType() == CommandTypes::ARRAY_SLICE));
+    if (!isChainedArrayAccess && this->CheckConstSize(checkedCommand, 4))
     {
         return;
     }
@@ -955,14 +1139,18 @@ void FullCommand::HandleFuncLikeExpressions(
 
 inline bool FullCommand::CheckLastExpressionOperator(Command& checkedCommand)
 {
-    const Token lastToken = checkedCommand[checkedCommand.GetTokens().size() - 2];
+    const auto& tokens = checkedCommand.GetTokens();
+    if (tokens.size() < 2) return false;
+    // Binary expression (a op b) has tokens [HAS_PARAM, op, HAS_PARAM] — size-2 is the operator; that's valid
+    if (checkedCommand.GetParams().size() == 2) return false;
+    const Token lastToken = checkedCommand[tokens.size() - 2];
     if ((lastToken.GetType() == TokenTypes::OPERATOR ||
          lastToken.GetType() == TokenTypes::KEYWORD)
         && lastToken.GetValue() != ")")
     {
         this->FoundIllegal(
             checkedCommand,
-            "Expression ends with an operator — expected a value after it",
+            "Expression ends with an operator - expected a value after it",
             "Add a value after the operator or remove the trailing operator",
             0);
         return true;

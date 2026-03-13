@@ -42,6 +42,7 @@ public:
     // @return: true -> Errors stored in the `m_errorList`, false -> Otherwise.
     bool HasErrorsOccured() const noexcept;
 
+    std::vector<CompileTimeError> GetErrorsCopy() const;
     /// @return: true if any stored error is for the given file path.
     bool HasErrorsForFile(const std::string& filePath) const noexcept;
 
