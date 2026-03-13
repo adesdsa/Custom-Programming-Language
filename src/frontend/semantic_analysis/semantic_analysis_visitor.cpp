@@ -1195,7 +1195,7 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
     }
     auto varMetaData = this->m_currentScope->FindVar(name).value();
 
-    if (!varMetaData.arraySize.has_value())
+    if (!varMetaData.arraySize.has_value() && varMetaData.type != Type::STRING_TYPE)
     {
         this->m_errorManager.StoreError(
             CompileTimeError(
@@ -1227,12 +1227,12 @@ void SemanticAnalysisVisitor::VisitArrayAccess(ASTNode* node)
 
     if (type == CommandTypes::ARRAY_SLICE)
     {
-        if (varMetaData.arraySize.has_value())
+        if (varMetaData.arraySize.has_value() || varMetaData.type != Type::STRING_TYPE)
         {
             this->m_errorManager.StoreError(
                 CompileTimeError(
                     ErrorTypes::NAME_ERROR,
-                    "Array slicing not allowed",
+                    "Array slicing not allowed, Only string slicing is allowed",
                     node->command[IDENTIFIER_NAME_INDEX].GetLine(),
                     node->command[IDENTIFIER_NAME_INDEX].GetColumn(),
                     ""

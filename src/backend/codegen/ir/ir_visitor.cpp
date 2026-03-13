@@ -2276,10 +2276,29 @@ IRBaseValue* IRVisitor::HandleFuncCall(Command command)
                     FuncMetaData* argFunc = this->m_decoratedAst.funcTable.FindFunctionByName(firstArg[FUNC_IDENTIFIER_INDEX].GetValue());
                     if (argFunc && argFunc->GetRType() == Type::STRING_TYPE) isStringArg = true;
                 }
+                else if (firstArg.GetType() == CommandTypes::STRING_ARRAY_SLICE)
+                {
+                    // arr[i][j:k] always returns string
+                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                    if (varMeta && varMeta->type == Type::STRING_TYPE && varMeta->arraySize.has_value())
+                        isStringArg = true;
+                }
                 else if (firstArg.GetType() == CommandTypes::ARRAY_SLICE)
                 {
-                    auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
-                    if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                    const auto& p0 = firstArg.GetParams();
+                    if (p0.size() > 0 && (p0[0].GetType() == CommandTypes::ARRAY_ACCESS ||
+                                          p0[0].GetType() == CommandTypes::STRING_ARRAY_ACCESS))
+                    {
+                        // Chained slice: arr[i][j:k] — base is string[] so result is string
+                        auto varMeta = this->m_currVarTableNode->FindVar(p0[0][0].GetValue());
+                        if (varMeta && varMeta->type == Type::STRING_TYPE && varMeta->arraySize.has_value())
+                            isStringArg = true;
+                    }
+                    else
+                    {
+                        auto varMeta = this->m_currVarTableNode->FindVar(firstArg[0].GetValue());
+                        if (varMeta && varMeta->type == Type::STRING_TYPE) isStringArg = true;
+                    }
                 }
                 else if (firstArg.GetType() == CommandTypes::ARRAY_ACCESS)
                 {
@@ -3157,11 +3176,13 @@ IRBaseValue* IRVisitor::HandleExpression(Command command)
     {
         return HandleSizeof(command);
     }
-    else if (command.GetType() == CommandTypes::ARRAY_ACCESS)
+    else if (command.GetType() == CommandTypes::ARRAY_ACCESS ||
+        command.GetType() == CommandTypes::STRING_ARRAY_ACCESS)
     {
         return HandleArrayAccess(command);
     }
-    else if (command.GetType() == CommandTypes::ARRAY_SLICE)
+    else if (command.GetType() == CommandTypes::ARRAY_SLICE || 
+        command.GetType() == CommandTypes::STRING_ARRAY_SLICE)
     {
         return HandleArraySlice(command);
     }
