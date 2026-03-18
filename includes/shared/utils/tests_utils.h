@@ -15,12 +15,15 @@ namespace TestsUtils
     // @return: Content of the file.
     std::string ReadFile(const std::string& path);
 
-    // Collect all tokens of the lexe into a vector.
+    // Collect all tokens of the lexer into a vector.
     // @param lexer: Lexer to collect from.
     // @return: Vector of all lexer's tokens.
     std::vector<Token> CollectTokens(Lexer& lexer);
 
-    // Make gtest asserions by comparing results and expected tokens.
+    // Remove TRIVIA and UNFINISHED_TRIVIA tokens (for lexer tests that expect only significant tokens).
+    std::vector<Token> FilterTrivia(std::vector<Token> tokens);
+
+    // Make gtest assertions by comparing results and expected tokens.
     // @param results: Vector result of tokenizing all tokens by lexer.
     // @param expected: Vector of all expcted results of tokenizer.
     void CompareTokens(const std::vector<Token>& results, const std::vector<Token>& expected);

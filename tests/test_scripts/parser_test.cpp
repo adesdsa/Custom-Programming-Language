@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>  // gtest FrameWork
+#include <string>
 
 #include "includes/frontend/parser/parser_logic.h"
 #include "includes/shared/utils/tests_utils.h"
@@ -68,13 +69,21 @@ TEST(ParserTest, HappyFlowFullProgram)
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 
-    // Initialize helper pointers (skip import statement if present at top of file)
+    // Skip any leading import statements (file may start with import { ... } from "...")
     ASTNode* currentNextSibling = result_ast;
     ASTNode* astPtr = result_ast;
-    if (astPtr->command.GetType() == CommandTypes::IMPORT_STATEMENT) {
-        currentNextSibling = result_ast->nodeNextSibling;
-        astPtr = currentNextSibling;
+    const std::string importType(CommandTypes::IMPORT_STATEMENT.data(), CommandTypes::IMPORT_STATEMENT.size());
+    while (astPtr != nullptr)
+    {
+        std::string nodeType(astPtr->command.GetType().data(), astPtr->command.GetType().size());
+        if (nodeType != importType)
+            break;
+        ASTNode* next = astPtr->nodeNextSibling;
+        if (next == nullptr) break;
+        currentNextSibling = next;
+        astPtr = next;
     }
+    ASSERT_NE(astPtr, nullptr) << "Expected a non-import top-level node after skipping imports";
 
     /*
     FINISHED_FUNC_DECLARATION (displayAllPrimeNumbersInRange)

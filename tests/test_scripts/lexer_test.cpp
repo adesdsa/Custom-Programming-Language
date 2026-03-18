@@ -62,7 +62,7 @@ TEST(LexerTest, SmallCodeExample)
         Token("}",TokenTypes::PUNCTUATION,8, 1),
     };
 
-    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::FilterTrivia(TestsUtils::CollectTokens(lexer));
 
     TestsUtils::CompareTokens(results, expected);
 }
@@ -298,7 +298,7 @@ TEST(LexerTest, FullProgram)
         Token("}", TokenTypes::PUNCTUATION, 44, 1),
     };
 
-    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::FilterTrivia(TestsUtils::CollectTokens(lexer));
 
     TestsUtils::CompareTokens(results, expected);
 }

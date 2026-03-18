@@ -134,7 +134,7 @@ add_executable(Custom-Programming-Language main.cpp)
 target_link_libraries(Custom-Programming-Language PRIVATE CPLib)
 
 # =============================
-# Tests
+# Tests (sources live under tests/test_scripts/ only)
 # =============================
 option(BUILD_TESTS "Build unit tests" OFF)
 if(BUILD_TESTS)
