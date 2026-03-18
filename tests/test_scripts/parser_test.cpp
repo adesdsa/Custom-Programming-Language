@@ -68,9 +68,13 @@ TEST(ParserTest, HappyFlowFullProgram)
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 
-    // Initialize helper pointers
+    // Initialize helper pointers (skip import statement if present at top of file)
     ASTNode* currentNextSibling = result_ast;
     ASTNode* astPtr = result_ast;
+    if (astPtr->command.GetType() == CommandTypes::IMPORT_STATEMENT) {
+        currentNextSibling = result_ast->nodeNextSibling;
+        astPtr = currentNextSibling;
+    }
 
     /*
     FINISHED_FUNC_DECLARATION (displayAllPrimeNumbersInRange)
