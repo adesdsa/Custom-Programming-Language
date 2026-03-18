@@ -26,10 +26,6 @@ const AST& ParserLogic::MainFlow()
         // building full-command
         while (!fullCommand.IsFinished())
         {
-            if (this->m_currentToken.GetLine() == 9)
-            {
-                int x = 0;
-            }
             fullCommand.AddToken(this->m_currentToken, this->m_nextToken);
             this->Advance();
         }
