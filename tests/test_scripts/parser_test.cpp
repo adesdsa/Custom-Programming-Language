@@ -72,26 +72,22 @@ TEST(ParserTest, HappyFlowFullProgram)
     // Skip any leading import statements (file may start with import { ... } from "...")
     ASTNode* currentNextSibling = result_ast;
     ASTNode* astPtr = result_ast;
-    const std::string importType(CommandTypes::IMPORT_STATEMENT.data(), CommandTypes::IMPORT_STATEMENT.size());
-    while (astPtr != nullptr)
+    while (astPtr != nullptr && astPtr->command.GetType() == CommandTypes::IMPORT_STATEMENT)
     {
-        std::string nodeType(astPtr->command.GetType().data(), astPtr->command.GetType().size());
-        if (nodeType != importType)
-            break;
         ASTNode* next = astPtr->nodeNextSibling;
         if (next == nullptr) break;
         currentNextSibling = next;
         astPtr = next;
     }
     ASSERT_NE(astPtr, nullptr) << "Expected a non-import top-level node after skipping imports";
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION)
+        << "First non-import node should be FINISHED_FUNC_DECLARATION (full program has import then func decl)";
 
     /*
     FINISHED_FUNC_DECLARATION (displayAllPrimeNumbersInRange)
         VAR_DECLARATION (low)
         VAR_DECLARATION (high)
     */
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION);
-
     astPtr = currentNextSibling->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::VAR_DECLARATION);
     EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::VAR_DECLARATION);

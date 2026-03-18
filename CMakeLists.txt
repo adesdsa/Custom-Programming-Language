@@ -71,6 +71,9 @@ if(GUI_SRC_FILES)
     list(REMOVE_ITEM SRC_FILES ${GUI_SRC_FILES})
 endif()
 
+# Exclude test-only utils from CPLib (they use GTest; only unit_tests should link them to avoid duplicate symbols)
+list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/src/shared/utils/tests_utils.cpp")
+
 # =============================
 # CPLib
 # =============================
@@ -134,13 +137,19 @@ add_executable(Custom-Programming-Language main.cpp)
 target_link_libraries(Custom-Programming-Language PRIVATE CPLib)
 
 # =============================
-# Tests (sources live under tests/test_scripts/ only)
+# Tests (sources: only the files listed below from tests/test_scripts/)
 # =============================
 option(BUILD_TESTS "Build unit tests" OFF)
 if(BUILD_TESTS)
     enable_testing()
-    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/test_scripts/*.cpp)
-    add_executable(unit_tests ${TEST_SOURCES})
+    set(UNIT_TEST_SOURCES
+        tests/test_scripts/ir_module_test.cpp
+        tests/test_scripts/lexer_test.cpp
+        tests/test_scripts/parser_test.cpp
+        tests/test_scripts/semantic_analysis_module_test.cpp
+        src/shared/utils/tests_utils.cpp
+    )
+    add_executable(unit_tests ${UNIT_TEST_SOURCES})
     target_link_libraries(unit_tests PRIVATE GTest::gtest_main CPLib)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
