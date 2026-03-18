@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=picoC GUI
+GenericName=Compiler IDE
+Comment=Launch picoC Compiler GUI
+Exec=picoc-gui %F
+Icon=picoc
+Terminal=false
+Categories=Development;IDE;
+Keywords=compiler;programming;picoC;
+StartupNotify=true

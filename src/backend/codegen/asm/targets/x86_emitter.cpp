@@ -1,10 +1,32 @@
 #include "includes/backend/codegen/asm/targets/x86_emitter.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
+
+#include <cstring>
 
 X86_Emitter::X86_Emitter(const FuncTable& funcTable) : 
     X86BaseEmitter(funcTable)
 {}
 
-std::string X86_Emitter::EmitHeader() const
+void X86_Emitter::EmitExtraBssContent(const IRModule& module, std::ostream& out) const
+{
+    if (!module.IsPrimaryModule()) return;
+    out << "    ; Bump allocator heap (1MB)\n";
+    if (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        out << "    _heap_mem: resb 1048576\n";
+        out << "    _heap_cur: resd 1\n";
+    }
+    else
+    {
+        out << "    heap_mem: resb 1048576\n";
+        out << "    heap_cur: resd 1\n";
+    }
+    out << "\n";
+}
+
+std::string X86_Emitter::EmitHeader(const IRModule& module) const
 {
     std::ostringstream header;
 
@@ -16,16 +38,64 @@ std::string X86_Emitter::EmitHeader() const
         case OS::Linux:
             header << "; Target: x86 Linux (32-bit)\n\n";
             header << "BITS 32\n";
-            header << "global _start\n";
-            header << "extern main\n\n";
+
+            if (module.IsPrimaryModule())
+            {
+                header << "global _start\n";
+                header << "global main\n";
+                header << "global heap_alloc\n\n";
+
+                header << "extern memcpy\n";
+                header << "extern memmove\n\n";
+            }
+            header << "extern println\n";
+            header << "extern println_bool\n";
+            header << "extern println_str\n";
+            header << "extern println_double\n";
+            header << "extern println_char\n";
+            header << "extern readln\n";
+            header << "extern read_int\n";
+            header << "extern read_double\n";
+            header << "extern heap_alloc\n\n";
+
+            header << "extern __println_bool_true\n";
+            header << "extern __println_bool_false\n";
+            header << "extern __println_newline\n";
+            header << "extern __println_minus\n";
+            header << "extern __println_dot\n\n";
             break;
 
         case OS::Windows:
             header << "; Target: x86 Windows (32-bit)\n\n";
             header << "BITS 32\n";
-            header << "global _mainCRTStartup\n";
-            header << "extern _main\n";
-            header << "extern _ExitProcess@4\n\n";
+
+            if (module.IsPrimaryModule())
+            {
+                header << "global _mainCRTStartup\n";
+                header << "global __mainCRTStartup\n";
+                header << "global _main\n";
+                header << "global _heap_alloc\n";
+                header << "extern _ExitProcess@4\n";
+                header << "extern _printf\n";
+                header << "extern _exit\n";
+                header << "extern _memcpy\n\n";
+            }
+            header << "extern _println\n";
+            header << "extern _println_double\n";
+            header << "extern _println_str\n";
+            header << "extern _println_bool\n";
+            header << "extern _println_char\n";
+            header << "extern _readln\n";
+            header << "extern _read_int\n";
+            header << "extern _read_double\n";
+            header << "extern _heap_alloc\n\n";
+
+            header << "extern __println_fmt_int\n";
+            header << "extern __println_fmt_double\n";
+            header << "extern __println_fmt_str\n";
+            header << "extern __println_fmt_char\n";
+            header << "extern __println_bool_true\n";
+            header << "extern __println_bool_false\n\n";
             break;
 
         default:
@@ -37,19 +107,36 @@ std::string X86_Emitter::EmitHeader() const
 
 void X86_Emitter::EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out)
 {
+    int allocaFrameSize = 0;
+    if (func->GetEntryBlock())
+    {
+        for (const auto& instr : func->GetEntryBlock()->GetInstructions())
+        {
+            if (instr->GetOpcode() == IROpcode::Alloca)
+            {
+                int sz = GetTypeSize(instr->GetType());
+                allocaFrameSize += (sz > 0) ? sz : x86_32::STACK_SLOT_SIZE;
+            }
+        }
+    }
+    int actualFrameSize = std::max(frameSize, allocaFrameSize);
+
     // reset stack tracking for this function
     this->m_nextVarStackOffset = x86_32::STACK_SLOT_SIZE;  // start after saved ebp
-    this->m_nextTempStackOffset = frameSize + x86_32::STACK_SLOT_SIZE;
+    this->m_nextTempStackOffset = actualFrameSize + x86_32::STACK_SLOT_SIZE;
     this->m_valueToStackOffset.clear();
 
     // save caller's base pointer
     out << "    push ebp\n";
     out << "    mov ebp, esp\n";
 
-    if (frameSize > 0)
+    if (actualFrameSize > 0)
     {
-        // reserve memory in stack for stack frame (align to 4 bytes)
-        int alignedSize = (frameSize + x86_32::STACK_ALIGNMENT_BIT_WISE) & ~x86_32::STACK_ALIGNMENT_BIT_WISE;
+        int alignedSize;
+        if (TargetArchitecture::GetOS() == OS::Windows && !TargetArchitecture::Is64Bit())
+            alignedSize = (actualFrameSize + 15) & ~15;  // 16-byte align for MSVC CRT calls
+        else
+            alignedSize = (actualFrameSize + x86_32::STACK_ALIGNMENT_BIT_WISE) & ~x86_32::STACK_ALIGNMENT_BIT_WISE;
         out << "    sub esp, " << alignedSize << "\n";
     }
 }
@@ -90,44 +177,43 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::SRem:
         case IROpcode::URem:
         {
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
             switch (opcode)
             {
                 case IROpcode::Add:
-                    out << "    add eax, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    add eax, " << o << "\n"; }
                     break;
 
                 case IROpcode::Sub:
-                    out << "    sub eax, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    sub eax, " << o << "\n"; }
                     break;
 
                 case IROpcode::Mul:
-                    out << "    imul eax, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    imul eax, " << o << "\n"; }
                     break;
 
                 case IROpcode::SDiv:
                     out << "    cdq\n";  // sign-extend EAX into EDX:EAX (32-bit)
-                    out << "    mov ebx, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ebx, " << o << "\n"; }
                     out << "    idiv ebx\n";
                     break;
 
                 case IROpcode::UDiv:
                     out << "    xor edx, edx\n";  // edx = 0 for unsigned
-                    out << "    mov ebx, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ebx, " << o << "\n"; }
                     out << "    div ebx\n";
                     break;
 
                 case IROpcode::SRem:
                     out << "    cdq\n";
-                    out << "    mov ebx, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ebx, " << o << "\n"; }
                     out << "    idiv ebx\n";
                     out << "    mov eax, edx\n";  // remainder in edx
                     break;
 
                 case IROpcode::URem:
                     out << "    xor edx, edx\n";
-                    out << "    mov ebx, " << this->GetOperandAsm(op2, out) << "\n";
+                    { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ebx, " << o << "\n"; }
                     out << "    div ebx\n";
                     out << "    mov eax, edx\n";  // remainder in edx
                     break;
@@ -144,40 +230,40 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         // Bitwise operations
         // -----------------------
         case IROpcode::And:
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    and eax, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    and eax, " << o << "\n"; }
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
 
         case IROpcode::Or:
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    or eax, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    or eax, " << o << "\n"; }
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
 
         case IROpcode::Xor:
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    xor eax, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    xor eax, " << o << "\n"; }
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
 
         case IROpcode::Shl:
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    mov ecx, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ecx, " << o << "\n"; }
             out << "    shl eax, cl\n";
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
 
         case IROpcode::LShr:
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    mov ecx, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ecx, " << o << "\n"; }
             out << "    shr eax, cl\n";
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
 
         case IROpcode::AShr:
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    mov ecx, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ecx, " << o << "\n"; }
             out << "    sar eax, cl\n";
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
@@ -196,8 +282,8 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::ICmpUgt:
         case IROpcode::ICmpUge:
         {
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    cmp eax, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    cmp eax, " << o << "\n"; }
 
             const char* setInstr = GetSetccMnemonic(opcode);
 
@@ -294,24 +380,106 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         // -----------------------
         case IROpcode::Load:
         {
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            if (op1 && dynamic_cast<const IRInstruction*>(op1) &&
+                static_cast<const IRInstruction*>(op1)->GetOpcode() == IROpcode::GEP)
+            {
+                auto elemType = instruction->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                    out << "    movzx eax, byte [eax]\n";
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                    out << "    mov eax, dword [eax]\n";
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movss xmm0, dword [eax]\n";
+                    out << "    movd eax, xmm0\n";
+                }
+                else
+                    out << "    mov eax, [eax]\n";
+            }
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
         }
 
         case IROpcode::Store:
         {
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
-            out << "    mov " << this->GetOperandAsm(op2, out) << ", eax\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            std::string destSlot = this->GetOperandAsm(op2, out);
+            out << m_operandPreamble;
+            if (op2 && dynamic_cast<const IRInstruction*>(op2) &&
+                static_cast<const IRInstruction*>(op2)->GetOpcode() == IROpcode::GEP)
+            {
+                out << "    mov ebx, " << destSlot << "\n";  // ebx = address (GEP slot holds it directly)
+                auto elemType = static_cast<const IRInstruction*>(op2)->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                    out << "    mov [ebx], al\n";
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                    out << "    mov [ebx], eax\n";
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movd xmm0, eax\n";
+                    out << "    movss [ebx], xmm0\n";
+                }
+                else
+                    out << "    mov [ebx], eax\n";
+            }
+            else
+            {
+                out << "    mov " << destSlot << ", eax\n";
+            }
             break;
         }
 
         case IROpcode::Alloca:
         {
-            // allocate a new stack slot for a local variable
+            int varSize = GetTypeSize(instruction->GetType());
+            if (varSize <= 0) varSize = x86_32::STACK_SLOT_SIZE;
             int offset = m_nextVarStackOffset;
-            m_nextVarStackOffset += x86_32::STACK_SLOT_SIZE;
+            m_nextVarStackOffset += varSize;
             m_valueToStackOffset[instruction] = offset;
+            break;
+        }
+
+        case IROpcode::GEP:
+        {
+            out << "    ; GEP: array index\n";
+            std::string baseSlot = this->GetOperandAsm(op1, out);
+            out << m_operandPreamble;
+            out << "    lea eax, " << baseSlot << "\n";
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov ebx, " << o << "\n"; }
+            int scale = GetTypeSize(instruction->GetType());
+            if (scale <= 0) scale = 1;
+            out << "    imul ebx, " << scale << "\n";
+            bool isGlobal = (dynamic_cast<const IRGlobalVariable*>(op1) != nullptr);
+            if (isGlobal)
+                out << "    add eax, ebx\n";  // global: base + index*scale
+            else
+                out << "    sub eax, ebx\n";  // stack: base - index*scale
+            int slotOffset = m_nextTempStackOffset;
+            m_nextTempStackOffset += x86_32::STACK_SLOT_SIZE;
+            m_valueToStackOffset[instruction] = slotOffset;
+            out << "    mov [ebp-" << slotOffset << "], eax\n";
+            break;
+        }
+
+        // -----------------------
+        // Type conversion
+        // -----------------------
+        case IROpcode::FPToSI:
+        {
+            out << "    ; FPToSI: convert float to signed int\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    movss xmm0, " << o << "\n"; }
+            out << "    cvttss2si eax, xmm0\n";
+            out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
+            break;
+        }
+
+        case IROpcode::SIToFP:
+        {
+            out << "    ; SIToFP: convert signed int to float\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
+            out << "    cvtsi2ss xmm0, eax\n";
+            out << "    movss " << this->slotOfInstr(instruction) << ", xmm0\n";
             break;
         }
 
@@ -321,26 +489,26 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
         case IROpcode::Br:
         {
             const auto& successors = instruction->GetParent()->GetSuccessors();
-            out << "    jmp ." << successors[0]->GetLabel() << "\n";
+            out << "    jmp " << this->MangledName(this->m_currentFunc->GetName()) << "." << successors[0]->GetLabel() << "\n";
             break;
         }
 
         case IROpcode::CondBr:
         {
             const auto& successors = instruction->GetParent()->GetSuccessors();
-            out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
+            { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
             out << "    cmp eax, 0\n";
-            out << "    jne ." << successors[0]->GetLabel() << "\n";
-            out << "    jmp ." << successors[1]->GetLabel() << "\n";
+            out << "    jne " << this->MangledName(this->m_currentFunc->GetName()) << "." << successors[0]->GetLabel() << "\n";
+            out << "    jmp " << this->MangledName(this->m_currentFunc->GetName()) << "." << successors[1]->GetLabel() << "\n";
             break;
         }
 
         case IROpcode::Ret:
             if (op1)
             {
-                out << "    mov eax, " << this->GetOperandAsm(op1, out) << "\n";
+                { std::string o = this->GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
             }
-            out << "    jmp ." << this->m_currentFunc->GetName() << "_epilogue\n";
+            out << "    jmp " << this->MangledName(this->m_currentFunc->GetName()) << ".func_epilogue\n";
             break;
 
         case IROpcode::Call:
@@ -351,19 +519,28 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             // 32-bit cdecl: push ALL arguments right to left
             for (int i = numOperands - 1; i >= 0; i--)
             {
-                out << "    push dword " << this->GetOperandAsm(operands[i], out) << "\n";
+                std::string opAsm = this->GetOperandAsm(operands[i], out);
+                out << m_operandPreamble;
+                auto* opInstr = dynamic_cast<const IRInstruction*>(operands[i]);
+                bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                if (isAlloca)
+                {
+                    // Alloca: opAsm is "dword [ebp-N]"; we need to push the address, not contents
+                    std::string memRef = opAsm;
+                    if (memRef.size() > 6 && memRef.substr(0, 6) == "dword ")
+                        memRef = memRef.substr(6);
+                    out << "    lea eax, " << memRef << "\n";
+                    out << "    push eax\n";
+                }
+                else
+                {
+                    // opAsm already has "dword [ebp-N]" for memory; use "push " + opAsm to avoid "push dword dword"
+                    out << "    push " << opAsm << "\n";
+                }
             }
 
-            std::string funcName = instruction->GetCalledFunction()->GetName();
-
-            if (TargetArchitecture::GetOS() == OS::Windows)
-            {
-                out << "    call _" << funcName << "\n";
-            }
-            else
-            {
-                out << "    call " << funcName << "\n";
-            }
+            std::string funcName = this->MangledName(instruction->GetCalledFunction()->GetName());
+            out << "    call " << funcName << "\n";
 
             // caller cleans up stack in cdecl
             if (numOperands > 0)
@@ -381,15 +558,15 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
             std::string lblTrue = this->SelectLabelGenerator();
             std::string lblEnd = this->SelectLabelGenerator();
 
-            out << "    mov eax, " << GetOperandAsm(op1, out) << "\n";
+            { std::string o = GetOperandAsm(op1, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
             out << "    cmp eax, 0\n";
             out << "    jne " << lblTrue << "\n";
             // Condition false: use op3 (false value)
-            out << "    mov eax, " << this->GetOperandAsm(op3, out) << "\n";
+            { std::string o = this->GetOperandAsm(op3, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
             out << "    jmp " << lblEnd << "\n";
             out << lblTrue << ":\n";
             // Condition true: use op2 (true value)
-            out << "    mov eax, " << this->GetOperandAsm(op2, out) << "\n";
+            { std::string o = this->GetOperandAsm(op2, out); out << m_operandPreamble << "    mov eax, " << o << "\n"; }
             out << lblEnd << ":\n";
             out << "    mov " << this->slotOfInstr(instruction) << ", eax\n";
             break;
@@ -401,30 +578,99 @@ void X86_Emitter::EmitInstruction(const IRInstruction* instruction, std::ostream
     }
 }
 
-void X86_Emitter::EmitStart(std::ostream& out)
+void X86_Emitter::EmitAfterFunctionLabel(const IRFunction* func, std::ostream& out)
 {
+    // On Windows 32-bit we use _mainCRTStartup which runs deferred inits before calling _main.
+    if (TargetArchitecture::GetOS() == OS::Windows && !TargetArchitecture::Is64Bit())
+        return;
+    if (func->GetName() != "main")
+        return;
+    IRModule* module = func->GetParent();
+    if (!module || !module->IsPrimaryModule())
+        return;
+    for (const auto& [target, source] : module->GetDeferredGlobalInits())
+    {
+        out << "    mov eax, [" << source << "]\n";
+        out << "    mov [" << target << "], eax\n";
+    }
+}
+
+void X86_Emitter::EmitStart(const IRModule& module, std::ostream& out)
+{
+    if (!module.IsPrimaryModule()) return;
+
     switch (TargetArchitecture::GetOS())
     {
         case OS::Linux:
         {
             out << "_start:\n";
+
+            for (const auto& [target, source] : module.GetDeferredGlobalInits())
+            {
+                out << "    mov eax, [" << source << "]\n";
+                out << "    mov [" << target << "], eax\n";
+            }
+
             out << "    call main\n";
 
             // exit syscall (sys_exit = 1)
             out << "    mov ebx, eax\n";  // exit code from main's return
             out << "    mov eax, 1\n";    // sys_exit syscall number
             out << "    int 0x80\n";      // interrupt to kernel
+
+            // ---- Bump allocator: heap_alloc(size) -> ptr (cdecl: [esp+4]=size) ----
+            out << "\n";
+            out << "heap_alloc:\n";
+            out << "    mov eax, [esp+4]\n";
+            out << "    add eax, 7\n";
+            out << "    and eax, -8\n";
+            out << "    cmp dword [heap_cur], 0\n";
+            out << "    jne .heap_alloc_no_init\n";
+            out << "    mov dword [heap_cur], heap_mem\n";
+            out << ".heap_alloc_no_init:\n";
+            out << "    mov ecx, [heap_cur]\n";
+            out << "    mov edx, ecx\n";
+            out << "    add edx, eax\n";
+            out << "    mov [heap_cur], edx\n";
+            out << "    mov eax, ecx\n";
+            out << "    ret\n";
             break;
         }
 
         case OS::Windows:
         {
             out << "_mainCRTStartup:\n";
-            out << "    call _main\n";
+            out << "__mainCRTStartup:\n";
 
-            // call ExitProcess with return value
-            out << "    push eax\n";            // push exit code
-            out << "    call _ExitProcess@4\n"; // stdcall: callee cleans stack
+            for (const auto& [target, source] : module.GetDeferredGlobalInits())
+            {
+                out << "    mov eax, [_" << source << "]\n";
+                out << "    mov [_" << target << "], eax\n";
+            }
+
+            // 16-byte align stack before call (MSVC 32-bit: esp+4 must be 16-byte aligned at callee entry)
+            out << "    sub esp, 4\n";
+            out << "    call _main\n";
+            out << "    add esp, 4\n";
+            out << "    push eax\n";
+            out << "    call _ExitProcess@4\n";
+
+            // ---- Bump allocator: _heap_alloc(size) -> ptr (cdecl: [esp+4]=size) ----
+            out << "\n";
+            out << "_heap_alloc:\n";
+            out << "    mov eax, [esp+4]\n";
+            out << "    add eax, 7\n";
+            out << "    and eax, -8\n";
+            out << "    cmp dword [_heap_cur], 0\n";
+            out << "    jne ._heap_alloc_no_init\n";
+            out << "    mov dword [_heap_cur], _heap_mem\n";
+            out << "._heap_alloc_no_init:\n";
+            out << "    mov ecx, [_heap_cur]\n";
+            out << "    mov edx, ecx\n";
+            out << "    add edx, eax\n";
+            out << "    mov [_heap_cur], edx\n";
+            out << "    mov eax, ecx\n";
+            out << "    ret\n";
             break;
         }
 
@@ -433,23 +679,23 @@ void X86_Emitter::EmitStart(std::ostream& out)
     }
 }
 
+std::string X86_Emitter::MangledName(const std::string& name) const
+{
+    if (TargetArchitecture::GetOS() == OS::Windows)
+    {
+        return "_" + name;
+    }
+    return name;
+}
+
 std::string X86_Emitter::GetGlobalDirective(const std::string& symbol) const
 {
-    switch (TargetArchitecture::GetOS())
-    {
-        case OS::Linux:
-            return "global " + symbol + "\n";
-
-        case OS::Windows:
-            return "global _" + symbol + "\n";
-
-        default:
-            return "global " + symbol + "\n";
-    }
+    return "global " + this->MangledName(symbol) + "\n";
 }
 
 std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream& out)
 {
+    m_operandPreamble.clear();
     if (!operand)
     {
         return "0";
@@ -471,14 +717,32 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
 
         // allocate a slot and write the constant there
         std::string slot = this->slotOfInstr(floatLiteral);
+        int offset = this->m_valueToStackOffset[floatLiteral];
 
         float value = static_cast<float>(floatLiteral->GetValue());
         uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(float));
 
-        // store as 32-bit hex value
-        out << "    mov dword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";
+        // Store preamble for caller to emit before the instruction that uses this operand.
+        // Use [ebp-N] (not slot which has "dword ") to avoid "mov dword dword [ebp-N]".
+        std::ostringstream pre;
+        pre << "    mov dword [ebp-" << offset << "], 0x" << std::hex << bits << std::dec << "\n";
+        m_operandPreamble = pre.str();
+        (void)out;  // do not write to out; caller emits m_operandPreamble first
         return slot;
+    }
+
+    if (auto* strConst = dynamic_cast<const IRConstantString*>(operand))
+    {
+        // return the label of the string constant in the .data section
+        if (TargetArchitecture::GetOS() == OS::Windows)
+        {
+            return strConst->GetLabel();
+        }
+        else
+        {
+            return strConst->GetLabel();
+        }
     }
 
     if (auto* boolLiteral = dynamic_cast<const IRConstantBool*>(operand))
@@ -488,14 +752,7 @@ std::string X86_Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostream&
 
     if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
-        if (TargetArchitecture::GetOS() == OS::Windows)
-        {
-            return "dword [_" + globalVar->GetName() + "]";
-        }
-        else
-        {
-            return "dword [" + globalVar->GetName() + "]";
-        }
+        return "dword [" + this->MangledName(globalVar->GetName()) + "]";
     }
 
     // operand is a function argument

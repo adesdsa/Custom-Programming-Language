@@ -4,7 +4,8 @@ Token::Token(size_t ulLine, size_t ulColumn) :
     m_sValue(""), 
     m_sType(TokenTypes::UNKNOWN), 
     m_ulLine(ulLine),
-    m_ulColumn(ulColumn) {}
+    m_ulColumn(ulColumn) 
+{}
 
 Token::Token(std::string_view sTokenType, size_t ulLine, size_t ulColumn) :
     m_sValue(""), 
@@ -27,7 +28,33 @@ bool Token::Append(char cAddedChar) noexcept
 {   
     const std::string k_sTempToken = m_sValue + cAddedChar;
 
-    // Check #1: Comments
+    // if we are already building a string literal, keep accumulating.
+    if (this->m_sType == TokenTypes::STRING_LITERAL)
+    {
+        if (this->m_sValue.size() > 1 && this->m_sValue.back() == '"')
+        {
+            size_t backslashes = 0;
+            for (size_t i = this->m_sValue.size() - 2; i > 0 && this->m_sValue[i] == '\\'; --i)
+            {
+                backslashes++;
+            }
+            if (backslashes % 2 == 0)
+                return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
+    }
+
+    // if we are already building a char literal, keep accumulating.
+    if (this->m_sType == TokenTypes::CHAR_LITERAL)
+    {
+        if (this->m_sValue.size() > 1 && this->m_sValue.back() == '\'')
+        {
+            return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::CHAR_LITERAL);
+    }
+
+    // check #1: Comments (must run before " check so quotes inside comments don't start strings)
     if (this->IsCommentToken(k_sTempToken))
         return this->AssignToken(k_sTempToken, TokenTypes::UNFINISHED_TRIVIA);
 
@@ -35,6 +62,24 @@ bool Token::Append(char cAddedChar) noexcept
     {
         this->m_sType = TokenTypes::TRIVIA;
         return TokenStatus::k_bFinished;
+    }
+
+    if (cAddedChar == '"')
+    {
+        if (!m_sValue.empty())
+        {
+            return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::STRING_LITERAL);
+    }
+
+    if (cAddedChar == '\'')
+    {
+        if (!m_sValue.empty())
+        {
+            return TokenStatus::k_bFinished;
+        }
+        return AssignToken(k_sTempToken, TokenTypes::CHAR_LITERAL);
     }
 
     // check #2: Whitespace
@@ -166,7 +211,34 @@ bool Token::CheckSoloLetters(
 
 bool Token::IsCommentToken(const std::string &sToken) const
 {
-    return std::regex_match(sToken, RegexPatterns::k_TriviaComments());
+    // Line comments start with '#': they are comments until (but not including) '\n' or EOF.
+    if (!sToken.empty() && sToken[0] == '#')
+    {
+        return sToken.find('\n') == std::string::npos &&
+               sToken.find('\0') == std::string::npos;
+    }
+
+    // Block comments start with '/*' and end with '*/', possibly spanning multiple lines.
+    // We consider ourselves "inside a comment" as long as:
+    //  - the token starts with '/*', and
+    //  - either we haven't seen '*/' yet,
+    //    or we have seen it but there is nothing after it (the next char will close the token).
+    if (sToken.size() >= 2 && sToken[0] == '/' && sToken[1] == '*')
+    {
+        const std::size_t endPos = sToken.find("*/", 2);
+        if (endPos == std::string::npos)
+        {
+            // No closing '*/' yet -> still inside block comment, unless we hit EOF.
+            return sToken.find('\0') == std::string::npos;
+        }
+
+        // We have a closing '*/'. Stay in the comment as long as there is
+        // nothing after it; once more characters are appended, we should
+        // stop treating it as a comment so the tokenizer can finish the token.
+        return (endPos + 2 == sToken.size());
+    }
+
+    return false;
 }
 
 bool Token::IsWhiteSpaceToken(const std::string& sToken, char newChar) const

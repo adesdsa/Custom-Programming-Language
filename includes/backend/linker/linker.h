@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "includes/shared/logger/entity_logger.h"
 #include "includes/shared/common/target_architecture.h"
@@ -21,7 +22,7 @@ constexpr int OK_EXIT_CODE = 0;
  *
  * Usage:
  *   Linker linker;
- *   std::string exePath = linker.MainFlow("build/program.obj");
+ *   std::string exePath = linker.MainFlow({"build/main.obj", "build/utils.obj"}, "program", "build/");
  * 
  * References:
  *  GoLink:
@@ -35,25 +36,37 @@ public:
     Linker();
     ~Linker() = default;
 
-    /// @brief Links the given object file into a native executable.
-    /// @param objFilePath  Path to the .obj (Windows) or .o (Linux) file.
+    /// @brief Links the given object files into a native executable.
+    /// @param objFilePaths Paths to the .obj (Windows) or .o (Linux) files.
+    /// @param outputName   Base name of the executable (without extension).
+    /// @param outputDir    Directory where the executable is placed.
     /// @return Path to the produced executable.
-    std::string MainFlow(const std::string& objFilePath);
+    std::string MainFlow(
+        const std::vector<std::string>& objFilePaths,
+        const std::string& outputName,
+        const std::string& outputDir
+    );
 
 private:
     EntityLogger m_logger;
 
     /// @brief Build the platform-specific linker command line.
-    /// @param objPath Path to the input object file.
-    /// @param exePath Path to the output executable.
-    /// @return The full shell command to invoke the linker.
     std::string BuildLinkerCommand(
-        const std::string& objPath,
+        const std::vector<std::string>& objPaths,
         const std::string& exePath
     ) const;
 
-    /// @brief Derive the output executable path from the object file path.
-    /// @param objPath Path to the input object file.
-    /// @return Path with the correct executable extension (.exe / none).
-    std::string DeriveOutputPath(const std::string& objPath) const;
+    /// @brief Derive the full executable path from a base name and directory.
+    std::string DeriveOutputPath(
+        const std::string& outputName,
+        const std::string& outputDir
+    ) const;
+
+#ifdef _WIN32
+    /// @brief Build MSVC link.exe command for 32-bit (resolves GetStdHandle@4 etc.). Returns empty if not found.
+    static std::string BuildMsvcLinkCommandWin32(
+        const std::vector<std::string>& objPaths,
+        const std::string& exePath
+    );
+#endif
 };

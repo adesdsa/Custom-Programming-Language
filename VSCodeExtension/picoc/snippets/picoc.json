@@ -1,0 +1,277 @@
+{
+  "Main Function": {
+    "prefix": "main",
+    "body": [
+      "main(void) -> int",
+      "{",
+      "\t$0",
+      "\treturn 0;",
+      "}"
+    ],
+    "description": "Main function entry point"
+  },
+  "Function Definition": {
+    "prefix": ["fn", "func"],
+    "body": [
+      "${1:name}(${2:params}) -> ${3:void}",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "Function definition"
+  },
+  "Forward Declaration": {
+    "prefix": ["fndecl", "declare"],
+    "body": [
+      "${1:name}(${2:params}) -> ${3:void};"
+    ],
+    "description": "Forward function declaration"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "if (${1:condition})",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "If statement"
+  },
+  "If / Else": {
+    "prefix": "ifelse",
+    "body": [
+      "if (${1:condition})",
+      "{",
+      "\t$2",
+      "}",
+      "else",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "If / else statement"
+  },
+  "If / Elif / Else": {
+    "prefix": "ifelif",
+    "body": [
+      "if (${1:condition})",
+      "{",
+      "\t$2",
+      "}",
+      "elif (${3:condition})",
+      "{",
+      "\t$4",
+      "}",
+      "else",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "If / elif / else chain"
+  },
+  "Elif Block": {
+    "prefix": "elif",
+    "body": [
+      "elif (${1:condition})",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "Elif block"
+  },
+  "For Loop": {
+    "prefix": "for",
+    "body": [
+      "for (let ${1:i}: int = ${2:0}; ${1:i} < ${3:n}; ${1:i} = ${1:i} + 1)",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "For loop"
+  },
+  "While Loop": {
+    "prefix": "while",
+    "body": [
+      "while (${1:condition})",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "While loop"
+  },
+  "Let Variable": {
+    "prefix": "let",
+    "body": [
+      "let ${1:name}: ${2:int} = ${3:0};"
+    ],
+    "description": "Let variable declaration"
+  },
+  "Let Const Variable": {
+    "prefix": "letconst",
+    "body": [
+      "let const ${1:name}: ${2:int} = ${3:0};"
+    ],
+    "description": "Let const variable declaration"
+  },
+  "Var Variable": {
+    "prefix": "var",
+    "body": [
+      "var ${1:name}: ${2:int} = ${3:0};"
+    ],
+    "description": "Var variable declaration"
+  },
+  "Global Variable": {
+    "prefix": "global",
+    "body": [
+      "global ${1:name}: ${2:int} = ${3:0};"
+    ],
+    "description": "Global variable declaration"
+  },
+  "Println": {
+    "prefix": "println",
+    "body": [
+      "println(${1:value});"
+    ],
+    "description": "Print with newline"
+  },
+  "Block Comment": {
+    "prefix": "comment",
+    "body": [
+      "/*",
+      " * ${0:description}",
+      " */"
+    ],
+    "description": "Block comment"
+  },
+  "Doc Comment": {
+    "prefix": ["doc", "/**"],
+    "body": [
+      "/*",
+      " * @brief ${1:Brief description}",
+      " * @param ${2:name} ${3:description}",
+      " * @return ${4:description}",
+      " */"
+    ],
+    "description": "Documentation comment with @brief, @param, @return"
+  },
+  "Doc Comment (full)": {
+    "prefix": "docfull",
+    "body": [
+      "/*",
+      " * @brief ${1:Brief description}",
+      " *",
+      " * @param ${2:name} ${3:description}",
+      " * @return ${4:description}",
+      " *",
+      " * @note ${5:additional notes}",
+      " * @example ${6:usage example}",
+      " */"
+    ],
+    "description": "Full documentation comment"
+  },
+  "Import (named)": {
+    "prefix": "import",
+    "body": [
+      "import { ${1:symbol} } from \"${2:file}.picoc\""
+    ],
+    "description": "Import named symbols from another file"
+  },
+  "Import (wildcard)": {
+    "prefix": "importall",
+    "body": [
+      "import * from \"${1:file}.picoc\""
+    ],
+    "description": "Import all exports from another file"
+  },
+  "Export Const": {
+    "prefix": "export",
+    "body": [
+      "export const ${1:name}: ${2:int} = ${3:0};"
+    ],
+    "description": "Export a constant variable"
+  },
+  "Char Variable": {
+    "prefix": "charvar",
+    "body": [
+      "let ${1:name}: char = '${2:a}';"
+    ],
+    "description": "Char variable declaration"
+  },
+  "String Variable": {
+    "prefix": "strvar",
+    "body": [
+      "let ${1:name}: string = \"${2:hello}\";"
+    ],
+    "description": "String variable declaration"
+  },
+  "Import String Library": {
+    "prefix": "importstring",
+    "body": [
+      "import { ${1:str_len} } from \"string\""
+    ],
+    "description": "Import from the built-in string library"
+  },
+  "Import String Library (all)": {
+    "prefix": "importstringall",
+    "body": [
+      "import * from \"string\""
+    ],
+    "description": "Import all from the built-in string library"
+  },
+  "Import Array Library": {
+    "prefix": "importarray",
+    "body": [
+      "import { ${1:len, front, back, find} } from \"arraylib\""
+    ],
+    "description": "Import from the built-in array library"
+  },
+  "Import Array Library (all)": {
+    "prefix": "importarrayall",
+    "body": [
+      "import * from \"arraylib\""
+    ],
+    "description": "Import all from the built-in array library"
+  },
+  "Array Declaration": {
+    "prefix": "array",
+    "body": [
+      "let ${1:name}: ${2:int}[${3:5}] = [${4:1, 2, 3, 4, 5}];"
+    ],
+    "description": "Array variable declaration with initializer"
+  },
+  "Array Declaration (empty)": {
+    "prefix": "arrayempty",
+    "body": [
+      "let ${1:name}: ${2:int}[${3:5}];"
+    ],
+    "description": "Array variable declaration without initializer"
+  },
+  "Array Access": {
+    "prefix": "arraccess",
+    "body": [
+      "${1:arr}[${2:0}]"
+    ],
+    "description": "Array element access"
+  },
+  "Array Slice": {
+    "prefix": "arrslice",
+    "body": [
+      "${1:arr}[${2:0}:${3:5}]"
+    ],
+    "description": "Array slice access"
+  },
+  "String Slice": {
+    "prefix": "slice",
+    "body": [
+      "${1:str}[${2:start}:${3:end}]"
+    ],
+    "description": "String slice access s[start:end]"
+  },
+  "String Slice with Step": {
+    "prefix": "slicestep",
+    "body": [
+      "${1:str}[${2:start}:${3:end}:${4:step}]"
+    ],
+    "description": "String slice with step s[start:end:step]"
+  }
+}

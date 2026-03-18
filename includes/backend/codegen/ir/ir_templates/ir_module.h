@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <set>
 
 #include "includes/backend/codegen/ir/ir_templates/ir_function.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
@@ -40,15 +41,39 @@ public:
     /// @return m_globals size
     size_t GetNumVariables() const noexcept;
     /// @return nullptr -> Var with this name already exists. otherwise -> success.
-    IRGlobalVariable* AddVariable(const std::string& name, std::shared_ptr<const IRType> type);
+    IRGlobalVariable* AddVariable(const std::string& name, std::shared_ptr<const IRType> type, bool isExtern = false);
     bool IsVarExistByName(const std::string& name) const;
 
     void RemoveVariable(IRGlobalVariable* globalVar);
     void AddConstant(std::unique_ptr<IRBaseValue> constant);
+    const std::vector<std::unique_ptr<IRBaseValue>>& GetConstants() const noexcept;
+
+    // <======= Import/Export Related Functions =======>
+    const std::vector<std::string>& GetExports() const;
+    const std::vector<std::string>& GetImports() const;
+    void AddExport(const std::string& exportable);
+    void AddImport(const std::string& importable);
+
+    void SetPrimaryModule();
+    bool IsPrimaryModule() const;
+
+    void AddDeferredGlobalInit(const std::string& target, const std::string& source);
+    void RemoveDeferredGlobalInit(const std::string& name);
+    const std::vector<std::pair<std::string, std::string>>& GetDeferredGlobalInits() const noexcept;
+
+    void AddRequiredLibrary(const std::string& libName);
+    const std::set<std::string>& GetRequiredLibraries() const noexcept;
 
 private:
     const std::string m_name;
     std::vector<std::unique_ptr<IRBaseValue>> m_constants;
+    bool m_isPrimaryModule; // True-> If main is defined here, False-> Otherwise
+
+    // Names of symbols imported from other files
+    std::vector<std::string> m_externSymbols;
+
+    // names of symbols this file exports
+    std::vector<std::string> m_exportedSymbols;
     
     /// @note: Following code contains both vector and map for better time complexity
                             
@@ -57,4 +82,7 @@ private:
 
     std::vector<std::unique_ptr<IRGlobalVariable>> m_globals;
     std::map<std::string, IRGlobalVariable*> m_globalMap;
+
+    std::vector<std::pair<std::string, std::string>> m_deferredGlobalInits;
+    std::set<std::string> m_requiredLibraries;
 };

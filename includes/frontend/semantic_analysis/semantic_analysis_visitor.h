@@ -9,6 +9,8 @@
 #include "includes/frontend/semantic_analysis/func_factory.h"
 #include "includes/frontend/semantic_analysis/semantic_checker_facade.h"
 #include "includes/frontend/semantic_analysis/var_metadata.h"
+#include "includes/frontend/common/project_symbol_table.h"
+#include "includes/shared/common/builtin_library.h"
 
 class SemanticAnalysisVisitor : public IASTVisitor
 {
@@ -16,11 +18,13 @@ public:
     SemanticAnalysisVisitor(
         const EntityLogger& entityLogger, 
         VarTableNode& varTable,
-        FuncTable& functable
+        FuncTable& functable,
+        const ProjectSymbolTable& projectSymbolTable
     );
     ~SemanticAnalysisVisitor() = default;
 
     virtual void VisitVarDeclaration(ASTNode* node) override;
+    virtual void VisitArrayDeclaration(ASTNode* node) override;
     virtual void VisitExpression(ASTNode* node) override;
     virtual void VisitIdentifier(ASTNode* node) override;
     virtual void VisitIdentifierValue(ASTNode* node) override;
@@ -40,8 +44,11 @@ public:
     virtual void VisitEndOfCommand(ASTNode* node) override;
     virtual void VisitSizeof(ASTNode* node) override;
     virtual void VisitVoidCommand(ASTNode* node) override;
+    virtual void VisitImportStatement(ASTNode* node) override;
     virtual void VisitPass(ASTNode* node) override;
     virtual void VisitEof(ASTNode* node) override;
+    virtual void VisitArrayAccess(ASTNode* node) override;
+    virtual void VisitArrayValue(ASTNode* node) override;
 
 private:
     /**********************\
@@ -66,7 +73,9 @@ private:
     |     Helper Fields    |
     \**********************/
     VarTableNode* m_currentScope;
+    VarTableNode* m_functionScopeRoot = nullptr;
     ExpressionType m_lastExpressionType;
+    const ProjectSymbolTable& m_projectSymbolTable;
 
     std::string m_lastIdentifierName;
     bool m_identifierError = false;
@@ -79,6 +88,7 @@ private:
 
     // pending assignment tracking, consumed by VisitExpression
     bool m_pendingAssignment = false;
+    bool m_isVarInitialization = false;
     size_t m_assignmentLine = 0;
     size_t m_assignmentColumn = 0;
 
@@ -90,12 +100,18 @@ private:
     // Each bool represents: did this block level call EnteredBlock?
     std::stack<bool> m_blockEnteredStack;
 
+    // stack to track which blocks need an extra scope pop (for-loop init scope)
+    std::stack<bool> m_forInitScopeStack;
+    bool m_pendingForInitScope = false;
+
     // pending for loop condition check, consumed by VisitExpression
     // The condition can't be checked in VisitFor because the loop variable isn't in scope yet
     bool m_pendingForConditionCheck = false;
     size_t m_forConditionLine = 0;
     size_t m_forConditionColumn = 0;
     int m_forExpressionCount = 0;  // 0=init value, 1=condition, 2+=increment
+
+    SemanticCheckerFacade m_facade;
 
     /**********************\
     |    Helper Methods    |
@@ -107,6 +123,7 @@ private:
     /// @brief If some logic errors already detected in handler
         /// then next handlers in the chain may need use this knowlage
     void SignalFailureForNextHandlers() noexcept;
+    void HandleBuiltinLibraryImport(ASTNode* node, const std::string& libName);
 
     /// @brief Clears all state related to the deferred assignment type check mechanism.
     /// 
@@ -135,7 +152,7 @@ private:
     /// @brief Evaluate given node into an `ExpressionType enum`
     /// @param node `ASTNode*`: node that passed as agrument to function call 
     /// @return `ExpressionType enum`: infered type of the node's expression
-    ExpressionType EvaluateNodeType(ASTNode* node) const noexcept;
+    ExpressionType EvaluateNodeType(ASTNode* node) noexcept;
 
     /// @brief Following methods cover facade checks that are shared between Visits ||
     //                                                                              \/
@@ -147,7 +164,7 @@ private:
         SemanticCheckerFacade::BlockKind blockkind
     );
 
-    void HandleExitedBlockCheck(ASTNode* node) const;
+    void HandleExitedBlockCheck(ASTNode* node);
 
     /// @brief The func is used to handle single Command assignments
     /// which means either identifier_value or finished_func_call

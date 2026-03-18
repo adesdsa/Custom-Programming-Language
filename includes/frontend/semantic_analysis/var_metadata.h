@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <optional>
 
 #include "includes/shared/common/common_consts.h"
 
@@ -18,13 +19,17 @@ struct VarMetaData
         Type type,
         AccessRights access,
         Scope scope,
-        int offset
+        int offset,
+        bool isExtern = false,
+        std::optional<size_t> arraySize = std::nullopt
     ): 
         sName(name),
         type(type),
         accessRights(access),
         scope(scope),
-        offsetInsideFrame(offset)
+        offsetInsideFrame(offset),
+        isExtern(isExtern),
+        arraySize(arraySize)
     {}
 
     bool operator==(const VarMetaData& other) const
@@ -33,7 +38,9 @@ struct VarMetaData
                type == other.type &&
                accessRights == other.accessRights &&
                scope == other.scope &&
-               offsetInsideFrame == other.offsetInsideFrame;
+               offsetInsideFrame == other.offsetInsideFrame &&
+               isExtern == other.isExtern &&
+               arraySize == other.arraySize;
     }
 
     std::string sName;
@@ -41,4 +48,6 @@ struct VarMetaData
     AccessRights accessRights;
     Scope scope;
     int offsetInsideFrame;
+    bool isExtern;
+    std::optional<size_t> arraySize;  // When set, variable is a static array of this many elements
 };

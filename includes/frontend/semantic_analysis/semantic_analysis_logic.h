@@ -3,11 +3,12 @@
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 #include "includes/shared/common/ast_helpers/ast_iterator.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_visitor.h"
+#include "includes/frontend/common/project_symbol_table.h"
 
 class SemanticAnalysisLogicComponent
 {
 public:
-    SemanticAnalysisLogicComponent(const AST& ast);
+    SemanticAnalysisLogicComponent(const AST& ast, const ProjectSymbolTable& projectSymbolTable);
     ~SemanticAnalysisLogicComponent() = default;
 
     /*****************************************************************************
@@ -41,6 +42,9 @@ public:
      ****************************************************************************/
     const DecoratedAST& MainFlow();
 
+    /// @return Reference to the decorated AST produced by MainFlow() (valid after MainFlow() has been called).
+    const DecoratedAST& GetDecoratedAST() const;
+
 private:
     EntityLogger m_semanticAnalysisLogger;
     ErrorManager& m_errorManager;
@@ -48,6 +52,10 @@ private:
     ASTIterator m_astIterator;
     DecoratedAST m_decoratedAST;
     SemanticAnalysisVisitor m_semanticAnalysisVisitor;
+
+    /// @brief Pre-pass: scan AST for global variable declarations and
+    /// register them in the root var table so they are visible to all functions.
+    void CollectGlobalVariables();
 
     /// @brief Check that all declared functions have matching defination
     void HandleUndefinedFunctions();

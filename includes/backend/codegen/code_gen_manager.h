@@ -1,7 +1,9 @@
 #pragma once
 
 #include <filesystem>
+#include <set>
 
+#include "includes/driver/compiler_options.h"
 #include "includes/shared/common/ast_helpers/decorated_ast.h"
 
 // Sub-Managers
@@ -21,12 +23,18 @@
 class CodeGenManager
 {
 public:
-    CodeGenManager(const DecoratedAST& decoratedAST);
+    CodeGenManager(const DecoratedAST& decoratedAST, const CompilerOptions& options);
     ~CodeGenManager() = default;
 
-    void MainFlow();
+    /// @brief Runs IR generation, ASM emission, and assembly.
+    /// @return Path to the produced artifact (.asm if stopAtAsm, .obj/.o otherwise).
+    std::string MainFlow();
+
+    const std::set<std::string>& GetRequiredLibraries() const noexcept;
 
 private:
+    std::set<std::string> m_requiredLibraries;
     const DecoratedAST& m_decoratedAST;
+    const CompilerOptions& m_options;
     ErrorManager& m_errorManager;
 };

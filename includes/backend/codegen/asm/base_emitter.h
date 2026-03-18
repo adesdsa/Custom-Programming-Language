@@ -20,7 +20,7 @@ protected:
     const IRFunction* m_currentFunc;
     
     // header signature for the file
-    virtual std::string EmitHeader() const = 0;
+    virtual std::string EmitHeader(const IRModule& module) const = 0;
 
     /** 
       * my_function:
@@ -29,6 +29,9 @@ protected:
       * sub rsp, 32  ; Reserve 32 bytes for local variables
     */
     virtual void EmitPrologue(const IRFunction* func, int frameSize, std::ostream& out) = 0;
+
+    /// @brief Override to emit code immediately after the function label (e.g. deferred global inits for main).
+    virtual void EmitAfterFunctionLabel(const IRFunction* func, std::ostream& out) { (void)func; (void)out; }
 
     /** 
       * mov rsp, rbp  ; Restore stack pointer
@@ -41,7 +44,7 @@ protected:
     virtual void EmitInstruction(const IRInstruction* instruction, std::ostream& out) = 0;
 
     /// @brief The func emits a correct _start label that calls the main func and handles more stuff.
-    virtual void EmitStart(std::ostream& out) = 0;
+    virtual void EmitStart(const IRModule& module, std::ostream& out) = 0;
 
     // Gets sections name as a string e.g., section .text
     virtual std::string GetSectionDirective(SectionType sectionType) const = 0;
@@ -63,12 +66,25 @@ protected:
     /// @param bytes size of the variable in bytes
     virtual std::string GetReserveDirective(int bytes) const = 0;
 
+    /// @brief Returns the size in bytes of the given IR type (including arrays).
+    int GetTypeSize(std::shared_ptr<const IRType> type) const;
+
 private:
-    /// @brief Emits .data section (initialized globals)
+    /** 
+     * Emits global/extern directives for cross-module linking:
+     *  1. For each exported function/variable: emit  global _funcname
+     *  2. For each imported function/variable: emit  extern _funcname
+     */
+    void EmitExternAndGlobalDirectives(const IRModule& module, std::ostream& out);
+
+    /// @brief Emits .data section (initialized globals). Skips extern variables.
     void EmitDataSection(const IRModule& module, std::ostream& out);
     
-    /// @brief Emits .bss section (uninitialized globals)
+    /// @brief Emits .bss section (uninitialized globals). Skips extern variables.
     void EmitBssSection(const IRModule& module, std::ostream& out);
+
+    /// @brief Override to emit extra BSS content (e.g. heap for custom allocator). Default: no-op.
+    virtual void EmitExtraBssContent(const IRModule& module, std::ostream& out) const { (void)module; (void)out; }
     
     /// @brief emits .text section (all functions)
     void EmitTextSection(const IRModule& module, std::ostream& out);
@@ -77,11 +93,15 @@ private:
 
     void EmitBasicBlock(const BasicBlock* block, std::ostream& out);
 
+    /// @brief Returns the platform-mangled version of a symbol name.
+    /// For example, 32-bit Windows prefixes C symbols with '_'.
+    /// Override in target emitters that need name mangling.
+    virtual std::string MangledName(const std::string& name) const;
+
     //------------------------//
     //                        //
     //    Helper Functions    //
     //                        //
     //------------------------//
-    int GetTypeSize(std::shared_ptr<const IRType> type) const;
     std::string Indent() const;
 };

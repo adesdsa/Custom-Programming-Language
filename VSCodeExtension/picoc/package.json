@@ -1,0 +1,175 @@
+{
+  "name": "picoc",
+  "displayName": "PicoC Language Support",
+  "publisher": "picocDevelopers",
+  "description": "Full language support for PicoC — syntax highlighting, cross-file IntelliSense, Go to Definition, import/export support, snippets, doc comments, and more",
+  "version": "0.3.5",
+  "icon": "images/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/adesdsa/Custom-Programming-Language"
+  },
+  "bugs": {
+    "url": "https://gitlab.com/adesdsa/Custom-Programming-Language/-/issues",
+    "email": "picocdevelopers@gmail.com"
+  },
+  "homepage": "https://gitlab.com/adesdsa/Custom-Programming-Language",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "main": "./out/extension.js",
+  "activationEvents": ["onLanguage:picoc"],
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  },
+  "configurationDefaults": {
+    "editor.tokenColorCustomizations": {
+      "textMateRules": [
+          {
+            "scope": "comment.line.number-sign.picoc",
+            "settings": { "foreground": "#6A9955" }
+          },
+          {
+            "scope": "comment.block.picoc",
+            "settings": { "foreground": "#6A9955" }
+          },
+          {
+            "scope": "keyword.control.picoc",
+            "settings": { "foreground": "#C586C0" }
+          },
+          {
+            "scope": "keyword.other.sizeof.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "storage.modifier.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "storage.type.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "storage.type.primitive.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "storage.type.array.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "constant.language.picoc",
+            "settings": { "foreground": "#569CD6" }
+          },
+          {
+            "scope": "string.quoted.double.picoc",
+            "settings": { "foreground": "#CE9178" }
+          },
+          {
+            "scope": "string.quoted.single.picoc",
+            "settings": { "foreground": "#CE9178" }
+          },
+          {
+            "scope": "constant.character.escape.picoc",
+            "settings": { "foreground": "#D7BA7D" }
+          },
+          {
+            "scope": "constant.numeric.float.picoc",
+            "settings": { "foreground": "#B5CEA8" }
+          },
+          {
+            "scope": "constant.numeric.integer.picoc",
+            "settings": { "foreground": "#B5CEA8" }
+          },
+          {
+            "scope": "entity.name.function.picoc",
+            "settings": { "foreground": "#DCDCAA" }
+          },
+          {
+            "scope": "variable.other.picoc",
+            "settings": { "foreground": "#9CDCFE" }
+          },
+          {
+            "scope": "keyword.operator.comparison.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "keyword.operator.arithmetic.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "keyword.operator.assignment.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "keyword.operator.logical.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.accessor.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.terminator.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.separator.colon.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.separator.comma.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.section.parens.open.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.section.parens.close.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.section.braces.open.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          },
+          {
+            "scope": "punctuation.section.braces.close.picoc",
+            "settings": { "foreground": "#D4D4D4" }
+          }
+        ]
+      }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "picoc",
+        "aliases": ["PicoC", "picoc"],
+        "extensions": [".picoc"],
+        "icon": {
+          "light": "./images/file-icon.png",
+          "dark": "./images/file-icon.png"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "picoc",
+        "scopeName": "source.picoc",
+        "path": "./syntaxes/picoc.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "picoc",
+        "path": "./snippets/picoc.json"
+      }
+    ]
+  }
+}

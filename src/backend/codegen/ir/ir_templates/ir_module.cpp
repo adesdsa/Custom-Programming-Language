@@ -1,8 +1,10 @@
 #include "includes/backend/codegen/ir/ir_templates/ir_module.h"
 #include "includes/backend/codegen/ir/ir_templates/ir_argument.h"
+#include <algorithm>
 
 IRModule::IRModule(const std::string& moduleName) :
-    m_name(moduleName)
+    m_name(moduleName),
+    m_isPrimaryModule(false)
 {}
 
 const std::string& IRModule::GetName() const noexcept
@@ -61,13 +63,14 @@ size_t IRModule::GetNumVariables() const noexcept
     return this->m_globals.size();
 }
 
-IRGlobalVariable* IRModule::AddVariable(const std::string& name, std::shared_ptr<const IRType> type)
+IRGlobalVariable* IRModule::AddVariable(const std::string& name, std::shared_ptr<const IRType> type, bool isExtern)
 {
     if (this->m_globalMap.find(name) != this->m_globalMap.end()) return nullptr;
 
     this->m_globals.push_back(std::make_unique<IRGlobalVariable>(
         name,
-        type
+        type,
+        isExtern
     ));
     this->m_globalMap[name] = this->m_globals.back().get();
     this->m_globalMap[name]->SetParent(this);
@@ -105,4 +108,70 @@ void IRModule::RemoveVariable(IRGlobalVariable* globalVar)
 void IRModule::AddConstant(std::unique_ptr<IRBaseValue> constant)
 {
     this->m_constants.push_back(std::move(constant));
+}
+
+const std::vector<std::unique_ptr<IRBaseValue>>& IRModule::GetConstants() const noexcept
+{
+    return this->m_constants;
+}
+
+const std::vector<std::string>& IRModule::GetExports() const
+{
+    return this->m_exportedSymbols;
+}
+
+const std::vector<std::string>& IRModule::GetImports() const
+{
+    return this->m_externSymbols;
+}
+
+void IRModule::AddExport(const std::string& exportable)
+{
+    this->m_exportedSymbols.push_back(exportable);
+}
+
+void IRModule::AddImport(const std::string& importable)
+{
+    this->m_externSymbols.push_back(importable);
+}
+
+void IRModule::SetPrimaryModule()
+{
+    this->m_isPrimaryModule = true;
+}
+
+bool IRModule::IsPrimaryModule() const
+{
+    return this->m_isPrimaryModule;
+}
+
+void IRModule::AddDeferredGlobalInit(const std::string& target, const std::string& source)
+{
+    this->m_deferredGlobalInits.emplace_back(target, source);
+}
+
+void IRModule::RemoveDeferredGlobalInit(const std::string& name)
+{
+    this->m_deferredGlobalInits.erase(
+        std::remove_if(this->m_deferredGlobalInits.begin(), this->m_deferredGlobalInits.end(),
+            [&name](const std::pair<std::string, std::string>& p)
+            {
+                return p.first == name || p.second == name;
+            }),
+        this->m_deferredGlobalInits.end());
+}
+
+const std::vector<std::pair<std::string, std::string>>& IRModule::GetDeferredGlobalInits() const noexcept
+{
+    return this->m_deferredGlobalInits;
+}
+
+void IRModule::AddRequiredLibrary(const std::string& libName)
+{
+    this->m_requiredLibraries.insert(libName);
+}
+
+const std::set<std::string>& IRModule::GetRequiredLibraries() const noexcept
+{
+    return this->m_requiredLibraries;
 }

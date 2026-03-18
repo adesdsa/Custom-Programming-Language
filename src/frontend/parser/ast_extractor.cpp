@@ -1,4 +1,9 @@
 #include "includes/frontend/parser/ast_extractor.h"
+#include "includes/frontend/parser/command.h"
+#include "includes/frontend/tokenizer/token.h"
+
+#include <cstdlib>
+#include <cctype>
 
 const std::string& ASTExtractor::ExtractVarName(ASTNode* varDecNode)
 {    
@@ -35,9 +40,81 @@ Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)
         if (val == "var") return Scope::VAR;
         if (val == "let") return Scope::LET;
         if (val == "global") return Scope::GLOBAL;
+        if (val == "export") return Scope::EXPORT;
     }
     
     return Scope::LET;  // Default scope
+}
+
+std::optional<size_t> ASTExtractor::ExtractArraySize(ASTNode* arrayDeclNode)
+{
+    if (!arrayDeclNode || arrayDeclNode->command.GetType() != CommandTypes::ARRAY_DECLARATION)
+    {
+        return std::nullopt;
+    }
+
+    const auto& params = arrayDeclNode->command.GetParams();
+    if (params.empty()) 
+    {
+        return std::nullopt;
+    }
+
+    const Command& sizeParam = params[0];
+    const auto& tokens = sizeParam.GetTokens();
+
+    // Only accept a single integer literal (e.g. "10")
+    for (const Token& token : tokens)
+    {
+        if (token.GetType() != TokenTypes::VALUE)
+        {
+            return std::nullopt;  // Non-value token (e.g. operator) -> not a simple literal
+        }
+    }
+    if (tokens.size() != 1)
+    {
+        return std::nullopt;  // "2+3" or "3, 2" would have multiple tokens
+    }
+
+    const std::string& val = tokens[0].GetValue();
+    if (val.empty()) return std::nullopt;
+    
+    const char* p = val.c_str();
+    for (; *p && std::isdigit(static_cast<unsigned char>(*p)); p++) {}
+    if (*p != '\0')
+    {
+        return std::nullopt;  // Non-integer (e.g. "10.5")
+    }
+    unsigned long long n = std::strtoull(val.c_str(), nullptr, 10);
+    if (n <= SIZE_MAX)
+    {
+        return static_cast<size_t>(n);
+    }
+    return std::nullopt;
+}
+
+std::optional<size_t> ASTExtractor::ExtractArraySizeFromInitializer(ASTNode* arrayDeclNode)
+{
+    if (!arrayDeclNode) return std::nullopt;
+
+    ASTNode* assignNode = arrayDeclNode->nodeNextSibling;
+    if (!assignNode) return std::nullopt;
+
+    if (assignNode->command.GetType() != CommandTypes::ASSIGNMENT) return std::nullopt;
+
+    ASTNode* arrayValueNode = assignNode->nodeNextSibling;
+    if (!arrayValueNode) return std::nullopt;
+    if (arrayValueNode->command.GetType() != CommandTypes::ARRAY_VALUE)
+    {
+        return std::nullopt;
+    }
+
+    const auto& params = arrayValueNode->command.GetParams();
+    size_t count = params.size();
+    if (count == 0 || count > SIZE_MAX)
+    {
+        return std::nullopt;
+    }
+    return count;
 }
 
 Type ASTExtractor::ExtractFuncReturnType(ASTNode* funcDecNode)
@@ -82,12 +159,14 @@ const std::vector<VarMetaData> ASTExtractor::ExtractFuncParams(
             Type paramType = ExtractVarType(child);
             AccessRights paramAccess = ExtractVarAccessRight(child);
             
+            Scope paramScope = ExtractVarScope(child);
             params.push_back(
                 varFactory.CreateVarMetadata(
                     paramName,
                     paramType,
                     paramAccess,
-                    Scope::LET  // params are local
+                    paramScope,
+                    std::nullopt
                 )
             );
         }
@@ -115,6 +194,8 @@ std::optional<Type> ASTExtractor::StringToType(std::string_view type)
     if (type == "bool") return Type::BOOL_TYPE;
     if (type == "int") return Type::INT_TYPE;
     if (type == "double") return Type::DOUBLE_TYPE;
+    if (type == "char") return Type::CHAR_TYPE;
+    if (type == "string") return Type::STRING_TYPE;
 
     return std::nullopt;  // Unknown/unsupported type
 }

@@ -1,0 +1,19 @@
+ArrayBuiltinsIntegrationTest.CompileAndRunArrayTest 0 0
+IRTest.HappyFlowSmallCodeExample 3 0.0074587
+IRTest.HappyFlowFullProgram 3 0.0247173
+OptimizationTest.ConstantFoldingHappyFlow 3 0.00475717
+OptimizationTest.ConstantFoldingNegativeFlow 3 0.00461853
+OptimizationTest.DCEHappyFlow 3 0.006599
+OptimizationTest.DCENegativeFlow 3 0.00465333
+LexerTest.EmptyInput 3 0.00481703
+LexerTest.OnlyTriviaTokens 3 0.0048957
+LexerTest.SmallCodeExample 3 0.00642987
+LexerTest.FullProgram 3 0.0206551
+ParserTest.HappyFlowSmallCodeExample 3 0.0083195
+ParserTest.HappyFlowFullProgram 3 0.0210753
+ParserTest.NegativeFlowSyntaxErrors 3 0.0300286
+SemanticAnalysisTest.HappyFlowSmallCodeExample 3 0.00693813
+SemanticAnalysisTest.HappyFlowFullProgram 3 0.0239187
+SemanticAnalysisTest.NegativeFlowSemanticErrors 3 0.0325663
+---
+ArrayBuiltinsIntegrationTest.CompileAndRunArrayTest

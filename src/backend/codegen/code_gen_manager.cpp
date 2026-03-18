@@ -1,25 +1,48 @@
 #include "includes/backend/codegen/code_gen_manager.h"
+#include "includes/shared/utils/string_utils.hpp"
 
-CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST) :
+CodeGenManager::CodeGenManager(const DecoratedAST& decoratedAST, const CompilerOptions& options) :
     m_decoratedAST(decoratedAST),
+    m_options(options),
     m_errorManager(ErrorManager::GetInstance())
 {}
 
-void CodeGenManager::MainFlow()
+std::string CodeGenManager::MainFlow()
 {
     IRGenerator irGenerator(this->m_decoratedAST);
     IRModule& irProgram = irGenerator.MainFlow();
 
-    OptimizationManager optimizationManager;
-    optimizationManager.MainFlow(irProgram);
+    if (this->m_options.optimizationLevel > 0)
+    {
+        OptimizationManager optimizationManager;
+        optimizationManager.MainFlow(irProgram);
+    }
 
-    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable);
+    this->m_requiredLibraries = irProgram.GetRequiredLibraries();
+
+    std::string outputName = StringUtils::ToNarrow(this->m_options.outputFileName);
+    std::string outputDir  = StringUtils::ToNarrow(this->m_options.outputDir);
+
+    ASMGenerator asmGenerator(irProgram, this->m_decoratedAST.funcTable, outputName, outputDir);
     std::string asmFilePath = asmGenerator.MainFlow();
 
-    Assembler assembler;
-    std::string objectFilePath = assembler.Mainflow(asmFilePath, "out");
+    if (this->m_options.stopAtAsm)
+    {
+        return asmFilePath;
+    }
 
-    Linker linker;
-    std::string executableFilePath = linker.MainFlow(objectFilePath);
-    /// @todo handle output
+    Assembler assembler;
+    std::string objectFilePath = assembler.Mainflow(asmFilePath, outputName, outputDir);
+
+    if (!this->m_options.saveTemps)
+    {
+        std::filesystem::remove(asmFilePath);
+    }
+
+    return objectFilePath;
+}
+
+const std::set<std::string>& CodeGenManager::GetRequiredLibraries() const noexcept
+{
+    return this->m_requiredLibraries;
 }

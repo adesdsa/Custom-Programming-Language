@@ -24,6 +24,7 @@ if "%COMMAND%"=="" set "COMMAND=help"
 :: available commands
 if /i "%COMMAND%"=="run" goto :run
 if /i "%COMMAND%"=="test" goto :test
+if /i "%COMMAND%"=="test32" goto :test32
 if /i "%COMMAND%"=="release" goto :release
 if /i "%COMMAND%"=="rebuild" goto :rebuild
 if /i "%COMMAND%"=="help" goto :help
@@ -63,7 +64,7 @@ goto :eof
 :test
 call :logo
 echo.
-echo   ^>^> Configuring Debug Build
+echo   ^>^> Configuring Debug Build (win64)
 echo.
 cmake --preset debug
 echo.
@@ -74,6 +75,24 @@ echo.
 echo   ^>^> Running Tests
 echo.
 ctest --test-dir "%BUILD_DIR%" -C Debug --output-on-failure
+goto :eof
+
+:: test32 command implementation (Win32)
+:test32
+call :logo
+echo.
+echo   ^>^> Configuring Debug Build (win32)
+echo.
+set "BUILD_DIR32=%~dp0build32"
+cmake --preset debug32
+echo.
+echo   ^>^> Building Debug
+echo.
+cmake --build "%BUILD_DIR32%" --config Debug
+echo.
+echo   ^>^> Running Tests
+echo.
+ctest --test-dir "%BUILD_DIR32%" -C Debug --output-on-failure
 goto :eof
 
 :: release command implementation
@@ -187,7 +206,10 @@ echo.
 echo   run [args]     Build debug and run the executable
 echo                  Example: picoc run input.txt
 echo.
-echo   test           Build with tests and run all unit tests
+echo   test           Build with tests and run all unit tests (win64)
+echo.
+echo   test32         Build and run tests for Win32 (x86)
+echo                  Requires VCPKG_ROOT set
 echo.
 echo   release        Build optimized release version
 echo.

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>  // gtest FrameWork
+#include <string>
 
 #include "includes/frontend/parser/parser_logic.h"
 #include "includes/shared/utils/tests_utils.h"
@@ -7,7 +8,7 @@
 // TEST: Happy Flow - Single function
 TEST(ParserTest, HappyFlowSmallCodeExample) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/small_code_example_file.picoc"));
     const AST& ast = parser.MainFlow();
     ASTNode* result_ast = ast.GetRoot();
 
@@ -61,24 +62,32 @@ TEST(ParserTest, HappyFlowSmallCodeExample)
 // TEST: Happy Flow - main function + other function and logic
 TEST(ParserTest, HappyFlowFullProgram) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.picoc"));
     const AST& ast = parser.MainFlow();
     ASTNode* result_ast = ast.GetRoot();
 
 
     ASSERT_NE(result_ast, nullptr);  // Check that AST root exists
 
-    // Initialize helper pointers
+    // Skip any leading import statements (file may start with import { ... } from "...")
     ASTNode* currentNextSibling = result_ast;
     ASTNode* astPtr = result_ast;
+    while (astPtr != nullptr && astPtr->command.GetType() == CommandTypes::IMPORT_STATEMENT)
+    {
+        ASTNode* next = astPtr->nodeNextSibling;
+        if (next == nullptr) break;
+        currentNextSibling = next;
+        astPtr = next;
+    }
+    ASSERT_NE(astPtr, nullptr) << "Expected a non-import top-level node after skipping imports";
+    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION)
+        << "First non-import node should be FINISHED_FUNC_DECLARATION (full program has import then func decl)";
 
     /*
     FINISHED_FUNC_DECLARATION (displayAllPrimeNumbersInRange)
         VAR_DECLARATION (low)
         VAR_DECLARATION (high)
     */
-    EXPECT_EQ(astPtr->command.GetType(), CommandTypes::FINISHED_FUNC_DECLARATION);
-
     astPtr = currentNextSibling->nodeFirstChild;
     EXPECT_EQ(astPtr->command.GetType(), CommandTypes::VAR_DECLARATION);
     EXPECT_EQ(astPtr->nodeNextSibling->command.GetType(), CommandTypes::VAR_DECLARATION);
@@ -535,6 +544,6 @@ TEST(ParserTest, HappyFlowFullProgram)
 // TEST: Negative Flow - Code with syntax errors
 TEST(ParserTest, NegativeFlowSyntaxErrors) 
 {
-    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test6.txt"));
+    ParserLogic parser(SystemUtils::BuildRelativePath(L"tests/inputs/test6.picoc"));
     EXPECT_THROW(parser.MainFlow(), CompilationAbortException);
 }

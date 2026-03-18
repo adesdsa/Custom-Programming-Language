@@ -1,0 +1,42 @@
+#pragma once
+
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <optional>
+
+#include "includes/shared/common/common_consts.h"
+
+struct ExportedVar 
+{
+    std::string name;
+    Type type;
+    AccessRights accessRights;
+    std::optional<size_t> arraySize;  // When set, variable is an array of this many elements
+};
+
+struct ExportedFunc 
+{
+    std::string name;
+    Type returnType;
+    std::vector<ExportedVar> params;
+};
+
+struct FileExportTable 
+{
+    std::string filePath;
+    std::string fileName;
+    std::vector<ExportedFunc> functions;
+    std::vector<ExportedVar> exportedVars;
+};
+
+/// @brief Holds all exported variables and functions from files 
+/// that can be shared via import
+class ProjectSymbolTable 
+{
+    std::unordered_map<std::string, FileExportTable> files;
+
+public:
+    void Register(const std::string& fileName, FileExportTable table);
+    const FileExportTable* Resolve(const std::string& fileName) const;
+};

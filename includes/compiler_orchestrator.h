@@ -3,12 +3,16 @@
 #include <vector>
 #include <string>
 #include <exception>
-#include <cstring>
+#include <thread>
 
+#include "includes/driver/compiler_options.h"
 #include "includes/shared/utils/system_utils.h"
+#include "includes/shared/utils/thread_pool.h"
 #include "includes/frontend/parser/parser_logic.h"
+#include "includes/frontend/parser/export_collector.h"
 #include "includes/frontend/semantic_analysis/semantic_analysis_logic.h"
 #include "includes/backend/codegen/code_gen_manager.h"
+#include "includes/backend/linker/linker.h"
 
 // Manager of all compilers components.
 // performs the complete compiling process.             
@@ -20,55 +24,75 @@
 class CompilerOrchestrator
 {
 public:
-    // constructor using Command Line Arguments
-    CompilerOrchestrator(int argc, const char* argv[]);
+    /// @brief Construct the orchestrator with pre-parsed compiler options.
+    /// Any UI (CLI, GUI, etc.) should build a CompilerOptions, validate it,
+    /// and pass it here.
+    explicit CompilerOrchestrator(CompilerOptions options);
 
     /*****************************************************************************
-     * @brief Runs Whole Compiler's Pipeline:                                    |
+     * @brief Runs the complete compilation pipeline.                            |
      *                                                                           |
-     * This method performs the complete compiling process.                      |
-     * Takes input source files and compilation flags, and produces a native     |
-     * executable:                                                               |
-     *  - PE (.exe) on Windows                                                   |
-     *  - ELF on Linux                                                           |
+     * Calls Init() first, then for each source file:                            |
      *                                                                           |
-     * 1. @param Request from UI'S (CLI/GUI) with project files paths & flags    |                                                                       |
-     *    @brief Deserializer of request                                         |
-     *    @return List of all files paths &                                      |
-     *      Map - Key: Flag, Value: It's arguments list (if any)                 |
+     * 1. Lexer + Parser  (@see includes/frontend/parser)                        |
+     *    @param  file_path  Absolute path to a .picoc source file               |
+     *    @return AST                                                            |
      *                                                                           |
-     * 2. For each file:                                                         |
+     * 2. Semantic Analysis  (@see includes/frontend/semantic_analysis)           |
+     *    @param  AST                                                            |
+     *    @return DecoratedAST (AST + VarTable Tree + FuncTable)                 |
      *                                                                           |
-     * 2.1. @param file_path                                                     |
-     *      @brief Parse & Syntax Checker, @see includes/parser                  |                                        |
-     *      @return AST                                                          |
+     * 3. IR Generation + Optimization  (@see includes/backend/codegen)          |
+     *    @param  DecoratedAST                                                   |
+     *    @return Optimized IR -> x86 .asm file                                  |
      *                                                                           |
-     * 2.2 @param AST                                                            |
-     *     @brief Semantic Analysis, @see includes/semantic_analysis             |
-     *     @return Decorated AST - AST + VarTable Tree + FuncTable               |                                                          |
+     * 4. Assembler (NASM)                                                       |
+     *    @param  .asm file                                                      |
+     *    @return .obj file                                                      |
      *                                                                           |
-     * 2.3 @param Decorated AST - @see step 2.2                                  |
-     *     @brief Intermediate Representation - Optimization & Define RunTime    |
-     *     @return x86 .asm file                                                 |
-     *                                                                           |
-     * 2.4 @param x86 .asm file                                                  |
-     *     @brief Assembler via NASM API                                         |
-     *     @return .o file                                                       |
-     *     @note After this part we finished compiling file. @see step 2         |                                                    |
-     *                                                                           |
-     * 3.  @param All .o files got from step 2                                   |
-     *     @brief Linker, static part                                            |
-     *     @return On Windows - .exe file, On Linux: ELF executable file         |
-     *     @note Windows & Linux have diffrent executables files                 |
+     * 5. Linker                                                                 |
+     *    @param  All .obj files from step 4                                     |
+     *    @return Native executable                                              |
+     *      - PE  (.exe) on Windows                                              |
+     *      - ELF on Linux                                                       |
      ****************************************************************************/
     void MainFlow();
 
-    // TODO: Replace this method logic with Desrializer class call
-    // @brief Desrialize input file path into wstring file path.
-    // @param argc & argv: Command Line Arguments.
-    // @return Encoded file path as wstring.
-    std::wstring DesriralizeCLI(int argc, const char* argv[]);
-
 private:
-    std::wstring m_filePath;
+    CompilerOptions m_options;
+
+    /**
+     * @brief Setup Compiler Orchestrator values
+     */
+    void Init();
+
+    /// @brief Parse all input source files into ASTs.
+    void ParseSourceFiles(
+        std::vector<std::unique_ptr<ParserLogic>>& parsers,
+        std::vector<const AST*>& asts);
+
+    /// @brief Build the import graph and detect circular dependencies via DFS.
+    /// @return true if a cycle was found (error already stored).
+    bool DetectCircularImports(
+        const std::vector<const AST*>& asts
+    ) const;
+
+    /// @brief Walk each AST and register exported symbols in the project table.
+    ProjectSymbolTable CollectProjectExports(
+        const std::vector<const AST*>& asts
+    ) const;
+
+    /// @brief Run semantic analysis + code generation for every source file.
+    void AnalyzeAndGenerate(
+        const std::vector<const AST*>& asts,
+        const ProjectSymbolTable& projectSymbols,
+        std::vector<std::string>& artifactPaths,
+        std::set<std::string>& requiredLibraries
+    );
+
+    /// @brief Link all object files (user artifacts + stdlib) into the final executable.
+    void LinkExecutable(
+        std::vector<std::string>& artifactPaths,
+        const std::set<std::string>& requiredLibraries
+    );
 };

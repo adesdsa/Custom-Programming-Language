@@ -47,20 +47,13 @@ public:
     IRModule& MainFlow();
 
 private:
-    /**********************\
-    |        Utils         |
-    \**********************/
+
     EntityLogger m_IRLogger;
     ErrorManager& m_errorManager;
 
-    /**********************\
-    |        Jobs          |
-    \**********************/
     ASTIterator m_astIterator;
-    IRVisitor m_irVisitor;  // generate each node into ir
 
-    /**********************\
-    |        Output        |
-    \**********************/
-    IRModule m_irMoudle;  // the entire ir program
+    IRModule m_irMoudle;  // the entire ir program (must be declared before m_irVisitor)
+
+    IRVisitor m_irVisitor;
 };

@@ -51,6 +51,7 @@ public:
 
 private:
     // infrastructures
+    std::filesystem::path m_filePath;
     EntityLogger m_entityLogger;
     ErrorManager& m_errorManager;
 

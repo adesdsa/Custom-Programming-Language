@@ -55,7 +55,7 @@ void AST::StoreFullCommand(const FullCommand& fullCommand)
             prevSibling->nodeNextSibling = node;
         }
 
-        if(command.HasParams())
+        if(command.HasParams() && command.GetType() != CommandTypes::IMPORT_STATEMENT)
         {
             this->StoreParams(node, command);
         }

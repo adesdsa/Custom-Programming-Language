@@ -1,6 +1,7 @@
 #include "includes/shared/utils/tests_utils.h"
 
-#include <gtest/gtest.h>  // gest FrameWork
+#include <algorithm>
+#include <gtest/gtest.h>  // gtest FrameWork
 
 namespace TestsUtils
 {
@@ -31,11 +32,25 @@ namespace TestsUtils
 
             Token token = std::move(*optToken);
 
-            if (token.GetType() != TokenTypes::EOF_TOKEN)
+            if (token.GetType() != TokenTypes::EOF_TOKEN &&
+                token.GetType() != TokenTypes::TRIVIA &&
+                token.GetType() != TokenTypes::UNFINISHED_TRIVIA)
             {
                 tokens.push_back(token);
             }
         }
+        return tokens;
+    }
+
+    std::vector<Token> FilterTrivia(std::vector<Token> tokens)
+    {
+        tokens.erase(
+            std::remove_if(tokens.begin(), tokens.end(),
+                [](const Token& t) {
+                    return t.GetType() == TokenTypes::TRIVIA ||
+                           t.GetType() == TokenTypes::UNFINISHED_TRIVIA;
+                }),
+            tokens.end());
         return tokens;
     }
 

@@ -39,7 +39,8 @@ enum class EntranceKind
 {
     entry,
     exit,
-    condition
+    condition,
+    latch  // for loops jump here if continue is called
 };
 enum class BlockKind
 {
@@ -57,6 +58,7 @@ struct ExprItem
     Operators op;           // operator after this value
     bool signage;
     bool floatness;
+    bool isString;          // true if value is string (literal, variable, or string-returning func)
     size_t notCnt;          // how many `not` applied before this value
 };
 
@@ -84,6 +86,7 @@ class IRVisitor : public IASTVisitor
     std::vector<std::unique_ptr<IRBaseValue>> DumpConstants() noexcept;
 
     void VisitVarDeclaration(ASTNode* node) override;
+    void VisitArrayDeclaration(ASTNode* node) override;
     void VisitExpression(ASTNode* node) override;
     void VisitIdentifier(ASTNode* node) override;
     void VisitIdentifierValue(ASTNode* node) override;
@@ -103,8 +106,11 @@ class IRVisitor : public IASTVisitor
     void VisitEndOfCommand(ASTNode* node) override;
     void VisitSizeof(ASTNode* node) override;
     void VisitVoidCommand(ASTNode* node) override;
+    void VisitImportStatement(ASTNode* node) override;
     void VisitPass(ASTNode* node) override;
     void VisitEof(ASTNode* node) override;
+    void VisitArrayAccess(ASTNode* node) override;
+    void VisitArrayValue(ASTNode* node) override;
 
 private:
     /**********************\
@@ -139,6 +145,7 @@ private:
     size_t m_bodyCnt;
     size_t m_exitCnt;
     size_t m_mergeCnt;
+    size_t m_latchCnt;
 
     /**********************\
     |  Control Flow Fields |
@@ -158,6 +165,10 @@ private:
     std::stack<std::unique_ptr<BasicBlock>> m_conditionMergeBlocks;
     /// @brief Saves the next exit block that is initialized at next '}' node.
     std::stack<std::unique_ptr<BasicBlock>> m_nextExitBlocks;
+    /// @brief Target block for 'continue': for-loops latch (increment), while-loops, condition.
+    std::stack<BasicBlock*> m_continueTargets;
+    /// @brief For-loop latch blocks (hold the increment code); created in VisitFor, added to function in VisitBlockEnd.
+    std::stack<std::unique_ptr<BasicBlock>> m_forLatchBlocks;
     /// @brief The current index of the varTable.
     std::stack<size_t> m_varTableIndex;
 
@@ -173,6 +184,12 @@ private:
     bool m_expectedReturnValue;
     bool m_expectedAssignment;
 
+    bool m_indexedAssignment;
+    bool m_slicedAssignment;
+    bool m_chainedIndexedAssignment;  /// arr[i][0] = 'a' — base is expression, not var
+    bool m_lastExprWasString;
+    Command m_pendingIndexCommand;
+
     bool m_returnedAlready;
     /// @brief This is used to flag that we already handled the insides:
     /// e.g. let's say we had an if statement we had to run the expression inside it at the VisitIf
@@ -185,6 +202,7 @@ private:
     \**********************/
     /// @brief The func transforms a normal Type into an IRType object.
     std::shared_ptr<const IRType> TypeToIRType(Type type);
+    std::shared_ptr<const IRType> TypeToIRType(Type type, std::optional<size_t> arraySize);
     std::shared_ptr<const IRType> TypeToIRType(const std::string& type);
 
     /// @brief The func transforms a const value (e.g. 1, -3.4 true) into an IRConstValue
@@ -234,6 +252,12 @@ private:
     /// @return The IRBaseValue that holds the last value of the expression.
     IRBaseValue* HandleExpression(Command command);
 
+    /// @brief Handles string index access str[i] by lowering to char_at(str, i).
+    IRBaseValue* HandleArrayAccess(const Command& command);
+
+    /// @brief Handles string slice access str[a:b] by lowering to substr(str, a, b-a).
+    IRBaseValue* HandleArraySlice(const Command& command);
+
     /// @brief The func creates a corresponding labelName for each nameless block.
     /// @see EntranceKind for more info
     std::string GetCorrespondingLabel(BlockKind blockKind, EntranceKind entryKind);
@@ -268,6 +292,10 @@ private:
     /// @param notCnt Number of consecutive 'not' tokens seen immediately before value.
     /// @return New IRBaseValue* after applying the nots, or nullptr on error.
     IRBaseValue* ApplyNotIfNeeded(IRBaseValue* value, size_t notCnt);
+
+    /// @brief Insert an implicit FPToSI or SIToFP conversion when the value
+    ///        type doesn't match the target variable type.
+    IRBaseValue* ConvertIfNeeded(IRBaseValue* value, std::shared_ptr<const IRType> targetType);
 
     /// @brief Collect tokens from a command into a flat vector of ExprItem.
     /// @details This routine handles parentheses recursively: when a '(' is

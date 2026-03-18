@@ -1,4 +1,5 @@
 #include "includes/frontend/semantic_analysis/func_table.h"
+#include "includes/shared/common/builtin_library.h"
 
 FuncMetaData* FuncTable::FindFunctionByName(const std::string& funcName) const
 {
@@ -47,22 +48,29 @@ FuncTable::GetAllFunctions() const noexcept
 void FuncTable::RegisterBuiltins()
 {
     // guard: only register once
-    if (this->FindFunctionByName("println")) return;
+    if (this->m_builtinsRegistered) return;
+    this->m_builtinsRegistered = true;
 
-    // println(value: int) -> void
-    std::vector<VarMetaData> printlnParams = {
-        VarMetaData("value", Type::INT_TYPE, AccessRights::DEFAULT_ACCESS, Scope::LET, 0)
-    };
-    FuncMetaData printlnFunc(
-        this->m_entityLogger,
-        "println",
-        Type::VOID_TYPE,
-        printlnParams,
-        0, 0,  // no source location (built-in)
-        nullptr // no scope root (built-in)
-    );
-    printlnFunc.SetDefined(); // mark as defined so the linker check passes
-    this->InsertFunction(std::move(printlnFunc));
+    // Register arraylib and string builtins so semantic analysis can resolve them
+    for (const std::string& libName : { "arraylib", "string" })
+    {
+        const BuiltinLibrary* lib = BuiltinLibraryRegistry::GetLibrary(libName);
+        if (!lib) continue;
+        for (const BuiltinFunction& bf : lib->functions)
+        {
+            if (this->FindFunctionByName(bf.name)) continue;
+            FuncMetaData meta(
+                this->m_entityLogger,
+                bf.name,
+                bf.returnType,
+                bf.params,
+                0, 0,
+                nullptr
+            );
+            meta.SetDefined();
+            this->InsertFunction(std::move(meta));
+        }
+    }
 
     this->m_entityLogger.Info("Registered built-in functions");
 }

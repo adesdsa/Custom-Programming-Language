@@ -1,4 +1,8 @@
 #include "includes/backend/codegen/asm/base_emitter.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
+#include <set>
 
 BaseEmitter::BaseEmitter(const FuncTable& funcTable) :
     m_funcTable(funcTable),
@@ -9,12 +13,52 @@ std::string BaseEmitter::Emit(const IRModule& module)
 {
     std::ostringstream out;
 
-    out << EmitHeader();
+    out << EmitHeader(module);
+    EmitExternAndGlobalDirectives(module, out);
     EmitDataSection(module, out);
     EmitBssSection(module, out);
     EmitTextSection(module, out);
 
     return out.str();
+}
+
+std::string BaseEmitter::MangledName(const std::string& name) const
+{
+    return name; // default: no mangling
+}
+
+void BaseEmitter::EmitExternAndGlobalDirectives(const IRModule& module, std::ostream& out)
+{
+    std::set<std::string> exportedNames(module.GetExports().begin(), module.GetExports().end());
+
+    for (const auto& symbol : module.GetExports())
+    {
+        out << "global " << MangledName(symbol) << "\n";
+    }
+
+    std::set<std::string> emittedExterns;
+    for (const auto& symbol : module.GetImports())
+    {
+        out << "extern " << MangledName(symbol) << "\n";
+        emittedExterns.insert(symbol);
+    }
+
+    for (const auto& func : module.GetFunctions())
+    {
+        const std::string& name = func->GetName();
+        if (func->GetNumBasicBlocks() == 0 &&
+            emittedExterns.count(name) == 0 &&
+            exportedNames.count(name) == 0)
+        {
+            out << "extern " << MangledName(name) << "\n";
+            emittedExterns.insert(name);
+        }
+    }
+
+    if (!module.GetExports().empty() || !emittedExterns.empty())
+    {
+        out << "\n";
+    }
 }
 
 void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
@@ -24,14 +68,49 @@ void BaseEmitter::EmitDataSection(const IRModule& module, std::ostream& out)
 
     for (const auto& globalVar : module.GetVariables())
     {
-        if (globalVar.get()->GetInitializer())
+        if (globalVar->IsExtern()) continue;
+
+        if (globalVar->HasArrayInitializer())
+        {
+            int elemSize = GetTypeSize(globalVar->GetType()->GetElementType());
+            out << Indent() << MangledName(globalVar->GetName()) << ": ";
+            out << GetDataDirective(elemSize) << " ";
+            out << globalVar->GetArrayInitializerString() << "\n";
+        }
+        else if (globalVar->GetInitializer())
         {
             int varSize = GetTypeSize(globalVar->GetType());
-            out << Indent() << globalVar->GetName() << ": ";
+            out << Indent() << MangledName(globalVar->GetName()) << ": ";
             out << GetDataDirective(varSize) << " ";
             out << globalVar->GetInitializerString() << "\n";
         }
     }
+
+    for (const auto& constant : module.GetConstants())
+    {
+        if (auto* stringLiteral = dynamic_cast<const IRConstantString*>(constant.get()))
+        {
+            out << Indent() << stringLiteral->GetLabel() << " db ";
+            const std::string& val = stringLiteral->GetValue();
+            for (size_t i = 0; i < val.size(); ++i)
+            {
+                if (i > 0) out << ", ";
+                unsigned char ch = static_cast<unsigned char>(val[i]);
+                if (ch >= 32 && ch < 127 && ch != '"' && ch != '\\' && ch != '\'')
+                {
+                    // printable ASCII
+                    out << "'" << val[i] << "'";
+                }
+                else
+                {
+                    // emit as numeric byte (handles \n, \t, etc.)
+                    out << static_cast<int>(ch);
+                }
+            }
+            out << ", 0\n"; // null terminator
+        }
+    }
+
     out << "\n";
     out << "\n";
 }
@@ -43,14 +122,19 @@ void BaseEmitter::EmitBssSection(const IRModule& module, std::ostream& out)
     
     for (const auto& global : module.GetVariables())
     {
-        if (!global.get()->GetInitializer())
+        if (global->IsExtern()) continue;
+
+        if (!global->GetInitializer() && !global->HasArrayInitializer())
         {
             int size = GetTypeSize(global->GetType());
-            out << Indent() << global->GetName() << ": ";
-            /// @note we only save scalar (no arrays) so only 1 count is needed
-            out << GetReserveDirective(size) << " 1\n";
+            out << Indent() << MangledName(global->GetName()) << ": ";
+            if (size > 8)
+                out << "resb " << size << "\n";  // Arrays: reserve exact byte count
+            else
+                out << GetReserveDirective(size) << " 1\n";
         }
     }
+    EmitExtraBssContent(module, out);
     out << "\n";
     out << "\n";
 }
@@ -60,7 +144,7 @@ void BaseEmitter::EmitTextSection(const IRModule& module, std::ostream& out)
     out << GetSectionDirective(SectionType::TEXT);
     out << "\n";
     
-    EmitStart(out);
+    EmitStart(module, out);
     out << "\n";
     
     for (const auto& func : module.GetFunctions())
@@ -81,8 +165,9 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
     if (func->GetNumBasicBlocks() == 0) return;
     this->m_currentFunc = func;
 
-    // function label
-    out << func->GetName() << ":\n";
+    // function label (mangled for the target platform)
+    out << MangledName(func->GetName()) << ":\n";
+    EmitAfterFunctionLabel(func, out);
 
     int frameSize = funcMetadata->ComputeFrameSize();
     EmitPrologue(func, frameSize, out);
@@ -92,7 +177,7 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
         EmitBasicBlock(block.get(), out);
     }
     
-    out << this->m_currentFunc->GetName() << ".func_epilogue:\n";
+    out << MangledName(this->m_currentFunc->GetName()) << ".func_epilogue:\n";
     EmitEpilogue(out);
     this->m_currentFunc = nullptr;
     out << "\n";
@@ -101,7 +186,7 @@ void BaseEmitter:: EmitFunction(const IRFunction* func, std::ostream& out)
 
 void BaseEmitter::EmitBasicBlock(const BasicBlock* block, std::ostream& out)
 {
-    out << this->m_currentFunc->GetName() << "." << block->GetLabel() << ":\n";
+    out << MangledName(this->m_currentFunc->GetName()) << "." << block->GetLabel() << ":\n";
 
     for (const auto& instr : block->GetInstructions())
     {
@@ -132,6 +217,9 @@ int BaseEmitter::GetTypeSize(std::shared_ptr<const IRType> type) const
 
     case IRTypeKind::Int8:
         return 1;
+
+    case IRTypeKind::Array:
+        return static_cast<int>(type->GetSizeInBytes());
     
     default: // Incase of error or void (shouldnt get here)
         return 0;

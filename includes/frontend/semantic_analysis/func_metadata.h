@@ -24,7 +24,8 @@ public:
         const std::vector<VarMetaData>& funcParams,
         size_t declarationLine,
         size_t declarationColumn,
-        VarTableNode* functionScopeRoot = nullptr
+        VarTableNode* functionScopeRoot = nullptr,
+        bool isExtern = false
     );
     ~FuncMetaData() = default;
 
@@ -42,6 +43,7 @@ public:
     const std::vector<VarMetaData>& GetFuncParams() const noexcept;
     bool IsFuncDefined() const noexcept;
     bool IsFuncDeclared() const noexcept;
+    bool IsExtern() const noexcept;
     size_t GetDeclarationLine() const noexcept;
     size_t GetDeclarationColumn() const noexcept;
 
@@ -87,6 +89,7 @@ private:
     \******************/
     bool m_isDefined = false;
     bool m_isDeclared = false;
+    bool m_isExtern = false;
 
     /*****************\
     |  FUNCTION SIZE  |

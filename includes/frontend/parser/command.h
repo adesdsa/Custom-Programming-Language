@@ -30,6 +30,9 @@ namespace CommandTypes
     inline constexpr std::string_view ARRAY_VALUE                   = "ARRAY_VALUE";
     inline constexpr std::string_view IDENTIFIER_VALUE              = "IDENTIFIER_VALUE";   // IDENTIFIER call where the values is used
     inline constexpr std::string_view FINISHED_FUNC_DEFINITION      = "FINISHED_FUNC_DEFINITION";
+    inline constexpr std::string_view IMPORT_STATEMENT              = "IMPORT_STATEMENT";
+    inline constexpr std::string_view COMPOUND_ASSIGNMENT           = "COMPOUND_ASSIGNMENT";         // +=, -=, *=, /=, //=
+    inline constexpr std::string_view INCREMENT_DECREMENT           = "INCREMENT_DECREMENT";         // ++, --
 
 
     /// 
@@ -43,6 +46,9 @@ namespace CommandTypes
     inline constexpr std::string_view FINISHED_FUNC_DECLARATION     = "FINISHED_FUNC_DECLARATION";
     inline constexpr std::string_view FINISHED_FUNC_CALL            = "FINISHED_FUNC_CALL";
     inline constexpr std::string_view ARRAY_ACCESS                  = "ARRAY_ACCESS";
+    inline constexpr std::string_view ARRAY_SLICE                   = "ARRAY_SLICE";
+    inline constexpr std::string_view STRING_ARRAY_ACCESS           = "STRING_ARRAY_ACCESS";   // arr[i][j] for string[][]
+    inline constexpr std::string_view STRING_ARRAY_SLICE            = "STRING_ARRAY_SLICE";   // arr[i][j:k] for string[][]
     inline constexpr std::string_view ARRAY_DECLARATION             = "ARRAY_DECLARATION";
     inline constexpr std::string_view VAR_TYPE                      = "VAR_TYPE";           // int, bool...
 
@@ -78,6 +84,10 @@ namespace CommandTypes
     inline constexpr std::string_view NOT_FUNC_IDENTIFIER           = "NOT_FUNC_IDENTIFIER";
     inline constexpr std::string_view ARRAY_DECLARATION_START       = "ARRAY_DECLARATION_START";
     inline constexpr std::string_view ARRAY_VALUE_START             = "ARRAY_VALUE_START";
+    inline constexpr std::string_view IMPORT_START                  = "IMPORT_START";
+    inline constexpr std::string_view IMPORT_IDENTIFIER             = "IMPORT_IDENTIFIER";
+    inline constexpr std::string_view IMPORT_FINISH                 = "IMPORT_FINISH";
+    inline constexpr std::string_view IMPORT_FROM                   = "IMPORT_FROM";
 }
 
 // The class represents a set of Tokens that create the most basic Command.
@@ -101,6 +111,7 @@ public:
     std::string_view GetType() const;
     // The func returns the Token's of the Command.
     const std::vector<Token>& GetTokens() const;
+    std::vector<Token> GetTokensMutable() const;
     // Does the Command have parameters.
     bool HasParams() const noexcept;
     // Get the Command's parameters.
@@ -125,6 +136,8 @@ public:
     void SetExpression(bool indicator);
     // Set the a single Token as the Command.
     void SetValue(Token token);
+    // Set multiple tokens (e.g. for sub-expressions).
+    void SetTokens(std::vector<Token> tokens);
 
     // Operators
     Token& operator[](size_t index);
@@ -141,6 +154,7 @@ private:
     bool m_bFirstParanthesesEnter;          // Used to indicate if this is the first time we entered the parantheses
     int m_iParanthesesCounter;              // Used for counting how many parantheses we saw (that way for example we know when we finished getting all of the func's params(when the counter is 0)).
     size_t m_uParameterIndex;               // Saves the current parameter index.
+    size_t m_bSawColonInArrayBrackets;        // Counts if ":" was seen (required for slice; distinguishes from comma/semicolon).
     std::vector<CompileTimeError> m_errors;
 
 
@@ -156,21 +170,18 @@ private:
 
     // The func parses an ACCESS_RIGHTS CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseAccessRights(Token& currToken, Token& nextToken);
+    bool ParseAccessRights(Token& currToken);
 
     // The func parses a SCOPE CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseScope(Token& currToken, Token& nextToken);
+    bool ParseScope(Token& currToken);
 
     // The func parses an IDENTIFIER CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseIdentifier(Token& currToken, Token& nextToken);
+    bool ParseIdentifier(Token& currToken);
 
     // The func parses a FUNC_START CommandType.
     // @param currToken: The current Token we are adding.
@@ -180,9 +191,8 @@ private:
 
     // The func parses an FILLED_FUNC_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseFilledFuncDeclaration(Token& currToken, Token& nextToken);
+    bool ParseFilledFuncDeclaration(Token& currToken);
 
     // The func parses an ARROW_FUNC_DECLARATION CommandType.
     // @param currToken: The current Token we are adding.
@@ -198,9 +208,8 @@ private:
 
     // The func parses an ELIF_CALL, IF_CALL, WHILE_CALL or FOR_CALL CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseParameterKeywordCall(Token& currToken, Token& nextToken);
+    bool ParseParameterKeywordCall(Token& currToken);
 
     // The func parses an ELIF_START, IF_START etc CommandType.
     // @param currToken: The current Token we are adding.
@@ -210,9 +219,8 @@ private:
 
     // The func parses an EXPRESSION_VALUE CommandType.
     // @param currToken: The current Token we are adding.
-    // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseExpressionValue(Token& currToken, Token& nextToken);
+    bool ParseExpressionValue(Token& currToken);
 
     // The func parses an EXPRESSION_OPERATOR CommandType.
     // @param currToken: The current Token we are adding.
@@ -224,7 +232,7 @@ private:
     // @param currToken: The current Token we are adding.
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
-    bool ParseNotFuncIdentifier(Token& currToken, Token& nextToken);
+    bool ParseNotFuncIdentifier(Token& currToken);
 
     // The func parses an ARRAY_ACCESS_START CommandType.
     // @param currToken: The current Token we are adding.
@@ -243,6 +251,30 @@ private:
     // @param nextToken: The next Token we will add.
     // @return: True-> finished the Command. False-> otherwise.
     bool ParseArrayValueStart(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_START CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportStart(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_IDENTIFIER CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportIdentifer(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_FROM CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportFrom(Token& currToken, Token& nextToken);
+
+    // The func parses an IMPORT_FINISH CommandType.
+    // @param currToken: The current Token we are adding.
+    // @param nextToken: The next Token we will add.
+    // @return: True-> finished the Command. False-> otherwise.
+    bool ParseImportFinish(Token& currToken, Token& nextToken);
 
 
     ///
@@ -278,6 +310,16 @@ private:
     // @param token: The token we are checking.
     // @return: True-> the Token is an Access Right. False-> otherwise.
     bool IsAccessRights(Token& token);
+
+    // The func checks if the given token is an Assignment Operator.
+    // @param token: The token we are checking.
+    // @return: True-> the Token is an Assignment Operator. False-> otherwise.
+    bool IsAssignmentOperator(Token& token);
+
+    // The func checks if the given token is increment or decrement (++, --).
+    // @param token: The token we are checking.
+    // @return: True-> the Token is ++ or --. False-> otherwise.
+    bool IsIncrementDecrement(Token& token);
 
     // The func checks if the given token is a Scope.
     // @param token: The token we are checking.

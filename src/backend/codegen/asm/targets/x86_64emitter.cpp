@@ -1,4 +1,8 @@
 #include "includes/backend/codegen/asm/targets/x86_64emitter.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_constant_values/ir_constant_string.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_global_vars.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_instruction.h"
+#include "includes/backend/codegen/ir/ir_templates/ir_type.h"
 
 #include <cstring>
 
@@ -6,7 +10,15 @@ X86_64Emitter::X86_64Emitter(const FuncTable& funcTable) :
 X86BaseEmitter(funcTable)
 { }
 
-std::string X86_64Emitter::EmitHeader() const
+void X86_64Emitter::EmitExtraBssContent(const IRModule& module, std::ostream& out) const
+{
+    if (!module.IsPrimaryModule()) return;
+    out << "    heap_mem: resb 1048576\n";
+    out << "    heap_cur: resq 1\n";
+    out << "\n";
+}
+
+std::string X86_64Emitter::EmitHeader(const IRModule& module) const
 {
     std::ostringstream header;
 
@@ -22,21 +34,57 @@ std::string X86_64Emitter::EmitHeader() const
     {
         case OS::Linux:
             header << "default rel\n";
-            header << "global _start\n";
-            header << "extern main\n";
-            header << "extern exit\n\n";
+            if (module.IsPrimaryModule())
+            {
+                header << "global _start\n";
+                header << "global main\n";
+                header << "global heap_alloc\n\n";
+
+                header << "extern memcpy\n";
+            }
+            header << "extern println\n";
+            header << "extern println_bool\n";
+            header << "extern println_str\n";
+            header << "extern println_double\n";
+            header << "extern println_char\n";
+            header << "extern readln\n";
+            header << "extern read_int\n";
+            header << "extern read_double\n";
+            header << "extern heap_alloc\n\n";
+
+            header << "extern __println_bool_true\n";
+            header << "extern __println_bool_false\n";
+            header << "extern __println_newline\n";
+            header << "extern __println_minus\n";
+            header << "extern __println_dot\n\n";
             break;
 
         case OS::Windows:
-            header << "global mainCRTStartup\n";
-            header << "extern main\n";
-            header << "extern ExitProcess\n";
-            header << "extern printf\n";
-            header << "extern exit\n\n";
+            if (module.IsPrimaryModule())
+            {
+                header << "global mainCRTStartup\n";
+                header << "global main\n";
+                header << "global heap_alloc\n";
+                header << "extern ExitProcess\n";
+                header << "extern exit\n";
+                header << "extern memcpy\n\n";
+            }
+            header << "extern println\n";
+            header << "extern println_double\n";
+            header << "extern println_str\n";
+            header << "extern println_bool\n";
+            header << "extern println_char\n";
+            header << "extern readln\n";
+            header << "extern read_int\n";
+            header << "extern read_double\n";
+            header << "extern heap_alloc\n\n";
 
-            // Built-in format strings (used by println and other built-ins)
-            header << "section .data\n";
-            header << "    __println_fmt_int db \"%lld\", 10, 0\n\n";
+            header << "extern __println_fmt_int\n";
+            header << "extern __println_fmt_double\n";
+            header << "extern __println_fmt_str\n";
+            header << "extern __println_fmt_char\n";
+            header << "extern __println_bool_true\n";
+            header << "extern __println_bool_false\n\n";
             break;
 
         default:
@@ -69,9 +117,28 @@ void X86_64Emitter::EmitPrologue(
         argSpillSize = regArgs * x86_64::STACK_SLOT_SIZE;
     }
 
+    // The semantic analysis frame size may undercount when sibling scopes
+    // reuse offsets, but the IR gives every variable its own alloca.
+    // Use the actual alloca sizes (8-byte aligned) so temp slots never overlap var slots.
+    int allocaFrameSize = 0;
+    if (func->GetEntryBlock())
+    {
+        for (const auto& instr : func->GetEntryBlock()->GetInstructions())
+        {
+            if (instr->GetOpcode() == IROpcode::Alloca)
+            {
+                int sz = GetTypeSize(instr->GetType());
+                if (sz <= 0) sz = x86_64::STACK_SLOT_SIZE;
+                int allocSize = (sz + 7) & ~7;  // match Alloca emission
+                allocaFrameSize += allocSize;
+            }
+        }
+    }
+    int actualFrameSize = std::max(frameSize, allocaFrameSize);
+
     // Calculate total frame = aligned frameSize
     int bufferedTempSize = (temporaryVarSize + argSpillSize + 15) & ~15;
-    int bufferedFrameSize = (frameSize + 15) & ~15;
+    int bufferedFrameSize = (actualFrameSize + 15) & ~15;
     int totalFrame = (bufferedTempSize + bufferedFrameSize + 15) & ~15;
     if (TargetArchitecture::GetOS() == OS::Windows)
     {
@@ -115,7 +182,7 @@ void X86_64Emitter::EmitPrologue(
     }
     else if (TargetArchitecture::GetOS() == OS::Linux)
     {
-        // Linux SysV ABI: no shadow space — spill into the local frame.
+        // Linux SysV ABI: no shadow space â€” spill into the local frame.
         // Each register argument gets a dedicated slot tracked via
         // m_valueToStackOffset so GetOperandAsm resolves them normally.
         int regArgs = std::min(numArgs, x86_64::SIX_ARGUEMENTS);
@@ -436,6 +503,34 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
             out << "    ; Load from memory into register/slot\n";
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
+            if (source1 && dynamic_cast<const IRInstruction*>(source1) &&
+                static_cast<const IRInstruction*>(source1)->GetOpcode() == IROpcode::GEP)
+            {
+                // GEP stores address in slot; load from that address with correct element size
+                auto elemType = instr->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                {
+                    out << "    movzx rax, byte [rax]\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                {
+                    out << "    mov eax, dword [rax]\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movss xmm0, dword [rax]\n";
+                    out << "    movq rax, xmm0\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float64)
+                {
+                    out << "    movsd xmm0, qword [rax]\n";
+                    out << "    movq rax, xmm0\n";
+                }
+                else
+                {
+                    out << "    mov rax, [rax]\n";  // Int64, pointer
+                }
+            }
             tempAsmValue = GetOperandAsm(instr, out);
             out << "    mov " << tempAsmValue << ", rax\n";
             break;
@@ -444,20 +539,116 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
         case IROpcode::Store:
         {
             out << "    ; Store value into memory\n";
-            // Load value to store into rax
             tempAsmValue = GetOperandAsm(source1, out);
             out << "    mov rax, " << tempAsmValue << "\n";
             tempAsmValue = GetOperandAsm(source2, out);
-            out << "    mov " << tempAsmValue << ", rax\n";
+            if (source2 && dynamic_cast<const IRInstruction*>(source2) &&
+                static_cast<const IRInstruction*>(source2)->GetOpcode() == IROpcode::GEP)
+            {
+                out << "    mov rbx, " << tempAsmValue << "\n";  // rbx = address (GEP slot holds it directly)
+                auto elemType = static_cast<const IRInstruction*>(source2)->GetType();
+                if (elemType->GetKind() == IRTypeKind::Int8 || elemType->GetKind() == IRTypeKind::Int1)
+                {
+                    out << "    mov [rbx], al\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Int32)
+                {
+                    out << "    mov [rbx], eax\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float32)
+                {
+                    out << "    movq xmm0, rax\n";
+                    out << "    movss [rbx], xmm0\n";
+                }
+                else if (elemType->GetKind() == IRTypeKind::Float64)
+                {
+                    out << "    movq xmm0, rax\n";
+                    out << "    movsd [rbx], xmm0\n";
+                }
+                else
+                {
+                    out << "    mov [rbx], rax\n";  // Int64, pointer
+                }
+            }
+            else
+            {
+                out << "    mov " << tempAsmValue << ", rax\n";
+            }
             break;
         }
 
         case IROpcode::Alloca:
         {
-            // Allocate a new stack slot for new var
+            int varSize = GetTypeSize(instr->GetType());
+            if (varSize <= 0) varSize = x86_64::STACK_SLOT_SIZE;
+            // Align allocation to 8 bytes so zero-init and GEP never overflow
+            int allocSize = (varSize + 7) & ~7;
             int allocaOffset = this->m_nextVarStackOffset;
-            this->m_nextVarStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_nextVarStackOffset += allocSize;
             this->m_valueToStackOffset[instr] = allocaOffset;
+            if (varSize > x86_64::STACK_SLOT_SIZE && instr->GetType()->GetKind() == IRTypeKind::Array)
+            {
+                out << "    ; Zero-initialize array (calloc-style)\n";
+                out << "    xor eax, eax\n";
+                for (int i = 0; i < allocSize; i += x86_64::STACK_SLOT_SIZE)
+                {
+                    out << "    mov [rbp-" << (allocaOffset + i) << "], rax\n";
+                }
+            }
+            break;
+        }
+
+        case IROpcode::GEP:
+        {
+            // GEP(base, index): compute address of arr[index]
+            // Stack: arr[0] at rbp-X, arr[1] at rbp-X-8, ... -> base - index*scale
+            // Global: arr[0] at symbol, arr[1] at symbol+8, ... -> base + index*scale
+            out << "    ; GEP: array index\n";
+            tempAsmValue = GetOperandAsm(source1, out);  // base: [rbp-X] or [rel symbol]
+            out << "    lea rax, " << tempAsmValue << "\n";  // rax = base address
+            tempAsmValue = GetOperandAsm(source2, out);  // index
+            out << "    mov rbx, " << tempAsmValue << "\n";
+            int scale = GetTypeSize(instr->GetType());
+            if (scale <= 0) scale = 1;
+            out << "    imul rbx, " << scale << "\n";
+            bool isGlobal = (dynamic_cast<const IRGlobalVariable*>(source1) != nullptr);
+            if (isGlobal)
+                out << "    add rax, rbx\n";  // global: base + index*scale
+            else
+                out << "    sub rax, rbx\n";  // stack: base - index*scale
+            int slotOffset = this->m_nextTempStackOffset;
+            this->m_nextTempStackOffset += x86_64::STACK_SLOT_SIZE;
+            this->m_valueToStackOffset[instr] = slotOffset;
+            out << "    mov [rbp-" << slotOffset << "], rax\n";
+            break;
+        }
+
+        // -----------------------
+        // Type conversion
+        // -----------------------
+        case IROpcode::FPToSI:
+        {
+            // load the double from its memory slot directly into xmm0
+            // then convert to a signed 64-bit integer
+            out << "    ; FPToSI: convert double to signed int\n";
+            tempAsmValue = GetOperandAsm(source1, out);
+            out << "    movsd xmm0, qword " << tempAsmValue << "\n";
+            out << "    cvttsd2si rax, xmm0\n";
+            tempAsmValue = GetOperandAsm(instr, out);
+            out << "    mov " << tempAsmValue << ", rax\n";
+            break;
+        }
+
+        case IROpcode::SIToFP:
+        {
+            // load the integer into rax, convert to double in xmm0
+            // then store the double bits back via memory
+            out << "    ; SIToFP: convert signed int to double\n";
+            tempAsmValue = GetOperandAsm(source1, out);
+            out << "    mov rax, " << tempAsmValue << "\n";
+            out << "    cvtsi2sd xmm0, rax\n";
+            tempAsmValue = GetOperandAsm(instr, out);
+            out << "    movsd qword " << tempAsmValue << ", xmm0\n";
             break;
         }
 
@@ -511,15 +702,35 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                 for (int i = numCallOperands - 1; i >= x86_64::SIX_ARGUEMENTS; --i)
                 {
                     tempAsmValue = GetOperandAsm(callOperands[i], out);
-                    out << "    push " << tempAsmValue << "\n";
+                    auto* argInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool argIsAlloca = (argInstr && argInstr->GetOpcode() == IROpcode::Alloca);
+                    if (argIsAlloca && tempAsmValue.front() == '[')
+                    {
+                        out << "    lea rax, " << tempAsmValue << "\n";
+                        out << "    push rax\n";
+                    }
+                    else
+                    {
+                        out << "    push " << tempAsmValue << "\n";
+                    }
                 }
 
                 // move register args
                 for (int i = 0; i < std::min(x86_64::SIX_ARGUEMENTS, numCallOperands); ++i)
                 {
-                    tempAsmValue = GetOperandAsm(callOperands[i], out);
-                    out << "    mov " << x86_64::linuxArgMapping[i]
-                        << ", " << tempAsmValue << "\n";
+                    std::string tempValue = GetOperandAsm(callOperands[i], out);
+                    auto* opInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                    if (isAlloca && tempValue.front() == '[')
+                    {
+                        out << "    lea " << x86_64::linuxArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
+                    else
+                    {
+                        out << "    mov " << x86_64::linuxArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
@@ -552,16 +763,39 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
                     int argIndex = x86_64::FOUR_ARGUEMENTS + i;
                     int argOffset = i * x86_64::STACK_SLOT_SIZE;
                     tempAsmValue = GetOperandAsm(callOperands[argIndex], out);
-                    out << "    mov qword [rsp + " << argOffset << "], "
-                        << tempAsmValue << "\n";
+                    auto* argInstr = dynamic_cast<const IRInstruction*>(callOperands[argIndex]);
+                    bool argIsAlloca = (argInstr && argInstr->GetOpcode() == IROpcode::Alloca);
+                    if (tempAsmValue.front() == '[')
+                    {
+                        if (argIsAlloca)
+                            out << "    lea rax, " << tempAsmValue << "\n";
+                        else
+                            out << "    mov rax, " << tempAsmValue << "\n";
+                        out << "    mov qword [rsp + " << argOffset << "], rax\n";
+                    }
+                    else
+                    {
+                        out << "    mov qword [rsp + " << argOffset << "], "
+                            << tempAsmValue << "\n";
+                    }
                 }
 
                 // Register args
                 for (int i = 0; i < std::min(x86_64::FOUR_ARGUEMENTS, numCallOperands); ++i)
                 {
                     std::string tempValue = GetOperandAsm(callOperands[i], out);
-                    out << "    mov " << x86_64::windowsArgMapping[i]
-                        << ", " << tempValue << "\n";
+                    auto* opInstr = dynamic_cast<const IRInstruction*>(callOperands[i]);
+                    bool isAlloca = (opInstr && opInstr->GetOpcode() == IROpcode::Alloca);
+                    if (isAlloca && tempValue.front() == '[')
+                    {
+                        out << "    lea " << x86_64::windowsArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
+                    else
+                    {
+                        out << "    mov " << x86_64::windowsArgMapping[i]
+                            << ", " << tempValue << "\n";
+                    }
                 }
 
                 out << "    call " << instr->GetCalledFunction()->GetName() << "\n";
@@ -611,64 +845,76 @@ void X86_64Emitter::EmitInstruction(const IRInstruction* instr, std::ostream& ou
     }
 }
 
-void X86_64Emitter::EmitStart(std::ostream& out)
+void X86_64Emitter::EmitStart(const IRModule& module, std::ostream& out)
 {
+    if (!module.IsPrimaryModule()) return;
+
     if (TargetArchitecture::GetOS() == OS::Linux)
     {
         out << "_start:\n";
-
-        // Kernel enters with RSP % 16 == 8
-        out << "    ; Align stack to 16 bytes (kernel provides RSP % 16 == 8 on entry)\n";
         out << "    and rsp, -16\n";
 
-        // call main()
-        out << "    ; call main() and pass its return value to exit\n";
+        for (const auto& [target, source] : module.GetDeferredGlobalInits())
+        {
+            out << "    mov rax, [rel " << source << "]\n";
+            out << "    mov [rel " << target << "], rax\n";
+        }
+
         out << "    call main\n";
-
-        // exit(main_return)
         out << "    mov rdi, rax\n";
-        out << "    call exit\n";
-
-        out << "    ; Halt if exit returns (should not)\n";
+        out << "    mov rax, 60\n";
+        out << "    syscall\n";
         out << "    hlt\n";
+
+        out << "\n";
+        out << "heap_alloc:\n";
+        out << "    add rdi, 7\n";
+        out << "    and rdi, -8\n";
+        out << "    cmp qword [rel heap_cur], 0\n";
+        out << "    jne .heap_alloc_no_init\n";
+        out << "    lea rax, [rel heap_mem]\n";
+        out << "    mov [rel heap_cur], rax\n";
+        out << ".heap_alloc_no_init:\n";
+        out << "    mov rax, [rel heap_cur]\n";
+        out << "    mov rcx, rax\n";
+        out << "    add rcx, rdi\n";
+        out << "    mov [rel heap_cur], rcx\n";
+        out << "    ret\n";
     }
     else if (TargetArchitecture::GetOS() == OS::Windows)
     {
         out << "mainCRTStartup:\n";
+        out << "    sub rsp, 40\n";
 
-        // Windows x64 ABI:
-        // - Stack is 16-byte aligned before CALL
-        // - 32 bytes of shadow space required
-        out << "    ; allocate shadow space + alignment for calling main\n";
-        out << "    sub rsp, 40\n"; // 32 shadow + 8 align
+        for (const auto& [target, source] : module.GetDeferredGlobalInits())
+        {
+            out << "    mov rax, [rel " << source << "]\n";
+            out << "    mov [rel " << target << "], rax\n";
+        }
 
-        // call main()
-        out << "    ; call main() (CRT entry -> user main)\n";
         out << "    call main\n";
-
-        // exit() flushes CRT stdio buffers (needed for printf / println)
         out << "    mov ecx, eax\n";
         out << "    call exit\n";
-
-        out << "    ; Halt if exit returns (should not)\n";
         out << "    hlt\n";
 
-        // ---- Built-in: println(value: int) -> void ----
-        // Wraps printf with a "%lld\n" format string.
         out << "\n";
-        out << "println:\n";
-        out << "    push rbp\n";
-        out << "    mov rbp, rsp\n";
-        out << "    ; rcx = value (first arg from caller)\n";
-        out << "    mov rdx, rcx\n";                          // 2nd printf arg = value
-        out << "    lea rcx, [rel __println_fmt_int]\n";      // 1st printf arg = fmt
-        out << "    sub rsp, 32\n";                            // shadow space
-        out << "    call printf\n";
-        out << "    add rsp, 32\n";
-        out << "    pop rbp\n";
+        out << "heap_alloc:\n";
+        out << "    add rcx, 7\n";
+        out << "    and rcx, -8\n";
+        out << "    cmp qword [rel heap_cur], 0\n";
+        out << "    jne .heap_alloc_no_init\n";
+        out << "    lea rax, [rel heap_mem]\n";
+        out << "    mov [rel heap_cur], rax\n";
+        out << ".heap_alloc_no_init:\n";
+        out << "    mov rax, [rel heap_cur]\n";
+        out << "    mov r10, rax\n";
+        out << "    add r10, rcx\n";
+        out << "    mov [rel heap_cur], r10\n";
         out << "    ret\n";
     }
 }
+
+
 
 std::string X86_64Emitter::GetGlobalDirective(const std::string& symbol) const
 {
@@ -682,8 +928,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
     if (auto* intConst = dynamic_cast<const IRConstantInt*>(operand))
     {
         uint64_t bits = static_cast<uint64_t>(intConst->GetValue());
-        out << "    mov qword r10" << ", 0x" 
-            << std::hex << bits << std::dec << "\n";
+        out << "    mov r10, 0x" << std::hex << bits << std::dec << "\n";
         return "r10";
     }
     else if (auto* floatConst = dynamic_cast<const IRConstantFloat*>(operand))
@@ -693,20 +938,26 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
         double floatValue = floatConst->GetValue();   // 64-bit float
         uint64_t bits;
         std::memcpy(&bits, &floatValue, sizeof(double));
-        out << "    mov qword " << slot << ", 0x" << std::hex << bits << std::dec << "\n";  // qword = 64-bit
+        out << "    mov rax, 0x" << std::hex << bits << std::dec << "\n";
+        out << "    mov " << slot << ", rax\n";
         // return the slot
         return slot;
+    }
+    else if (auto* strConst = dynamic_cast<const IRConstantString*>(operand))
+    {
+        // load effective address of the string label into r10
+        out << "    lea r10, [rel " << strConst->GetLabel() << "]\n";
+        return "r10";
     }
     else if (auto* boolConst = dynamic_cast<const IRConstantBool*>(operand))
     {
         uint64_t bits = static_cast<uint64_t>(boolConst->GetValue());  // 0 or 1
-        out << "    mov qword r10" << ", 0x" 
-            << std::hex << bits << std::dec << "\n";
+        out << "    mov r10, 0x" << std::hex << bits << std::dec << "\n";
         return "r10";
     }
     else if (auto* globalVar = dynamic_cast<const IRGlobalVariable*>(operand))
     {
-        return globalVar->GetName();
+        return "[rel " + globalVar->GetName() + "]";
     }
     else if (auto* argVal = dynamic_cast<const IRArgument*>(operand))
     {
@@ -731,7 +982,7 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
                 }
             }
 
-            // Stack-passed args (7th+): [rbp+16], [rbp+24], …
+            // Stack-passed args (7th+): [rbp+16], [rbp+24], â€¦
             int stackOffset = x86_64::FIRST_STACK_ARG_OFFSET_LINUX + x86_64::STACK_SLOT_SIZE * static_cast<int>(foundIndex - x86_64::SIX_ARGUEMENTS);
             return "[rbp+" + std::to_string(stackOffset) + "]";
         }
@@ -742,13 +993,13 @@ std::string X86_64Emitter::GetOperandAsm(const IRBaseValue* operand, std::ostrea
                 // Register arguments were spilled to the caller's shadow
                 // space in the prologue.  Read from there so we are safe
                 // even after idiv / call clobber the volatile registers.
-                //   [rbp+16] = arg 0,  [rbp+24] = arg 1, …
+                //   [rbp+16] = arg 0,  [rbp+24] = arg 1, â€¦
                 int offset = 16 + static_cast<int>(foundIndex) * x86_64::STACK_SLOT_SIZE;
                 return "qword [rbp+" + std::to_string(offset) + "]";
             }
             else
             {
-                // Stack-passed args (5th+): [rbp+48], [rbp+56], …
+                // Stack-passed args (5th+): [rbp+48], [rbp+56], â€¦
                 int stackOffset = x86_64::FIRST_STACK_ARG_OFFSET_WINDOWS + x86_64::STACK_SLOT_SIZE * static_cast<int>(foundIndex - x86_64::FOUR_ARGUEMENTS);
                 return "[rbp+" + std::to_string(stackOffset) + "]";
             }

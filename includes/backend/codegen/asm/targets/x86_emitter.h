@@ -39,7 +39,7 @@ public:
     ~X86_Emitter() = default;
 
 private:
-    std::string EmitHeader() const override final;
+    std::string EmitHeader(const IRModule& module) const override final;
 
     void EmitPrologue(
         const IRFunction* func,
@@ -51,7 +51,11 @@ private:
 
     void EmitInstruction(const IRInstruction* instruction, std::ostream& out) override final;
 
-    void EmitStart(std::ostream& out) override final;
+    void EmitStart(const IRModule& module, std::ostream& out) override final;
+
+    void EmitAfterFunctionLabel(const IRFunction* func, std::ostream& out) override final;
+
+    std::string MangledName(const std::string& name) const override final;
 
     std::string GetGlobalDirective(const std::string& symbol) const override final;
 
@@ -62,4 +66,10 @@ private:
 
     // load an operand into an SSE XMM register
     void LoadOperandAsFloat(const IRBaseValue* operand, const std::string& xmmReg, std::ostream& out);
+
+    void EmitExtraBssContent(const IRModule& module, std::ostream& out) const override;
+
+    /// Preamble to emit before using an operand (e.g. float constant materialization).
+    /// Set by GetOperandAsm for float constants; callers must output it before the instruction.
+    mutable std::string m_operandPreamble;
 };

@@ -3,13 +3,17 @@
 
 Assembler::Assembler() :
     m_assemblerLogger("ASSEMBLER")
-{ }
+{}
 
-std::string Assembler::Mainflow(const std::string& asmPath, const std::string& programName)
+std::string Assembler::Mainflow(
+    const std::string& asmPath, 
+    const std::string& programName,
+    const std::string& outputDir_
+)
 {
     namespace fs = std::filesystem;
 
-    fs::path outputDir = fs::current_path();
+    fs::path outputDir = outputDir_;
     fs::path asmFile = asmPath;
 
     if (!fs::exists(asmFile))
@@ -81,9 +85,9 @@ std::string Assembler::BuildNasmCommand(
     {
         std::ostringstream inner;
         inner << "\"" << nasmPath.string() << "\""
-              << " -f " << nasmFormat
-              << " \"" << asmFile.string() << "\""
-              << " -o \"" << objFile.string() << "\"";
+        << " -f " << nasmFormat
+        << " \"" << asmFile.string() << "\""
+        << " -o \"" << objFile.string() << "\"";
 
         cmd << "cmd /C \"" << inner.str() << "\"";
     }
