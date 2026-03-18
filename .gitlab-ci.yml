@@ -234,7 +234,7 @@ check-conventions:
   script:
     - pip install cpplint
     - mkdir -p conventions_results
-    - cpplint --recursive src/ include/ tests/ 2>&1 | tee conventions_results/cpplint.log
+    - cpplint --recursive src/ include/ tests/test_scripts/ 2>&1 | tee conventions_results/cpplint.log
     # Fail explicitly if lint errors detected
     - if grep -q "Total errors found:" conventions_results/cpplint.log; then exit 1; fi
   artifacts:

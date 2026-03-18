@@ -49,11 +49,15 @@ Scope ASTExtractor::ExtractVarScope(ASTNode* varDecNode)
 std::optional<size_t> ASTExtractor::ExtractArraySize(ASTNode* arrayDeclNode)
 {
     if (!arrayDeclNode || arrayDeclNode->command.GetType() != CommandTypes::ARRAY_DECLARATION)
+    {
         return std::nullopt;
+    }
 
     const auto& params = arrayDeclNode->command.GetParams();
-    if (params.empty())
+    if (params.empty()) 
+    {
         return std::nullopt;
+    }
 
     const Command& sizeParam = params[0];
     const auto& tokens = sizeParam.GetTokens();
@@ -62,20 +66,29 @@ std::optional<size_t> ASTExtractor::ExtractArraySize(ASTNode* arrayDeclNode)
     for (const Token& token : tokens)
     {
         if (token.GetType() != TokenTypes::VALUE)
+        {
             return std::nullopt;  // Non-value token (e.g. operator) -> not a simple literal
+        }
     }
     if (tokens.size() != 1)
+    {
         return std::nullopt;  // "2+3" or "3, 2" would have multiple tokens
+    }
 
     const std::string& val = tokens[0].GetValue();
     if (val.empty()) return std::nullopt;
+    
     const char* p = val.c_str();
-    for (; *p && std::isdigit(static_cast<unsigned char>(*p)); ++p) {}
+    for (; *p && std::isdigit(static_cast<unsigned char>(*p)); p++) {}
     if (*p != '\0')
+    {
         return std::nullopt;  // Non-integer (e.g. "10.5")
+    }
     unsigned long long n = std::strtoull(val.c_str(), nullptr, 10);
     if (n <= SIZE_MAX)
+    {
         return static_cast<size_t>(n);
+    }
     return std::nullopt;
 }
 
@@ -85,18 +98,22 @@ std::optional<size_t> ASTExtractor::ExtractArraySizeFromInitializer(ASTNode* arr
 
     ASTNode* assignNode = arrayDeclNode->nodeNextSibling;
     if (!assignNode) return std::nullopt;
-    if (assignNode->command.GetType() != CommandTypes::ASSIGNMENT)
-        return std::nullopt;
+
+    if (assignNode->command.GetType() != CommandTypes::ASSIGNMENT) return std::nullopt;
 
     ASTNode* arrayValueNode = assignNode->nodeNextSibling;
     if (!arrayValueNode) return std::nullopt;
     if (arrayValueNode->command.GetType() != CommandTypes::ARRAY_VALUE)
+    {
         return std::nullopt;
+    }
 
     const auto& params = arrayValueNode->command.GetParams();
     size_t count = params.size();
     if (count == 0 || count > SIZE_MAX)
+    {
         return std::nullopt;
+    }
     return count;
 }
 

@@ -53,16 +53,16 @@ TEST(LexerTest, SmallCodeExample)
 
         // Line 7
         Token("return",TokenTypes::KEYWORD,7, 5),
-        Token("3", TokenTypes::VALUE,7, 12),
+        Token("a", TokenTypes::IDENTIFIER,7, 12),
         Token("+", TokenTypes::OPERATOR,7, 14),
-        Token("2", TokenTypes::VALUE,7, 16),
+        Token("b", TokenTypes::IDENTIFIER,7, 16),
         Token(";",TokenTypes::PUNCTUATION,7, 17),
 
         // Line 8
         Token("}",TokenTypes::PUNCTUATION,8, 1),
     };
 
-    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::FilterTrivia(TestsUtils::CollectTokens(lexer));
 
     TestsUtils::CompareTokens(results, expected);
 }
@@ -73,224 +73,232 @@ TEST(LexerTest, FullProgram)
     Lexer lexer(SystemUtils::BuildRelativePath(L"tests/inputs/full_program_example_file.picoc"));
 
     std::vector<Token> expected = {
-        // Line 1
-        Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 1, 1),
-        Token("(", TokenTypes::PUNCTUATION,1,30),
-        Token("low", TokenTypes::IDENTIFIER,1,31),
-        Token(":", TokenTypes::PUNCTUATION,1,34),
-        Token("int", TokenTypes::KEYWORD,1,36),
-        Token(",", TokenTypes::PUNCTUATION,1,39),
-        Token("high", TokenTypes::IDENTIFIER,1,41),
-        Token(":", TokenTypes::PUNCTUATION,1,45),
-        Token("int", TokenTypes::KEYWORD,1,47),
-        Token(")", TokenTypes::PUNCTUATION,1,50),
-        Token("->", TokenTypes::PUNCTUATION,1,52),
-        Token("void", TokenTypes::KEYWORD,1,55),
-        Token(";", TokenTypes::PUNCTUATION, 1, 59),
+        // Line 1: import {println} from "io"
+        Token("import", TokenTypes::KEYWORD, 1, 1),
+        Token("{", TokenTypes::PUNCTUATION, 1, 8),
+        Token("println", TokenTypes::IDENTIFIER, 1, 9),
+        Token("}", TokenTypes::PUNCTUATION, 1, 16),
+        Token("from", TokenTypes::KEYWORD, 1, 18),
+        Token("\"io\"", TokenTypes::STRING_LITERAL, 1, 23),
 
         // Line 3
-        Token("main", TokenTypes::IDENTIFIER, 3, 1),
-        Token("(", TokenTypes::PUNCTUATION, 3, 5),
-        Token("void", TokenTypes::KEYWORD, 3, 6),
-        Token(")", TokenTypes::PUNCTUATION, 3, 10),
-        Token("->", TokenTypes::PUNCTUATION, 3, 12),
-        Token("int", TokenTypes::KEYWORD, 3, 15),
-
-        // Line 4
-        Token("{", TokenTypes::PUNCTUATION, 4, 1),
+        Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 3, 1),
+        Token("(", TokenTypes::PUNCTUATION, 3, 30),
+        Token("low", TokenTypes::IDENTIFIER, 3, 31),
+        Token(":", TokenTypes::PUNCTUATION, 3, 34),
+        Token("int", TokenTypes::KEYWORD, 3, 36),
+        Token(",", TokenTypes::PUNCTUATION, 3, 39),
+        Token("high", TokenTypes::IDENTIFIER, 3, 41),
+        Token(":", TokenTypes::PUNCTUATION, 3, 45),
+        Token("int", TokenTypes::KEYWORD, 3, 47),
+        Token(")", TokenTypes::PUNCTUATION, 3, 50),
+        Token("->", TokenTypes::PUNCTUATION, 3, 52),
+        Token("void", TokenTypes::KEYWORD, 3, 55),
+        Token(";", TokenTypes::PUNCTUATION, 3, 59),
 
         // Line 5
-        Token("let", TokenTypes::KEYWORD, 5, 5),
-        Token("low", TokenTypes::IDENTIFIER, 5, 9),
-        Token(":", TokenTypes::PUNCTUATION, 5, 12),
-        Token("int", TokenTypes::KEYWORD, 5, 14),
-        Token("=", TokenTypes::OPERATOR, 5, 18),
-        Token("1", TokenTypes::VALUE, 5, 20),    
-        Token(";", TokenTypes::PUNCTUATION, 5, 21),
+        Token("main", TokenTypes::IDENTIFIER, 5, 1),
+        Token("(", TokenTypes::PUNCTUATION, 5, 5),
+        Token("void", TokenTypes::KEYWORD, 5, 6),
+        Token(")", TokenTypes::PUNCTUATION, 5, 10),
+        Token("->", TokenTypes::PUNCTUATION, 5, 12),
+        Token("int", TokenTypes::KEYWORD, 5, 15),
 
         // Line 6
-        Token("let", TokenTypes::KEYWORD, 6, 5),
-        Token("high", TokenTypes::IDENTIFIER, 6, 9),
-        Token(":", TokenTypes::PUNCTUATION, 6, 13),
-        Token("int", TokenTypes::KEYWORD, 6, 15),
-        Token("=", TokenTypes::OPERATOR, 6, 19),
-        Token("100", TokenTypes::VALUE, 6, 21),
-        Token(";", TokenTypes::PUNCTUATION, 6, 24),
+        Token("{", TokenTypes::PUNCTUATION, 6, 1),
 
+        // Line 7
+        Token("let", TokenTypes::KEYWORD, 7, 5),
+        Token("low", TokenTypes::IDENTIFIER, 7, 9),
+        Token(":", TokenTypes::PUNCTUATION, 7, 12),
+        Token("int", TokenTypes::KEYWORD, 7, 14),
+        Token("=", TokenTypes::OPERATOR, 7, 18),
+        Token("1", TokenTypes::VALUE, 7, 20),    
+        Token(";", TokenTypes::PUNCTUATION, 7, 21),
 
         // Line 8
-        Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 8, 5),
-        Token("(", TokenTypes::PUNCTUATION, 8, 34),
-        Token("low", TokenTypes::IDENTIFIER, 8, 35),
-        Token(",", TokenTypes::PUNCTUATION, 8, 38),
-        Token("high", TokenTypes::IDENTIFIER, 8, 40),
-        Token(")", TokenTypes::PUNCTUATION, 8, 44),
-        Token(";", TokenTypes::PUNCTUATION, 8, 45),
+        Token("let", TokenTypes::KEYWORD, 8, 5),
+        Token("high", TokenTypes::IDENTIFIER, 8, 9),
+        Token(":", TokenTypes::PUNCTUATION, 8, 13),
+        Token("int", TokenTypes::KEYWORD, 8, 15),
+        Token("=", TokenTypes::OPERATOR, 8, 19),
+        Token("100", TokenTypes::VALUE, 8, 21),
+        Token(";", TokenTypes::PUNCTUATION, 8, 24),
 
-        // Line 9
-        Token("return", TokenTypes::KEYWORD, 9, 5),
-        Token("0", TokenTypes::VALUE, 9, 12),
-        Token(";", TokenTypes::PUNCTUATION, 9, 13),
 
         // Line 10
-        Token("}", TokenTypes::PUNCTUATION, 10, 1),
+        Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 10, 5),
+        Token("(", TokenTypes::PUNCTUATION, 10, 34),
+        Token("low", TokenTypes::IDENTIFIER, 10, 35),
+        Token(",", TokenTypes::PUNCTUATION, 10, 38),
+        Token("high", TokenTypes::IDENTIFIER, 10, 40),
+        Token(")", TokenTypes::PUNCTUATION, 10, 44),
+        Token(";", TokenTypes::PUNCTUATION, 10, 45),
 
-        // Line 13
-        Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 13, 1),
-        Token("(", TokenTypes::PUNCTUATION, 13, 30),
-        Token("low", TokenTypes::IDENTIFIER, 13, 31),
-        Token(":", TokenTypes::PUNCTUATION, 13, 34),
-        Token("int", TokenTypes::KEYWORD, 13, 36),
-        Token(",", TokenTypes::PUNCTUATION, 13, 39),
-        Token("high", TokenTypes::IDENTIFIER, 13, 41),
-        Token(":", TokenTypes::PUNCTUATION, 13, 45),
-        Token("int", TokenTypes::KEYWORD, 13, 47),
-        Token(")", TokenTypes::PUNCTUATION, 13, 50),
-        Token("->", TokenTypes::PUNCTUATION, 13, 52),
-        Token("void", TokenTypes::KEYWORD, 13, 55),
+        // Line 11
+        Token("return", TokenTypes::KEYWORD, 11, 5),
+        Token("0", TokenTypes::VALUE, 11, 12),
+        Token(";", TokenTypes::PUNCTUATION, 11, 13),
 
-        // Line 14
-        Token("{", TokenTypes::PUNCTUATION, 14, 1),
+        // Line 12
+        Token("}", TokenTypes::PUNCTUATION, 12, 1),
 
         // Line 15
-        Token("while", TokenTypes::KEYWORD, 15, 5),
-        Token("(", TokenTypes::PUNCTUATION, 15, 10),
-        Token("low", TokenTypes::IDENTIFIER, 15, 11),
-        Token("<", TokenTypes::OPERATOR, 15, 15),
-        Token("high", TokenTypes::IDENTIFIER, 15, 17),
-        Token(")", TokenTypes::PUNCTUATION, 15, 21),
+        Token("displayAllPrimeNumbersInRange", TokenTypes::IDENTIFIER, 15, 1),
+        Token("(", TokenTypes::PUNCTUATION, 15, 30),
+        Token("low", TokenTypes::IDENTIFIER, 15, 31),
+        Token(":", TokenTypes::PUNCTUATION, 15, 34),
+        Token("int", TokenTypes::KEYWORD, 15, 36),
+        Token(",", TokenTypes::PUNCTUATION, 15, 39),
+        Token("high", TokenTypes::IDENTIFIER, 15, 41),
+        Token(":", TokenTypes::PUNCTUATION, 15, 45),
+        Token("int", TokenTypes::KEYWORD, 15, 47),
+        Token(")", TokenTypes::PUNCTUATION, 15, 50),
+        Token("->", TokenTypes::PUNCTUATION, 15, 52),
+        Token("void", TokenTypes::KEYWORD, 15, 55),
 
         // Line 16
-        Token("{", TokenTypes::PUNCTUATION, 16, 5),
+        Token("{", TokenTypes::PUNCTUATION, 16, 1),
 
         // Line 17
-        Token("let", TokenTypes::KEYWORD, 17, 9),
-        Token("is_prime", TokenTypes::IDENTIFIER, 17, 13),
-        Token(":", TokenTypes::PUNCTUATION, 17, 21),
-        Token("bool", TokenTypes::KEYWORD, 17, 23),
-        Token("=", TokenTypes::OPERATOR, 17, 28),
-        Token("true", TokenTypes::VALUE, 17, 30),
-        Token(";", TokenTypes::PUNCTUATION, 17, 34),
+        Token("while", TokenTypes::KEYWORD, 17, 5),
+        Token("(", TokenTypes::PUNCTUATION, 17, 10),
+        Token("low", TokenTypes::IDENTIFIER, 17, 11),
+        Token("<", TokenTypes::OPERATOR, 17, 15),
+        Token("high", TokenTypes::IDENTIFIER, 17, 17),
+        Token(")", TokenTypes::PUNCTUATION, 17, 21),
 
-        // Line 20
-        Token("if", TokenTypes::KEYWORD, 20, 9),
-        Token("(", TokenTypes::PUNCTUATION, 20, 11),
-        Token("low", TokenTypes::IDENTIFIER, 20, 12),
-        Token("<", TokenTypes::OPERATOR, 20, 16),
-        Token("2", TokenTypes::VALUE, 20, 18),
-        Token(")", TokenTypes::PUNCTUATION, 20, 19),
+        // Line 18
+        Token("{", TokenTypes::PUNCTUATION, 18, 5),
 
-        // Line 21
-        Token("{", TokenTypes::PUNCTUATION, 21, 9),
+        // Line 19
+        Token("let", TokenTypes::KEYWORD, 19, 9),
+        Token("is_prime", TokenTypes::IDENTIFIER, 19, 13),
+        Token(":", TokenTypes::PUNCTUATION, 19, 21),
+        Token("bool", TokenTypes::KEYWORD, 19, 23),
+        Token("=", TokenTypes::OPERATOR, 19, 28),
+        Token("true", TokenTypes::VALUE, 19, 30),
+        Token(";", TokenTypes::PUNCTUATION, 19, 34),
 
         // Line 22
-        Token("is_prime", TokenTypes::IDENTIFIER, 22, 13),
-        Token("=", TokenTypes::OPERATOR, 22, 22),
-        Token("false", TokenTypes::VALUE, 22, 24),
-        Token(";", TokenTypes::PUNCTUATION, 22, 29),
+        Token("if", TokenTypes::KEYWORD, 22, 9),
+        Token("(", TokenTypes::PUNCTUATION, 22, 11),
+        Token("low", TokenTypes::IDENTIFIER, 22, 12),
+        Token("<", TokenTypes::OPERATOR, 22, 16),
+        Token("2", TokenTypes::VALUE, 22, 18),
+        Token(")", TokenTypes::PUNCTUATION, 22, 19),
 
         // Line 23
-        Token("}", TokenTypes::PUNCTUATION, 23, 9),
+        Token("{", TokenTypes::PUNCTUATION, 23, 9),
+
+        // Line 24
+        Token("is_prime", TokenTypes::IDENTIFIER, 24, 13),
+        Token("=", TokenTypes::OPERATOR, 24, 22),
+        Token("false", TokenTypes::VALUE, 24, 24),
+        Token(";", TokenTypes::PUNCTUATION, 24, 29),
 
         // Line 25
-        Token("for", TokenTypes::KEYWORD, 25, 9),
-        Token("(", TokenTypes::PUNCTUATION, 25, 12),
-        Token("let", TokenTypes::KEYWORD, 25, 13),
-        Token("i", TokenTypes::IDENTIFIER, 25, 17),
-        Token(":", TokenTypes::PUNCTUATION, 25, 18),
-        Token("int", TokenTypes::KEYWORD, 25, 20),
-        Token("=", TokenTypes::OPERATOR, 25, 24),
-        Token("2", TokenTypes::VALUE, 25, 26),
-        Token(";", TokenTypes::PUNCTUATION, 25, 27),
-        Token("i", TokenTypes::IDENTIFIER, 25, 29),
-        Token("<", TokenTypes::OPERATOR, 25, 31),
-        Token("(", TokenTypes::PUNCTUATION, 25, 33),
-        Token("(", TokenTypes::PUNCTUATION, 25, 34),
-        Token("low", TokenTypes::IDENTIFIER, 25, 35),
-        Token("//", TokenTypes::OPERATOR, 25, 39),
-        Token("2", TokenTypes::VALUE, 25, 42),
-        Token(")", TokenTypes::PUNCTUATION, 25, 43),
-        Token("+", TokenTypes::OPERATOR, 25, 45),
-        Token("1", TokenTypes::VALUE, 25, 47),
-        Token(")", TokenTypes::PUNCTUATION, 25, 48),
-        Token(";", TokenTypes::PUNCTUATION, 25, 50),
-        Token("i", TokenTypes::IDENTIFIER, 25, 52),
-        Token("=", TokenTypes::OPERATOR, 25, 54),
-        Token("i", TokenTypes::IDENTIFIER, 25, 56),
-        Token("+", TokenTypes::OPERATOR, 25, 58),
-        Token("1", TokenTypes::VALUE, 25, 60),
-        Token(")", TokenTypes::PUNCTUATION, 25, 61),
-        
-        // Line 26
-        Token("{", TokenTypes::PUNCTUATION, 26, 9),
+        Token("}", TokenTypes::PUNCTUATION, 25, 9),
 
         // Line 27
-        Token("if", TokenTypes::KEYWORD, 27, 13),
-        Token("(", TokenTypes::PUNCTUATION, 27, 15),
-        Token("low", TokenTypes::IDENTIFIER, 27, 16),
-        Token("%", TokenTypes::OPERATOR, 27, 20),
-        Token("i", TokenTypes::IDENTIFIER, 27, 22),
-        Token("==", TokenTypes::OPERATOR, 27, 24),
-        Token("0", TokenTypes::VALUE, 27, 27),
-        Token(")", TokenTypes::PUNCTUATION, 27, 28),
-
+        Token("for", TokenTypes::KEYWORD, 27, 9),
+        Token("(", TokenTypes::PUNCTUATION, 27, 12),
+        Token("let", TokenTypes::KEYWORD, 27, 13),
+        Token("i", TokenTypes::IDENTIFIER, 27, 17),
+        Token(":", TokenTypes::PUNCTUATION, 27, 18),
+        Token("int", TokenTypes::KEYWORD, 27, 20),
+        Token("=", TokenTypes::OPERATOR, 27, 24),
+        Token("2", TokenTypes::VALUE, 27, 26),
+        Token(";", TokenTypes::PUNCTUATION, 27, 27),
+        Token("i", TokenTypes::IDENTIFIER, 27, 29),
+        Token("<", TokenTypes::OPERATOR, 27, 31),
+        Token("(", TokenTypes::PUNCTUATION, 27, 33),
+        Token("(", TokenTypes::PUNCTUATION, 27, 34),
+        Token("low", TokenTypes::IDENTIFIER, 27, 35),
+        Token("//", TokenTypes::OPERATOR, 27, 39),
+        Token("2", TokenTypes::VALUE, 27, 42),
+        Token(")", TokenTypes::PUNCTUATION, 27, 43),
+        Token("+", TokenTypes::OPERATOR, 27, 45),
+        Token("1", TokenTypes::VALUE, 27, 47),
+        Token(")", TokenTypes::PUNCTUATION, 27, 48),
+        Token(";", TokenTypes::PUNCTUATION, 27, 50),
+        Token("i", TokenTypes::IDENTIFIER, 27, 52),
+        Token("=", TokenTypes::OPERATOR, 27, 54),
+        Token("i", TokenTypes::IDENTIFIER, 27, 56),
+        Token("+", TokenTypes::OPERATOR, 27, 58),
+        Token("1", TokenTypes::VALUE, 27, 60),
+        Token(")", TokenTypes::PUNCTUATION, 27, 61),
+        
         // Line 28
-        Token("{", TokenTypes::PUNCTUATION, 28, 13),
+        Token("{", TokenTypes::PUNCTUATION, 28, 9),
 
         // Line 29
-        Token("is_prime", TokenTypes::IDENTIFIER, 29, 17),
-        Token("=", TokenTypes::OPERATOR, 29, 26),
-        Token("false", TokenTypes::VALUE, 29, 28),
-        Token(";", TokenTypes::PUNCTUATION, 29, 33),
-        
+        Token("if", TokenTypes::KEYWORD, 29, 13),
+        Token("(", TokenTypes::PUNCTUATION, 29, 15),
+        Token("low", TokenTypes::IDENTIFIER, 29, 16),
+        Token("%", TokenTypes::OPERATOR, 29, 20),
+        Token("i", TokenTypes::IDENTIFIER, 29, 22),
+        Token("==", TokenTypes::OPERATOR, 29, 24),
+        Token("0", TokenTypes::VALUE, 29, 27),
+        Token(")", TokenTypes::PUNCTUATION, 29, 28),
+
         // Line 30
-        Token("break", TokenTypes::KEYWORD, 30, 17),
-        Token(";", TokenTypes::PUNCTUATION, 30, 22),
+        Token("{", TokenTypes::PUNCTUATION, 30, 13),
 
         // Line 31
-        Token("}", TokenTypes::PUNCTUATION, 31, 13),
-
+        Token("is_prime", TokenTypes::IDENTIFIER, 31, 17),
+        Token("=", TokenTypes::OPERATOR, 31, 26),
+        Token("false", TokenTypes::VALUE, 31, 28),
+        Token(";", TokenTypes::PUNCTUATION, 31, 33),
+        
         // Line 32
-        Token("}", TokenTypes::PUNCTUATION, 32, 9),
+        Token("break", TokenTypes::KEYWORD, 32, 17),
+        Token(";", TokenTypes::PUNCTUATION, 32, 22),
+
+        // Line 33
+        Token("}", TokenTypes::PUNCTUATION, 33, 13),
 
         // Line 34
-        Token("if", TokenTypes::KEYWORD, 34, 9),
-        Token("(", TokenTypes::PUNCTUATION, 34, 11),
-        Token("is_prime", TokenTypes::IDENTIFIER, 34, 12),
-        Token(")", TokenTypes::PUNCTUATION, 34, 20),
-
-        // Line 35  
-        Token("{", TokenTypes::PUNCTUATION, 35, 9),
+        Token("}", TokenTypes::PUNCTUATION, 34, 9),
 
         // Line 36
-        Token("println", TokenTypes::IDENTIFIER, 36, 13),
-        Token("(", TokenTypes::PUNCTUATION, 36, 20),
-        Token("low", TokenTypes::IDENTIFIER, 36, 21),
-        Token(")", TokenTypes::PUNCTUATION, 36, 24),
-        Token(";", TokenTypes::PUNCTUATION, 36, 25),
+        Token("if", TokenTypes::KEYWORD, 36, 9),
+        Token("(", TokenTypes::PUNCTUATION, 36, 11),
+        Token("is_prime", TokenTypes::IDENTIFIER, 36, 12),
+        Token(")", TokenTypes::PUNCTUATION, 36, 20),
 
-        // Line 37
-        Token("}", TokenTypes::PUNCTUATION, 37, 9),
+        // Line 37  
+        Token("{", TokenTypes::PUNCTUATION, 37, 9),
+
+        // Line 38
+        Token("println", TokenTypes::IDENTIFIER, 38, 13),
+        Token("(", TokenTypes::PUNCTUATION, 38, 20),
+        Token("low", TokenTypes::IDENTIFIER, 38, 21),
+        Token(")", TokenTypes::PUNCTUATION, 38, 24),
+        Token(";", TokenTypes::PUNCTUATION, 38, 25),
 
         // Line 39
-        Token("low", TokenTypes::IDENTIFIER, 39, 9),
-        Token("=", TokenTypes::OPERATOR, 39, 13),
-        Token("low", TokenTypes::IDENTIFIER, 39, 15),
-        Token("+", TokenTypes::OPERATOR, 39, 19),
-        Token("1", TokenTypes::VALUE, 39, 21),
-        Token(";", TokenTypes::PUNCTUATION, 39, 22),
+        Token("}", TokenTypes::PUNCTUATION, 39, 9),
 
-        // Line 40
-        Token("}", TokenTypes::PUNCTUATION, 40, 5),
-
-        // Line 41 is a comment: # println(); Display with \n
-        // (no tokens emitted for comments)
+        // Line 41
+        Token("low", TokenTypes::IDENTIFIER, 41, 9),
+        Token("=", TokenTypes::OPERATOR, 41, 13),
+        Token("low", TokenTypes::IDENTIFIER, 41, 15),
+        Token("+", TokenTypes::OPERATOR, 41, 19),
+        Token("1", TokenTypes::VALUE, 41, 21),
+        Token(";", TokenTypes::PUNCTUATION, 41, 22),
 
         // Line 42
-        Token("}", TokenTypes::PUNCTUATION, 42, 1),
+        Token("}", TokenTypes::PUNCTUATION, 42, 5),
+
+        // Line 43 is a comment: # println(); Display with \n
+        // (no tokens emitted for comments)
+
+        // Line 44
+        Token("}", TokenTypes::PUNCTUATION, 44, 1),
     };
 
-    std::vector<Token> results = TestsUtils::CollectTokens(lexer);
+    std::vector<Token> results = TestsUtils::FilterTrivia(TestsUtils::CollectTokens(lexer));
 
     TestsUtils::CompareTokens(results, expected);
 }
